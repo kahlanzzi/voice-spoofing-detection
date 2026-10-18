@@ -48,7 +48,10 @@ features:
   center: false
   n_mels: 64
   fmin_hz: 0.0
-  fmax_hz: 8000.0
+  # Keep the last Mel band below the 16 kHz Nyquist edge. The first official
+  # FoR candidate run showed that an 8 kHz edge band was not stable after
+  # deterministic sample-rate conversion; 7.6 kHz passes the D18 converters.
+  fmax_hz: 7600.0
   mel_power: 1.0
   log_epsilon: 1.0e-6
   mfcc_count: 20

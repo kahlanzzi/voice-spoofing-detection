@@ -25,6 +25,15 @@ def _tone(sr=16000):
     return (0.2 * np.sin(2 * np.pi * 440 * t)).astype(np.float32)
 
 
+def _nyquist_edge_probe(sr=16000):
+    """Synthetic speech-band tone plus energy near the old 8 kHz Mel edge."""
+    t = np.arange(2 * sr, dtype=np.float32) / sr
+    return (
+        0.2 * np.sin(2 * np.pi * 440 * t)
+        + 0.02 * np.sin(2 * np.pi * 7900 * t)
+    ).astype(np.float32)
+
+
 def test_feature_shapes_dtype_finite_and_deterministic(profile):
     prepared, log_mel, mfcc = extract_features(_tone(), 16000, profile)
     assert prepared.waveform.shape == (32000,)
@@ -38,7 +47,7 @@ def test_feature_shapes_dtype_finite_and_deterministic(profile):
 
 
 def test_40_44_1_48khz_stereo_synthetic_invariance(profile):
-    reference = _tone()
+    reference = _nyquist_edge_probe()
     _, base_log_mel, base_mfcc = extract_features(reference, 16000, profile)
     for sr in (40000, 44100, 48000):
         # D18 converts the same clip to another rate/stereo and then sends that

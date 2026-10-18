@@ -24,6 +24,7 @@ def test_load_profile_has_frozen_shapes_and_stable_fingerprint(profile_path):
     assert profile.sample_rate == 16000
     assert profile.samples == 32000
     assert profile.expected_log_mel_frames == 197
+    assert profile.features["fmax_hz"] == 7600.0
     assert profile.fingerprint() == load_profile(profile_path).fingerprint()
     assert len(profile.fingerprint()) == 64
 
@@ -38,6 +39,7 @@ def test_load_profile_has_frozen_shapes_and_stable_fingerprint(profile_path):
         (lambda d: d["resampling"].update(method="kaiser_best"), "soxr_hq"),
         (lambda d: d["silence"].update(detector="silero"), "frame-RMS"),
         (lambda d: d["features"].update(n_mels=80), "feature settings"),
+        (lambda d: d["features"].update(fmax_hz=8000.0), "feature settings"),
         (lambda d: d["benchmark"].update(mode="train"), "must not fit"),
     ],
 )

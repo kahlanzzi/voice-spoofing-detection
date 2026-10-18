@@ -173,7 +173,7 @@ def load_profile(path: Path) -> PreprocessingProfile:
     )
     fixed_features = {
         "n_fft": 512, "win_length": 400, "hop_length": 160, "window": "hann",
-        "center": False, "n_mels": 64, "fmin_hz": 0.0, "fmax_hz": 8000.0,
+        "center": False, "n_mels": 64, "fmin_hz": 0.0, "fmax_hz": 7600.0,
         "mel_power": 1.0, "log_epsilon": 1.0e-6, "mfcc_count": 20,
         "mfcc_dct_type": 2, "mfcc_norm": "ortho",
     }
