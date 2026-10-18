@@ -1,1 +1,13 @@
-# filled in Stage 7
+# MFCC/SVM baseline fitting (Stage 7; D7, D9, D29, D37). Read by src/tuning/baseline_fit.py.
+# Written before any baseline training run, as D37 requires. Changing a value needs a new decision;
+# tests/tuning/test_baseline_fit.py fails if this file drifts from D37.
+decision: D37
+features: mfcc_mean_std_40          # 40-value MFCC vector: mean + std of 20 coefficients (§3, §11)
+scaling: standardize_train_only     # per-feature mean/std (ddof=0) on FoR train only, stored in the artifact
+grid:                               # RBF-SVM, 16 configurations, evaluated in this order (C outer, gamma inner)
+  C: [0.1, 1, 10, 100]
+  gamma: [0.001, 0.01, 0.025, 0.1]
+selection: lowest_val_a_eer         # lowest EER on val-A (D9)
+tie_break: [C, gamma]               # equal val-A EER: smaller C, then smaller gamma
+score: decision_function            # continuous SVM score; no probability outputs
+threshold: d29_val_b_eer            # forced-binary threshold at the val-B EER point of the score (D29)

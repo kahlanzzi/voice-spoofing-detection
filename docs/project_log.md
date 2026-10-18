@@ -1133,6 +1133,33 @@ any baseline training run.
 
 ---
 
+### Entry 54 — Stage 7 MFCC/SVM baseline code, steps B1–B2 (2026-10-18)
+
+**What / AI assistance:** Donia, with Claude Code (code, tests and docs drafted by the AI; human
+review pending), on `feat/stage7-baseline-code`, stacked on `docs/stage6-d37-baseline-tuning`.
+- **B1** (`src/models/baseline.py`): train-only scaler, NumPy RBF scorer equal to
+  `SVC.decision_function`, forced-binary label through the shared band rule (half_width 0), and a
+  non-pickle artifact (`baseline.npz` read with `allow_pickle=False` + strict `baseline.json`) with
+  one `artifact_sha256` for F4 (D36). Two review fixes: the npz is written with fixed zip metadata so
+  equal models give identical bytes and hash; `from_sklearn` reads the public `gamma` and refuses
+  `"scale"` / `"auto"` (D37 fixes numeric gamma).
+- **B2** (`src/tuning/baseline_fit.py`, `configs/baseline.yaml`): the D37 config with a strict
+  loader; `select_baseline` fits the 16 (C, gamma) configurations on standardized train and selects
+  the lowest val-A EER (ties: smaller C, then smaller gamma), keeping all 16 rows in a report;
+  `fit_baseline_threshold` sets the D29 threshold at the val-B EER point of `BaselineModel.score`;
+  `fit_baseline` composes them. Documented in `docs/baseline.md`.
+
+**Checks [verified]:** full suite in the project venv (Python 3.14.7) `362 passed`; governance test
+`3 passed`. Tests prove val-A reaches only selection and val-B only the threshold (eer spy), the
+config equals D37 (drift guard), and refitting gives identical reports and artifact hash. On the
+synthetic data the selected configuration is C 10, gamma 0.025 (tied with C 100 at val-A EER 0.35;
+the tie rule picked the smaller C). Synthetic data only; no dataset, feature or model access.
+
+**Gate:** human review of B1–B2; D37 must be approved (PR below) before this branch merges. Real
+fitting waits for F3 features.
+
+---
+
 ## Open items
 
 **Khalil: Stage 13 preparation**
@@ -1195,7 +1222,8 @@ any baseline training run.
 - [ ] File-level decisions for DEEP-VOICE: frozen band on the file mean of p, secondary view (Khalil, before Stage 13).
 - [ ] Colab install of scikit-learn 1.9.1 [to verify] at the first Stage 7 Colab run.
 - [ ] Approve D37 (team review) (Entry 53).
-- [ ] Write the baseline grid and scaling in `configs/` before Stage 7 training (D37).
+- [x] Write the baseline grid and scaling in `configs/` before Stage 7 training (D37): `configs/baseline.yaml` (Entry 54).
+- [ ] Human review of `feat/stage7-baseline-code` (B1–B2) after D37 approval (Entry 54).
 
 **Stage 10 risk policy (Entry 33)**
 - [x] Human review of `feat/stage10-risk-policy` (R1–R2); CI green on Python 3.13: merged as PR #17.
@@ -1320,6 +1348,8 @@ any baseline training run.
   (Entry 47); merged in `3ecb979`.
 - **D37 proposed** on `docs/stage6-d37-baseline-tuning` (Entry 53): baseline grid, train-only
   scaling and `decision_function` score, fixed before any val-A result; approval by PR review.
+- **Stage 7 baseline code, steps B1–B2** on `feat/stage7-baseline-code` (Entry 54): scorer,
+  non-pickle deterministic artifact, D37 fitting and `configs/baseline.yaml`; synthetic tests only.
 
 **What we have:**
 - The approved FoR split and the F2 manifests and hash ledger (D28).
@@ -1328,6 +1358,8 @@ any baseline training run.
   helpers for Stage 13.
 - Pre-declared rules for the baseline threshold, CNN selection and the single Stage 11 run (D29–D31),
   and proposed baseline tuning, scaling and score (D37, Entry 53).
+- A tested MFCC/SVM baseline (`src/models/baseline.py`, `src/tuning/baseline_fit.py`), documented in
+  `docs/baseline.md`; not yet fitted on real features (waits for F3).
 - A tested risk-policy fit (`src/tuning`) and core apply / save / load (`src/risk`), documented in
   `docs/risk_policy.md`; not yet fitted on real val-B scores.
 - A tested append-only run registry (`src/evaluation/run_registry.py`) that refuses a second
@@ -1343,6 +1375,9 @@ any baseline training run.
   explicit decision confirmations.
 - `chore/stage13-synthetic-reporting`: PR #27; main integrated locally, log entry renumbered
   to 51. Commit/push, retarget to main and updated CI remain pending.
+- `docs/stage6-d37-baseline-tuning`: D37 proposal (Entry 53), waiting for team review.
+- `feat/stage7-baseline-code`: stacked on `docs/stage6-d37-baseline-tuning`; B1–B2 committed
+  locally (Entry 54), not pushed. Retarget to main once the D37 PR merges.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
@@ -1354,5 +1389,6 @@ any baseline training run.
    benchmark, on a separate branch.
 3. Before Stage 13, record approved decisions for the file-level view, speaker-average undefined
    values and governance allowlist. Verify the scikit-learn Colab install.
-4. Approve D37 by team review, then write the baseline grid and scaling in `configs/`.
+4. Approve D37 by team review; then review B1–B2 (`feat/stage7-baseline-code`). The baseline
+   grid and scaling are now in `configs/baseline.yaml`.
 5. Then run the real Part C work on the frozen F3 preprocessing profile.
