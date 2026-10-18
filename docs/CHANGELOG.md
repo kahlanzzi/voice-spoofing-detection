@@ -11,6 +11,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ### Added
 - Stage briefs 00 (setup) and 01 (dataset audit) (`docs/stages/`, D32).
 - Stage briefs structure and template (`docs/stages/`, D32).
+- Stage 6 preprocessing profile v1 candidate, shared waveform/log-Mel/MFCC pipeline, FoR shortcut and invariance validation, no-training compute benchmark, tests and Colab runner.
 - ModelBundle format and verifying loader (hashes, versions, path safety, immutability, provenance).
 - Append-only, hash-chained run registry for D31 (claim before run).
 - Stage 10 risk policy: Platt calibration with smoothed targets, val-B EER threshold, uncertain band with ≤ 10% deferral, confidence, risk level, strict JSON policy file.

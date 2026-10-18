@@ -895,6 +895,32 @@ approve or merge.
 
 **Gate:** briefs in review; teach-back review by Iheb (Stage 0) and Malak (Stage 1) (D32). AI does
 not approve or merge.
+---
+
+### Entry 39 — Stage 6 preprocessing profile implementation candidate (2026-10-18)
+
+**What [verified locally]:** on `feat/stage6-preprocessing-profile-malak`, Malak approved the Stage 6
+plan and Codex implemented the F3 candidate only. `configs/preprocessing.yaml` records the strict
+profile and F2 ledger link. `src/preprocessing/` now supplies one shared mono/resample, RMS edge-trim,
+length-fix, log-Mel and MFCC path; the official validator verifies the frozen F2 manifest and every
+sample hash before decode, re-screens RMS/silence/bandwidth, and runs D18 invariance. The benchmark
+uses disposable forward/backward operations without an optimizer, weight update, checkpoint or model
+metric. `notebooks/02_stage6_preprocessing_profile.ipynb` checks out an exact clean commit, performs
+two validation runs, compares all four files byte-for-byte, runs the benchmark, and copies candidate
+evidence to Drive. Proposed D33 records the settings and gate.
+
+**Evidence [verified locally]:** focused `tests/preprocessing`: `29 passed in 1.51s`; full suite:
+`295 passed in 45.36s`. Tests use synthetic arrays/files only. No real audio was opened and no model
+was trained. The real FoR validation, shortcut results, invariance results, GPU measurements, selected
+future batch size and determinism hashes do not exist yet; they require the clean Colab run.
+
+**AI assistance:** **Codex** drafted the configuration, implementation, tests, notebook and proposed
+decision after Malak approved the plan. Malak reviews the implementation commit; Donia and Iheb review
+the evidence PR. AI does not approve, freeze or merge.
+
+**Gate:** implementation candidate ready for review. F3 is not effective; do not begin Stage 7 model
+work until the clean FoR run passes, D33/F3 evidence is reviewed, and the PR is merged by a human.
+D32 also requires the Stage 6 brief and teach-back review before the stage is marked done.
 
 ---
 
@@ -940,6 +966,19 @@ not approve or merge.
 - [x] Record the generated manifest hashes in proposed D28 and project-log Entry 30.
 - [x] Donia reviewed and approved the F2 PR; PR #15 merged as `89b37fc`, Stage 5 is done and F2 is
   effective (Entry 36).
+
+**Stage 6 gate**
+- [x] Implement preprocessing profile v1 candidate, shared transforms, tests, validation, no-training
+  compute benchmark and Colab runner (Entry 39).
+- [ ] Review and commit the Stage 6 implementation candidate; the official run must cite that clean
+  commit.
+- [ ] Run the full pinned FoR manifest twice in Colab; require every sample hash/check, shortcut rule
+  and D18 invariance check to pass and the four validation artifacts to be byte-identical.
+- [ ] Record the GPU type, VRAM, PyTorch version, preprocessing throughput and selected future batch
+  size; no optimizer, weight update, checkpoint or model metric is permitted in this benchmark.
+- [ ] Commit the small evidence files, approve D33/F3 through Donia + Iheb review, merge by a human,
+  then write `docs/stages/stage06-preprocessing.md` and complete its teach-back review (D32). Do not
+  mark Stage 6 done or begin Stage 7 model work before this gate.
 
 **Stage 7 harness: protocol clarifications (Entry 31; Protocol §12, next free D-ID when decided)**
 - [x] Baseline threshold: own val-B EER point, forced binary only (Donia, before Stage 7 results): D29 (Entry 32).
@@ -1049,6 +1088,8 @@ not approve or merge.
 - **Stage 4 is complete** (Entry 28): PR #12 merged as `865faf4`.
 - **Stage 5 is complete and F2 is effective**: Donia approved PR #15, merged as `89b37fc`; D28 is
   approved (Entry 36).
+- **Stage 6 implementation is a local candidate** (Entry 39): profile, shared transforms, validation,
+  benchmark, tests and Colab runner are prepared; no real FoR run or F3 approval has occurred.
 - **Stage 7 evaluation harness, steps 1–5, is merged** as PR #13 (Entry 31).
 - **Protocol clarifications D29–D31 are merged** as PR #16 (Entry 32).
 - **Stage 10 risk policy, steps R1–R2, is merged** as PR #17 (Entry 33).
@@ -1075,16 +1116,15 @@ not approve or merge.
 - A stage-brief structure (`docs/stages/`, D32, Entry 37) and the first two briefs (00, 01; in review).
 
 **Branches:**
-- `main`: through PRs #22 and #20, at `567f4aa`.
-- `docs/stage6-briefs-00-01`: briefs 00 and 01, Entry 38; not pushed, waiting for Donia's review.
+- `main`: through stage-brief PR #25 at `610a412`.
+- `feat/stage6-preprocessing-profile-malak`: Stage 6 implementation candidate; not yet committed.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
 
 **What's next:**
-1. Donia reviews briefs 00–01 and pushes; teach-back review by Iheb (00) and Malak (01). Then
-   Donia writes briefs 02–03 and Malak briefs 04–05. AI does not merge.
-2. **Stage 6 is current (waiting for F3):** Malak is on preprocessing profile v1 + tests + compute
-   benchmark, on a separate branch.
-3. Khalil decides the DEEP-VOICE file-level view before Stage 13; verify the scikit-learn Colab install.
-4. Then run the real Part C work on the frozen F3 preprocessing profile.
+1. Review and commit the Stage 6 implementation candidate; CI must be green on Python 3.13.
+2. Run the official FoR-only Stage 6 notebook twice from that clean commit and review the F3 evidence.
+3. Donia and Iheb approve the evidence PR; a human merges it. AI does not approve or merge.
+4. Complete the Stage 6 brief and remaining retrospective stage briefs/teach-backs required by D32.
+5. Then run the real Part C work on the frozen F3 preprocessing profile.
