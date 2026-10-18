@@ -1078,9 +1078,47 @@ No implementation, dataset access or external run. Human review and CI remain re
 
 ---
 
+### Entry 51 — Synthetic reporting integration tests (2026-10-18)
+
+**What / AI assistance:** Codex prepared six integration tests at Khalil's request, using invented
+scores for eight speakers, unequal sizes, 1,870 REAL and 13,090 FAKE windows, seed 2026, and one
+fixed example threshold/band. Known error/deferral counts verify the per-speaker table; an
+independent count-level oracle verifies clustered accuracy intervals with 2,000 resamples.
+Tests also cover macro versus pooled accuracy, artificial filter accounting and missing-speaker
+roster comparison. No dataset, audio, trained model or real prediction file is used.
+
+**Evidence:** Prepared tests: `6 passed in 1.71s`. Full installed suite: `317 passed in 11.57s`, including governance tests
+(writable temporary directory; pytest cache and bytecode writes disabled).
+**Limitations:** These are integration tests of existing helpers, not a production reporting
+layer, eight-speaker enforcement, a file-level implementation or real model performance.
+D33–D35 remain proposals in PR #26. Tests do not select their final conventions.
+**Branch:** requested rename from `test/stage13-synthetic-reporting` (Codex's incorrect prefix)
+to `chore/stage13-synthetic-reporting` under D23; stacked on the pending proposal branch.
+**Gate:** Review, branch rename, commit/push and CI pending. No external run authorized.
+
+---
+
+### Entry 52 — Reconcile synthetic reporting tests with main (2026-10-18)
+
+**What / AI assistance:** Codex resolved the project-log conflict for PR #27 after PR #26
+merged as `72a9646`. Preserved merged Entries 1–50 and renumbered only the unmerged
+synthetic-test entry to 51. Both changelog additions remain. The branch rename and push
+recorded as pending in Entry 51 are now complete; current tracking reflects that correction.
+
+**Checks [verified]:** full local suite `317 passed in 12.04s`, including governance.
+Merged entries preserved; numbering is sequential; no conflict markers or trailing whitespace.
+
+**Gate:** Commit/push, retarget PR #27 to main and updated CI/review remain pending.
+D33–D35 remain proposals. No production code, real predictions or external data accessed.
+
+---
+
 ## Open items
 
 **Khalil: Stage 13 preparation**
+- [x] Rename synthetic-test branch to the D23-compliant `chore/stage13-synthetic-reporting`.
+- [ ] Complete PR #27 integration, retarget to main, and review updated synthetic tests (Entry 51).
+- [x] PR #26 merged as `72a9646`; explicit D33–D35 decision confirmations remain pending.
 - [x] PR #21 merged into main as `65ce1d2`; PR #23 base changed to main.
 - [x] PR #23 integrated and merged as `3f2f4bb` after passing CI (Entries 42–44).
 - [x] PR #24 merged into main as `6786c12` (Entries 45–46).
@@ -1236,10 +1274,11 @@ No implementation, dataset access or external run. Human review and CI remain re
 ## Current status — updated 2026-10-18
 
 **What was done:**
+- **Synthetic integration tests prepared:** eight invented speakers and 14,960 windows (Entry 51); no real predictions.
 - **PR #21 merged** as `65ce1d2`; its documentation is in main.
 - **PR #23 merged** as `3f2f4bb`: per-speaker helper and tests (Entries 42–44).
 - **PR #24 merged** as `6786c12`: speaker-average helper and tests (Entries 45–46).
-- **D33–D35 proposed:** ADR 0007 includes Donia's requested corrections (Entries 48–49); confirmation and team decisions remain pending.
+- **PR #26 merged** as `72a9646`; D33–D35 remain proposed. ADR 0007 includes Donia's requested corrections (Entries 48–49); confirmation and team decisions remain pending.
 - **Lab 6 closeout in progress:** factual report sections and PR #21 CI evidence are documented (Entry 40); Donia's reported test is now recorded (Entry 41); her extension version, Iheb's answer and human verification/review remain pending.
 - **Stages 0–3 and Part A are complete.** Protocol v1.0 is frozen as F1 (PR #10).
 - **Stage 4 is complete** (Entry 28): PR #12 merged as `865faf4`.
@@ -1274,11 +1313,11 @@ No implementation, dataset access or external run. Human review and CI remain re
 - Stage briefs (`docs/stages/`, D32): 00–01 accepted, 02–03 merged; teach-back completion tracked separately.
 
 **Branches:**
-- `origin/main`: fetched at `3ecb979`, including Donia's briefs 02–03 and merged Entries 1–47.
-- `docs/stage13-evaluation-decisions`: PR #26, proposals D33–D35 (Entries 48–49);
-  main integrated locally; merge commit and updated review pending.
-- `chore/stage13-synthetic-reporting`: PR #27, stacked on PR #26; update and renumber
-  its unmerged log entry after PR #26 is integrated.
+- `origin/main`: fetched at `72a9646`, including merged PR #26 and Entries 1–50.
+- `docs/stage13-evaluation-decisions`: PR #26 merged; D33–D35 remain Proposed pending
+  explicit decision confirmations.
+- `chore/stage13-synthetic-reporting`: PR #27; main integrated locally, log entry renumbered
+  to 51. Commit/push, retarget to main and updated CI remain pending.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
