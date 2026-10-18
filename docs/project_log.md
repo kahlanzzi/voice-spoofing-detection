@@ -922,6 +922,14 @@ not approve or merge.
 
 ---
 
+### Entry 41 — Donia AI-tool test evidence for Lab 6 (2026-10-18)
+
+**Evidence (member-reported):** Khalil relayed Donia's fresh-session Claude Code test on `main`, dated 2026-10-18. Donia reported a passed answer on the external-data restrictions and preprocessing location, with `CLAUDE.md` importing `AGENTS.md`. The extension version was not supplied. Codex did not observe that session independently.
+
+**What changed / AI assistance:** Codex transcribed the summary into `docs/setup-report.md` §5 and updated its outstanding checks. Donia's answer is collected; her extension version, Iheb's answer and the other Lab 6 checks remain pending. No stage closure is claimed.
+
+---
+
 ## Open items
 
 **GitHub / repo**
@@ -1009,7 +1017,7 @@ not approve or merge.
 **Course deliverables**
 - [ ] Setup report (`docs/setup-report.md`, Lab 6 skeleton): Malak's Codex test is recorded and
   passed (Entry 22); Khalil's local setup evidence and Codex answer are recorded (Entry 39).
-  Factual report sections are filled (Entry 40); other team answers, Iheb's review and D14 response,
+  Factual report sections are filled (Entry 40); Donia's extension version, Iheb's AI answer, review and D14 response,
   owner/setup verification and team acceptance are still open.
 
 **Local verification**
@@ -1071,7 +1079,7 @@ not approve or merge.
 ## Current status — updated 2026-10-18
 
 **What was done:**
-- **Lab 6 closeout in progress:** factual report sections and PR #21 CI evidence are documented (Entry 40); missing member responses and human verification/review remain pending.
+- **Lab 6 closeout in progress:** factual report sections and PR #21 CI evidence are documented (Entry 40); Donia's reported test is now recorded (Entry 41); her extension version, Iheb's answer and human verification/review remain pending.
 - **Stages 0–3 and Part A are complete.** Protocol v1.0 is frozen as F1 (PR #10).
 - **Stage 4 is complete** (Entry 28): PR #12 merged as `865faf4`.
 - **Stage 5 is complete and F2 is effective**: Donia approved PR #15, merged as `89b37fc`; D28 is
