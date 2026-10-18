@@ -825,7 +825,26 @@ touched.
 
 ---
 
-### Entry 36 — Stage briefs: structure, template and D32 (2026-10-17)
+### Entry 36 — Stage 5 closeout: F2 effective (2026-10-17)
+
+**What [verified]:** Stage 5 is complete. Donia reviewed and approved PR #15, which merged into
+`main` as `89b37fc` on 2026-10-17. D28 is now approved, the reviewed F2 manifests and hash ledger are
+effective, and the roadmap advances to Stage 6 as the current stage. Entry 30 remains unchanged.
+
+**Evidence [verified]:** local Git history identifies `89b37fc` as
+`Merge pull request #15 from kahlanzzi/feat/stage5-dataset-freeze-malak`, dated 2026-10-17. The merge
+is contained by `main`. The Stage 5 implementation, correction and deterministic evidence are the
+artifacts reviewed in PR #15.
+
+**AI assistance:** **Codex** checked the merge evidence and prepared this documentation-only closeout.
+Malak reviews the diff; Donia reviews the closeout PR. AI does not approve or merge.
+
+**Gate:** **PASSED. Stage 5 is complete and F2 is effective.** Stage 6 may begin on its own branch;
+this closeout branch contains documentation only.
+
+---
+
+### Entry 37 — Stage briefs: structure, template and D32 (2026-10-17)
 
 **Authorship:** proposed and specified by Donia Mabrouk. The files were written by **Claude Code**;
 Donia reviews before push.
@@ -894,7 +913,8 @@ approve or merge.
 - [x] Malak approved implementation commit `9e005b1` and correction commit `df1d6ac`; run the
   official freeze twice from the final clean commit.
 - [x] Record the generated manifest hashes in proposed D28 and project-log Entry 30.
-- [ ] Donia reviews the F2 PR; after approval and human merge, mark Stage 5 done.
+- [x] Donia reviewed and approved the F2 PR; PR #15 merged as `89b37fc`, Stage 5 is done and F2 is
+  effective (Entry 36).
 
 **Stage 7 harness: protocol clarifications (Entry 31; Protocol §12, next free D-ID when decided)**
 - [x] Baseline threshold: own val-B EER point, forced binary only (Donia, before Stage 7 results): D29 (Entry 32).
@@ -920,7 +940,7 @@ approve or merge.
 - [ ] Stage 8: save checkpoints in a non-executable form (safetensors or state_dict + weights_only=True).
 - [ ] F4: record manifest_sha256 in the freeze decision.
 
-**Stage briefs (D32, Entry 36)**
+**Stage briefs (D32, Entry 37)**
 - [ ] Team review of `docs/stage6-stage-briefs` (approves D32).
 - [ ] Write stage briefs 00–03 (Donia).
 - [ ] Write stage briefs 04–05 (Malak).
@@ -1001,14 +1021,17 @@ approve or merge.
 **What was done:**
 - **Stages 0–3 and Part A are complete.** Protocol v1.0 is frozen as F1 (PR #10).
 - **Stage 4 is complete** (Entry 28): PR #12 merged as `865faf4`.
-- **Stage 5 F2 PR merged** as PR #15 (`main` at `89b37fc`).
+- **Stage 5 is complete and F2 is effective**: Donia approved PR #15, merged as `89b37fc`; D28 is
+  approved (Entry 36).
 - **Stage 7 evaluation harness, steps 1–5, is merged** as PR #13 (Entry 31).
 - **Protocol clarifications D29–D31 are merged** as PR #16 (Entry 32).
 - **Stage 10 risk policy, steps R1–R2, is merged** as PR #17 (Entry 33).
 - **Stage 11 run registry (D31) is merged** as PR #18 (Entry 34).
-- **Stage 12 prep, ModelBundle format and verifying loader, is merged** as PR #19 (Entry 35). With
-  it, the **Part C prep is complete**: harness, risk policy, run registry and bundle format are
-  built and tested on synthetic data; the real Part C runs wait for F3 (preprocessing profile v1).
+- **Stage 12 prep, ModelBundle format and verifying loader, merged** as PR #19 (`8b688dc`; Entry 35).
+  The **Part C prep is complete**: harness, risk policy, run registry and bundle format are built and
+  tested on synthetic data; the real Part C runs wait for F3 (preprocessing profile v1).
+- **Stage 5 administrative closeout merged** as PR #22 (`02f53e2`; Entry 36).
+- **Stage-briefs PR (D32, Entry 37)** approved by all three reviewers; merging next.
 
 **What we have:**
 - The approved FoR split and the F2 manifests and hash ledger (D28).
@@ -1022,18 +1045,19 @@ approve or merge.
 - A tested ModelBundle format (`src/bundle/`) whose loader verifies every part before use,
   documented in `docs/model_bundle.md`.
 - Governance rules that keep the external set metadata-only until the one guarded Stage 13 run.
-- A stage-brief structure (`docs/stages/`, proposed D32, Entry 36); no brief written yet.
+- A stage-brief structure (`docs/stages/`, D32, Entry 37); no brief written yet.
 
 **Branches:**
-- `main`: through PR #19 at `8b688dc`.
-- `docs/stage6-stage-briefs`: stage-brief structure, template and D32, Entry 36; ready for human review.
+- `main`: through PR #22 at `02f53e2`.
+- `docs/stage6-stage-briefs`: stage-brief structure, template and D32, Entry 37; approved by all three, merging next.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
 
 **What's next:**
-1. Team review of the stage-briefs PR (approves D32); CI green on Python 3.13. AI does not merge.
+1. Merge the stage-briefs PR (D32 approved); CI green on Python 3.13. AI does not merge.
    Then Donia writes briefs 00–03 and Malak briefs 04–05.
-2. **Waiting for F3:** Malak is on Stage 6 (preprocessing profile v1 + tests + compute benchmark).
+2. **Stage 6 is current (waiting for F3):** Malak is on preprocessing profile v1 + tests + compute
+   benchmark, on a separate branch.
 3. Khalil decides the DEEP-VOICE file-level view before Stage 13; verify the scikit-learn Colab install.
-4. Then the MFCC/SVM baseline (Stage 7) on the frozen preprocessing.
+4. Then run the real Part C work on the frozen F3 preprocessing profile.
