@@ -5,7 +5,7 @@
 | **Stage** | 0 — Repository and environment setup |
 | **Owner** | Donia Mabrouk (D26, Part A) |
 | **Reviewer(s)** | Iheb Zemzemi (repo owner since 2026-10-14, `docs/project_log.md` header and Entry 20) |
-| **Status** | In review |
+| **Status** | Accepted (PR #25) |
 | **Date** | 2026-10-18 |
 | **Related PRs** | Stage 0: #1 (`stage-0-git-workflow`, Entry 14) · Part A repository-structure work (Execution Plan v2.1 §7, "Repository structure" row): #6 (`chore/repo-structure`, Entry 18) |
 

@@ -9,6 +9,14 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 7 MFCC/SVM baseline: train-only scaler, NumPy scorer, deterministic non-pickle artifact, and D37 fitting (16-point grid on val-A, D29 threshold on val-B) with `configs/baseline.yaml`.
+- Deterministic eight-speaker synthetic integration tests for metric tables, averages, filter counts and clustered accuracy intervals.
+- Proposed Stage 13 reporting conventions and exact guarded-run access scope (D33–D35, ADR 0007); approval pending.
+- Equal-speaker rate summaries with explicit undefined-value handling and synthetic tests (D19 preparation; report convention pending review).
+- Per-source-speaker metric tables reusing the evaluation harness, with synthetic tests and usage documentation (D4, D19; Stage 13 preparation).
+- Evidence-backed Lab 6 report sections covering team roles, setup, CI, workflow and data rules, with remaining closeout checks listed.
+- Khalil's local setup verification, troubleshooting notes and Codex rule-check answer in the Lab 6 setup report.
+- Stage briefs 02 (threat model) and 03 (protocol) (`docs/stages/`, D32).
 - Stage briefs 00 (setup) and 01 (dataset audit) (`docs/stages/`, D32).
 - Stage briefs structure and template (`docs/stages/`, D32).
 - Stage 6 preprocessing profile v1 candidate, shared waveform/log-Mel/MFCC pipeline, FoR shortcut and invariance validation, no-training compute benchmark, tests and Colab runner.
@@ -37,6 +45,8 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 
 ### Changed
 - Stage 6 Colab runner now supports a manual input/evidence transfer mode when Drive credential propagation is unavailable.
+- Baseline tuning pre-declared: MFCC standardization on FoR train, RBF-SVM C × gamma grid, val-A EER selection, decision_function score (D37, proposed).
+- Refined proposed D33/D35 after Donia's review: existing bootstrap convention, dataset-wide run key and durable registry evidence; approval still pending.
 - Stage 5 closed after PR #15 review and merge: D28 approved, F2 effective, Stage 6 current.
 - Band rule moved to the core (`src/risk/decisions.py`); the evaluation harness re-exports it.
 - Protocol clarifications D29–D31 (baseline threshold, CNN search space with seed and tie rule, Stage 11 run once) and the Protocol §14 row.
