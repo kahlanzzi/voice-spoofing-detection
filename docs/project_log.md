@@ -1163,9 +1163,40 @@ fitting waits for F3 features.
 
 ---
 
+### Entry 55 — Per-window preprocessing integration requirement (2026-10-18)
+
+**What / AI assistance:** At Khalil's request, Codex added the team follow-up from Malak's
+Stage 6 work to ADR 0007's D35 implementation list: a synthetic runner integration test
+must exercise the shared frozen preprocessing function for every complete 2 s window,
+with trimming and centred padding per window. Direct-call comparisons and distinct silence
+patterns must detect whole-recording preprocessing before splitting.
+
+**Scope / gate:** Documentation only. The runner and integration test are not implemented
+by this change; no decision acceptance, allowlist change or external execution is implied.
+Review the final F3 API before implementing. Entry number must be checked against latest
+main before merging this documentation update.
+
+---
+
+### Entry 56 — Integrate main into preprocessing-test requirement (2026-10-18)
+
+**What / AI assistance:** Codex resolved the changelog and log conflicts against `bf8096c`.
+Kept both changelog additions and all merged Entries 1–54; renumbered the unmerged
+per-window test requirement to Entry 55. The D35 requirement remains in ADR 0007.
+Baseline code/config/tests from main are retained. No decision approval is inferred here.
+
+**Checks [verified]:** full local suite `366 passed in 14.86s`, including governance;
+merged entries retained, sequential numbering and conflict-marker checks passed.
+
+**Gate:** Finish the merge commit, push PR #32 and obtain updated CI/human review.
+The runner integration test is still future implementation work; no external data accessed.
+
+---
+
 ## Open items
 
 **Khalil: Stage 13 preparation**
+- [ ] Implement the D35 per-window frozen preprocessing integration test (Entry 55).
 - [x] Rename synthetic-test branch to the D23-compliant `chore/stage13-synthetic-reporting`.
 - [ ] Complete PR #27 integration, retarget to main, and review updated synthetic tests (Entry 51).
 - [x] PR #26 merged as `72a9646`; explicit D33–D35 decision confirmations remain pending.
@@ -1327,6 +1358,7 @@ fitting waits for F3 features.
 ## Current status — updated 2026-10-18
 
 **What was done:**
+- Added the D35 per-window preprocessing integration-test requirement (Entry 55); implementation pending.
 - **Synthetic integration tests prepared:** eight invented speakers and 14,960 windows (Entry 51); no real predictions.
 - **PR #21 merged** as `65ce1d2`; its documentation is in main.
 - **PR #23 merged** as `3f2f4bb`: per-speaker helper and tests (Entries 42–44).
@@ -1349,8 +1381,7 @@ fitting waits for F3 features.
 - **Stage briefs 00 and 01** accepted: merged as PR #25 (`610a412`) after teach-back review.
 - **Stage briefs 02 (threat model) and 03 (protocol)** written on `docs/stage6-briefs-02-03`
   (Entry 47); merged in `3ecb979`.
-- **D37 proposed** on `docs/stage6-d37-baseline-tuning` (Entry 53): baseline grid, train-only
-  scaling and `decision_function` score, fixed before any val-A result; approval by PR review.
+- **D37 recorded on main** (Entry 53): baseline grid, train-only scaling and score; Entry 53 records team approval.
 - **Stage 7 baseline code, steps B1–B2** on `feat/stage7-baseline-code` (Entry 54): scorer,
   non-pickle deterministic artifact, D37 fitting and `configs/baseline.yaml`; synthetic tests only.
 
@@ -1360,7 +1391,7 @@ fitting waits for F3 features.
   external run, documented in `docs/evaluation_harness.md`, plus per-speaker and speaker-average
   helpers for Stage 13.
 - Pre-declared rules for the baseline threshold, CNN selection and the single Stage 11 run (D29–D31),
-  and proposed baseline tuning, scaling and score (D37, Entry 53).
+  and baseline tuning, scaling and score (D37, Entry 53).
 - A tested MFCC/SVM baseline (`src/models/baseline.py`, `src/tuning/baseline_fit.py`), documented in
   `docs/baseline.md`; not yet fitted on real features (waits for F3).
 - A tested risk-policy fit (`src/tuning`) and core apply / save / load (`src/risk`), documented in
@@ -1373,14 +1404,10 @@ fitting waits for F3 features.
 - Stage briefs (`docs/stages/`, D32): 00–01 accepted, 02–03 merged; teach-back completion tracked separately.
 
 **Branches:**
-- `origin/main`: fetched at `72a9646`, including merged PR #26 and Entries 1–50.
-- `docs/stage13-evaluation-decisions`: PR #26 merged; D33–D35 remain Proposed pending
-  explicit decision confirmations.
-- `chore/stage13-synthetic-reporting`: PR #27; main integrated locally, log entry renumbered
-  to 51. Commit/push, retarget to main and updated CI remain pending.
-- `docs/stage6-d37-baseline-tuning`: D37 proposal (Entry 53), waiting for team review.
-- `feat/stage7-baseline-code`: stacked on `docs/stage6-d37-baseline-tuning`; B1–B2 committed
-  locally (Entry 54), not pushed. Retarget to main once the D37 PR merges.
+- `origin/main`: fetched at `bf8096c`; includes merged Entries 1–54 and baseline B1–B2.
+- `docs/stage13-preprocessing-test`: PR #32; main integrated locally, requirement at Entry 55;
+  merge commit, push and updated CI/review pending.
+- PRs #26 and #27 are merged. D33–D35 acceptance tracking remains separate from this update.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
@@ -1392,6 +1419,5 @@ fitting waits for F3 features.
    benchmark, on a separate branch.
 3. Before Stage 13, record approved decisions for the file-level view, speaker-average undefined
    values and governance allowlist. Verify the scikit-learn Colab install.
-4. Approve D37 by team review; then review B1–B2 (`feat/stage7-baseline-code`). The baseline
-   grid and scaling are now in `configs/baseline.yaml`.
+4. Baseline B1–B2 and the D37 configuration are in main; real fitting still waits for F3.
 5. Then run the real Part C work on the frozen F3 preprocessing profile.

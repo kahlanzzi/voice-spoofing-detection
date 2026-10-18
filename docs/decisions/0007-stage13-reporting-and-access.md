@@ -125,6 +125,15 @@ are rejected. It must also demonstrate, using dummy files and a fake scorer:
    log, preserving the durable registry evidence (D31 truncation lesson).
 5. Produce both views in one scoring pass with drop counts and the existing stored-score
    interface; subsequent reporting consumes scores only. Keep D27's no-MCP Stage 13 rule.
+6. Add a runner integration test proving that every complete 2 s window calls the same
+   frozen Stage 6 preprocessing function with the frozen profile and parameters. Trimming
+   and centred padding must happen separately per window, not on the full recording before
+   windowing. Use synthetic multi-window audio with distinct silence patterns and a fake
+   scorer; wrap the real preprocessing function to verify call inputs/counts and compare
+   each scorer input with a direct call on that individual window. Choose fixtures that
+   fail if trimming/padding is done before splitting, and check the frozen padding convention
+   and protocol's short-remainder rule. Use the final F3 API; do not duplicate preprocessing
+   logic or access external audio. This test is required implementation work, not yet built.
 
 Reusing the Stage 11 registry requires inspection and tests: its model-set key must not
 be used for the external guard, whose uniqueness scope is the dataset across all model sets. The current governance
