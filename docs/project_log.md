@@ -995,12 +995,30 @@ explicit decisions before Stage 13; this integration approves none of them.
 
 ---
 
+### Entry 47 — Stage 13 decision proposals (2026-10-18)
+
+**What / AI assistance:** At Khalil's request, Codex checked the decision register, frozen protocol,
+metric helpers and governance scanner, and drafted proposed D33–D35 with ADR 0007. Topics:
+undefined eight-speaker averages, file-level decisions using the frozen CNN policy, and two exact
+future runner/config allowlist entries with runtime guard requirements. All approvals are pending.
+
+**Evidence:** PR #24 merged as `6786c12`; PRs #21 and #23 are also merged. The current branch starts
+from that main revision. This change edits documentation only; no dataset or model access,
+allowlist change, scoring implementation or protocol amendment. Full suite: `311 passed in 10.91s`
+(including governance tests; writable temporary directory, cache/bytecode writes disabled).
+Documentation whitespace and conflict-marker checks passed.
+
+**Gate:** Team review of each proposal before adoption. Stage 13 has not run and is not authorized.
+
+---
+
 ## Open items
 
 **Khalil: Stage 13 preparation**
 - [x] PR #21 merged into main as `65ce1d2`; PR #23 base changed to main.
 - [x] PR #23 integrated and merged as `3f2f4bb` after passing CI (Entries 42–44).
-- [ ] Complete PR #24 integration and updated checks (Entries 45–46); retarget to main before merge.
+- [x] PR #24 merged into main as `6786c12` (Entries 45–46).
+- [ ] Review proposed D33–D35 and ADR 0007; record explicit approval or requested revisions (Entry 47).
 - [ ] Complete clustered CIs, speaker completeness checks and filter/file-level reporting.
 - [ ] Before Stage 13, approve and record the speaker-average undefined-value convention alongside
   the file-level view and governance allowlist decisions. No convention is approved by this update.
@@ -1154,7 +1172,8 @@ explicit decisions before Stage 13; this integration approves none of them.
 **What was done:**
 - **PR #21 merged** as `65ce1d2`; its documentation is in main.
 - **PR #23 merged** as `3f2f4bb`: per-speaker helper and tests (Entries 42–44).
-- **PR #24 integration in progress:** installed speaker-average helper and tests (Entries 45–46).
+- **PR #24 merged** as `6786c12`: speaker-average helper and tests (Entries 45–46).
+- **D33–D35 proposed:** ADR 0007 documents the three pending Stage 13 choices (Entry 47).
 - **Lab 6 closeout in progress:** factual report sections and PR #21 CI evidence are documented (Entry 40); Donia's reported test is now recorded (Entry 41); her extension version, Iheb's answer and human verification/review remain pending.
 - **Stages 0–3 and Part A are complete.** Protocol v1.0 is frozen as F1 (PR #10).
 - **Stage 4 is complete** (Entry 28): PR #12 merged as `865faf4`.
@@ -1186,16 +1205,15 @@ explicit decisions before Stage 13; this integration approves none of them.
 - A stage-brief structure (`docs/stages/`, D32, Entry 37) and the first two briefs (00, 01; in review).
 
 **Branches:**
-- `main`: fetched at `3f2f4bb`, including PRs #21 and #23 and merged Entries 1–44.
-- `feat/stage13-speaker-analysis` (PR #23): merged; branch retained for the stacked follow-up.
-- `feat/stage13-speaker-average` (PR #24): integrating main; log entries 45–46.
-  Base change to main, updated checks and review remain before merge.
+- `main`: synchronized at `6786c12`; PRs #21, #23 and #24 are merged.
+- `docs/stage13-evaluation-decisions`: documentation-only proposals D33–D35 and Entry 47;
+  team review pending. The implementation branches are retained locally/remotely.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
 
 **What's next:**
-1. Complete PR #24 integration and checks; retarget to main before merge.
+1. Review proposed D33–D35; record explicit decisions before implementation or the external run.
    Briefs 00–01 are in main; teach-back review remains tracked separately. Donia prepares
    briefs 02–03 and Malak briefs 04–05. AI does not merge.
 2. **Stage 6 is current (waiting for F3):** Malak is on preprocessing profile v1 + tests + compute
