@@ -54,5 +54,4 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## 2026-10-06 — Stages 0–2
 
 ### Added
-- Per-source-speaker metric tables reusing the evaluation harness, with synthetic tests and usage documentation (D4, D19; Stage 13 preparation).
 - Repo scaffold (Stage 0), dataset audit tools and evidence (Stage 1), threat model v1.0 (Stage 2).

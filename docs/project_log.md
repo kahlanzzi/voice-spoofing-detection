@@ -857,9 +857,18 @@ touched.
 - **Gate:** preparation only; WAITING FOR APPROVAL. Stage 13 has not run.
 
 ---
+### Entry 39 — Analysis PR and changelog correction (2026-10-18)
+
+- Codex created draft PR #23 at Khalil's request, based on `docs/stage0-lab6-closeout` (PR #21); one analysis commit and five files at creation. Nothing merged.
+- [verified] Khalil's pre-PR governance check: **3 passed in 0.22s**; token-pattern search returned no matches. Full-suite evidence is in Entry 38.
+- Codex removed its accidentally duplicated speaker-analysis changelog line from the historical 2026-10-06 section, keeping the Unreleased entry. This correction changes documentation only; no code or datasets changed.
+- Open: commit/push this correction, verify GitHub CI, human review and change the PR base to main after #21 merges. Stage 13 remains preparation only; WAITING FOR APPROVAL.
+
+---
 ## Open items
 
 **Khalil: Stage 13 preparation**
+- [ ] Commit/push the documentation correction and review draft PR #23 (Entry 39); verify GitHub CI and retarget to main after #21 merges.
 - [ ] Review the per-speaker helper and synthetic tests (Entry 38); complete speaker average, CIs and reporting before the external run.
 
 
@@ -1003,6 +1012,7 @@ touched.
 ## Current status — updated 2026-10-18
 
 **What was done:**
+- **Analysis draft PR #23 created:** based on #21; duplicate historical changelog line corrected locally (Entry 39), pending commit/push.
 - **Stage 13 preparation:** per-speaker metrics helper and synthetic tests prepared on `feat/stage13-speaker-analysis` (Entry 38); no external run.
 - **Lab 6 closeout in progress:** factual report sections and PR #21 CI evidence are documented (Entry 37); missing member responses and human verification/review remain pending.
 - **Stages 0–3 and Part A are complete.** Protocol v1.0 is frozen as F1 (PR #10).
