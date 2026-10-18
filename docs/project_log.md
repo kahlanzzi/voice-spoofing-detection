@@ -930,7 +930,52 @@ not approve or merge.
 
 ---
 
+### Entry 42 — Per-speaker analysis preparation (2026-10-18)
+
+- **Owner:** Khalil (D26). AI assistance: Codex implemented the helper, synthetic tests and documentation; human review is pending.
+- **Scope:** FR-12, D4, D19. Added `src/evaluation/speakers.py`: per-source-speaker EER/AUC, forced-binary and three-way metrics through the existing harness. All speakers use the caller's fixed threshold and band. Undefined metrics remain NaN and no speaker is silently dropped.
+- **Evidence [verified]:** 25 focused synthetic tests passed in 1.53 s in a temporary workspace using the project's Python environment. After installation, the full repository suite passed: **291 passed in 20.94 s**, including the governance tests. Tests used a writable temporary directory and disabled pytest cache/bytecode writes because of the app sandbox. Git diff checks from the app shell were unavailable (Git reported that it must run in a work tree); human Git review is pending.
+- **Data:** invented scores only; no audio access, model execution, threshold fitting or external run.
+- **Open:** speaker-average summary, clustered CIs, filter reporting, file-level decision and external-run allowlist decision remain. Lab 6 PR #21 still awaits team evidence/review.
+- **Gate:** preparation only; WAITING FOR APPROVAL. Stage 13 has not run.
+
+---
+### Entry 43 — Analysis PR and changelog correction (2026-10-18)
+
+- Codex created draft PR #23 at Khalil's request, based on `docs/stage0-lab6-closeout` (PR #21); one analysis commit and five files at creation. Nothing merged.
+- [verified] Khalil's pre-PR governance check: **3 passed in 0.22s**; token-pattern search returned no matches. Full-suite evidence is in Entry 42.
+- Codex removed its accidentally duplicated speaker-analysis changelog line from the historical 2026-10-06 section, keeping the Unreleased entry. This correction changes documentation only; no code or datasets changed.
+- Open: commit/push this correction, verify GitHub CI, human review and change the PR base to main after #21 merges. Stage 13 remains preparation only; WAITING FOR APPROVAL.
+
+---
+
+### Entry 44 — Per-speaker PR integration with main (2026-10-18)
+
+**What changed:** PR #21 merged as `65ce1d2`; PR #23 now targets main. Codex resolved the log conflict,
+kept merged Entries 1–41 intact and renumbered the unmerged analysis entries to 42–43, including
+their internal reference. The changelog retains both main's additions and the per-speaker entry.
+
+**Review follow-up:** `speakers.py` imports `_validate` through the evaluation harness re-export,
+as Donia suggested. This retains the same validator. The undefined-value convention is listed as
+an open pre-Stage 13 decision together with the file-level view and governance allowlist.
+
+**Evidence [verified]:** Full suite after the resolution and import cleanup: `291 passed in 11.20s`,
+including governance tests; writable temporary directory, pytest cache and bytecode writes disabled.
+
+**AI assistance / gate:** Codex prepared these changes at Khalil's request. Commit/push and updated
+CI remain pending; PR #23 is not merged. Synthetic preparation only; no external run or new
+evaluation-policy approval.
+
+---
+
 ## Open items
+
+**Khalil: Stage 13 preparation**
+- [x] PR #21 merged into main as `65ce1d2`; PR #23 base changed to main.
+- [ ] Complete PR #23 integration, verify new CI and review the updated diff (Entries 42–44).
+- [ ] Integrate the speaker-average helper from PR #24 after #23 merges; complete CIs and reporting.
+- [ ] Before Stage 13, approve and record the speaker-average undefined-value convention alongside
+  the file-level view and governance allowlist decisions. No convention is approved by this update.
 
 **GitHub / repo**
 - [x] PR `stage-0-git-workflow`: merged as PR #1 (approved and merged by Malak, 2026-10-05).
@@ -1079,6 +1124,8 @@ not approve or merge.
 ## Current status — updated 2026-10-18
 
 **What was done:**
+- **PR #21 merged** as `65ce1d2`; its documentation is in main.
+- **PR #23 integration in progress:** per-speaker helper and tests (Entries 42–44); base is main.
 - **Lab 6 closeout in progress:** factual report sections and PR #21 CI evidence are documented (Entry 40); Donia's reported test is now recorded (Entry 41); her extension version, Iheb's answer and human verification/review remain pending.
 - **Stages 0–3 and Part A are complete.** Protocol v1.0 is frozen as F1 (PR #10).
 - **Stage 4 is complete** (Entry 28): PR #12 merged as `865faf4`.
@@ -1110,21 +1157,21 @@ not approve or merge.
 - A stage-brief structure (`docs/stages/`, D32, Entry 37) and the first two briefs (00, 01; in review).
 
 **Branches:**
-- `main`: fetched at `610a412`; includes Stage 5 closeout, D32 and briefs 00–01 (Entries 36–38).
-- `docs/stage0-lab6-closeout` (PR #21): integrating that revision; Lab 6 entries renumbered
-  39–40. Merge completion, updated CI and human review remain pending.
-- `feat/stage13-speaker-analysis` (PR #23) and `feat/stage13-speaker-average` (PR #24):
-  stacked follow-ups. After each parent merges, update the next branch, reconcile its log
-  entries against main, retarget its PR to main and rerun CI before human merge.
+- `main`: fetched at `65ce1d2`, including PR #21 and merged Entries 1–41.
+- `feat/stage13-speaker-analysis` (PR #23): integrating main, log entries 42–44;
+  updated checks and review remain before merge.
+- `feat/stage13-speaker-average` (PR #24): still based on the analysis branch. After #23 merges,
+  update it from main, reconcile its log numbers, retarget to main and rerun checks.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
 
 **What's next:**
-1. Complete PR #21 integration and checks; human merge order is #21 → #23 → #24.
+1. Complete PR #23 integration and checks, then integrate #24 after #23 merges.
    Briefs 00–01 are in main; teach-back review remains tracked separately. Donia prepares
    briefs 02–03 and Malak briefs 04–05. AI does not merge.
 2. **Stage 6 is current (waiting for F3):** Malak is on preprocessing profile v1 + tests + compute
    benchmark, on a separate branch.
-3. Khalil decides the DEEP-VOICE file-level view before Stage 13; verify the scikit-learn Colab install.
+3. Before Stage 13, record approved decisions for the file-level view, speaker-average undefined
+   values and governance allowlist. Verify the scikit-learn Colab install.
 4. Then run the real Part C work on the frozen F3 preprocessing profile.
