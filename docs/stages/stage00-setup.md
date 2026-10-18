@@ -7,7 +7,7 @@
 | **Reviewer(s)** | Iheb Zemzemi (repo owner since 2026-10-14, `docs/project_log.md` header and Entry 20) |
 | **Status** | In review |
 | **Date** | 2026-10-18 |
-| **Related PRs** | #1 (`stage-0-git-workflow`, Entry 14) · #6 (`chore/repo-structure`: CI, governance test, docs; Entry 18) · #7 (`docs/stage3-repo-cleanup`: team of four, D26; Open items) |
+| **Related PRs** | Stage 0: #1 (`stage-0-git-workflow`, Entry 14) · Part A repository-structure work (Execution Plan v2.1 §7, "Repository structure" row): #6 (`chore/repo-structure`, Entry 18) |
 
 ## 1. In one paragraph
 
@@ -51,7 +51,7 @@ No D26 hand-over interface belongs to this stage; those are fixed in Stage 3 (D2
    if a DEEP-VOICE path appears outside the permitted files.
 7. **Protection on `main`**: PR + 1 approval + required CI check `checks` + branch up to date; no
    direct pushes (Entry 18).
-8. **Team of four** (Khalil joined) and work split D26 written into `AGENTS.md` (Entry 18).
+8. Later, before Stage 3 (PR #7): Khalil joined and the work split D26 was recorded; see the Stage 3 brief.
 
 Details: [`docs/setup.md`](../setup.md), [`CONTRIBUTING.md`](../../CONTRIBUTING.md).
 
@@ -86,9 +86,13 @@ Details: [`docs/setup.md`](../setup.md), [`CONTRIBUTING.md`](../../CONTRIBUTING.
 
 - The local machine has no Python 3.13; 3.13 is checked only by CI and Colab (Entry 17). A
   3.14-only problem could pass locally and still fail in CI, or the reverse [verified absence].
-- The governance test matches path strings only (the DEEP-VOICE root folder name, the Kaggle slug
-  and owner, the audit subfolder name). It cannot see code that builds the path some other way, and it allows all
-  of `docs/`, `tests/` and `src/audit/` [doc: test docstring and `ALLOWED`].
+- The governance test only matches four text patterns in tracked and non-ignored files: the
+  DEEP-VOICE root folder name (any case), the Kaggle slug / zip name (any case), the Kaggle owner
+  (any case) and the audit subfolder name as a whole word (upper case only). It skips binary files
+  (`.pdf`, `.docx`, `.png`, `.jpg`, `.wav`, `.npy`, `.pt`, `.zip`, `.tar`) and allows everything under
+  `src/audit/`, `docs/` and `tests/`, plus exactly `configs/audit.yaml`,
+  `notebooks/01_stage1_dataset_audit.ipynb` and `data/README.md`. Code that builds the path some other
+  way is not caught [verified: `PATTERNS`, `ALLOWED`, `BINARY_SUFFIXES` in the test file].
 - "AI agents never merge" is a written rule; the technical block is branch protection (1 human
   approval), not a check on who presses merge [doc: `AGENTS.md`, Entry 18].
 - W&B logging is required by `AGENTS.md` but not yet set up (Open items: "Set up W&B (0.6) before
@@ -115,8 +119,9 @@ Details: [`docs/setup.md`](../setup.md), [`CONTRIBUTING.md`](../../CONTRIBUTING.
    copied to `/content/data/` in Colab (`AGENTS.md`, Compute and data).
 5. **Q:** How is "DEEP-VOICE touched once" enforced technically, not just by a rule?
    **A:** `tests/governance/test_deepvoice_access.py` fails CI if a DEEP-VOICE path appears outside
-   the permitted files (D20); the zip hash is checked before unzipping (D21); and the metadata audit
-   blocks audio-decoding calls while it runs (notebook cell 7 text).
+   the permitted files (D20); the zip hash is checked before unzipping (D21); and while the metadata
+   audit runs, `decoding_forbidden()` in `src/audit/deepvoice_metadata_audit.py` replaces the
+   soundfile / librosa / torchaudio read and load calls with a function that raises.
 6. **Q:** Why one AI rulebook (`AGENTS.md`) for every tool?
    **A:** The project is worked on with several AI tools (D22 names Codex, Antigravity, Claude Code and
    Gemini CLI). One file means one set of rules and no copies that drift apart; rules are edited only

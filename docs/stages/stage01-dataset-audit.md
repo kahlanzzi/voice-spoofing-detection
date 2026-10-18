@@ -30,7 +30,7 @@ protocol (Stage 3) and the split (Stage 4) build on. The full report is
 | Out | Audit report: facts, decisions, limitations | Stage 2 threat model, Stage 3 protocol (Donia) | `docs/dataset_audit.md` |
 | Out | Committed evidence summaries | Reviewers, the final report | `docs/audit_evidence/` |
 | Out | Full FoR inventory and summary (per-file, pairs, fingerprints) | Stage 4 split (Malak) | Drive `processed/metadata/stage1/for2sec` |
-| Out | Decisions D5, D9, D13, D14 settled; D16–D21, H5, H6 added | Every later stage | `docs/decisions/README.md` |
+| Out | Decisions D5, D9, D13, D14 settled; D16–D20, H5, H6 added; the pins were set in Stage 1 (Entry 7) and recorded as D21 in Stage 2 (Entry 11) | Every later stage | `docs/decisions/README.md` |
 
 ## 3. How it works, step by step
 
