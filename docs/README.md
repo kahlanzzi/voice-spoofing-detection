@@ -16,6 +16,7 @@ tools all read it. Project rules live in `../AGENTS.md`.
 | [experimental_protocol.md](experimental_protocol.md) | Stage 3 Experimental Protocol (v1.0, frozen (F1)) | only by a new decision (§12 change control) |
 | [evaluation_harness.md](evaluation_harness.md) | Shared metrics module (EER, ROC-AUC, ...): conventions, methods, tests | a harness step is added |
 | [risk_policy.md](risk_policy.md) | Risk policy (Stage 10): band rule in the core, Platt calibration, ... | a risk-policy step is added |
+| [stages/](stages/) | Stage briefs (D32): one short explanation per closed stage, from `stages/TEMPLATE.md` | a stage closes |
 | [model_bundle.md](model_bundle.md) | ModelBundle (Stage 12): format, verifying loader, tests | the bundle format changes |
 | [setup-report.md](setup-report.md) | Lab 6 setup report (skeleton) | the Lab 6 report is written |
 | [reference/](reference/) | SRS, SDD, Execution Plan, Proposal (read-only sources) | never edited here |

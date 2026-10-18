@@ -92,6 +92,8 @@ AI tools are encouraged, but the team owns every line that is committed:
 - Made a real decision? → add a D-ID row to `docs/decisions/README.md` (+ an ADR if major).
 - Stage or session ended? → append an entry to `docs/project_log.md`, update Open items and Current
   status.
+- Stage closed? → its PR (or the next PR) includes the stage brief in `docs/stages/` (D32); the stage
+  is done only when the brief is merged.
 - Moved files around? → run `./scripts/update-structure.sh`.
 
 A git hook (enabled by `./scripts/setup.sh`) reminds you if you change code without touching docs.
