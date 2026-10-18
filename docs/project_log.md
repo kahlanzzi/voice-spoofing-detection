@@ -847,7 +847,21 @@ touched.
 
 **Open issues / gate:** Remaining member answers, Iheb's audit review and D14 answer, owner-settings confirmation, setup/access checks, the AI-test-method review and final PR checks remain pending. Lab 6 is not closed.
 
+### Entry 38 — Per-speaker analysis preparation (2026-10-18)
+
+- **Owner:** Khalil (D26). AI assistance: Codex implemented the helper, synthetic tests and documentation; human review is pending.
+- **Scope:** FR-12, D4, D19. Added `src/evaluation/speakers.py`: per-source-speaker EER/AUC, forced-binary and three-way metrics through the existing harness. All speakers use the caller's fixed threshold and band. Undefined metrics remain NaN and no speaker is silently dropped.
+- **Evidence [verified]:** 25 focused synthetic tests passed in 1.53 s in a temporary workspace using the project's Python environment. After installation, the full repository suite passed: **291 passed in 20.94 s**, including the governance tests. Tests used a writable temporary directory and disabled pytest cache/bytecode writes because of the app sandbox. Git diff checks from the app shell were unavailable (Git reported that it must run in a work tree); human Git review is pending.
+- **Data:** invented scores only; no audio access, model execution, threshold fitting or external run.
+- **Open:** speaker-average summary, clustered CIs, filter reporting, file-level decision and external-run allowlist decision remain. Lab 6 PR #21 still awaits team evidence/review.
+- **Gate:** preparation only; WAITING FOR APPROVAL. Stage 13 has not run.
+
+---
 ## Open items
+
+**Khalil: Stage 13 preparation**
+- [ ] Review the per-speaker helper and synthetic tests (Entry 38); complete speaker average, CIs and reporting before the external run.
+
 
 **GitHub / repo**
 - [x] PR `stage-0-git-workflow`: merged as PR #1 (approved and merged by Malak, 2026-10-05).
@@ -989,6 +1003,7 @@ touched.
 ## Current status — updated 2026-10-18
 
 **What was done:**
+- **Stage 13 preparation:** per-speaker metrics helper and synthetic tests prepared on `feat/stage13-speaker-analysis` (Entry 38); no external run.
 - **Lab 6 closeout in progress:** factual report sections and PR #21 CI evidence are documented (Entry 37); missing member responses and human verification/review remain pending.
 - **Stages 0–3 and Part A are complete.** Protocol v1.0 is frozen as F1 (PR #10).
 - **Stage 4 is complete** (Entry 28): PR #12 merged as `865faf4`.
@@ -1015,6 +1030,7 @@ touched.
 - Governance rules that keep the external set metadata-only until the one guarded Stage 13 run.
 
 **Branches:**
+- `feat/stage13-speaker-analysis`: Khalil's analysis preparation, stacked on `docs/stage0-lab6-closeout` (PR #21).
 - `main`: through PR #18 at `6fc4528`.
 - `feat/stage12-bundle-format`: ModelBundle format and loader, Entry 35; ready for human review.
 
