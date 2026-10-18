@@ -924,6 +924,34 @@ D32 also requires the Stage 6 brief and teach-back review before the stage is ma
 
 ---
 
+### Entry 40 — Stage 6 Colab manual-transfer fallback (2026-10-18)
+
+**What [verified in code; official run pending]:** after repeated Colab Drive mounts failed with
+`credential propagation was unsuccessful`, the Stage 6 notebook gained an explicit `manual` transfer
+mode. Malak can download the two pinned FoR inputs through the normal Drive web interface, upload
+`for_2sec_ff8c82c7.tar` and `for_2sec_REVISION.txt` to the temporary Colab `/content/` session, and
+download `stage6_evidence.zip` when the run finishes. The original `drive` mode remains available.
+
+**Boundary:** this changes only transport into and out of the temporary Colab runtime. It does not
+change the F2 manifest or hash ledger, preprocessing settings, validators, shortcut rules, D18
+invariance checks, compute benchmark or proposed D33. The notebook still checks out an exact clean
+commit and validates the pinned revision before extracting the FoR archive. No dataset is made public
+or committed, and DEEP-VOICE remains out of scope.
+
+**Evidence [verified locally]:** notebook JSON parses as nbformat 4.5 with 12 cells; `git diff
+--check` passed; full suite: `295 passed in 9.24s`; DEEP-VOICE governance: `3 passed in 0.22s`;
+token scan found no secrets. No real audio was opened locally; the official two-run FoR evidence does
+not exist yet.
+
+**AI assistance:** **Codex** prepared the manual-transfer fallback after Malak chose not to wait for
+the external Colab authentication issue to be resolved. Malak reviews and approves any correction
+commit. AI does not approve, push or merge.
+
+**Gate:** correction candidate only. The official run must cite the final clean correction commit;
+F3 remains proposed and Stage 7 model work remains blocked.
+
+---
+
 ## Open items
 
 **GitHub / repo**
@@ -970,8 +998,9 @@ D32 also requires the Stage 6 brief and teach-back review before the stage is ma
 **Stage 6 gate**
 - [x] Implement preprocessing profile v1 candidate, shared transforms, tests, validation, no-training
   compute benchmark and Colab runner (Entry 39).
-- [ ] Review and commit the Stage 6 implementation candidate; the official run must cite that clean
-  commit.
+- [x] Review and commit the Stage 6 implementation candidate as `fdfa14f`; branch pushed.
+- [ ] Review and commit the manual Colab transfer fallback (Entry 40); the official run must cite the
+  final clean correction commit.
 - [ ] Run the full pinned FoR manifest twice in Colab; require every sample hash/check, shortcut rule
   and D18 invariance check to pass and the four validation artifacts to be byte-identical.
 - [ ] Record the GPU type, VRAM, PyTorch version, preprocessing throughput and selected future batch
@@ -1088,8 +1117,9 @@ D32 also requires the Stage 6 brief and teach-back review before the stage is ma
 - **Stage 4 is complete** (Entry 28): PR #12 merged as `865faf4`.
 - **Stage 5 is complete and F2 is effective**: Donia approved PR #15, merged as `89b37fc`; D28 is
   approved (Entry 36).
-- **Stage 6 implementation is a local candidate** (Entry 39): profile, shared transforms, validation,
-  benchmark, tests and Colab runner are prepared; no real FoR run or F3 approval has occurred.
+- **Stage 6 implementation commit `fdfa14f` is pushed** (Entry 39): profile, shared transforms,
+  validation, benchmark, tests and Colab runner are prepared. A manual Colab transfer correction is
+  pending review (Entry 40); no real FoR run or F3 approval has occurred.
 - **Stage 7 evaluation harness, steps 1–5, is merged** as PR #13 (Entry 31).
 - **Protocol clarifications D29–D31 are merged** as PR #16 (Entry 32).
 - **Stage 10 risk policy, steps R1–R2, is merged** as PR #17 (Entry 33).
@@ -1117,14 +1147,15 @@ D32 also requires the Stage 6 brief and teach-back review before the stage is ma
 
 **Branches:**
 - `main`: through stage-brief PR #25 at `610a412`.
-- `feat/stage6-preprocessing-profile-malak`: Stage 6 implementation candidate; not yet committed.
+- `feat/stage6-preprocessing-profile-malak`: implementation `fdfa14f` pushed; manual-transfer
+  correction pending review.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
 
 **What's next:**
-1. Review and commit the Stage 6 implementation candidate; CI must be green on Python 3.13.
-2. Run the official FoR-only Stage 6 notebook twice from that clean commit and review the F3 evidence.
+1. Review, commit and push the manual Colab transfer fallback; CI must be green on Python 3.13.
+2. Run the official FoR-only Stage 6 notebook twice from the final clean commit and review the F3 evidence.
 3. Donia and Iheb approve the evidence PR; a human merges it. AI does not approve or merge.
 4. Complete the Stage 6 brief and remaining retrospective stage briefs/teach-backs required by D32.
 5. Then run the real Part C work on the frozen F3 preprocessing profile.

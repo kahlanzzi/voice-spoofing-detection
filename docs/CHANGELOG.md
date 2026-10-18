@@ -36,6 +36,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - `docs/experimental_protocol.md` v1.0 frozen (F1): all sections decided from the team-accepted defaults.
 
 ### Changed
+- Stage 6 Colab runner now supports a manual input/evidence transfer mode when Drive credential propagation is unavailable.
 - Stage 5 closed after PR #15 review and merge: D28 approved, F2 effective, Stage 6 current.
 - Band rule moved to the core (`src/risk/decisions.py`); the evaluation harness re-exports it.
 - Protocol clarifications D29–D31 (baseline threshold, CNN search space with seed and tie rule, Stage 11 run once) and the Protocol §14 row.
