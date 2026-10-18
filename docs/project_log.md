@@ -1365,6 +1365,27 @@ every D18 and shortcut check passes and the validation artifacts are byte-identi
 
 ---
 
+### Entry 63 — Stage 6 Nyquist-edge correction committed and pushed (2026-10-19)
+
+**What [verified]:** Malak approved the Stage 6 7.6 kHz correction and committed it as `6e17185`
+(`fix(stage6): stabilize Mel Nyquist edge`). She pushed it to
+`origin/feat/stage6-preprocessing-profile-malak`; local HEAD and the remote branch are identical. A
+fresh fetch confirms the branch is zero commits behind `origin/main` at `638339b`.
+
+**Evidence:** the approved commit contains the profile/config correction, synthetic Nyquist-edge
+regression, D38 explanation, changelog and Entry 62. Its pre-commit verification was 14 focused
+preprocessing tests, the complete 397-test suite and all 3 DEEP-VOICE governance tests. The first
+candidate evidence remains diagnostic only; no corrected official run or F3 approval is claimed.
+
+**AI assistance:** **Codex** verified the remote branch and updated the append-only status after
+Malak's push. AI did not push or merge.
+
+**Gate:** use exact clean implementation commit `6e17185` for both corrected Colab validation runs
+and the no-training benchmark. Do not approve D38/F3 until every required check passes, the two runs
+are byte-identical, and Donia + Iheb review the evidence.
+
+---
+
 ## Open items
 
 **Khalil: Stage 13 preparation**
@@ -1433,7 +1454,7 @@ every D18 and shortcut check passes and the validation artifacts are byte-identi
   (Entry 61); the first official candidate cited that exact merge commit.
 - [x] Diagnose the first official candidate's D18 failure and obtain Malak's approval for the 7.6 kHz
   Nyquist-edge correction (Entry 62); local implementation and all 397 tests pass.
-- [ ] Review, commit and push the 7.6 kHz correction, then use its new exact clean commit in Colab.
+- [x] Review, commit and push the 7.6 kHz correction as `6e17185` (Entry 63).
 - [ ] Run the full pinned FoR manifest twice in Colab; require every sample hash/check, shortcut rule
   and D18 invariance check to pass and the four validation artifacts to be byte-identical.
 - [ ] Record the GPU type, VRAM, PyTorch version, preprocessing throughput and selected future batch
@@ -1565,9 +1586,9 @@ every D18 and shortcut check passes and the validation artifacts are byte-identi
 - **Stage 6 implementation `fdfa14f`, manual-transfer correction `34e826b`, current-main merges
   `c713111`/`532877d` and padding-shortcut correction `becc52b` are pushed** (Entries 57–61).
 - **The first official FoR candidate exposed a D18 failure** despite byte-identical outputs and a
-  successful no-training benchmark (Entry 62). Malak approved the 7.6 kHz Nyquist-edge correction;
-  local tests pass, but the correction is not committed and corrected official evidence does not yet
-  exist. F3 remains pending.
+  successful no-training benchmark (Entry 62). Malak approved the 7.6 kHz Nyquist-edge correction.
+- **Correction commit `6e17185` is pushed and verified against current main** (Entry 63). Corrected
+  official evidence does not yet exist, so F3 remains pending.
 - **Stage 7 evaluation harness, steps 1–5, is merged** as PR #13 (Entry 31).
 - **Protocol clarifications D29–D31 are merged** as PR #16 (Entry 32).
 - **Stage 10 risk policy, steps R1–R2, is merged** as PR #17 (Entry 33).
@@ -1604,19 +1625,19 @@ every D18 and shortcut check passes and the validation artifacts are byte-identi
 
 **Branches:**
 - `origin/main`: fetched at `638339b`; includes merged PR #32 and Entries 1–56.
-- `feat/stage6-preprocessing-profile-malak`: synchronized merge `532877d` is pushed; the approved
-  7.6 kHz correction and regression test are local, verified and awaiting commit approval.
+- `feat/stage6-preprocessing-profile-malak`: approved 7.6 kHz correction `6e17185` is pushed; local
+  HEAD matches the remote branch and is zero commits behind current main.
 - PRs #26 and #27 are merged. D33–D35 acceptance tracking remains separate from this update.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
 
 **What's next:**
-1. Review, approve, commit and push the Stage 6 7.6 kHz correction (Entry 62); require green CI.
-2. Restart Colab and run the official FoR-only Stage 6 notebook twice from that new exact clean commit;
+1. Use exact clean implementation commit `6e17185` in a fresh Colab runtime and run the official
+   FoR-only Stage 6 notebook twice;
    require all shortcut/D18 checks and deterministic hashes to pass, then record the corrected benchmark
    batch size required by D30.
-3. Donia and Iheb approve D38/F3 and the evidence PR; a human merges it. AI does not approve or merge.
-4. Complete the Stage 6 brief, retrospective briefs 04–05 and teach-backs required by D32.
-5. Separately review proposed D33–D35 before their affected work; no real Part C or external
+2. Donia and Iheb approve D38/F3 and the evidence PR; a human merges it. AI does not approve or merge.
+3. Complete the Stage 6 brief, retrospective briefs 04–05 and teach-backs required by D32.
+4. Separately review proposed D33–D35 before their affected work; no real Part C or external
    run proceeds before its applicable freeze and approvals.
