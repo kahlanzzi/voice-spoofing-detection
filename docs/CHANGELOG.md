@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage briefs 00 (setup) and 01 (dataset audit) (`docs/stages/`, D32).
 - Stage briefs structure and template (`docs/stages/`, D32).
 - ModelBundle format and verifying loader (hashes, versions, path safety, immutability, provenance).
 - Append-only, hash-chained run registry for D31 (claim before run).
