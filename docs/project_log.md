@@ -1162,7 +1162,37 @@ fitting waits for F3 features.
 
 ---
 
-### Entry 55 — Stage 6 preprocessing profile implementation candidate (2026-10-18)
+### Entry 55 — Per-window preprocessing integration requirement (2026-10-18)
+
+**What / AI assistance:** At Khalil's request, Codex added the team follow-up from Malak's
+Stage 6 work to ADR 0007's D35 implementation list: a synthetic runner integration test
+must exercise the shared frozen preprocessing function for every complete 2 s window,
+with trimming and centred padding per window. Direct-call comparisons and distinct silence
+patterns must detect whole-recording preprocessing before splitting.
+
+**Scope / gate:** Documentation only. The runner and integration test are not implemented
+by this change; no decision acceptance, allowlist change or external execution is implied.
+Review the final F3 API before implementing. Entry number must be checked against latest
+main before merging this documentation update.
+
+---
+
+### Entry 56 — Integrate main into preprocessing-test requirement (2026-10-18)
+
+**What / AI assistance:** Codex resolved the changelog and log conflicts against `bf8096c`.
+Kept both changelog additions and all merged Entries 1–54; renumbered the unmerged
+per-window test requirement to Entry 55. The D35 requirement remains in ADR 0007.
+Baseline code/config/tests from main are retained. No decision approval is inferred here.
+
+**Checks [verified]:** full local suite `366 passed in 14.86s`, including governance;
+merged entries retained, sequential numbering and conflict-marker checks passed.
+
+**Gate:** Finish the merge commit, push PR #32 and obtain updated CI/human review.
+The runner integration test is still future implementation work; no external data accessed.
+
+---
+
+### Entry 57 — Stage 6 preprocessing profile implementation candidate (2026-10-18)
 
 **What [verified locally]:** on `feat/stage6-preprocessing-profile-malak`, Malak approved the Stage 6
 plan and Codex implemented the F3 candidate only. `configs/preprocessing.yaml` records the strict
@@ -1191,7 +1221,7 @@ requires the Stage 6 brief and teach-back review before the stage is marked done
 
 ---
 
-### Entry 56 — Stage 6 Colab manual-transfer fallback (2026-10-18)
+### Entry 58 — Stage 6 Colab manual-transfer fallback (2026-10-18)
 
 **What [verified in code; official run pending]:** after repeated Colab Drive mounts failed with
 `credential propagation was unsuccessful`, the Stage 6 notebook gained an explicit `manual` transfer
@@ -1219,7 +1249,7 @@ F3 remains proposed and Stage 7 model work remains blocked.
 
 ---
 
-### Entry 57 — Stage 6 branch synchronization with current main (2026-10-18)
+### Entry 59 — Stage 6 branch synchronization with current main (2026-10-18)
 
 **What [merge candidate]:** Donia reported that the Stage 6 branch was 31 commits behind main. Malak
 paused the official Colab run. `origin/main` was fetched at `bf8096c` and merged without rewriting the
@@ -1245,7 +1275,7 @@ approves the merge commit, and the new final commit hash is pushed.
 
 ---
 
-### Entry 58 — Stage 6 padding-shortcut correction before official run (2026-10-18)
+### Entry 60 — Stage 6 padding-shortcut correction before official run (2026-10-18)
 
 **What [verified locally; official run pending]:** after Donia's pre-run review, Malak approved a
 Stage 6-only correction that exposes the exact number of zero-padding samples added after edge
@@ -1277,9 +1307,35 @@ push it, and use the resulting clean commit hash in the notebook.
 
 ---
 
+### Entry 61 — Stage 6 synchronization after PR #32 (2026-10-18)
+
+**What [merge candidate]:** after the padding correction was pushed, `origin/main` advanced from
+`bf8096c` to `638339b` through PR #32. Malak paused Colab and approved another current-main merge.
+The incoming D35 documentation requires Khalil's future Stage 13 runner integration test to call the
+shared frozen preprocessing function separately for every complete 2 s window. It does not move that
+implementation or test into Stage 6.
+
+**Conflict resolution:** code merged without conflict. The append-only project log preserved main's
+Entries 55–56 and renumbered the still-unmerged Stage 6 Entries 55–58 to Entries 57–60. The Stage 6
+padding implementation and proposed D38 remain unchanged. Current status and open items now describe
+both work streams without claiming that Khalil's integration test is implemented.
+
+**Evidence [verified locally]:** full merged suite: `396 passed in 14.85s`; DEEP-VOICE governance:
+`3 passed in 0.32s`. Conflict-marker, sequential-entry, token and diff checks are completed before
+the merge commit. No FoR audio or DEEP-VOICE content was accessed during synchronization.
+
+**AI assistance:** **Codex** fetched current main, inspected the incoming scope and prepared the
+append-only conflict resolution. Malak approved the merge commit. AI does not push or merge the PR.
+
+**Gate:** do not resume the official Colab run until Malak approves this merge commit, it is pushed,
+and the notebook uses its new exact hash.
+
+---
+
 ## Open items
 
 **Khalil: Stage 13 preparation**
+- [ ] Implement the D35 per-window frozen preprocessing integration test (Entry 55).
 - [x] Rename synthetic-test branch to the D23-compliant `chore/stage13-synthetic-reporting`.
 - [ ] Complete PR #27 integration, retarget to main, and review updated synthetic tests (Entry 51).
 - [x] PR #26 merged as `72a9646`; explicit D33–D35 decision confirmations remain pending.
@@ -1334,11 +1390,14 @@ push it, and use the resulting clean commit hash in the notebook.
 
 **Stage 6 gate**
 - [x] Implement preprocessing profile v1 candidate, shared transforms, tests, validation, no-training
-  compute benchmark and Colab runner (Entry 55).
+  compute benchmark and Colab runner (Entry 57).
 - [x] Review and commit the Stage 6 implementation candidate as `fdfa14f`; branch pushed.
-- [x] Review and commit the manual Colab transfer fallback as `34e826b`; branch pushed (Entry 56).
+- [x] Review and commit the manual Colab transfer fallback as `34e826b`; branch pushed (Entry 58).
 - [x] Complete, approve and push the synchronization with `origin/main` at `bf8096c` as `c713111`
-  (Entry 57). The official run must cite the newer final padding-correction commit (Entry 58).
+  (Entry 59).
+- [x] Review, commit and push the padding-shortcut correction as `becc52b` (Entry 60).
+- [ ] Complete, approve and push the synchronization with `origin/main` at `638339b` (Entry 61); the
+  official run must cite that final merge commit.
 - [ ] Run the full pinned FoR manifest twice in Colab; require every sample hash/check, shortcut rule
   and D18 invariance check to pass and the four validation artifacts to be byte-identical.
 - [ ] Record the GPU type, VRAM, PyTorch version, preprocessing throughput and selected future batch
@@ -1456,6 +1515,7 @@ push it, and use the resulting clean commit hash in the notebook.
 ## Current status — updated 2026-10-18
 
 **What was done:**
+- Added the D35 per-window preprocessing integration-test requirement (Entry 55); implementation pending.
 - **Synthetic integration tests prepared:** eight invented speakers and 14,960 windows (Entry 51); no real predictions.
 - **PR #21 merged** as `65ce1d2`; its documentation is in main.
 - **PR #23 merged** as `3f2f4bb`: per-speaker helper and tests (Entries 42–44).
@@ -1466,9 +1526,9 @@ push it, and use the resulting clean commit hash in the notebook.
 - **Stage 4 is complete** (Entry 28): PR #12 merged as `865faf4`.
 - **Stage 5 is complete and F2 is effective**: Donia approved PR #15, merged as `89b37fc`; D28 is
   approved (Entry 36).
-- **Stage 6 implementation `fdfa14f`, manual-transfer correction `34e826b` and current-main merge
-  `c713111` are pushed** (Entries 55–57). The padding-shortcut correction is locally verified and
-  awaiting commit review (Entry 58); no real FoR run or F3 approval occurred.
+- **Stage 6 implementation `fdfa14f`, manual-transfer correction `34e826b`, first current-main merge
+  `c713111` and padding-shortcut correction `becc52b` are pushed** (Entries 57–60). A second
+  current-main synchronization is being verified (Entry 61); no real FoR run or F3 approval occurred.
 - **Stage 7 evaluation harness, steps 1–5, is merged** as PR #13 (Entry 31).
 - **Protocol clarifications D29–D31 are merged** as PR #16 (Entry 32).
 - **Stage 10 risk policy, steps R1–R2, is merged** as PR #17 (Entry 33).
@@ -1481,8 +1541,7 @@ push it, and use the resulting clean commit hash in the notebook.
 - **Stage briefs 00 and 01** accepted: merged as PR #25 (`610a412`) after teach-back review.
 - **Stage briefs 02 (threat model) and 03 (protocol)** written on `docs/stage6-briefs-02-03`
   (Entry 47); merged in `3ecb979`.
-- **D37 proposed** on `docs/stage6-d37-baseline-tuning` (Entry 53): baseline grid, train-only
-  scaling and `decision_function` score, fixed before any val-A result; approval by PR review.
+- **D37 recorded on main** (Entry 53): baseline grid, train-only scaling and score; Entry 53 records team approval.
 - **Stage 7 baseline code, steps B1–B2** on `feat/stage7-baseline-code` (Entry 54): scorer,
   non-pickle deterministic artifact, D37 fitting and `configs/baseline.yaml`; synthetic tests only.
 
@@ -1492,7 +1551,7 @@ push it, and use the resulting clean commit hash in the notebook.
   external run, documented in `docs/evaluation_harness.md`, plus per-speaker and speaker-average
   helpers for Stage 13.
 - Pre-declared rules for the baseline threshold, CNN selection and the single Stage 11 run (D29–D31),
-  and proposed baseline tuning, scaling and score (D37, Entry 53).
+  and baseline tuning, scaling and score (D37, Entry 53).
 - A tested MFCC/SVM baseline (`src/models/baseline.py`, `src/tuning/baseline_fit.py`), documented in
   `docs/baseline.md`; not yet fitted on real features (waits for F3).
 - A tested risk-policy fit (`src/tuning`) and core apply / save / load (`src/risk`), documented in
@@ -1505,18 +1564,19 @@ push it, and use the resulting clean commit hash in the notebook.
 - Stage briefs (`docs/stages/`, D32): 00–01 accepted, 02–03 merged; teach-back completion tracked separately.
 
 **Branches:**
-- `origin/main`: fetched at `bf8096c`, including merged PR #31 and Entries 1–54.
-- `feat/stage6-preprocessing-profile-malak`: current with `origin/main` through pushed merge
-  `c713111`; the locally verified padding-shortcut correction awaits commit review.
+- `origin/main`: fetched at `638339b`; includes merged PR #32 and Entries 1–56.
+- `feat/stage6-preprocessing-profile-malak`: padding correction `becc52b` pushed; current-main merge,
+  local verification and human approval complete; merge commit and push pending.
+- PRs #26 and #27 are merged. D33–D35 acceptance tracking remains separate from this update.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
 
 **What's next:**
-1. Review, commit and push the Stage 6 padding-shortcut correction (Entry 58); require green CI.
-2. Run the official FoR-only Stage 6 notebook twice from that exact commit; record shortcut/invariance
+1. Finish, verify, approve and push the Stage 6 current-main merge (Entry 61); require green CI.
+2. Run the official FoR-only Stage 6 notebook twice from that exact merge commit; record shortcut/invariance
    results, deterministic hashes and the measured batch size required by D30.
 3. Donia and Iheb approve D38/F3 and the evidence PR; a human merges it. AI does not approve or merge.
-4. Complete the Stage 6 brief and remaining retrospective briefs/teach-backs required by D32.
-5. Separately review proposed D33–D35 and D37 before their affected work; no real Part C or external
+4. Complete the Stage 6 brief, retrospective briefs 04–05 and teach-backs required by D32.
+5. Separately review proposed D33–D35 before their affected work; no real Part C or external
    run proceeds before its applicable freeze and approvals.
