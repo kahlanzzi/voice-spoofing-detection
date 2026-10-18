@@ -1012,9 +1012,12 @@ in the format of the merged briefs 00 and 01:
   `fit_risk_policy()`, `three_way_decisions()`, `RISK_LEVELS`, `RunRegistry.claim()`, `load_bundle()`.
 - `docs/stages/README.md`: briefs 00 and 01 → "accepted" (merged as PR #25, `610a412`, after
   teach-back review); 02 and 03 → "in review". CHANGELOG line.
+- stage00 and stage01 headers set to Accepted (PR #25).
 
-**Not recorded in the sources:** the reasons for most "team choice" values (e.g. why exactly 10%
-deferral); the defaults file with that reasoning is kept outside the repo (Entry 21).
+**Value rationale:** the reasons for the main "team choice" values (10% maximum deferral, ≥ 5 points
+for H5/H6, 2,000 bootstrap resamples, robustness levels) were written down on 2026-10-18 in
+`stage03-protocol.md` §4 ("Why these values"), as team reasoning; values unchanged, no data seen.
+The "~200 FAKE_other test clips" figure is taken from threat model §8 T5.
 
 **Evidence [verified]:** `.venv` (Python 3.14.7): `tests/governance` → `3 passed`; seeds, run
 registry, risk, tuning and bundle tests → `131 passed`; full suite in the PR report.

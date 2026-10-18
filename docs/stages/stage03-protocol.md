@@ -74,6 +74,21 @@ flowchart LR
 - **D29–D31** — baseline threshold rule, CNN search space and seeds, Stage 11 run once: gaps closed
   before any data was seen.
 
+### Why these values (team reasoning, recorded 2026-10-18; not derived from data; no rule changed)
+
+- **10% maximum deferral:** "uncertain" must stay the exception, or the tool stops helping analysts.
+  In the triage scenario (~200 high-risk requests a day, illustrative, threat model §3.4), 10% is
+  ~20 manual checks a day, which is reviewable. It is a maximum on val-B; the external deferral rate
+  is reported, and Stage 15 checks the band under shift (Protocol §10).
+- **≥ 5 points (H5, H6):** the FoR test has ~200 FAKE_other clips (15% of 1,329;
+  `docs/dataset_audit.md` §3). For recall near 0.9, the standard error is about
+  sqrt(0.9 · 0.1 / 200) ≈ 2.1 points, so a 95% interval is about ±4 points: 5 points is roughly the
+  smallest difference the test set can detect reliably. The "CI excludes 0" condition adds the
+  statistical guard.
+- **2,000 bootstrap resamples:** enough that Monte Carlo noise in the percentile bounds is small
+  compared with the interval width.
+- **Robustness levels:** they span mild to severe; 3.4 kHz is the classic telephone band (H6).
+
 ## 5. Evidence
 
 - Sign-off: Donia (lead, author), Malak, Khalil, Iheb, all dated 2026-10-14, PR #10 [doc] — source:
@@ -98,13 +113,17 @@ flowchart LR
 
 - Many values are "team choice, 2026-10-14": one defensible value among several, not derived from data
   (Protocol header). Examples: the 10% deferral, the ≥ 5-point H5/H6 thresholds, 2,000 bootstrap
-  resamples, the robustness levels. The reasoning for each is in the defaults file, which is not in
-  the repo (Entry 21); for most of them, the reason is not recorded in the repo.
+  resamples, the robustness levels. The defaults file is not in the repo (Entry 21); the team
+  reasoning for these values is recorded in section 4, "Why these values".
 - F1 deliberately leaves items to Stage 6 (silence detector, loudness normalization, resampler and
   invariance tolerance); they are frozen only in F3 (§12 change control (1)).
 - Still open after F1: online handling of clips longer than 2 s (before Stage 17); DEEP-VOICE
   file-level decisions and the speaker-average undefined-value convention (before Stage 13); the
-  governance allowlist for the external-run code (§8; Open items).
+  governance allowlist for the external-run code (§8; Open items). D33–D35 (speaker-average
+  undefined values, file-level decisions, external-run allowlist) are proposed in PR #26, approval
+  pending.
+- Protocol §1 RQ2 compares CNN vs baseline externally, but §8 scores only the CNN bundle: a decision
+  on scoring the frozen baseline in the same single run is to be proposed before F4.
 - The protocol was written in one integrated PR from the accepted defaults, not by each section
   author (Entry 21): the teach-back review is where each owner shows they can defend their sections.
 - The C→E bundle check is not complete in code yet: the profile-version check waits for the F3
@@ -132,8 +151,9 @@ flowchart LR
    lower seed on a tie (§5; `select_bundle_seed()`).
 5. **Q:** What is the uncertain band, and why at most 10% deferral?
    **A:** A symmetric zone around the val-B threshold on calibrated p; cases inside become "uncertain"
-   (MEDIUM risk) and go to manual verification (§6; FR-05; threat model §9). 10% is a team choice
-   (§6, D12 asks for a fixed deferral policy); why exactly 10% is not recorded in the repo.
+   (MEDIUM risk) and go to manual verification (§6; FR-05; threat model §9). 10% (team choice, §6;
+   D12) keeps "uncertain" the exception: ~20 manual checks a day at ~200 requests (illustrative,
+   threat model §3.4); see section 4, "Why these values".
 6. **Q:** Which metrics do you report, and why never accuracy alone and no t-DCF?
    **A:** D4 in full: accuracy, precision, recall, F1, EER, ROC-AUC, 3-way confusion matrix, coverage /
    deferral, class counts, FPR / FNR, 95% CIs (§5). DEEP-VOICE windows are 87.5% FAKE, so "always fake"
