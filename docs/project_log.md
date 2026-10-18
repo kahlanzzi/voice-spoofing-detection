@@ -837,6 +837,16 @@ touched.
 
 **Gate:** Lab 6 closeout remains incomplete; waiting for remaining evidence and team review.
 
+### Entry 37 — Lab 6 report evidence and remaining closeout checks (2026-10-18)
+
+**What we did:** Codex filled the team, repository history, environment, CI, workflow and data-governance sections of `docs/setup-report.md` using the existing decision register, contribution guide, scripts and workflow. Existing member answers and local setup evidence were preserved.
+
+**Evidence:** PR #21's GitHub UI showed one successful check for the draft ending at `faecd8c` [verified]. This is distinct from Khalil's earlier local test screenshots. The report marks historical/configuration statements as documentation and does not claim current owner settings or missing human sign-offs were verified.
+
+**AI assistance:** Codex inspected repository files and the PR page and drafted these documentation updates. No model or dataset operation was performed.
+
+**Open issues / gate:** Remaining member answers, Iheb's audit review and D14 answer, owner-settings confirmation, setup/access checks, the AI-test-method review and final PR checks remain pending. Lab 6 is not closed.
+
 ## Open items
 
 **GitHub / repo**
@@ -917,7 +927,8 @@ touched.
 **Course deliverables**
 - [ ] Setup report (`docs/setup-report.md`, Lab 6 skeleton): Malak's Codex test is recorded and
   passed (Entry 22); Khalil's local setup evidence and Codex answer are recorded (Entry 36).
-  Remaining sections, other team answers, Iheb's review and D14 response, and team acceptance are still open.
+  Factual report sections are filled (Entry 37); other team answers, Iheb's review and D14 response,
+  owner/setup verification and team acceptance are still open.
 
 **Local verification**
 - [x] Re-run the full local suite: Python 3.13 completed with **33 passed in 6.36 s** during Stage 4;
@@ -975,10 +986,10 @@ touched.
 
 ---
 
-## Current status — updated 2026-10-17
+## Current status — updated 2026-10-18
 
 **What was done:**
-- **Lab 6 closeout in progress:** Khalil's local setup and Codex answer are documented (Entry 36); remaining evidence and review are pending.
+- **Lab 6 closeout in progress:** factual report sections and PR #21 CI evidence are documented (Entry 37); missing member responses and human verification/review remain pending.
 - **Stages 0–3 and Part A are complete.** Protocol v1.0 is frozen as F1 (PR #10).
 - **Stage 4 is complete** (Entry 28): PR #12 merged as `865faf4`.
 - **Stage 5 F2 PR merged** as PR #15 (`main` at `89b37fc`).

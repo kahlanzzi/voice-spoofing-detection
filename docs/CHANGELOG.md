@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Evidence-backed Lab 6 report sections covering team roles, setup, CI, workflow and data rules, with remaining closeout checks listed.
 - Khalil's local setup verification, troubleshooting notes and Codex rule-check answer in the Lab 6 setup report.
 - ModelBundle format and verifying loader (hashes, versions, path safety, immutability, provenance).
 - Append-only, hash-chained run registry for D31 (claim before run).
