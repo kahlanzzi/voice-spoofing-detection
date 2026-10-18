@@ -873,6 +873,31 @@ approve or merge.
 
 ---
 
+### Entry 38 — Stage briefs 00 and 01 written (2026-10-18)
+
+**Authorship:** requested and specified by Donia Mabrouk. Both briefs were written by **Claude Code**
+(Claude Opus 5.5), an AI tool, from the repository documents only; Donia reviews before push.
+
+**What:** on `docs/stage6-briefs-00-01` (docs only, no code), from `docs/stages/TEMPLATE.md` (D32):
+- `docs/stages/stage00-setup.md` (owner Donia; reviewer Iheb, repo owner; PRs #1, #6, #7).
+- `docs/stages/stage01-dataset-audit.md` (owner Donia; reviewer Malak, whose split builds on the
+  audit; PR #2).
+- Each has all 8 sections; every number cites its file and section or log entry; section 7 answers
+  the questions set by Donia (6 for Stage 0, 8 for Stage 1). No DEEP-VOICE path, slug or folder name
+  is written.
+- `docs/stages/README.md`: both briefs → "in review". CHANGELOG line.
+
+**Not recorded in the sources:** where the Proposal's DEEP-VOICE counts 628 / 4,425 come from
+(stated as "not recorded" in the Stage 1 brief, Q8).
+
+**Evidence [verified]:** `.venv` `python -m pytest -q` (Python 3.14.7): `266 passed`;
+`tests/audit` + `tests/governance`: `15 passed`.
+
+**Gate:** briefs in review; teach-back review by Iheb (Stage 0) and Malak (Stage 1) (D32). AI does
+not approve or merge.
+
+---
+
 ## Open items
 
 **GitHub / repo**
@@ -942,7 +967,8 @@ approve or merge.
 
 **Stage briefs (D32, Entry 37)**
 - [x] Team review of `docs/stage6-stage-briefs` (approves D32): approved by all three, 2026-10-18.
-- [ ] Write stage briefs 00–03 (Donia).
+- [ ] Write stage briefs 00–03 (Donia). 00–01 in review (Entry 38: teach-back by Iheb and Malak);
+  02–03 to write.
 - [ ] Write stage briefs 04–05 (Malak).
 
 **Notebook (ported to the repo, `f8af88a`; pins and guards added in Entry 7)**
@@ -1016,7 +1042,7 @@ approve or merge.
 
 ---
 
-## Current status — updated 2026-10-17
+## Current status — updated 2026-10-18
 
 **What was done:**
 - **Stages 0–3 and Part A are complete.** Protocol v1.0 is frozen as F1 (PR #10).
@@ -1031,7 +1057,8 @@ approve or merge.
   The **Part C prep is complete**: harness, risk policy, run registry and bundle format are built and
   tested on synthetic data; the real Part C runs wait for F3 (preprocessing profile v1).
 - **Stage 5 administrative closeout merged** as PR #22 (`02f53e2`; Entry 36).
-- **Stage-briefs PR (D32, Entry 37)** approved by all three reviewers; merging next.
+- **Stage-briefs PR (D32, Entry 37)** merged as PR #20 (`567f4aa`).
+- **Stage briefs 00 (setup) and 01 (dataset audit)** written (Entry 38); in review.
 
 **What we have:**
 - The approved FoR split and the F2 manifests and hash ledger (D28).
@@ -1045,18 +1072,18 @@ approve or merge.
 - A tested ModelBundle format (`src/bundle/`) whose loader verifies every part before use,
   documented in `docs/model_bundle.md`.
 - Governance rules that keep the external set metadata-only until the one guarded Stage 13 run.
-- A stage-brief structure (`docs/stages/`, D32, Entry 37); no brief written yet.
+- A stage-brief structure (`docs/stages/`, D32, Entry 37) and the first two briefs (00, 01; in review).
 
 **Branches:**
-- `main`: through PR #22 at `02f53e2`.
-- `docs/stage6-stage-briefs`: stage-brief structure, template and D32, Entry 37; approved by all three, merging next.
+- `main`: through PRs #22 and #20, at `567f4aa`.
+- `docs/stage6-briefs-00-01`: briefs 00 and 01, Entry 38; not pushed, waiting for Donia's review.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
 
 **What's next:**
-1. Merge the stage-briefs PR (D32 approved); CI green on Python 3.13. AI does not merge.
-   Then Donia writes briefs 00–03 and Malak briefs 04–05.
+1. Donia reviews briefs 00–01 and pushes; teach-back review by Iheb (00) and Malak (01). Then
+   Donia writes briefs 02–03 and Malak briefs 04–05. AI does not merge.
 2. **Stage 6 is current (waiting for F3):** Malak is on preprocessing profile v1 + tests + compute
    benchmark, on a separate branch.
 3. Khalil decides the DEEP-VOICE file-level view before Stage 13; verify the scikit-learn Colab install.

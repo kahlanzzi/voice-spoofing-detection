@@ -68,8 +68,8 @@ flowchart LR
 
 | Stage | Owner (D26) | Brief file | Status |
 |---|---|---|---|
-| 0 Repository + environment | Donia | `stage00-setup.md` | to write |
-| 1 Dataset audit | Donia | `stage01-dataset-audit.md` | to write |
+| 0 Repository + environment | Donia | `stage00-setup.md` | in review |
+| 1 Dataset audit | Donia | `stage01-dataset-audit.md` | in review |
 | 2 Threat model | Donia | `stage02-threat-model.md` | to write |
 | 3 Experimental Protocol v1.0 | Donia (lead) | `stage03-protocol.md` | to write |
 | 4 Leakage-aware split | Malak | `stage04-split.md` | to write |
