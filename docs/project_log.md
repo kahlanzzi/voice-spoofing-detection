@@ -1113,9 +1113,25 @@ D33–D35 remain proposals. No production code, real predictions or external dat
 
 ---
 
+### Entry 53 — Per-window preprocessing integration requirement (2026-10-18)
+
+**What / AI assistance:** At Khalil's request, Codex added the team follow-up from Malak's
+Stage 6 work to ADR 0007's D35 implementation list: a synthetic runner integration test
+must exercise the shared frozen preprocessing function for every complete 2 s window,
+with trimming and centred padding per window. Direct-call comparisons and distinct silence
+patterns must detect whole-recording preprocessing before splitting.
+
+**Scope / gate:** Documentation only. The runner and integration test are not implemented
+by this change; no decision acceptance, allowlist change or external execution is implied.
+Review the final F3 API before implementing. Entry number must be checked against latest
+main before merging this documentation update.
+
+---
+
 ## Open items
 
 **Khalil: Stage 13 preparation**
+- [ ] Implement the D35 per-window frozen preprocessing integration test (Entry 53).
 - [x] Rename synthetic-test branch to the D23-compliant `chore/stage13-synthetic-reporting`.
 - [ ] Complete PR #27 integration, retarget to main, and review updated synthetic tests (Entry 51).
 - [x] PR #26 merged as `72a9646`; explicit D33–D35 decision confirmations remain pending.
@@ -1274,6 +1290,7 @@ D33–D35 remain proposals. No production code, real predictions or external dat
 ## Current status — updated 2026-10-18
 
 **What was done:**
+- Added the D35 per-window preprocessing integration-test requirement (Entry 53); implementation pending.
 - **Synthetic integration tests prepared:** eight invented speakers and 14,960 windows (Entry 51); no real predictions.
 - **PR #21 merged** as `65ce1d2`; its documentation is in main.
 - **PR #23 merged** as `3f2f4bb`: per-speaker helper and tests (Entries 42–44).
