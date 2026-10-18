@@ -865,9 +865,19 @@ touched.
 - Open: commit/push this correction, verify GitHub CI, human review and change the PR base to main after #21 merges. Stage 13 remains preparation only; WAITING FOR APPROVAL.
 
 ---
+### Entry 40 — Speaker-average helper preparation (2026-10-18)
+
+- Owner Khalil (D26); Codex prepared the D4/D19 equal-speaker summary, 20 synthetic tests and usage documentation. Intended branch: `feat/stage13-speaker-average`, stacked on PR #23.
+- Explicit caller-selected undefined policy: propagate NaN with speaker IDs/counts, or raise. No silent exclusion or zero replacement. The external report convention remains for team decision/review; frozen protocol unchanged.
+- [verified] Existing repository tests plus the 20 prepared tests: **311 passed in 11.80s**. The new module was loaded from the preparation workspace; repository installation and normal full-suite verification remain pending.
+- Git operations from the app failed with work-tree/permission errors. A guarded installer creates the new branch and copies the files only if the starting branch is clean and the source documents are unchanged.
+- No audio or model access. No confidence intervals or real external results produced. Human review and final reporting convention pending; WAITING FOR APPROVAL.
+
+---
 ## Open items
 
 **Khalil: Stage 13 preparation**
+- [ ] Install and review the speaker-average helper (Entry 40); decide the undefined-metric report convention before the real run.
 - [ ] Commit/push the documentation correction and review draft PR #23 (Entry 39); verify GitHub CI and retarget to main after #21 merges.
 - [ ] Review the per-speaker helper and synthetic tests (Entry 38); complete speaker average, CIs and reporting before the external run.
 
@@ -1012,6 +1022,7 @@ touched.
 ## Current status — updated 2026-10-18
 
 **What was done:**
+- **Speaker-average preparation:** helper and 20 synthetic tests prepared (Entry 40); intended next branch `feat/stage13-speaker-average`. Installation and human review pending.
 - **Analysis draft PR #23 created:** based on #21; duplicate historical changelog line corrected locally (Entry 39), pending commit/push.
 - **Stage 13 preparation:** per-speaker metrics helper and synthetic tests prepared on `feat/stage13-speaker-analysis` (Entry 38); no external run.
 - **Lab 6 closeout in progress:** factual report sections and PR #21 CI evidence are documented (Entry 37); missing member responses and human verification/review remain pending.

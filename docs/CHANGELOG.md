@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Equal-speaker rate summaries with explicit undefined-value handling and synthetic tests (D19 preparation; report convention pending review).
 - Per-source-speaker metric tables reusing the evaluation harness, with synthetic tests and usage documentation (D4, D19; Stage 13 preparation).
 - Evidence-backed Lab 6 report sections covering team roles, setup, CI, workflow and data rules, with remaining closeout checks listed.
 - Khalil's local setup verification, troubleshooting notes and Codex rule-check answer in the Lab 6 setup report.
