@@ -49,7 +49,7 @@ Khalil's pre-push terminal evidence on 2026-10-17 showed `266 passed in 10.79s` 
 ## 5. AI tooling
 [doc] D22 defines `AGENTS.md` as the common rulebook: Codex and Antigravity use it as context, Claude Code imports it through `CLAUDE.md`, and Gemini CLI is configured through `.gemini/settings.json`. These are the configured mechanisms, not proof that every member tested automatic loading.
 
-Each member must supply their own tool-test evidence. Khalil's and Malak's records appear below; Donia's and Iheb's answers are pending collection for this report. Human review is required before AI-produced work is accepted. Assistance is disclosed in the PR and project log; AI agents do not merge.
+Each member must supply their own tool-test evidence. Khalil's, Malak's and Donia's records appear below; Iheb's answer is pending collection for this report. Human review is required before AI-produced work is accepted. Assistance is disclosed in the PR and project log; AI agents do not merge.
 
 ### Khalil Dridi
 
@@ -59,6 +59,16 @@ Each member must supply their own tool-test evidence. Khalil's and Malak's recor
 - **Question:** What are this project's hard rules about DEEP-VOICE, and where would preprocessing code go?
 - **Answer summary:** DEEP-VOICE is reserved for the single guarded external scoring run after the complete ModelBundle is frozen using FoR only (D2). It must not guide training, tuning, model selection, thresholds or calibration; before that run only D20-permitted accesses are allowed. Robustness uses FoR only (D3), later external analyses use stored scores, and preprocessing code belongs in `src/preprocessing/`.
 - **Review status:** Answer recorded for teammate review. Fresh-session automatic-context loading was not tested.
+
+### Donia Mabrouk
+
+- **Source:** Donia's test report, relayed by Khalil on 2026-10-18; the session was not independently observed by Codex.
+- **Tool:** Claude Code, VS Code extension; version not supplied (the submitted message contains `[version]`).
+- **Date:** 2026-10-18.
+- **Method (reported):** Fresh session in the repository on `main`, with no files attached and no context given. Claude Code loads `CLAUDE.md`, which imports `AGENTS.md` (D22).
+- **Question:** “What are this project's hard rules about DEEP-VOICE, and where would preprocessing code go?”
+- **Answer summary:** DEEP-VOICE is external test data used exactly once, in the single guarded run after the ModelBundle freeze (D2); never for training, tuning, thresholds, calibration or exploration. Before that run only D20 accesses are allowed (download, zip hash, unzip, listing and metadata audit), enforced by the CI governance test. Preprocessing goes in `src/preprocessing/`, tests in `tests/preprocessing/`, and configuration in `configs/`, shared by notebooks and the API (FR-04, NFR-09).
+- **Result (reported by Donia):** Passed. The tool also inspected the repository layout and labelled its claims `[doc]` / `[verified]`.
 
 ### Malak Ben Salem
 
@@ -107,7 +117,9 @@ Audio, datasets, checkpoints and secrets are excluded from commits. `.env.exampl
 - **Verification:** The local test run completed with `266 passed in 299.59s (0:04:59)`.
 
 ## 9. Next steps
-- [ ] Collect Donia's and Iheb's actual AI-tool names and answer summaries, or links to existing evidence.
+- [x] Record Donia's supplied AI-tool test summary (2026-10-18; §5).
+- [ ] Confirm Donia's Claude Code extension version.
+- [ ] Collect Iheb's actual AI-tool name and answer summary, or a link to existing evidence.
 - [ ] Obtain Iheb's audit review/sign-off and explicit D14 yes/no, including any concern. Do not infer approval from an existing decision entry.
 - [ ] Confirm live branch-protection details, including force-push/bypass policy, with the repository owner.
 - [ ] Verify Khalil's one-time setup script/hooks and team resource access (Drive, compute and W&B).

@@ -825,7 +825,80 @@ touched.
 
 ---
 
-### Entry 36 — Khalil local setup and AI-tool answer (2026-10-17)
+### Entry 36 — Stage 5 closeout: F2 effective (2026-10-17)
+
+**What [verified]:** Stage 5 is complete. Donia reviewed and approved PR #15, which merged into
+`main` as `89b37fc` on 2026-10-17. D28 is now approved, the reviewed F2 manifests and hash ledger are
+effective, and the roadmap advances to Stage 6 as the current stage. Entry 30 remains unchanged.
+
+**Evidence [verified]:** local Git history identifies `89b37fc` as
+`Merge pull request #15 from kahlanzzi/feat/stage5-dataset-freeze-malak`, dated 2026-10-17. The merge
+is contained by `main`. The Stage 5 implementation, correction and deterministic evidence are the
+artifacts reviewed in PR #15.
+
+**AI assistance:** **Codex** checked the merge evidence and prepared this documentation-only closeout.
+Malak reviews the diff; Donia reviews the closeout PR. AI does not approve or merge.
+
+**Gate:** **PASSED. Stage 5 is complete and F2 is effective.** Stage 6 may begin on its own branch;
+this closeout branch contains documentation only.
+
+---
+
+### Entry 37 — Stage briefs: structure, template and D32 (2026-10-17)
+
+**Authorship:** proposed and specified by Donia Mabrouk. The files were written by **Claude Code**;
+Donia reviews before push.
+
+**Why:** Donia's proposal. Execution Plan v2.1 §12 asks that everyone can explain the full pipeline
+end to end, not only their own part; with four owners and stages handed over between them, each
+member (and the professor) must be able to answer questions on any stage.
+
+**What:** on `docs/stage6-stage-briefs` (docs only, no code):
+- `docs/stages/TEMPLATE.md`: header block (stage, owner, reviewer(s), status, date, related PRs) and
+  8 sections with guidance and target lengths (2–4 pages in total).
+- `docs/stages/README.md`: purpose, how briefs differ from the log, the register and the design
+  notes, the process (owner writes at stage close; teach-back review; 5-minute teach-back by a
+  member who did not write the stage; Stage 19 report assembled from the briefs), a Mermaid overview of Stages 0–19 with
+  the four D26 hand-overs, and the table of all 20 brief files.
+- D32 (proposed) in `docs/decisions/README.md`; one line each in `CONTRIBUTING.md` §7, `AGENTS.md`
+  (Working mode) and the `docs/README.md` index; CHANGELOG line.
+
+**Not done:** no stage brief is written yet. First briefs: Donia (Stages 0–3), Malak (Stages 4–5).
+
+**Evidence [verified]:** `.venv` `python -m pytest -q`: `266 passed in 13.52s`; governance test
+`3 passed in 0.23s` (docs only; no test changed).
+
+**Gate:** PR ready for human review; D32 is approved by the team review of this PR. AI does not
+approve or merge.
+
+---
+
+### Entry 38 — Stage briefs 00 and 01 written (2026-10-18)
+
+**Authorship:** requested and specified by Donia Mabrouk. Both briefs were written by **Claude Code**
+(Claude Opus 5.5), an AI tool, from the repository documents only; Donia reviews before push.
+
+**What:** on `docs/stage6-briefs-00-01` (docs only, no code), from `docs/stages/TEMPLATE.md` (D32):
+- `docs/stages/stage00-setup.md` (owner Donia; reviewer Iheb, repo owner; PRs #1, #6, #7).
+- `docs/stages/stage01-dataset-audit.md` (owner Donia; reviewer Malak, whose split builds on the
+  audit; PR #2).
+- Each has all 8 sections; every number cites its file and section or log entry; section 7 answers
+  the questions set by Donia (6 for Stage 0, 8 for Stage 1). No DEEP-VOICE path, slug or folder name
+  is written.
+- `docs/stages/README.md`: both briefs → "in review". CHANGELOG line.
+
+**Not recorded in the sources:** where the Proposal's DEEP-VOICE counts 628 / 4,425 come from
+(stated as "not recorded" in the Stage 1 brief, Q8).
+
+**Evidence [verified]:** `.venv` `python -m pytest -q` (Python 3.14.7): `266 passed`;
+`tests/audit` + `tests/governance`: `15 passed`.
+
+**Gate:** briefs in review; teach-back review by Iheb (Stage 0) and Malak (Stage 1) (D32). AI does
+not approve or merge.
+
+---
+
+### Entry 39 — Khalil local setup and AI-tool answer (2026-10-17)
 
 **What we did:** Khalil prepared the Windows checkout and virtual environment on `docs/stage0-lab6-closeout`. Updated `docs/setup-report.md` with his setup evidence, command-resolution problems and Codex answer.
 
@@ -837,7 +910,7 @@ touched.
 
 **Gate:** Lab 6 closeout remains incomplete; waiting for remaining evidence and team review.
 
-### Entry 37 — Lab 6 report evidence and remaining closeout checks (2026-10-18)
+### Entry 40 — Lab 6 report evidence and remaining closeout checks (2026-10-18)
 
 **What we did:** Codex filled the team, repository history, environment, CI, workflow and data-governance sections of `docs/setup-report.md` using the existing decision register, contribution guide, scripts and workflow. Existing member answers and local setup evidence were preserved.
 
@@ -847,7 +920,17 @@ touched.
 
 **Open issues / gate:** Remaining member answers, Iheb's audit review and D14 answer, owner-settings confirmation, setup/access checks, the AI-test-method review and final PR checks remain pending. Lab 6 is not closed.
 
-### Entry 38 — Per-speaker analysis preparation (2026-10-18)
+---
+
+### Entry 41 — Donia AI-tool test evidence for Lab 6 (2026-10-18)
+
+**Evidence (member-reported):** Khalil relayed Donia's fresh-session Claude Code test on `main`, dated 2026-10-18. Donia reported a passed answer on the external-data restrictions and preprocessing location, with `CLAUDE.md` importing `AGENTS.md`. The extension version was not supplied. Codex did not observe that session independently.
+
+**What changed / AI assistance:** Codex transcribed the summary into `docs/setup-report.md` §5 and updated its outstanding checks. Donia's answer is collected; her extension version, Iheb's answer and the other Lab 6 checks remain pending. No stage closure is claimed.
+
+---
+
+### Entry 42 — Per-speaker analysis preparation (2026-10-18)
 
 - **Owner:** Khalil (D26). AI assistance: Codex implemented the helper, synthetic tests and documentation; human review is pending.
 - **Scope:** FR-12, D4, D19. Added `src/evaluation/speakers.py`: per-source-speaker EER/AUC, forced-binary and three-way metrics through the existing harness. All speakers use the caller's fixed threshold and band. Undefined metrics remain NaN and no speaker is silently dropped.
@@ -857,20 +940,42 @@ touched.
 - **Gate:** preparation only; WAITING FOR APPROVAL. Stage 13 has not run.
 
 ---
-### Entry 39 — Analysis PR and changelog correction (2026-10-18)
+### Entry 43 — Analysis PR and changelog correction (2026-10-18)
 
 - Codex created draft PR #23 at Khalil's request, based on `docs/stage0-lab6-closeout` (PR #21); one analysis commit and five files at creation. Nothing merged.
-- [verified] Khalil's pre-PR governance check: **3 passed in 0.22s**; token-pattern search returned no matches. Full-suite evidence is in Entry 38.
+- [verified] Khalil's pre-PR governance check: **3 passed in 0.22s**; token-pattern search returned no matches. Full-suite evidence is in Entry 42.
 - Codex removed its accidentally duplicated speaker-analysis changelog line from the historical 2026-10-06 section, keeping the Unreleased entry. This correction changes documentation only; no code or datasets changed.
 - Open: commit/push this correction, verify GitHub CI, human review and change the PR base to main after #21 merges. Stage 13 remains preparation only; WAITING FOR APPROVAL.
 
 ---
+
+### Entry 44 — Per-speaker PR integration with main (2026-10-18)
+
+**What changed:** PR #21 merged as `65ce1d2`; PR #23 now targets main. Codex resolved the log conflict,
+kept merged Entries 1–41 intact and renumbered the unmerged analysis entries to 42–43, including
+their internal reference. The changelog retains both main's additions and the per-speaker entry.
+
+**Review follow-up:** `speakers.py` imports `_validate` through the evaluation harness re-export,
+as Donia suggested. This retains the same validator. The undefined-value convention is listed as
+an open pre-Stage 13 decision together with the file-level view and governance allowlist.
+
+**Evidence [verified]:** Full suite after the resolution and import cleanup: `291 passed in 11.20s`,
+including governance tests; writable temporary directory, pytest cache and bytecode writes disabled.
+
+**AI assistance / gate:** Codex prepared these changes at Khalil's request. Commit/push and updated
+CI remain pending; PR #23 is not merged. Synthetic preparation only; no external run or new
+evaluation-policy approval.
+
+---
+
 ## Open items
 
 **Khalil: Stage 13 preparation**
-- [ ] Commit/push the documentation correction and review draft PR #23 (Entry 39); verify GitHub CI and retarget to main after #21 merges.
-- [ ] Review the per-speaker helper and synthetic tests (Entry 38); complete speaker average, CIs and reporting before the external run.
-
+- [x] PR #21 merged into main as `65ce1d2`; PR #23 base changed to main.
+- [ ] Complete PR #23 integration, verify new CI and review the updated diff (Entries 42–44).
+- [ ] Integrate the speaker-average helper from PR #24 after #23 merges; complete CIs and reporting.
+- [ ] Before Stage 13, approve and record the speaker-average undefined-value convention alongside
+  the file-level view and governance allowlist decisions. No convention is approved by this update.
 
 **GitHub / repo**
 - [x] PR `stage-0-git-workflow`: merged as PR #1 (approved and merged by Malak, 2026-10-05).
@@ -910,7 +1015,8 @@ touched.
 - [x] Malak approved implementation commit `9e005b1` and correction commit `df1d6ac`; run the
   official freeze twice from the final clean commit.
 - [x] Record the generated manifest hashes in proposed D28 and project-log Entry 30.
-- [ ] Donia reviews the F2 PR; after approval and human merge, mark Stage 5 done.
+- [x] Donia reviewed and approved the F2 PR; PR #15 merged as `89b37fc`, Stage 5 is done and F2 is
+  effective (Entry 36).
 
 **Stage 7 harness: protocol clarifications (Entry 31; Protocol §12, next free D-ID when decided)**
 - [x] Baseline threshold: own val-B EER point, forced binary only (Donia, before Stage 7 results): D29 (Entry 32).
@@ -930,11 +1036,17 @@ touched.
   and results PR).
 
 **Stage 12 ModelBundle (Entry 35)**
-- [ ] Human review of `feat/stage12-bundle-format`; CI green on Python 3.13.
+- [x] Human review of `feat/stage12-bundle-format`; CI green on Python 3.13: merged as PR #19.
 - [ ] Stage 12: add the profile-version check once the F3 profile format is frozen.
 - [ ] Stage 12/17: load the checkpoint from verified bytes (or re-verify at load).
 - [ ] Stage 8: save checkpoints in a non-executable form (safetensors or state_dict + weights_only=True).
 - [ ] F4: record manifest_sha256 in the freeze decision.
+
+**Stage briefs (D32, Entry 37)**
+- [x] Team review of `docs/stage6-stage-briefs` (approves D32): approved by all three, 2026-10-18.
+- [ ] Write stage briefs 00–03 (Donia). 00–01 in review (Entry 38: teach-back by Iheb and Malak);
+  02–03 to write.
+- [ ] Write stage briefs 04–05 (Malak).
 
 **Notebook (ported to the repo, `f8af88a`; pins and guards added in Entry 7)**
 - [x] Cell 1: real `REPO_URL`; clone with `-b <branch>`; print Python version and commit hash; capture and print the `pytest` output.
@@ -949,8 +1061,8 @@ touched.
 
 **Course deliverables**
 - [ ] Setup report (`docs/setup-report.md`, Lab 6 skeleton): Malak's Codex test is recorded and
-  passed (Entry 22); Khalil's local setup evidence and Codex answer are recorded (Entry 36).
-  Factual report sections are filled (Entry 37); other team answers, Iheb's review and D14 response,
+  passed (Entry 22); Khalil's local setup evidence and Codex answer are recorded (Entry 39).
+  Factual report sections are filled (Entry 40); Donia's extension version, Iheb's AI answer, review and D14 response,
   owner/setup verification and team acceptance are still open.
 
 **Local verification**
@@ -1012,19 +1124,23 @@ touched.
 ## Current status — updated 2026-10-18
 
 **What was done:**
-- **Analysis draft PR #23 created:** based on #21; duplicate historical changelog line corrected locally (Entry 39), pending commit/push.
-- **Stage 13 preparation:** per-speaker metrics helper and synthetic tests prepared on `feat/stage13-speaker-analysis` (Entry 38); no external run.
-- **Lab 6 closeout in progress:** factual report sections and PR #21 CI evidence are documented (Entry 37); missing member responses and human verification/review remain pending.
+- **PR #21 merged** as `65ce1d2`; its documentation is in main.
+- **PR #23 integration in progress:** per-speaker helper and tests (Entries 42–44); base is main.
+- **Lab 6 closeout in progress:** factual report sections and PR #21 CI evidence are documented (Entry 40); Donia's reported test is now recorded (Entry 41); her extension version, Iheb's answer and human verification/review remain pending.
 - **Stages 0–3 and Part A are complete.** Protocol v1.0 is frozen as F1 (PR #10).
 - **Stage 4 is complete** (Entry 28): PR #12 merged as `865faf4`.
-- **Stage 5 F2 PR merged** as PR #15 (`main` at `89b37fc`).
+- **Stage 5 is complete and F2 is effective**: Donia approved PR #15, merged as `89b37fc`; D28 is
+  approved (Entry 36).
 - **Stage 7 evaluation harness, steps 1–5, is merged** as PR #13 (Entry 31).
 - **Protocol clarifications D29–D31 are merged** as PR #16 (Entry 32).
 - **Stage 10 risk policy, steps R1–R2, is merged** as PR #17 (Entry 33).
 - **Stage 11 run registry (D31) is merged** as PR #18 (Entry 34).
-- **Stage 12 prep, ModelBundle format and verifying loader, is ready for review** (Entry 35). With
-  it, the **Part C prep is complete**: harness, risk policy, run registry and bundle format are
-  built and tested on synthetic data; the real Part C runs wait for F3 (preprocessing profile v1).
+- **Stage 12 prep, ModelBundle format and verifying loader, merged** as PR #19 (`8b688dc`; Entry 35).
+  The **Part C prep is complete**: harness, risk policy, run registry and bundle format are built and
+  tested on synthetic data; the real Part C runs wait for F3 (preprocessing profile v1).
+- **Stage 5 administrative closeout merged** as PR #22 (`02f53e2`; Entry 36).
+- **Stage-briefs PR (D32, Entry 37)** merged as PR #20 (`567f4aa`).
+- **Stage briefs 00 (setup) and 01 (dataset audit)** written (Entry 38); in review.
 
 **What we have:**
 - The approved FoR split and the F2 manifests and hash ledger (D28).
@@ -1038,17 +1154,24 @@ touched.
 - A tested ModelBundle format (`src/bundle/`) whose loader verifies every part before use,
   documented in `docs/model_bundle.md`.
 - Governance rules that keep the external set metadata-only until the one guarded Stage 13 run.
+- A stage-brief structure (`docs/stages/`, D32, Entry 37) and the first two briefs (00, 01; in review).
 
 **Branches:**
-- `feat/stage13-speaker-analysis`: Khalil's analysis preparation, stacked on `docs/stage0-lab6-closeout` (PR #21).
-- `main`: through PR #18 at `6fc4528`.
-- `feat/stage12-bundle-format`: ModelBundle format and loader, Entry 35; ready for human review.
+- `main`: fetched at `65ce1d2`, including PR #21 and merged Entries 1–41.
+- `feat/stage13-speaker-analysis` (PR #23): integrating main, log entries 42–44;
+  updated checks and review remain before merge.
+- `feat/stage13-speaker-average` (PR #24): still based on the analysis branch. After #23 merges,
+  update it from main, reconcile its log numbers, retarget to main and rerun checks.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
 
 **What's next:**
-1. Human review of the bundle-format PR; CI must be green on Python 3.13. AI does not merge.
-2. **Waiting for F3:** Malak is on Stage 6 (preprocessing profile v1 + tests + compute benchmark).
-3. Khalil decides the DEEP-VOICE file-level view before Stage 13; verify the scikit-learn Colab install.
-4. Then the MFCC/SVM baseline (Stage 7) on the frozen preprocessing.
+1. Complete PR #23 integration and checks, then integrate #24 after #23 merges.
+   Briefs 00–01 are in main; teach-back review remains tracked separately. Donia prepares
+   briefs 02–03 and Malak briefs 04–05. AI does not merge.
+2. **Stage 6 is current (waiting for F3):** Malak is on preprocessing profile v1 + tests + compute
+   benchmark, on a separate branch.
+3. Before Stage 13, record approved decisions for the file-level view, speaker-average undefined
+   values and governance allowlist. Verify the scikit-learn Colab install.
+4. Then run the real Part C work on the frozen F3 preprocessing profile.
