@@ -1012,6 +1012,24 @@ Documentation whitespace and conflict-marker checks passed.
 
 ---
 
+### Entry 48 — Donia review corrections to proposed D33/D35 (2026-10-18)
+
+**Source:** Khalil relayed Donia's conditional acceptance of D33–D35 with three corrections.
+Codex checked the bootstrap documentation and revised ADR 0007 and the proposed register rows:
+existing invalid-resample exclusion with `n_invalid` reported per interval; dataset-wide external
+single-run key across all model sets; claim durable beyond Colab before audio access and registry
+SHA-256/line count recorded immediately after the run. D34 is unchanged.
+
+**Open / gate:** Donia's approval row stays pending until she confirms the revised text. Her
+CNN-versus-baseline external comparison proposal is a separate decision; it is not approved here.
+No protocol, runtime code or allowlist changed. Links, whitespace and log numbering checked;
+D34 and approval rows verified unchanged. Full suite: `311 passed in 11.48s`, including governance
+tests (writable temporary directory; pytest cache and bytecode writes disabled).
+
+**AI assistance:** Codex prepared the review corrections and this append-only log entry.
+
+---
+
 ## Open items
 
 **Khalil: Stage 13 preparation**
@@ -1173,7 +1191,7 @@ Documentation whitespace and conflict-marker checks passed.
 - **PR #21 merged** as `65ce1d2`; its documentation is in main.
 - **PR #23 merged** as `3f2f4bb`: per-speaker helper and tests (Entries 42–44).
 - **PR #24 merged** as `6786c12`: speaker-average helper and tests (Entries 45–46).
-- **D33–D35 proposed:** ADR 0007 documents the three pending Stage 13 choices (Entry 47).
+- **D33–D35 proposed:** ADR 0007 includes Donia's requested corrections (Entries 47–48); confirmation and team decisions remain pending.
 - **Lab 6 closeout in progress:** factual report sections and PR #21 CI evidence are documented (Entry 40); Donia's reported test is now recorded (Entry 41); her extension version, Iheb's answer and human verification/review remain pending.
 - **Stages 0–3 and Part A are complete.** Protocol v1.0 is frozen as F1 (PR #10).
 - **Stage 4 is complete** (Entry 28): PR #12 merged as `865faf4`.

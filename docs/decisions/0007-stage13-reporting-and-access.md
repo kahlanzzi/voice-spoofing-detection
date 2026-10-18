@@ -44,9 +44,14 @@ reported as unevaluable; do not fabricate rows for the current helper or silentl
 
 The reporting layer must implement the zero-window case and roster checks before use;
 the current helper rejects empty input. Counts and confusion matrices stay as counts,
-not rate averages. Primary pooled metrics remain separate. This decision does not define
-new bootstrap handling: D11/Protocol §5 remain binding, and undefined bootstrap replicates
-need an explicit reviewed convention before confidence intervals are reported.
+not rate averages. Primary pooled metrics remain separate. Use the existing `bootstrap_ci`
+convention ([evaluation harness, Step 4](../evaluation_harness.md#step-4-bootstrap-confidence-intervals),
+project-log Entry 31): resamples whose statistic raises `ValueError` or returns NaN are
+excluded from the percentile calculation and counted in `n_invalid`. Report `n_invalid`
+with every interval, including zero. D11/Protocol §5 still govern clustering, seed and
+resample count. An undefined full-data estimate or no valid resamples makes the interval
+unavailable; report that fact and reason, not a fabricated interval. This does not silently
+omit speakers from the full-data mean under D33.
 
 **Reason / alternatives:** Propagation preserves the intended eight-speaker denominator
 and makes missing information visible. Omitting NaNs changes the population; zero filling
@@ -106,19 +111,33 @@ are rejected. It must also demonstrate, using dummy files and a fake scorer:
 
 1. Verify the approved frozen bundle, profile/policy versions and pinned manifest/hash ledger
    before any audio decoder or model call. Refuse mismatches and incomplete prerequisites.
-2. Make one atomic, durable run claim before the first audio read or model call, for the
-   approved external evaluation scope. A new run ID, output folder or model hash must not
-   create a second opportunity. Test simultaneous starts and second-start refusal.
+2. Key the external single-run claim by the dataset: one external run ever, for any model
+   set. Do not use the Stage 11 model-set key. A new run ID, output folder, model hash or
+   model set must not create a second opportunity. Make the claim atomic and durable beyond
+   the Colab session: commit it to the repository, or write it to Drive and verify it,
+   before the first audio read or model call. A session-local claim alone is insufficient;
+   abort before scoring if durable persistence cannot be confirmed. Test simultaneous starts,
+   second-start refusal across model sets and loss of the local session.
 3. Persist failed/incomplete claims as well as successful ones. No automatic retry or resume
    of a partially executed real run; retain evidence and stop for team review. This does
    not authorize a second run.
-4. Produce both views in one scoring pass with drop counts and the existing stored-score
+4. Immediately after the run, record the registry SHA-256 and line count in the project
+   log, preserving the durable registry evidence (D31 truncation lesson).
+5. Produce both views in one scoring pass with drop counts and the existing stored-score
    interface; subsequent reporting consumes scores only. Keep D27's no-MCP Stage 13 rule.
 
-Reusing the Stage 11 registry requires inspection and tests: its model-set guard is not
-automatically sufficient for the external single-run invariant. The current governance
+Reusing the Stage 11 registry requires inspection and tests: its model-set key must not
+be used for the external guard, whose uniqueness scope is the dataset across all model sets. The current governance
 scanner is a text guard, not a security sandbox; review actual I/O and runtime guards too.
 Existing D20 metadata-only permissions remain the only pre-run dataset access permissions.
+
+## Separate follow-up: external model comparison
+
+Donia identified a separate question: Protocol §1 RQ2 compares CNN and baseline externally,
+while the currently described external runner scores the CNN bundle. She plans a separate
+decision proposing both frozen models on the same windows under one claim. This ADR does
+not approve that scope change; resolve it before implementing or executing the external run.
+D34 remains unchanged and describes CNN file-level decisions only.
 
 ## Consequences and review gate
 
