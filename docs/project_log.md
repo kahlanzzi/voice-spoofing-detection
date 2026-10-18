@@ -1113,6 +1113,26 @@ D33–D35 remain proposals. No production code, real predictions or external dat
 
 ---
 
+### Entry 53 — Proposed D37: baseline tuning, scaling and score (2026-10-18)
+
+**What / AI assistance:** Donia proposed D37, drafted with Claude Code (docs only). While preparing
+the Stage 7 baseline code, a gap was found: Protocol §4 left the RBF-SVM grid as "team choice" and
+did not fix feature scaling or which score feeds the D29 threshold. D37 fixes them: train-only
+standardization of the 40-value MFCC vector (scaler stored in the baseline artifact), the 16-point
+C × gamma grid (gamma 0.025 equals scikit-learn's 'scale' on the standardized inputs, written
+explicitly so the grid stays ordered and reproducible), selection by lowest val-A EER with a tie rule, and the continuous `decision_function`
+as the score. Recorded in `docs/decisions/README.md` and as a Protocol §14 row; §0–§13 unchanged.
+Minor decision, no ADR (D24). D36 is not on main; D37 is used as requested, so D36 stays free
+for the decision expected to take it.
+
+**Evidence:** Decided before any MFCC feature or val-A result exists (F3 is not frozen; no baseline
+has been trained). No code, config, dataset or model access in this change.
+
+**Gate:** D37 is approved by team review of this PR. Grid and scaling go into `configs/` before
+any baseline training run.
+
+---
+
 ## Open items
 
 **Khalil: Stage 13 preparation**
@@ -1174,6 +1194,8 @@ D33–D35 remain proposals. No production code, real predictions or external dat
 - [x] Enforcement of "Stage 11 runs once" (run registry) (Donia, before Stage 11): D31 (Entry 32).
 - [ ] File-level decisions for DEEP-VOICE: frozen band on the file mean of p, secondary view (Khalil, before Stage 13).
 - [ ] Colab install of scikit-learn 1.9.1 [to verify] at the first Stage 7 Colab run.
+- [ ] Approve D37 (team review) (Entry 53).
+- [ ] Write the baseline grid and scaling in `configs/` before Stage 7 training (D37).
 
 **Stage 10 risk policy (Entry 33)**
 - [x] Human review of `feat/stage10-risk-policy` (R1–R2); CI green on Python 3.13: merged as PR #17.
@@ -1296,13 +1318,16 @@ D33–D35 remain proposals. No production code, real predictions or external dat
 - **Stage briefs 00 and 01** accepted: merged as PR #25 (`610a412`) after teach-back review.
 - **Stage briefs 02 (threat model) and 03 (protocol)** written on `docs/stage6-briefs-02-03`
   (Entry 47); merged in `3ecb979`.
+- **D37 proposed** on `docs/stage6-d37-baseline-tuning` (Entry 53): baseline grid, train-only
+  scaling and `decision_function` score, fixed before any val-A result; approval by PR review.
 
 **What we have:**
 - The approved FoR split and the F2 manifests and hash ledger (D28).
 - One shared, tested evaluation harness (`src/evaluation/`) for the baseline, the CNN and the
   external run, documented in `docs/evaluation_harness.md`, plus per-speaker and speaker-average
   helpers for Stage 13.
-- Pre-declared rules for the baseline threshold, CNN selection and the single Stage 11 run (D29–D31).
+- Pre-declared rules for the baseline threshold, CNN selection and the single Stage 11 run (D29–D31),
+  and proposed baseline tuning, scaling and score (D37, Entry 53).
 - A tested risk-policy fit (`src/tuning`) and core apply / save / load (`src/risk`), documented in
   `docs/risk_policy.md`; not yet fitted on real val-B scores.
 - A tested append-only run registry (`src/evaluation/run_registry.py`) that refuses a second
@@ -1329,4 +1354,5 @@ D33–D35 remain proposals. No production code, real predictions or external dat
    benchmark, on a separate branch.
 3. Before Stage 13, record approved decisions for the file-level view, speaker-average undefined
    values and governance allowlist. Verify the scikit-learn Colab install.
-4. Then run the real Part C work on the frozen F3 preprocessing profile.
+4. Approve D37 by team review, then write the baseline grid and scaling in `configs/`.
+5. Then run the real Part C work on the frozen F3 preprocessing profile.
