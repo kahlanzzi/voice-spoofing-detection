@@ -1193,7 +1193,26 @@ The runner integration test is still future implementation work; no external dat
 
 ---
 
+### Entry 57 — Synthetic clustered discrimination checks (2026-10-18)
+
+**Owner:** Khalil Dridi. **AI assistance:** Codex prepared synthetic tests and documentation.
+**Scope [doc]:** Existing D4/D11 pooled EER and ROC-AUC; no D33–D35 acceptance or access change.
+**Work:** Two cases use eight invented unequal-size, single-class speaker groups and tied
+scores. Independent two-score ROC/count oracles verify point estimates, percentile bounds
+and exact invalid-resample counts, with 2,000 whole-speaker draws and seed 2026.
+**Evidence [verified]:** Candidate tests: `2 passed in 3.91s`. Existing full suite plus
+candidate tests: `368 passed in 13.71s`; no dataset/audio/model access.
+**Integration:** PR #32 merged as `638339b`; local main includes it. Candidate prepared in
+Codex workspace because repository writes require filesystem permission. Git status in
+the agent shell fails with “must be run in a work tree”; Khalil must verify the working tree
+and create the feature branch before committing. No commit or push performed by Codex.
+**Gate:** Human review and CI pending → WAITING FOR APPROVAL. Stage 13 remains incomplete.
+
+---
+
 ## Open items
+
+- [ ] Review synthetic clustered discrimination tests and obtain CI (Entry 57).
 
 **Khalil: Stage 13 preparation**
 - [ ] Implement the D35 per-window frozen preprocessing integration test (Entry 55).
@@ -1255,7 +1274,7 @@ The runner integration test is still future implementation work; no external dat
 - [x] Enforcement of "Stage 11 runs once" (run registry) (Donia, before Stage 11): D31 (Entry 32).
 - [ ] File-level decisions for DEEP-VOICE: frozen band on the file mean of p, secondary view (Khalil, before Stage 13).
 - [ ] Colab install of scikit-learn 1.9.1 [to verify] at the first Stage 7 Colab run.
-- [ ] Approve D37 (team review) (Entry 53).
+- [x] Approve D37 (team review recorded in Entry 53).
 - [x] Write the baseline grid and scaling in `configs/` before Stage 7 training (D37): `configs/baseline.yaml` (Entry 54).
 - [ ] Human review of `feat/stage7-baseline-code` (B1–B2) after D37 approval (Entry 54).
 
@@ -1358,6 +1377,7 @@ The runner integration test is still future implementation work; no external dat
 ## Current status — updated 2026-10-18
 
 **What was done:**
+- Prepared synthetic clustered EER/AUC checks with invalid-resample count oracles (Entry 57); human review pending.
 - Added the D35 per-window preprocessing integration-test requirement (Entry 55); implementation pending.
 - **Synthetic integration tests prepared:** eight invented speakers and 14,960 windows (Entry 51); no real predictions.
 - **PR #21 merged** as `65ce1d2`; its documentation is in main.
@@ -1404,10 +1424,9 @@ The runner integration test is still future implementation work; no external dat
 - Stage briefs (`docs/stages/`, D32): 00–01 accepted, 02–03 merged; teach-back completion tracked separately.
 
 **Branches:**
-- `origin/main`: fetched at `bf8096c`; includes merged Entries 1–54 and baseline B1–B2.
-- `docs/stage13-preprocessing-test`: PR #32; main integrated locally, requirement at Entry 55;
-  merge commit, push and updated CI/review pending.
-- PRs #26 and #27 are merged. D33–D35 acceptance tracking remains separate from this update.
+- Local `main`: `638339b`, including merged PR #32 and baseline B1–B2.
+- Next branch: `chore/stage13-discrimination-ci-tests`; create before committing Entry 57.
+- PRs #26, #27 and #32 are merged. D33–D35 acceptance tracking remains separate.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
