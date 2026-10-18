@@ -62,6 +62,8 @@ documents, propose a fix, and wait for approval.
 - If results look too good, suspect leakage or shortcuts before celebrating.
 - At the end of each stage or session, update `docs/project_log.md`: append a new log entry, update
   Open items, rewrite Current status. Never edit old entries.
+- At the end of a stage, the owner writes its brief in `docs/stages/` (template:
+  `docs/stages/TEMPLATE.md`, decision D32).
 - **Human in the loop:** every AI-produced artifact (code, documents, analysis) is reviewed by a team
   member before it is accepted. AI output is never merged, cited or reported as verified without that
   review. Record AI assistance honestly in `docs/project_log.md` (which tool, for what).

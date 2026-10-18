@@ -844,6 +844,35 @@ this closeout branch contains documentation only.
 
 ---
 
+### Entry 37 — Stage briefs: structure, template and D32 (2026-10-17)
+
+**Authorship:** proposed and specified by Donia Mabrouk. The files were written by **Claude Code**;
+Donia reviews before push.
+
+**Why:** Donia's proposal. Execution Plan v2.1 §12 asks that everyone can explain the full pipeline
+end to end, not only their own part; with four owners and stages handed over between them, each
+member (and the professor) must be able to answer questions on any stage.
+
+**What:** on `docs/stage6-stage-briefs` (docs only, no code):
+- `docs/stages/TEMPLATE.md`: header block (stage, owner, reviewer(s), status, date, related PRs) and
+  8 sections with guidance and target lengths (2–4 pages in total).
+- `docs/stages/README.md`: purpose, how briefs differ from the log, the register and the design
+  notes, the process (owner writes at stage close; teach-back review; 5-minute teach-back by a
+  member who did not write the stage; Stage 19 report assembled from the briefs), a Mermaid overview of Stages 0–19 with
+  the four D26 hand-overs, and the table of all 20 brief files.
+- D32 (proposed) in `docs/decisions/README.md`; one line each in `CONTRIBUTING.md` §7, `AGENTS.md`
+  (Working mode) and the `docs/README.md` index; CHANGELOG line.
+
+**Not done:** no stage brief is written yet. First briefs: Donia (Stages 0–3), Malak (Stages 4–5).
+
+**Evidence [verified]:** `.venv` `python -m pytest -q`: `266 passed in 13.52s`; governance test
+`3 passed in 0.23s` (docs only; no test changed).
+
+**Gate:** PR ready for human review; D32 is approved by the team review of this PR. AI does not
+approve or merge.
+
+---
+
 ## Open items
 
 **GitHub / repo**
@@ -905,11 +934,16 @@ this closeout branch contains documentation only.
   and results PR).
 
 **Stage 12 ModelBundle (Entry 35)**
-- [ ] Human review of `feat/stage12-bundle-format`; CI green on Python 3.13.
+- [x] Human review of `feat/stage12-bundle-format`; CI green on Python 3.13: merged as PR #19.
 - [ ] Stage 12: add the profile-version check once the F3 profile format is frozen.
 - [ ] Stage 12/17: load the checkpoint from verified bytes (or re-verify at load).
 - [ ] Stage 8: save checkpoints in a non-executable form (safetensors or state_dict + weights_only=True).
 - [ ] F4: record manifest_sha256 in the freeze decision.
+
+**Stage briefs (D32, Entry 37)**
+- [x] Team review of `docs/stage6-stage-briefs` (approves D32): approved by all three, 2026-10-18.
+- [ ] Write stage briefs 00–03 (Donia).
+- [ ] Write stage briefs 04–05 (Malak).
 
 **Notebook (ported to the repo, `f8af88a`; pins and guards added in Entry 7)**
 - [x] Cell 1: real `REPO_URL`; clone with `-b <branch>`; print Python version and commit hash; capture and print the `pytest` output.
@@ -996,6 +1030,8 @@ this closeout branch contains documentation only.
 - **Stage 12 prep, ModelBundle format and verifying loader, merged** as PR #19 (`8b688dc`; Entry 35).
   The **Part C prep is complete**: harness, risk policy, run registry and bundle format are built and
   tested on synthetic data; the real Part C runs wait for F3 (preprocessing profile v1).
+- **Stage 5 administrative closeout merged** as PR #22 (`02f53e2`; Entry 36).
+- **Stage-briefs PR (D32, Entry 37)** approved by all three reviewers; merging next.
 
 **What we have:**
 - The approved FoR split and the F2 manifests and hash ledger (D28).
@@ -1009,16 +1045,19 @@ this closeout branch contains documentation only.
 - A tested ModelBundle format (`src/bundle/`) whose loader verifies every part before use,
   documented in `docs/model_bundle.md`.
 - Governance rules that keep the external set metadata-only until the one guarded Stage 13 run.
+- A stage-brief structure (`docs/stages/`, D32, Entry 37); no brief written yet.
 
 **Branches:**
-- `main`: through PR #19 at `8b688dc`.
-- `docs/stage5-closeout`: Stage 5 administrative closeout; documentation only.
+- `main`: through PR #22 at `02f53e2`.
+- `docs/stage6-stage-briefs`: stage-brief structure, template and D32, Entry 37; approved by all three, merging next.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
 
 **What's next:**
-1. Human review of this Stage 5 closeout PR; CI must be green on Python 3.13. AI does not merge.
-2. **Stage 6 is current:** preprocessing profile v1 + tests + compute benchmark, on a separate branch.
+1. Merge the stage-briefs PR (D32 approved); CI green on Python 3.13. AI does not merge.
+   Then Donia writes briefs 00–03 and Malak briefs 04–05.
+2. **Stage 6 is current (waiting for F3):** Malak is on preprocessing profile v1 + tests + compute
+   benchmark, on a separate branch.
 3. Khalil decides the DEEP-VOICE file-level view before Stage 13; verify the scikit-learn Colab install.
 4. Then run the real Part C work on the frozen F3 preprocessing profile.
