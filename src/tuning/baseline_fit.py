@@ -23,6 +23,7 @@ from numbers import Real
 from pathlib import Path
 
 import numpy as np
+import sklearn
 import yaml
 from sklearn.svm import SVC
 
@@ -42,6 +43,8 @@ _FIXED = {
 }
 _CONFIG_KEYS = set(_FIXED) | {"grid"}
 _GRID_KEYS = {"C", "gamma"}
+# SVC settings recorded for provenance (read from get_params() of every fit).
+SVC_SETTINGS = ("kernel", "tol", "shrinking", "cache_size", "max_iter", "class_weight")
 
 
 @dataclass(frozen=True)
@@ -129,13 +132,16 @@ def _to_json(report) -> str:
 
 @dataclass(frozen=True)
 class SelectionReport:
-    """All grid rows in grid order, the selected (C, gamma) and the split sizes used."""
+    """All grid rows in grid order, the selected (C, gamma), the split sizes used, and provenance:
+    the scikit-learn version and the SVC settings shared by every fit (SVC_SETTINGS)."""
 
     rows: tuple[GridRow, ...]
     selected_C: float
     selected_gamma: float
     n_train: int
     n_val_a: int
+    sklearn_version: str
+    svc_settings: dict
 
     def to_json(self) -> str:
         return _to_json(self)
@@ -186,9 +192,15 @@ def select_baseline(train_X, train_y, val_a_X, val_a_y, *, config: BaselineConfi
     z_train = (x_train - mean) / std
     z_val_a = (x_val_a - mean) / std
 
-    rows, models = [], {}
+    rows, models, settings = [], {}, None
     for C, gamma in config.grid():
         svc = SVC(kernel="rbf", C=C, gamma=gamma).fit(z_train, y_train)
+        params = svc.get_params()
+        fit_settings = {key: params[key] for key in SVC_SETTINGS}
+        if settings is None:
+            settings = fit_settings
+        elif fit_settings != settings:  # every fit is built the same way; guard it
+            raise RuntimeError(f"SVC settings differ across the grid: {fit_settings} vs {settings}")
         rate, _ = eer(y_val_a, svc.decision_function(z_val_a))
         rows.append(GridRow(C=C, gamma=gamma, val_a_eer=rate, n_support=int(svc.n_support_.sum())))
         models[(C, gamma)] = svc
@@ -199,6 +211,8 @@ def select_baseline(train_X, train_y, val_a_X, val_a_y, *, config: BaselineConfi
         selected_gamma=best.gamma,
         n_train=len(y_train),
         n_val_a=len(y_val_a),
+        sklearn_version=sklearn.__version__,
+        svc_settings=settings,
     )
     return models[(best.C, best.gamma)], (mean, std), report
 

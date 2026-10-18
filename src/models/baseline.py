@@ -42,6 +42,8 @@ N_FEATURES = 40  # MFCC mean + std of 20 coefficients (Protocol §3, §11)
 SCHEMA_VERSION = 1
 NPZ_NAME = "baseline.npz"
 JSON_NAME = "baseline.json"
+# Rows scored per batch: the kernel matrix is at most SCORE_BATCH x n_support_vectors floats.
+SCORE_BATCH = 2048
 
 _NPZ_KEYS = {"mean", "std", "support_vectors", "dual_coef"}
 _JSON_KEYS = {"schema_version", "version", "gamma", "C", "intercept", "threshold", "n_features"}
@@ -129,13 +131,24 @@ class BaselineModel:
         set_(self, "threshold", _finite_number("threshold", self.threshold))
 
     def score(self, features) -> np.ndarray:
-        """Continuous SVM score per row (higher = more likely spoof), same as SVC.decision_function."""
+        """Continuous SVM score per row (higher = more likely spoof), same as SVC.decision_function.
+
+        Rows are scored in batches of SCORE_BATCH, so the kernel matrix never exceeds
+        SCORE_BATCH x n_support_vectors. Stage 13 scores ~15,000 windows; one kernel matrix against
+        thousands of support vectors could need hundreds of MB in a single allocation. Each row's
+        score depends on that row only, so the result equals scoring all rows at once.
+        """
         z = (_features(features, "features") - self.mean) / self.std
         sv = self.support_vectors
-        # ||sv - z||^2 = ||z||^2 + ||sv||^2 - 2 z.sv; clipped at 0 against rounding.
-        sq = (z * z).sum(axis=1)[:, None] + (sv * sv).sum(axis=1)[None, :] - 2.0 * (z @ sv.T)
-        kernel = np.exp(-self.gamma * np.maximum(sq, 0.0))
-        return kernel @ self.dual_coef + self.intercept
+        sv_sq = (sv * sv).sum(axis=1)[None, :]
+        out = np.empty(z.shape[0])
+        for start in range(0, z.shape[0], SCORE_BATCH):
+            zb = z[start:start + SCORE_BATCH]
+            # ||sv - z||^2 = ||z||^2 + ||sv||^2 - 2 z.sv; clipped at 0 against rounding.
+            sq = (zb * zb).sum(axis=1)[:, None] + sv_sq - 2.0 * (zb @ sv.T)
+            kernel = np.exp(-self.gamma * np.maximum(sq, 0.0))
+            out[start:start + SCORE_BATCH] = kernel @ self.dual_coef + self.intercept
+        return out
 
     def predict(self, features) -> np.ndarray:
         """Forced-binary labels ("synthetic" / "authentic") at the D29 threshold; never "uncertain"."""

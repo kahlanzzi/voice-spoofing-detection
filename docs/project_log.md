@@ -1148,8 +1148,11 @@ review pending), on `feat/stage7-baseline-code`, stacked on `docs/stage6-d37-bas
   the lowest val-A EER (ties: smaller C, then smaller gamma), keeping all 16 rows in a report;
   `fit_baseline_threshold` sets the D29 threshold at the val-B EER point of `BaselineModel.score`;
   `fit_baseline` composes them. Documented in `docs/baseline.md`.
+- **Review fixes (B1–B2):** `BaselineModel.score` scores in batches of 2048 rows, so the Stage 13
+  kernel matrix stays bounded (same scores, ≤ 1e-12). The selection report records the
+  scikit-learn version and the SVC settings of every fit (provenance).
 
-**Checks [verified]:** full suite in the project venv (Python 3.14.7) `362 passed`; governance test
+**Checks [verified]:** full suite in the project venv (Python 3.14.7) `366 passed`; governance test
 `3 passed`. Tests prove val-A reaches only selection and val-B only the threshold (eer spy), the
 config equals D37 (drift guard), and refitting gives identical reports and artifact hash. On the
 synthetic data the selected configuration is C 10, gamma 0.025 (tied with C 100 at val-A EER 0.35;

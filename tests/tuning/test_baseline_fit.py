@@ -10,6 +10,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+import sklearn
 
 import src.tuning.baseline_fit as fit_module
 from src.evaluation.metrics import eer
@@ -23,7 +24,8 @@ from src.tuning.baseline_fit import (
     select_baseline,
 )
 
-CONFIG_PATH = Path(__file__).resolve().parents[2] / "configs" / "baseline.yaml"
+ROOT = Path(__file__).resolve().parents[2]
+CONFIG_PATH = ROOT / "configs" / "baseline.yaml"
 # Different sizes per split, so a spy can tell which split's labels reached eer().
 N_TRAIN, N_VAL_A, N_VAL_B = 60, 40, 50  # per class
 
@@ -173,6 +175,22 @@ def test_report_json_has_sorted_keys_and_all_rows(config):
     assert list(data) == sorted(data)
     assert len(data["rows"]) == 16
     assert list(data["rows"][0]) == ["C", "gamma", "n_support", "val_a_eer"]
+
+
+def test_report_records_sklearn_version_and_svc_settings(config):
+    # Provenance: the report names the scikit-learn version that fitted the grid (the pin in
+    # requirements.txt) and the SVC settings every fit used, which are scikit-learn's defaults.
+    pins = [line.split("==")[1].strip() for line in
+            (ROOT / "requirements.txt").read_text(encoding="utf-8").splitlines()
+            if line.startswith("scikit-learn==")]
+    _, selection, _ = _fit(config)
+    assert selection.sklearn_version == pins[0] == sklearn.__version__
+    expected = {"kernel": "rbf", "tol": 0.001, "shrinking": True, "cache_size": 200,
+                "max_iter": -1, "class_weight": None}
+    assert selection.svc_settings == expected
+    data = json.loads(selection.to_json())
+    assert data["sklearn_version"] == pins[0]
+    assert data["svc_settings"] == expected
 
 
 # 7. Invalid inputs ------------------------------------------------------------------------------

@@ -113,6 +113,20 @@ def test_from_sklearn_refuses_non_numeric_gamma(gamma):
 
 # 3. Sign and forced-binary label ---------------------------------------------------------------
 
+@pytest.mark.parametrize("n_rows", [1, 2048, 5000])
+def test_batched_score_equals_one_shot(monkeypatch, n_rows):
+    # Batching only splits the rows; each score depends on its own row, so scoring in batches of
+    # SCORE_BATCH (2048) must match one pass over all rows. Sizes below, equal to and above it.
+    assert baseline_module.SCORE_BATCH == 2048
+    model, _, _, _ = _fitted()
+    x = np.random.default_rng(2026).normal(0.0, 1.0, (n_rows, N_FEATURES)) * 10
+    batched = model.score(x)
+    monkeypatch.setattr(baseline_module, "SCORE_BATCH", 10**9)  # one batch = the one-shot formula
+    one_shot = model.score(x)
+    assert batched.shape == (n_rows,)
+    assert np.max(np.abs(batched - one_shot)) <= 1e-12
+
+
 def test_spoof_scores_higher_and_predict_is_forced_binary():
     model, _, x, y = _fitted(threshold=0.0)
     s = model.score(x)

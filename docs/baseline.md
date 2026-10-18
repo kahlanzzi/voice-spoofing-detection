@@ -45,7 +45,9 @@ hash.
    constant feature (std == 0) raises.
 2. `score(features)` standardizes with the stored mean and std, then computes
    `f(x) = Σ_i dual_coef_i · exp(−gamma · ‖sv_i − x‖²) + intercept` in NumPy (vectorized; the squared
-   distance is expanded and clipped at 0). Higher score = more likely spoof.
+   distance is expanded and clipped at 0). Higher score = more likely spoof. Rows are scored in
+   batches of `SCORE_BATCH = 2048`, so the kernel matrix is at most 2048 × n_support_vectors; the
+   result equals scoring all rows at once.
 3. `predict(features)` = `three_way_decisions(score, threshold, half_width=0)` from
    `src.risk.decisions`: `synthetic` if score ≥ threshold, else `authentic`; never `uncertain`.
 4. `from_sklearn` accepts only a fitted `SVC(kernel="rbf")` with `classes_ == [0, 1]` and copies
@@ -72,7 +74,11 @@ hash.
 - **(d) Shared band rule for the forced-binary label.** The label uses the one band rule in
   `src.risk.decisions` with `half_width = 0` (D29: no uncertain band, no calibration), so the
   baseline and the CNN are thresholded by the same code.
-- **(e) Layering.** Stage 13 imports this module to score, so it does not import `src.evaluation` or
+- **(e) Batched scoring for Stage 13 memory.** Stage 13 scores ~15,000 windows; one kernel matrix
+  against thousands of support vectors could need hundreds of MB in a single allocation. Batches
+  of 2048 rows bound it, and a test checks the batched score equals the one-shot formula (≤ 1e-12)
+  for 1, 2048 and 5000 rows.
+- **(f) Layering.** Stage 13 imports this module to score, so it does not import `src.evaluation` or
   `src.tuning` (research code), nor scikit-learn, pickle or joblib. Fitting lives in `src/tuning`
   (step B2).
 
@@ -85,6 +91,7 @@ Synthetic data: two 40-dimensional Gaussian classes with different feature scale
 | Train-only scaler | `test_fit_scaler_uses_train_only` (scaler = train statistics; val with different statistics does not change it) |
 | Scaler input checks | `test_fit_scaler_rejects_bad_input` (constant feature, NaN, inf, wrong shape) |
 | Scorer = scikit-learn | `test_score_equals_sklearn_decision_function` (C=1, gamma=0.025; train and shifted val; ≤ 1e-9) |
+| Batched scoring | `test_batched_score_equals_one_shot` (1, 2048, 5000 rows; ≤ 1e-12 vs one batch) |
 | Sign and label | `test_spoof_scores_higher_and_predict_is_forced_binary` (never `uncertain`; synthetic ⇔ score ≥ threshold) |
 | Round trip | `test_save_load_round_trip` (identical scores, no `.pkl`, npz loads with `allow_pickle=False`), `test_save_is_byte_deterministic` (two saves: identical bytes, same `artifact_sha256`), `test_save_refuses_non_empty_folder` |
 | Tampering | `test_tampering_changes_artifact_hash` (one value in npz or JSON), `test_load_rejects_corrupted_artifact` (renamed/extra key, schema, n_features, missing array, shape, NaN, object array, corrupt npz, missing file) |
@@ -115,8 +122,10 @@ scikit-learn) fits the baseline from the settings in `configs/baseline.yaml`.
    standardized train and compute the val-A EER of `decision_function` with `eer()`. The selected
    configuration is the minimum of the sort key (EER, C, gamma): lowest EER, then smaller C, then
    smaller gamma. Returns the SVC, the scaler (mean, std) and a `SelectionReport` (frozen): all 16
-   rows (C, gamma, val-A EER, number of support vectors), the selected (C, gamma), n_train and
-   n_val_a; `to_json()` writes sorted keys.
+   rows (C, gamma, val-A EER, number of support vectors), the selected (C, gamma), n_train,
+   n_val_a, the scikit-learn version (`sklearn.__version__`) and the SVC settings of every fit
+   (`kernel`, `tol`, `shrinking`, `cache_size`, `max_iter`, `class_weight`, read from
+   `get_params()`; they must be the same for all 16 fits); `to_json()` writes sorted keys.
 2. `fit_baseline_threshold(model_scores_val_b, val_b_y) = eer(val_b_y, scores)[1]`: the val-B EER
    point on the score scale (D29), forced binary.
 3. `fit_baseline(train…, val_a…, val_b…, *, config, version)` runs step 1, copies the SVC with
@@ -138,6 +147,10 @@ scikit-learn) fits the baseline from the settings in `configs/baseline.yaml`.
 - **(d) `decision_function` as the score (D37).** The D29 threshold is fitted on the same score the
   artifact produces and Stage 13 stores (`BaselineModel.score`), so threshold and scores share one
   scale; no probability outputs are used.
+- **(e) Provenance.** The fitted SVM depends on the scikit-learn version and on solver settings
+  (tolerance, shrinking, iteration limit, class weights) that D37 does not list. Recording them in
+  the report makes the fit reproducible and shows that the pinned version and the defaults were
+  used.
 
 ### Tests (`tests/tuning/test_baseline_fit.py`)
 
@@ -151,5 +164,6 @@ scales 1..40), train / val-A / val-B with 60 / 40 / 50 clips per class, seeds de
 | Tie rule | `test_tie_goes_to_smallest_c_then_smallest_gamma` (constant EER ⇒ C 0.1, gamma 0.001) |
 | Data separation (D9) | `test_val_a_only_for_selection_val_b_only_for_threshold` (eer spy; val-B change; scaler = train statistics) |
 | D29 threshold | `test_threshold_is_val_b_eer_point_of_model_score_and_predict_is_binary` (bit-for-bit; never `uncertain`) |
+| Provenance | `test_report_records_sklearn_version_and_svc_settings` (pinned version, default SVC settings, in the JSON) |
 | Determinism | `test_fitting_twice_is_identical` (reports, scores, `artifact_sha256`), `test_report_json_has_sorted_keys_and_all_rows` |
 | Refusals | `test_invalid_inputs_raise` (shape, one class, NaN, length, label 2, one-class val-B), `test_bad_config_raises` (extra/missing key, other score, unordered/negative/NaN/non-numeric grid, other tie rule), `test_select_refuses_non_config` |
