@@ -105,8 +105,8 @@ required CI check `checks`, branch up to date; no direct pushes.
 | 2 | Threat model → `docs/threat_model.md` | A · Donia | done |
 | 3 | Experimental Protocol v1.0 (freeze) | A · Donia (lead); sign-off: all four | done |
 | 4 | Leakage-aware split | B · Malak; review: Donia | done |
-| 5 | Dataset freeze (F2: manifests + hashes) | B · Malak; review: Donia | ← CURRENT |
-| 6 | Preprocessing profile v1 + tests + compute benchmark | B · Malak | |
+| 5 | Dataset freeze (F2: manifests + hashes) | B · Malak; review: Donia | done |
+| 6 | Preprocessing profile v1 + tests + compute benchmark | B · Malak | ← CURRENT |
 | 7 | Evaluation harness + MFCC/SVM baseline | C · Donia | |
 | 8–9 | CNN training + model selection (FoR val-A) | C · Donia | |
 | 10 | Risk policy + calibration fit (FoR val-B) | C · Donia | |
