@@ -995,12 +995,44 @@ explicit decisions before Stage 13; this integration approves none of them.
 
 ---
 
+### Entry 47 — Stage briefs 02 and 03 written (2026-10-18)
+
+**Authorship:** requested and specified by Donia Mabrouk. Both briefs were written by **Claude Code**
+(Claude Opus 5.5), an AI tool, from the repository documents only; Donia reviews before push.
+
+**What:** on `docs/stage6-briefs-02-03` (docs only, no code), from `docs/stages/TEMPLATE.md` (D32),
+in the format of the merged briefs 00 and 01:
+- `docs/stages/stage02-threat-model.md` (owner Donia; reviewer Khalil; PRs #3, #4, #5).
+- `docs/stages/stage03-protocol.md` (owner Donia, lead; reviewers Iheb, Malak, Khalil; PRs #7, #8,
+  #10, #16), with a Mermaid diagram of the freeze points F1–F4.
+- Each has all 8 sections; every number cites its file and section or log entry; section 7 answers
+  the 8 questions set by Donia. The threat model's base-rate numbers are stated as illustrative, not
+  measured. No DEEP-VOICE path, slug or folder name is written.
+- Code claims in the Stage 3 brief were checked in the code: `select_bundle_seed()`,
+  `fit_risk_policy()`, `three_way_decisions()`, `RISK_LEVELS`, `RunRegistry.claim()`, `load_bundle()`.
+- `docs/stages/README.md`: briefs 00 and 01 → "accepted" (merged as PR #25, `610a412`, after
+  teach-back review); 02 and 03 → "in review". CHANGELOG line.
+- stage00 and stage01 headers set to Accepted (PR #25).
+
+**Value rationale:** the reasons for the main "team choice" values (10% maximum deferral, ≥ 5 points
+for H5/H6, 2,000 bootstrap resamples, robustness levels) were written down on 2026-10-18 in
+`stage03-protocol.md` §4 ("Why these values"), as team reasoning; values unchanged, no data seen.
+The "~200 FAKE_other test clips" figure is taken from threat model §8 T5.
+
+**Evidence [verified]:** `.venv` (Python 3.14.7): `tests/governance` → `3 passed`; seeds, run
+registry, risk, tuning and bundle tests → `131 passed`; full suite in the PR report.
+
+**Gate:** briefs 02–03 in review; teach-back review by Khalil (Stage 2) and Iheb, Malak, Khalil
+(Stage 3) (D32). AI does not approve or merge.
+
+---
+
 ## Open items
 
 **Khalil: Stage 13 preparation**
 - [x] PR #21 merged into main as `65ce1d2`; PR #23 base changed to main.
 - [x] PR #23 integrated and merged as `3f2f4bb` after passing CI (Entries 42–44).
-- [ ] Complete PR #24 integration and updated checks (Entries 45–46); retarget to main before merge.
+- [x] Complete PR #24 integration and updated checks (Entries 45–46): merged as `6786c12` (git log).
 - [ ] Complete clustered CIs, speaker completeness checks and filter/file-level reporting.
 - [ ] Before Stage 13, approve and record the speaker-average undefined-value convention alongside
   the file-level view and governance allowlist decisions. No convention is approved by this update.
@@ -1072,8 +1104,8 @@ explicit decisions before Stage 13; this integration approves none of them.
 
 **Stage briefs (D32, Entry 37)**
 - [x] Team review of `docs/stage6-stage-briefs` (approves D32): approved by all three, 2026-10-18.
-- [ ] Write stage briefs 00–03 (Donia). 00–01 in review (Entry 38: teach-back by Iheb and Malak);
-  02–03 to write.
+- [ ] Write stage briefs 00–03 (Donia). 00–01 accepted (merged as PR #25 after teach-back review);
+  02–03 in review (Entry 47: teach-back by Khalil for Stage 2; Iheb, Malak and Khalil for Stage 3).
 - [ ] Write stage briefs 04–05 (Malak).
 
 **Notebook (ported to the repo, `f8af88a`; pins and guards added in Entry 7)**
@@ -1153,8 +1185,8 @@ explicit decisions before Stage 13; this integration approves none of them.
 
 **What was done:**
 - **PR #21 merged** as `65ce1d2`; its documentation is in main.
-- **PR #23 merged** as `3f2f4bb`: per-speaker helper and tests (Entries 42–44).
-- **PR #24 integration in progress:** installed speaker-average helper and tests (Entries 45–46).
+- **PR #23 merged** as `3f2f4bb` (per-speaker helper) and **PR #24 merged** as `6786c12`
+  (speaker-average helper) (Entries 42–46).
 - **Lab 6 closeout in progress:** factual report sections and PR #21 CI evidence are documented (Entry 40); Donia's reported test is now recorded (Entry 41); her extension version, Iheb's answer and human verification/review remain pending.
 - **Stages 0–3 and Part A are complete.** Protocol v1.0 is frozen as F1 (PR #10).
 - **Stage 4 is complete** (Entry 28): PR #12 merged as `865faf4`.
@@ -1169,12 +1201,15 @@ explicit decisions before Stage 13; this integration approves none of them.
   tested on synthetic data; the real Part C runs wait for F3 (preprocessing profile v1).
 - **Stage 5 administrative closeout merged** as PR #22 (`02f53e2`; Entry 36).
 - **Stage-briefs PR (D32, Entry 37)** merged as PR #20 (`567f4aa`).
-- **Stage briefs 00 (setup) and 01 (dataset audit)** written (Entry 38); in review.
+- **Stage briefs 00 and 01** accepted: merged as PR #25 (`610a412`) after teach-back review.
+- **Stage briefs 02 (threat model) and 03 (protocol)** written on `docs/stage6-briefs-02-03`
+  (Entry 47); in review.
 
 **What we have:**
 - The approved FoR split and the F2 manifests and hash ledger (D28).
 - One shared, tested evaluation harness (`src/evaluation/`) for the baseline, the CNN and the
-  external run, documented in `docs/evaluation_harness.md`.
+  external run, documented in `docs/evaluation_harness.md`, plus per-speaker and speaker-average
+  helpers for Stage 13.
 - Pre-declared rules for the baseline threshold, CNN selection and the single Stage 11 run (D29–D31).
 - A tested risk-policy fit (`src/tuning`) and core apply / save / load (`src/risk`), documented in
   `docs/risk_policy.md`; not yet fitted on real val-B scores.
@@ -1183,21 +1218,19 @@ explicit decisions before Stage 13; this integration approves none of them.
 - A tested ModelBundle format (`src/bundle/`) whose loader verifies every part before use,
   documented in `docs/model_bundle.md`.
 - Governance rules that keep the external set metadata-only until the one guarded Stage 13 run.
-- A stage-brief structure (`docs/stages/`, D32, Entry 37) and the first two briefs (00, 01; in review).
+- Stage briefs (`docs/stages/`, D32): 00–01 accepted, 02–03 in review.
 
 **Branches:**
-- `main`: fetched at `3f2f4bb`, including PRs #21 and #23 and merged Entries 1–44.
-- `feat/stage13-speaker-analysis` (PR #23): merged; branch retained for the stacked follow-up.
-- `feat/stage13-speaker-average` (PR #24): integrating main; log entries 45–46.
-  Base change to main, updated checks and review remain before merge.
+- `main`: at `6786c12`, including PRs #21, #23, #24 and #25 and merged Entries 1–46.
+- `docs/stage6-briefs-02-03`: briefs 02–03 and Entry 47; not pushed yet; Donia reviews, then pushes
+  and the team opens the PR.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
 
 **What's next:**
-1. Complete PR #24 integration and checks; retarget to main before merge.
-   Briefs 00–01 are in main; teach-back review remains tracked separately. Donia prepares
-   briefs 02–03 and Malak briefs 04–05. AI does not merge.
+1. Teach-back review of briefs 02 (Khalil) and 03 (Iheb, Malak, Khalil); Malak writes briefs 04–05.
+   AI does not merge.
 2. **Stage 6 is current (waiting for F3):** Malak is on preprocessing profile v1 + tests + compute
    benchmark, on a separate branch.
 3. Before Stage 13, record approved decisions for the file-level view, speaker-average undefined
