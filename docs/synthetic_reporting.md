@@ -18,7 +18,7 @@ equal-speaker versus pooled accuracy; filter counts; a missing-speaker roster ch
 and a source-speaker clustered accuracy interval against a count-based oracle.
 The interval uses existing defaults: 2,000 draws, seed 2026, 95% percentile CI.
 All accuracy resamples are defined, so n_invalid is zero; existing bootstrap unit
-tests cover invalid resamples. This does not implement macro-mean CIs or EER/AUC CIs.
+tests cover invalid resamples. This original fixture does not implement macro-mean CIs.
 
 The missing-speaker test documents that the current helper reports observed IDs
 only: the separate production completeness/reporting layer is still required.
@@ -26,3 +26,17 @@ The speaker-average test uses the existing explicit `raise` development option
 on fully defined metrics; no final D33 reporting policy is selected. File means,
 zero-window report serialization and guarded execution remain separate work.
 No synthetic CSV, audio, model checkpoint or dataset is committed.
+
+## Clustered discrimination checks
+
+`tests/evaluation/test_synthetic_discrimination.py` adds two D4/D11 integration
+cases, one for EER and one for ROC-AUC. Eight invented, unequal-size speakers
+have tied two-level scores and deliberately single-class membership. This
+stress fixture differs from the mixed-class fixture above: some bootstrap
+draws lack one class and must be excluded and counted in `n_invalid`.
+An independent aggregate-count oracle checks the full-data estimate, percentile
+bounds and exact invalid count for 2,000 speaker draws with seed 2026.
+The two-score ROC has vertices (0,0), (FPR,TPR), (1,1); its area and intersection
+with FNR=FPR provide the oracle without calling the harness metrics.
+These tests exercise existing pooled metrics only; they do not implement a
+production report, select proposed D33 conventions or access any real data.
