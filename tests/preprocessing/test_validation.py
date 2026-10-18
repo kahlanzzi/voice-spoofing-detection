@@ -10,6 +10,7 @@ import pytest
 from src.preprocessing import PreprocessingError, load_profile
 from src.preprocessing.validation import (
     cosine_similarity,
+    padding_summary,
     relative_l2,
     resolve_audio,
     shortcut_screen,
@@ -31,11 +32,45 @@ def test_shortcut_stats_and_screen_find_planted_loudness_cue(profile):
         ("REAL", "REAL", quiet), ("FAKE", "FAKE_mp3", loud),
         ("REAL", "REAL", quiet), ("FAKE", "FAKE_other", loud),
     ):
-        rows.append({"label": label, "subgroup": subgroup, "split": "train", **shortcut_stats(waveform, profile)})
+        rows.append({
+            "label": label,
+            "subgroup": subgroup,
+            "split": "train",
+            "padding_samples": 0,
+            "padding_fraction": 0.0,
+            **shortcut_stats(waveform, profile),
+        })
     screen = shortcut_screen(pd.DataFrame(rows), profile)
     rms = screen[(screen.scope == "train") & (screen.comparison == "FAKE_vs_REAL") & (screen.feature == "rms_dbfs")].iloc[0]
     assert rms.auc_separability == 1.0
     assert rms.flag == "HIGH"
+
+
+def test_padding_screen_and_summary_find_planted_subgroup_cue(profile):
+    rows = pd.DataFrame([
+        {"label": "REAL", "subgroup": "REAL", "split": "train", "padding_samples": 0,
+         "padding_fraction": 0.0, "rms_dbfs": -20.0, "silence_frac": 0.1, "bw99_hz": 7000.0},
+        {"label": "FAKE", "subgroup": "FAKE_mp3", "split": "train", "padding_samples": 8000,
+         "padding_fraction": 0.25, "rms_dbfs": -20.0, "silence_frac": 0.1, "bw99_hz": 7000.0},
+        {"label": "REAL", "subgroup": "REAL", "split": "train", "padding_samples": 0,
+         "padding_fraction": 0.0, "rms_dbfs": -20.0, "silence_frac": 0.1, "bw99_hz": 7000.0},
+        {"label": "FAKE", "subgroup": "FAKE_other", "split": "train", "padding_samples": 16000,
+         "padding_fraction": 0.5, "rms_dbfs": -20.0, "silence_frac": 0.1, "bw99_hz": 7000.0},
+    ])
+    screen = shortcut_screen(rows, profile)
+    padding = screen[
+        (screen.scope == "train")
+        & (screen.comparison == "FAKE_vs_REAL")
+        & (screen.feature == "padding_fraction")
+    ].iloc[0]
+    assert padding.auc_separability == 1.0
+    assert padding.flag == "HIGH"
+
+    summary = padding_summary(rows).set_index(["scope", "grouping", "value"])
+    assert summary.loc[("train", "label", "REAL"), "mean_padding_samples"] == 0.0
+    assert summary.loc[("train", "label", "FAKE"), "mean_padding_samples"] == 12000.0
+    assert summary.loc[("train", "subgroup", "FAKE_mp3"), "mean_padding_samples"] == 8000.0
+    assert summary.loc[("train", "subgroup", "FAKE_other"), "mean_padding_samples"] == 16000.0
 
 
 def test_similarity_metrics_have_exact_identity_and_detect_change():

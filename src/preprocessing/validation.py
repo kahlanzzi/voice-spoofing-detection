@@ -30,7 +30,7 @@ F2_COLUMNS = ("path", "label", "subgroup", "group", "split", "hash")
 LABELS = {"REAL", "FAKE"}
 SUBGROUPS = {"REAL", "FAKE_mp3", "FAKE_other"}
 SPLITS = {"train", "val-A", "val-B", "test"}
-FEATURES = ("rms_dbfs", "silence_frac", "bw99_hz")
+FEATURES = ("rms_dbfs", "silence_frac", "bw99_hz", "padding_fraction")
 
 
 def sha256_file(path: Path) -> str:
@@ -182,6 +182,33 @@ def shortcut_screen(rows: pd.DataFrame, profile: PreprocessingProfile) -> pd.Dat
     return pd.DataFrame(output)
 
 
+def padding_summary(rows: pd.DataFrame) -> pd.DataFrame:
+    """Summarize post-trim zero-padding by split scope, class and F2 subgroup."""
+    output = []
+    for scope, scoped in (("train", rows[rows.split == "train"]), ("all", rows)):
+        for grouping, values in (("label", sorted(LABELS)), ("subgroup", sorted(SUBGROUPS))):
+            for value in values:
+                part = scoped[scoped[grouping] == value]
+                if part.empty:
+                    raise PreprocessingError(
+                        f"Cannot summarize padding: {scope} scope has no {grouping}={value} rows"
+                    )
+                samples = part["padding_samples"].to_numpy(dtype=np.int64)
+                fractions = part["padding_fraction"].to_numpy(dtype=np.float64)
+                output.append({
+                    "scope": scope,
+                    "grouping": grouping,
+                    "value": value,
+                    "rows": int(len(part)),
+                    "mean_padding_samples": float(samples.mean()),
+                    "median_padding_samples": float(np.median(samples)),
+                    "p95_padding_samples": float(np.quantile(samples, 0.95)),
+                    "max_padding_samples": int(samples.max()),
+                    "mean_padding_fraction": float(fractions.mean()),
+                })
+    return pd.DataFrame(output)
+
+
 def relative_l2(actual: np.ndarray, expected: np.ndarray) -> float:
     denominator = float(np.linalg.norm(expected))
     difference = float(np.linalg.norm(actual - expected))
@@ -241,7 +268,13 @@ def invariance_rows(
     return pd.DataFrame(results)
 
 
-def _write_report(out: Path, report: dict[str, Any], screen: pd.DataFrame, invariance: pd.DataFrame) -> None:
+def _write_report(
+    out: Path,
+    report: dict[str, Any],
+    screen: pd.DataFrame,
+    padding: pd.DataFrame,
+    invariance: pd.DataFrame,
+) -> None:
     out.mkdir(parents=True, exist_ok=False)
     (out / "shortcut_screen.csv").write_text(screen.to_csv(index=False), encoding="utf-8", newline="")
     (out / "invariance.csv").write_text(invariance.to_csv(index=False), encoding="utf-8", newline="")
@@ -264,6 +297,9 @@ def _write_report(out: Path, report: dict[str, Any], screen: pd.DataFrame, invar
         "",
         "## Shortcut re-screen",
         df_to_md(screen),
+        "",
+        "## Post-trim padding by class and subgroup",
+        df_to_md(padding),
         "",
         "## Invariance summary",
         df_to_md(pd.DataFrame([report["invariance"]])),
@@ -288,10 +324,14 @@ def run(root: Path, manifest_path: Path, profile_path: Path, out: Path) -> dict[
         prepared = preprocess_waveform(waveform, sample_rate, profile)
         processed_rows.append({
             "path": row["path"], "label": row["label"], "subgroup": row["subgroup"],
-            "split": row["split"], **shortcut_stats(prepared.waveform, profile),
+            "split": row["split"],
+            "padding_samples": prepared.padding_samples,
+            "padding_fraction": prepared.padding_samples / profile.samples,
+            **shortcut_stats(prepared.waveform, profile),
         })
     processed = pd.DataFrame(processed_rows)
     screen = shortcut_screen(processed, profile)
+    padding = padding_summary(processed)
     invariance = invariance_rows(root, manifest, profile)
 
     train_rms = screen[
@@ -302,11 +342,20 @@ def run(root: Path, manifest_path: Path, profile_path: Path, out: Path) -> dict[
         profile.loudness["mode"] == "speech_rms"
         or float(train_rms.auc_separability) < float(profile.loudness["separability_auc_threshold"])
     )
+    padding_measurements_valid = bool(
+        processed["padding_samples"].between(0, profile.samples).all()
+        and processed["padding_samples"].map(lambda value: isinstance(value, (int, np.integer))).all()
+        and np.isclose(
+            processed["padding_fraction"],
+            processed["padding_samples"] / profile.samples,
+        ).all()
+    )
     checks = {
         "f2_manifest_verified": True,
         "all_sample_hashes_verified": True,
         "all_rows_processed": len(processed) == F2_ROWS,
         "outputs_finite": bool(processed[list(FEATURES)].apply(np.isfinite).all().all()),
+        "padding_measurements_valid": padding_measurements_valid,
         "loudness_decision_rule_pass": bool(loudness_rule_pass),
         "invariance_pass": bool(invariance["pass"].all()),
         "invariance_rows_complete": len(invariance) == 3 * 10 * 3 * 2,
@@ -328,6 +377,7 @@ def run(root: Path, manifest_path: Path, profile_path: Path, out: Path) -> dict[
         "for2sec_rows": len(processed),
         "audio_scope": "FoR only; DEEP-VOICE not accessed",
         "shortcut_flags": screen[screen.flag != "LOW"].to_dict(orient="records"),
+        "padding_summary": padding.to_dict(orient="records"),
         "invariance": {
             "rows": len(invariance),
             "max_relative_l2_error": float(invariance.relative_l2_error.max()),
@@ -336,7 +386,7 @@ def run(root: Path, manifest_path: Path, profile_path: Path, out: Path) -> dict[
         "checks": checks,
         "all_checks_pass": all(checks.values()),
     }
-    _write_report(out, report, screen, invariance)
+    _write_report(out, report, screen, padding, invariance)
     return report
 
 

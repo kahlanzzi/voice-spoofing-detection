@@ -44,6 +44,7 @@ def test_silence_is_trimmed_then_center_padded(profile):
     signal = np.concatenate((np.zeros(3200), _tone(seconds=1.6), np.zeros(3200))).astype(np.float32)
     result = preprocess_waveform(signal, 16000, profile)
     assert result.trimmed is True
+    assert result.padding_samples == 6400
     assert result.waveform.shape == (32000,)
     assert np.count_nonzero(result.waveform[:3000]) == 0
     assert np.count_nonzero(result.waveform[-3000:]) == 0
@@ -53,6 +54,7 @@ def test_all_silent_is_preserved_and_processable(profile):
     result = preprocess_waveform(np.zeros(32000, dtype=np.float32), 16000, profile)
     assert result.speech_fraction == 0.0
     assert result.trimmed is False
+    assert result.padding_samples == 0
     assert np.array_equal(result.waveform, np.zeros(32000, dtype=np.float32))
 
 
@@ -60,6 +62,7 @@ def test_center_crop_is_deterministic(profile):
     long = np.arange(33000, dtype=np.float32) / 33000
     result = preprocess_waveform(long, 16000, profile)
     assert result.waveform.shape == (32000,)
+    assert result.padding_samples == 0
     assert result.waveform[0] == long[500]
 
 

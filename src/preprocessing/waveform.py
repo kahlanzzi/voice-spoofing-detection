@@ -19,6 +19,7 @@ class WaveformResult:
     speech_fraction: float
     input_sample_rate: int
     trimmed: bool
+    padding_samples: int
 
 
 def _mono(waveform: np.ndarray, channel_axis: int) -> np.ndarray:
@@ -131,6 +132,7 @@ def preprocess_waveform(
     fraction = float(mask.mean())
     trimmed, did_trim = _trim_edges(resampled, mask, profile)
     normalized = _normalize_loudness(trimmed, profile)
+    padding_samples = max(0, profile.samples - normalized.size)
     fixed = _fix_length(normalized, profile.samples)
     if fixed.shape != (profile.samples,) or fixed.dtype != np.float32 or not np.isfinite(fixed).all():
         raise PreprocessingError("waveform preprocessing violated the output contract")
@@ -140,4 +142,5 @@ def preprocess_waveform(
         speech_fraction=fraction,
         input_sample_rate=int(sample_rate),
         trimmed=did_trim,
+        padding_samples=padding_samples,
     )
