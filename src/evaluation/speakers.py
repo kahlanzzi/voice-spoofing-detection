@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from src.evaluation.metrics import (
+    _validate,
     BinaryMetrics,
     ThreeWayMetrics,
     binary_metrics,
@@ -14,7 +15,6 @@ from src.evaluation.metrics import (
     three_way_decisions,
     three_way_metrics,
 )
-from src.risk.decisions import _validate
 
 
 @dataclass(frozen=True)

@@ -13,6 +13,8 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - Per-source-speaker metric tables reusing the evaluation harness, with synthetic tests and usage documentation (D4, D19; Stage 13 preparation).
 - Evidence-backed Lab 6 report sections covering team roles, setup, CI, workflow and data rules, with remaining closeout checks listed.
 - Khalil's local setup verification, troubleshooting notes and Codex rule-check answer in the Lab 6 setup report.
+- Stage briefs 00 (setup) and 01 (dataset audit) (`docs/stages/`, D32).
+- Stage briefs structure and template (`docs/stages/`, D32).
 - ModelBundle format and verifying loader (hashes, versions, path safety, immutability, provenance).
 - Append-only, hash-chained run registry for D31 (claim before run).
 - Stage 10 risk policy: Platt calibration with smoothed targets, val-B EER threshold, uncertain band with ≤ 10% deferral, confidence, risk level, strict JSON policy file.
@@ -37,6 +39,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - `docs/experimental_protocol.md` v1.0 frozen (F1): all sections decided from the team-accepted defaults.
 
 ### Changed
+- Stage 5 closed after PR #15 review and merge: D28 approved, F2 effective, Stage 6 current.
 - Band rule moved to the core (`src/risk/decisions.py`); the evaluation harness re-exports it.
 - Protocol clarifications D29–D31 (baseline threshold, CNN search space with seed and tie rule, Stage 11 run once) and the Protocol §14 row.
 - Repo transferred to `kahlanzzi/voice-spoofing-detection` (2026-10-14); repo URLs updated.

@@ -62,6 +62,8 @@ documents, propose a fix, and wait for approval.
 - If results look too good, suspect leakage or shortcuts before celebrating.
 - At the end of each stage or session, update `docs/project_log.md`: append a new log entry, update
   Open items, rewrite Current status. Never edit old entries.
+- At the end of a stage, the owner writes its brief in `docs/stages/` (template:
+  `docs/stages/TEMPLATE.md`, decision D32).
 - **Human in the loop:** every AI-produced artifact (code, documents, analysis) is reviewed by a team
   member before it is accepted. AI output is never merged, cited or reported as verified without that
   review. Record AI assistance honestly in `docs/project_log.md` (which tool, for what).
@@ -105,8 +107,8 @@ required CI check `checks`, branch up to date; no direct pushes.
 | 2 | Threat model → `docs/threat_model.md` | A · Donia | done |
 | 3 | Experimental Protocol v1.0 (freeze) | A · Donia (lead); sign-off: all four | done |
 | 4 | Leakage-aware split | B · Malak; review: Donia | done |
-| 5 | Dataset freeze (F2: manifests + hashes) | B · Malak; review: Donia | ← CURRENT |
-| 6 | Preprocessing profile v1 + tests + compute benchmark | B · Malak | |
+| 5 | Dataset freeze (F2: manifests + hashes) | B · Malak; review: Donia | done |
+| 6 | Preprocessing profile v1 + tests + compute benchmark | B · Malak | ← CURRENT |
 | 7 | Evaluation harness + MFCC/SVM baseline | C · Donia | |
 | 8–9 | CNN training + model selection (FoR val-A) | C · Donia | |
 | 10 | Risk policy + calibration fit (FoR val-B) | C · Donia | |
