@@ -941,7 +941,7 @@ approve or merge.
 - [ ] F4: record manifest_sha256 in the freeze decision.
 
 **Stage briefs (D32, Entry 37)**
-- [ ] Team review of `docs/stage6-stage-briefs` (approves D32).
+- [x] Team review of `docs/stage6-stage-briefs` (approves D32): approved by all three, 2026-10-18.
 - [ ] Write stage briefs 00–03 (Donia).
 - [ ] Write stage briefs 04–05 (Malak).
 
