@@ -146,8 +146,8 @@ def from_sklearn(svc, *, mean, std, threshold, version: str) -> BaselineModel:
     """Copy a fitted sklearn.svm.SVC(kernel="rbf") with classes [0, 1] into a BaselineModel.
 
     With classes [0, 1], SVC.decision_function is positive towards class 1 (spoof), so the copied
-    dual_coef_ and intercept_ give the same sign convention. gamma is the numeric value the SVC
-    used (_gamma, which resolves "scale" / "auto"), not the constructor argument.
+    dual_coef_ and intercept_ give the same sign convention. D37 fixes gamma as explicit numbers,
+    so the public svc.gamma must be a number; "scale" / "auto" are refused.
     """
     if getattr(svc, "kernel", None) != "rbf":
         raise ValueError(f"svc must use kernel='rbf', got {getattr(svc, 'kernel', None)!r}")
@@ -159,6 +159,9 @@ def from_sklearn(svc, *, mean, std, threshold, version: str) -> BaselineModel:
     dual = np.asarray(svc.dual_coef_)
     if dual.shape[0] != 1:
         raise ValueError(f"svc.dual_coef_ must have one row (binary SVC), got shape {dual.shape}")
+    gamma = getattr(svc, "gamma", None)
+    if isinstance(gamma, bool) or not isinstance(gamma, Real):
+        raise ValueError(f"svc.gamma must be an explicit number (D37 grid), got {gamma!r}")
     return BaselineModel(
         version=version,
         mean=mean,
@@ -166,10 +169,26 @@ def from_sklearn(svc, *, mean, std, threshold, version: str) -> BaselineModel:
         support_vectors=svc.support_vectors_,
         dual_coef=dual[0],
         intercept=float(np.asarray(svc.intercept_)[0]),
-        gamma=float(svc._gamma),
+        gamma=float(gamma),
         C=float(svc.C),
         threshold=threshold,
     )
+
+
+def _write_npz(path: Path, arrays: dict[str, np.ndarray]) -> None:
+    """Write arrays as an uncompressed .npz with fixed metadata, so equal arrays give equal bytes.
+
+    np.savez stamps each entry with the current time; here every entry ("<name>.npy", sorted by
+    name) gets a fixed date and fixed system/permission fields, whatever the OS. np.load reads it.
+    """
+    with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_STORED) as zf:
+        for name in sorted(arrays):
+            info = zipfile.ZipInfo(f"{name}.npy", date_time=(1980, 1, 1, 0, 0, 0))
+            info.compress_type = zipfile.ZIP_STORED
+            info.create_system = 3  # fixed (ZipInfo defaults to the running OS)
+            info.external_attr = 0o644 << 16
+            with zf.open(info, "w") as f:
+                np.lib.format.write_array(f, np.ascontiguousarray(arrays[name]), allow_pickle=False)
 
 
 def save(model: BaselineModel, directory) -> Path:
@@ -198,13 +217,12 @@ def save(model: BaselineModel, directory) -> Path:
     try:
         npz_path = directory / NPZ_NAME
         written.append(npz_path)
-        np.savez(
-            npz_path,
-            mean=model.mean,
-            std=model.std,
-            support_vectors=model.support_vectors,
-            dual_coef=model.dual_coef,
-        )
+        _write_npz(npz_path, {
+            "mean": model.mean,
+            "std": model.std,
+            "support_vectors": model.support_vectors,
+            "dual_coef": model.dual_coef,
+        })
         json_path = directory / JSON_NAME
         written.append(json_path)
         json_path.write_text(text, encoding="utf-8")

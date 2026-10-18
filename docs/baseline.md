@@ -32,8 +32,11 @@ The artifact is one folder holding exactly two files:
 
 `artifact_sha256` is the SHA-256 of the ASCII text
 `baseline.json:<sha256 of baseline.json>\nbaseline.npz:<sha256 of baseline.npz>\n`, the single value
-the F4 record stores (D36). It identifies the written files; `np.savez` stores a timestamp, so
-saving the same model again gives a different hash.
+the F4 record stores (D36). The artifact is byte-deterministic: `baseline.npz` is an uncompressed
+zip with one `<name>.npy` entry per array (sorted by name, written by `np.lib.format.write_array`
+with `allow_pickle=False`), each with a fixed date (1980-01-01) and fixed system and permission
+fields, and the JSON has sorted keys. Saving the same model again gives identical bytes and the same
+hash.
 
 ## Method
 
@@ -45,9 +48,10 @@ saving the same model again gives a different hash.
 3. `predict(features)` = `three_way_decisions(score, threshold, half_width=0)` from
    `src.risk.decisions`: `synthetic` if score ≥ threshold, else `authentic`; never `uncertain`.
 4. `from_sklearn` accepts only a fitted `SVC(kernel="rbf")` with `classes_ == [0, 1]` and copies
-   `support_vectors_`, `dual_coef_[0]`, `intercept_[0]`, the numeric gamma used (`_gamma`, which
-   resolves `"scale"` / `"auto"`) and `C`.
-5. `save` refuses a non-empty folder, writes the npz then the JSON (no NaN allowed), and removes what
+   `support_vectors_`, `dual_coef_[0]`, `intercept_[0]`, the public `gamma` and `C`. D37 fixes gamma
+   as explicit numbers, so `gamma` must be numeric: `"scale"` and `"auto"` are refused.
+5. `save` refuses a non-empty folder, writes the npz (fixed metadata, see Format) then the JSON (no
+   NaN allowed), and removes what
    it wrote if a write fails. `load` reads the JSON (strict keys, schema 1, 40 features) and the npz
    with `allow_pickle=False` (strict keys, float arrays), and `BaselineModel` checks shapes and
    finiteness; any problem raises `ValueError`.
@@ -60,8 +64,7 @@ saving the same model again gives a different hash.
   without the scikit-learn version that wrote them.
 - **(b) Own NumPy scorer, verified against scikit-learn.** Stage 13 then scores without
   scikit-learn, from the stored numbers alone. The formula is the RBF decision function itself, and
-  the tests check it equals `SVC.decision_function` within 1e-9 (observed max difference 4.7e-15),
-  including for `gamma="scale"`.
+  the tests check it equals `SVC.decision_function` within 1e-9 (observed max difference 4.7e-15).
 - **(c) Train-only scaler stored in the artifact.** RBF-SVMs depend strongly on feature scale (D37).
   Fitting the scaler on train only keeps val-A, val-B, test and the external windows out of the fit;
   storing it in the artifact means the same scaling is applied everywhere and is covered by the hash.
@@ -80,9 +83,9 @@ Synthetic data: two 40-dimensional Gaussian classes with different feature scale
 |---|---|
 | Train-only scaler | `test_fit_scaler_uses_train_only` (scaler = train statistics; val with different statistics does not change it) |
 | Scaler input checks | `test_fit_scaler_rejects_bad_input` (constant feature, NaN, inf, wrong shape) |
-| Scorer = scikit-learn | `test_score_equals_sklearn_decision_function` (C=1, gamma=0.025; train and shifted val; ≤ 1e-9), `test_from_sklearn_resolves_gamma_scale` |
+| Scorer = scikit-learn | `test_score_equals_sklearn_decision_function` (C=1, gamma=0.025; train and shifted val; ≤ 1e-9) |
 | Sign and label | `test_spoof_scores_higher_and_predict_is_forced_binary` (never `uncertain`; synthetic ⇔ score ≥ threshold) |
-| Round trip | `test_save_load_round_trip` (identical scores, no `.pkl`, npz loads with `allow_pickle=False`), `test_save_refuses_non_empty_folder` |
+| Round trip | `test_save_load_round_trip` (identical scores, no `.pkl`, npz loads with `allow_pickle=False`), `test_save_is_byte_deterministic` (two saves: identical bytes, same `artifact_sha256`), `test_save_refuses_non_empty_folder` |
 | Tampering | `test_tampering_changes_artifact_hash` (one value in npz or JSON), `test_load_rejects_corrupted_artifact` (renamed/extra key, schema, n_features, missing array, shape, NaN, object array, corrupt npz, missing file) |
-| Refusals | `test_from_sklearn_refuses_other_classes_and_kernels` (labels 1/2, three classes, linear/poly/sigmoid, unfitted), `test_model_rejects_invalid_fields` |
+| Refusals | `test_from_sklearn_refuses_other_classes_and_kernels` (labels 1/2, three classes, linear/poly/sigmoid, unfitted), `test_from_sklearn_refuses_non_numeric_gamma` (`"scale"`, `"auto"`), `test_model_rejects_invalid_fields` |
 | Layering | `test_baseline_does_not_import_research_code_or_sklearn` |

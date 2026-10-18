@@ -101,16 +101,14 @@ def test_score_equals_sklearn_decision_function():
         assert np.max(np.abs(model.score(features) - expected)) <= 1e-9
 
 
-def test_from_sklearn_resolves_gamma_scale():
-    # gamma="scale" is a string on the estimator; the artifact must store the number actually used.
+@pytest.mark.parametrize("gamma", ["scale", "auto"])
+def test_from_sklearn_refuses_non_numeric_gamma(gamma):
+    # D37 fixes gamma as explicit numbers; a data-dependent string would hide the value used.
     x, y = _data()
     mean, std = fit_scaler(x)
-    z = (x - mean) / std
-    svc = SVC(kernel="rbf", C=10, gamma="scale").fit(z, y)
-    model = from_sklearn(svc, mean=mean, std=std, threshold=0.0, version="v")
-    assert model.gamma == pytest.approx(1.0 / (N_FEATURES * z.var()))
-    assert model.C == 10.0
-    assert np.max(np.abs(model.score(x) - svc.decision_function(z))) <= 1e-9
+    svc = SVC(kernel="rbf", C=1, gamma=gamma).fit((x - mean) / std, y)
+    with pytest.raises(ValueError, match="gamma"):
+        from_sklearn(svc, mean=mean, std=std, threshold=0.0, version="v")
 
 
 # 3. Sign and forced-binary label ---------------------------------------------------------------
@@ -142,6 +140,17 @@ def test_save_load_round_trip(tmp_path):
     # The arrays load without pickle.
     with np.load(out / NPZ_NAME, allow_pickle=False) as npz:
         assert set(npz.files) == {"mean", "std", "support_vectors", "dual_coef"}
+
+
+def test_save_is_byte_deterministic(tmp_path):
+    # Fixed zip metadata: the same model saved twice gives identical bytes and the same F4 hash.
+    model, _, x, _ = _fitted(threshold=0.5)
+    a = save(model, tmp_path / "a")
+    b = save(model, tmp_path / "b")
+    for name in (NPZ_NAME, JSON_NAME):
+        assert (a / name).read_bytes() == (b / name).read_bytes()
+    assert artifact_sha256(a) == artifact_sha256(b)
+    np.testing.assert_array_equal(load(b).score(x), model.score(x))
 
 
 def test_save_refuses_non_empty_folder(tmp_path):
