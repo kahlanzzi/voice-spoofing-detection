@@ -1027,12 +1027,64 @@ registry, risk, tuning and bundle tests → `131 passed`; full suite in the PR r
 
 ---
 
+### Entry 48 — Stage 13 decision proposals (2026-10-18)
+
+**What / AI assistance:** At Khalil's request, Codex checked the decision register, frozen protocol,
+metric helpers and governance scanner, and drafted proposed D33–D35 with ADR 0007. Topics:
+undefined eight-speaker averages, file-level decisions using the frozen CNN policy, and two exact
+future runner/config allowlist entries with runtime guard requirements. All approvals are pending.
+
+**Evidence:** PR #24 merged as `6786c12`; PRs #21 and #23 are also merged. The current branch starts
+from that main revision. This change edits documentation only; no dataset or model access,
+allowlist change, scoring implementation or protocol amendment. Full suite: `311 passed in 10.91s`
+(including governance tests; writable temporary directory, cache/bytecode writes disabled).
+Documentation whitespace and conflict-marker checks passed.
+
+**Gate:** Team review of each proposal before adoption. Stage 13 has not run and is not authorized.
+
+---
+
+### Entry 49 — Donia review corrections to proposed D33/D35 (2026-10-18)
+
+**Source:** Khalil relayed Donia's conditional acceptance of D33–D35 with three corrections.
+Codex checked the bootstrap documentation and revised ADR 0007 and the proposed register rows:
+existing invalid-resample exclusion with `n_invalid` reported per interval; dataset-wide external
+single-run key across all model sets; claim durable beyond Colab before audio access and registry
+SHA-256/line count recorded immediately after the run. D34 is unchanged.
+
+**Open / gate:** Donia's approval row stays pending until she confirms the revised text. Her
+CNN-versus-baseline external comparison proposal is a separate decision; it is not approved here.
+No protocol, runtime code or allowlist changed. Links, whitespace and log numbering checked;
+D34 and approval rows verified unchanged. Full suite: `311 passed in 11.48s`, including governance
+tests (writable temporary directory; pytest cache and bytecode writes disabled).
+
+**AI assistance:** Codex prepared the review corrections and this append-only log entry.
+
+---
+
+### Entry 50 — Reconcile Stage 13 proposals with main (2026-10-18)
+
+**What:** Codex resolved the project-log conflict while integrating `origin/main` at `3ecb979`
+into PR #26. Preserved merged Entries 1–47, including Donia's briefs entry. Renumbered only
+this PR's unmerged proposal and review-correction entries to 48–49, and updated their current
+references. Retained both branches' changelog additions. Current status and branch tracking
+now reflect the merged briefs and the pending stacked PR #27 update.
+
+**Checks [verified]:** full local suite `311 passed in 11.39s` (including governance);
+merged log entries preserved, sequential numbering and conflict-marker checks passed.
+
+**Gate:** D33–D35 remain proposals; no approval is inferred from this reconciliation.
+No implementation, dataset access or external run. Human review and CI remain required.
+
+---
+
 ## Open items
 
 **Khalil: Stage 13 preparation**
 - [x] PR #21 merged into main as `65ce1d2`; PR #23 base changed to main.
 - [x] PR #23 integrated and merged as `3f2f4bb` after passing CI (Entries 42–44).
-- [x] Complete PR #24 integration and updated checks (Entries 45–46): merged as `6786c12` (git log).
+- [x] PR #24 merged into main as `6786c12` (Entries 45–46).
+- [ ] Review proposed D33–D35 and ADR 0007; record explicit approval or requested revisions (Entry 48).
 - [ ] Complete clustered CIs, speaker completeness checks and filter/file-level reporting.
 - [ ] Before Stage 13, approve and record the speaker-average undefined-value convention alongside
   the file-level view and governance allowlist decisions. No convention is approved by this update.
@@ -1105,7 +1157,7 @@ registry, risk, tuning and bundle tests → `131 passed`; full suite in the PR r
 **Stage briefs (D32, Entry 37)**
 - [x] Team review of `docs/stage6-stage-briefs` (approves D32): approved by all three, 2026-10-18.
 - [ ] Write stage briefs 00–03 (Donia). 00–01 accepted (merged as PR #25 after teach-back review);
-  02–03 in review (Entry 47: teach-back by Khalil for Stage 2; Iheb, Malak and Khalil for Stage 3).
+  02–03 merged in `3ecb979` (Entry 47); confirm teach-back completion separately.
 - [ ] Write stage briefs 04–05 (Malak).
 
 **Notebook (ported to the repo, `f8af88a`; pins and guards added in Entry 7)**
@@ -1185,8 +1237,9 @@ registry, risk, tuning and bundle tests → `131 passed`; full suite in the PR r
 
 **What was done:**
 - **PR #21 merged** as `65ce1d2`; its documentation is in main.
-- **PR #23 merged** as `3f2f4bb` (per-speaker helper) and **PR #24 merged** as `6786c12`
-  (speaker-average helper) (Entries 42–46).
+- **PR #23 merged** as `3f2f4bb`: per-speaker helper and tests (Entries 42–44).
+- **PR #24 merged** as `6786c12`: speaker-average helper and tests (Entries 45–46).
+- **D33–D35 proposed:** ADR 0007 includes Donia's requested corrections (Entries 48–49); confirmation and team decisions remain pending.
 - **Lab 6 closeout in progress:** factual report sections and PR #21 CI evidence are documented (Entry 40); Donia's reported test is now recorded (Entry 41); her extension version, Iheb's answer and human verification/review remain pending.
 - **Stages 0–3 and Part A are complete.** Protocol v1.0 is frozen as F1 (PR #10).
 - **Stage 4 is complete** (Entry 28): PR #12 merged as `865faf4`.
@@ -1203,7 +1256,7 @@ registry, risk, tuning and bundle tests → `131 passed`; full suite in the PR r
 - **Stage-briefs PR (D32, Entry 37)** merged as PR #20 (`567f4aa`).
 - **Stage briefs 00 and 01** accepted: merged as PR #25 (`610a412`) after teach-back review.
 - **Stage briefs 02 (threat model) and 03 (protocol)** written on `docs/stage6-briefs-02-03`
-  (Entry 47); in review.
+  (Entry 47); merged in `3ecb979`.
 
 **What we have:**
 - The approved FoR split and the F2 manifests and hash ledger (D28).
@@ -1218,19 +1271,21 @@ registry, risk, tuning and bundle tests → `131 passed`; full suite in the PR r
 - A tested ModelBundle format (`src/bundle/`) whose loader verifies every part before use,
   documented in `docs/model_bundle.md`.
 - Governance rules that keep the external set metadata-only until the one guarded Stage 13 run.
-- Stage briefs (`docs/stages/`, D32): 00–01 accepted, 02–03 in review.
+- Stage briefs (`docs/stages/`, D32): 00–01 accepted, 02–03 merged; teach-back completion tracked separately.
 
 **Branches:**
-- `main`: at `6786c12`, including PRs #21, #23, #24 and #25 and merged Entries 1–46.
-- `docs/stage6-briefs-02-03`: briefs 02–03 and Entry 47; not pushed yet; Donia reviews, then pushes
-  and the team opens the PR.
+- `origin/main`: fetched at `3ecb979`, including Donia's briefs 02–03 and merged Entries 1–47.
+- `docs/stage13-evaluation-decisions`: PR #26, proposals D33–D35 (Entries 48–49);
+  main integrated locally; merge commit and updated review pending.
+- `chore/stage13-synthetic-reporting`: PR #27, stacked on PR #26; update and renumber
+  its unmerged log entry after PR #26 is integrated.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
 
 **What's next:**
-1. Teach-back review of briefs 02 (Khalil) and 03 (Iheb, Malak, Khalil); Malak writes briefs 04–05.
-   AI does not merge.
+1. Review proposed D33–D35; record explicit decisions before implementation or the external run.
+   Briefs 02–03 are now merged; track teach-back review separately. Malak writes briefs 04–05.
 2. **Stage 6 is current (waiting for F3):** Malak is on preprocessing profile v1 + tests + compute
    benchmark, on a separate branch.
 3. Before Stage 13, record approved decisions for the file-level view, speaker-average undefined
