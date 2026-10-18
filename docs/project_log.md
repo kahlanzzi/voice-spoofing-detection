@@ -968,12 +968,40 @@ evaluation-policy approval.
 
 ---
 
+### Entry 45 — Speaker-average helper preparation (2026-10-18)
+
+- Owner Khalil (D26); Codex prepared the D4/D19 equal-speaker summary, 20 synthetic tests and usage documentation. Intended branch: `feat/stage13-speaker-average`, stacked on PR #23.
+- Explicit caller-selected undefined policy: propagate NaN with speaker IDs/counts, or raise. No silent exclusion or zero replacement. The external report convention remains for team decision/review; frozen protocol unchanged.
+- [verified] Existing repository tests plus the 20 prepared tests: **311 passed in 11.80s**. The new module was loaded from the preparation workspace; repository installation and normal full-suite verification remain pending.
+- Git operations from the app failed with work-tree/permission errors. A guarded installer creates the new branch and copies the files only if the starting branch is clean and the source documents are unchanged.
+- No audio or model access. No confidence intervals or real external results produced. Human review and final reporting convention pending; WAITING FOR APPROVAL.
+
+---
+
+### Entry 46 — Speaker-average integration with main (2026-10-18)
+
+**What changed / AI assistance:** After PR #23 merged as `3f2f4bb`, Codex prepared the integration
+of main into PR #24 at Khalil's request. Merged Entries 1–44 are preserved; the unmerged
+speaker-average preparation entry is now 45. Current status and open items are refreshed.
+The changelog retains both main's additions and the equal-speaker summary entry.
+
+**Evidence:** The helper was installed and pushed as `3f88cc8`; Khalil's earlier terminal evidence
+showed `311 passed in 9.77s`. The updated full suite passed: `311 passed` (including governance tests), with a writable temporary
+directory and pytest cache/bytecode writes disabled. No audio or model was accessed.
+
+**Gate:** PR #24 integration, push, base change to main and updated CI remain pending.
+The report's undefined-value convention, file-level view and governance allowlist still require
+explicit decisions before Stage 13; this integration approves none of them.
+
+---
+
 ## Open items
 
 **Khalil: Stage 13 preparation**
 - [x] PR #21 merged into main as `65ce1d2`; PR #23 base changed to main.
-- [ ] Complete PR #23 integration, verify new CI and review the updated diff (Entries 42–44).
-- [ ] Integrate the speaker-average helper from PR #24 after #23 merges; complete CIs and reporting.
+- [x] PR #23 integrated and merged as `3f2f4bb` after passing CI (Entries 42–44).
+- [ ] Complete PR #24 integration and updated checks (Entries 45–46); retarget to main before merge.
+- [ ] Complete clustered CIs, speaker completeness checks and filter/file-level reporting.
 - [ ] Before Stage 13, approve and record the speaker-average undefined-value convention alongside
   the file-level view and governance allowlist decisions. No convention is approved by this update.
 
@@ -1125,7 +1153,8 @@ evaluation-policy approval.
 
 **What was done:**
 - **PR #21 merged** as `65ce1d2`; its documentation is in main.
-- **PR #23 integration in progress:** per-speaker helper and tests (Entries 42–44); base is main.
+- **PR #23 merged** as `3f2f4bb`: per-speaker helper and tests (Entries 42–44).
+- **PR #24 integration in progress:** installed speaker-average helper and tests (Entries 45–46).
 - **Lab 6 closeout in progress:** factual report sections and PR #21 CI evidence are documented (Entry 40); Donia's reported test is now recorded (Entry 41); her extension version, Iheb's answer and human verification/review remain pending.
 - **Stages 0–3 and Part A are complete.** Protocol v1.0 is frozen as F1 (PR #10).
 - **Stage 4 is complete** (Entry 28): PR #12 merged as `865faf4`.
@@ -1157,17 +1186,16 @@ evaluation-policy approval.
 - A stage-brief structure (`docs/stages/`, D32, Entry 37) and the first two briefs (00, 01; in review).
 
 **Branches:**
-- `main`: fetched at `65ce1d2`, including PR #21 and merged Entries 1–41.
-- `feat/stage13-speaker-analysis` (PR #23): integrating main, log entries 42–44;
-  updated checks and review remain before merge.
-- `feat/stage13-speaker-average` (PR #24): still based on the analysis branch. After #23 merges,
-  update it from main, reconcile its log numbers, retarget to main and rerun checks.
+- `main`: fetched at `3f2f4bb`, including PRs #21 and #23 and merged Entries 1–44.
+- `feat/stage13-speaker-analysis` (PR #23): merged; branch retained for the stacked follow-up.
+- `feat/stage13-speaker-average` (PR #24): integrating main; log entries 45–46.
+  Base change to main, updated checks and review remain before merge.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
 
 **What's next:**
-1. Complete PR #23 integration and checks, then integrate #24 after #23 merges.
+1. Complete PR #24 integration and checks; retarget to main before merge.
    Briefs 00–01 are in main; teach-back review remains tracked separately. Donia prepares
    briefs 02–03 and Malak briefs 04–05. AI does not merge.
 2. **Stage 6 is current (waiting for F3):** Malak is on preprocessing profile v1 + tests + compute
