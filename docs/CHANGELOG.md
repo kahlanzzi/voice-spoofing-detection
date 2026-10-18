@@ -9,6 +9,8 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Evidence-backed Lab 6 report sections covering team roles, setup, CI, workflow and data rules, with remaining closeout checks listed.
+- Khalil's local setup verification, troubleshooting notes and Codex rule-check answer in the Lab 6 setup report.
 - Stage briefs 00 (setup) and 01 (dataset audit) (`docs/stages/`, D32).
 - Stage briefs structure and template (`docs/stages/`, D32).
 - ModelBundle format and verifying loader (hashes, versions, path safety, immutability, provenance).

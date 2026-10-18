@@ -898,6 +898,38 @@ not approve or merge.
 
 ---
 
+### Entry 39 — Khalil local setup and AI-tool answer (2026-10-17)
+
+**What we did:** Khalil prepared the Windows checkout and virtual environment on `docs/stage0-lab6-closeout`. Updated `docs/setup-report.md` with his setup evidence, command-resolution problems and Codex answer.
+
+**Evidence:** Khalil supplied terminal screenshots showing Python 3.13.16, Git 2.56.0.windows.2 and `266 passed in 299.59s (0:04:59)` [verified from screenshots]. This is the earlier local run, not a new test run by Codex and not GitHub CI evidence.
+
+**AI assistance:** Codex guided setup, inspected local project instructions and drafted documentation. The AI-tool question was answered in the existing conversation; fresh-session automatic context loading was not tested. Teammate review remains pending.
+
+**Open issues:** Remaining report sections and team AI-tool responses; Iheb's audit review and explicit D14 response; passing PR CI and human review. No approval or stage closure is claimed.
+
+**Gate:** Lab 6 closeout remains incomplete; waiting for remaining evidence and team review.
+
+### Entry 40 — Lab 6 report evidence and remaining closeout checks (2026-10-18)
+
+**What we did:** Codex filled the team, repository history, environment, CI, workflow and data-governance sections of `docs/setup-report.md` using the existing decision register, contribution guide, scripts and workflow. Existing member answers and local setup evidence were preserved.
+
+**Evidence:** PR #21's GitHub UI showed one successful check for the draft ending at `faecd8c` [verified]. This is distinct from Khalil's earlier local test screenshots. The report marks historical/configuration statements as documentation and does not claim current owner settings or missing human sign-offs were verified.
+
+**AI assistance:** Codex inspected repository files and the PR page and drafted these documentation updates. No model or dataset operation was performed.
+
+**Open issues / gate:** Remaining member answers, Iheb's audit review and D14 answer, owner-settings confirmation, setup/access checks, the AI-test-method review and final PR checks remain pending. Lab 6 is not closed.
+
+---
+
+### Entry 41 — Donia AI-tool test evidence for Lab 6 (2026-10-18)
+
+**Evidence (member-reported):** Khalil relayed Donia's fresh-session Claude Code test on `main`, dated 2026-10-18. Donia reported a passed answer on the external-data restrictions and preprocessing location, with `CLAUDE.md` importing `AGENTS.md`. The extension version was not supplied. Codex did not observe that session independently.
+
+**What changed / AI assistance:** Codex transcribed the summary into `docs/setup-report.md` §5 and updated its outstanding checks. Donia's answer is collected; her extension version, Iheb's answer and the other Lab 6 checks remain pending. No stage closure is claimed.
+
+---
+
 ## Open items
 
 **GitHub / repo**
@@ -984,7 +1016,9 @@ not approve or merge.
 
 **Course deliverables**
 - [ ] Setup report (`docs/setup-report.md`, Lab 6 skeleton): Malak's Codex test is recorded and
-  passed (Entry 22); the remaining sections and team members' AI-tool answers are still open.
+  passed (Entry 22); Khalil's local setup evidence and Codex answer are recorded (Entry 39).
+  Factual report sections are filled (Entry 40); Donia's extension version, Iheb's AI answer, review and D14 response,
+  owner/setup verification and team acceptance are still open.
 
 **Local verification**
 - [x] Re-run the full local suite: Python 3.13 completed with **33 passed in 6.36 s** during Stage 4;
@@ -1045,6 +1079,7 @@ not approve or merge.
 ## Current status — updated 2026-10-18
 
 **What was done:**
+- **Lab 6 closeout in progress:** factual report sections and PR #21 CI evidence are documented (Entry 40); Donia's reported test is now recorded (Entry 41); her extension version, Iheb's answer and human verification/review remain pending.
 - **Stages 0–3 and Part A are complete.** Protocol v1.0 is frozen as F1 (PR #10).
 - **Stage 4 is complete** (Entry 28): PR #12 merged as `865faf4`.
 - **Stage 5 is complete and F2 is effective**: Donia approved PR #15, merged as `89b37fc`; D28 is
@@ -1075,15 +1110,20 @@ not approve or merge.
 - A stage-brief structure (`docs/stages/`, D32, Entry 37) and the first two briefs (00, 01; in review).
 
 **Branches:**
-- `main`: through PRs #22 and #20, at `567f4aa`.
-- `docs/stage6-briefs-00-01`: briefs 00 and 01, Entry 38; not pushed, waiting for Donia's review.
+- `main`: fetched at `610a412`; includes Stage 5 closeout, D32 and briefs 00–01 (Entries 36–38).
+- `docs/stage0-lab6-closeout` (PR #21): integrating that revision; Lab 6 entries renumbered
+  39–40. Merge completion, updated CI and human review remain pending.
+- `feat/stage13-speaker-analysis` (PR #23) and `feat/stage13-speaker-average` (PR #24):
+  stacked follow-ups. After each parent merges, update the next branch, reconcile its log
+  entries against main, retarget its PR to main and rerun CI before human merge.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
 
 **What's next:**
-1. Donia reviews briefs 00–01 and pushes; teach-back review by Iheb (00) and Malak (01). Then
-   Donia writes briefs 02–03 and Malak briefs 04–05. AI does not merge.
+1. Complete PR #21 integration and checks; human merge order is #21 → #23 → #24.
+   Briefs 00–01 are in main; teach-back review remains tracked separately. Donia prepares
+   briefs 02–03 and Malak briefs 04–05. AI does not merge.
 2. **Stage 6 is current (waiting for F3):** Malak is on preprocessing profile v1 + tests + compute
    benchmark, on a separate branch.
 3. Khalil decides the DEEP-VOICE file-level view before Stage 13; verify the scikit-learn Colab install.
