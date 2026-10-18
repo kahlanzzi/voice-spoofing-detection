@@ -5,7 +5,7 @@
 | **Stage** | 1 — Dataset audit (FoR-2sec full, DEEP-VOICE metadata-only) |
 | **Owner** | Donia Mabrouk (D26, Part A) |
 | **Reviewer(s)** | Malak Ben Salem (her Stage 4 split builds on the audit; D26) |
-| **Status** | In review |
+| **Status** | Accepted (PR #25) |
 | **Date** | 2026-10-18 |
 | **Related PRs** | #2 (`stage-1-audit-run`, approved and merged by Malak, 2026-10-05; Entry 14) |
 
