@@ -1113,7 +1113,43 @@ D33–D35 remain proposals. No production code, real predictions or external dat
 
 ---
 
+### Entry 53 — D36 proposed: baseline in the single external run (2026-10-18)
+
+**Authorship:** requested and specified by Donia Mabrouk (Part C owner). Drafted by **Claude Code**
+(Claude Opus 5.5), an AI tool, from the repository documents only; Donia reviews before push.
+
+**What:** on `docs/stage6-d36-baseline-external` (docs only, no code):
+- Gap found in the briefs review (Entry 47): Protocol §1 RQ2 compares CNN and baseline
+  externally, but §8 scores only the frozen CNN bundle, so the external half of RQ2 has no run.
+- Proposed **D36** with [ADR 0008](decisions/0008-baseline-in-external-run.md): both frozen models
+  scored on the same windows in the one Stage 13 run, under the D35 dataset-wide claim; baseline
+  forced binary at its D29 threshold plus EER/AUC; paired CNN − baseline EER difference with a
+  speaker-clustered paired bootstrap CI; baseline artifact hashed in F4, not in the ModelBundle;
+  C→D amended to one stored-score file per model with identical columns.
+- Review fixes (Donia): baseline stored-score values defined (raw = SVM score, p = NA, prediction
+  forced binary, never "uncertain"); the "drop external RQ2" alternative now cites Protocol §12.
+- Register row D36 and ADR table row 0008; Protocol §14 change-log row; CHANGELOG line.
+- **D33–D35 acceptance recorded:** PR #26 was approved by Donia (after her requested changes were
+  incorporated) and Malak; Khalil is the author; Iheb has not approved. ADR 0007 requires all
+  four, so D33–D35 stay Proposed ("accepted by Donia, Malak and Khalil (author) via PR #26,
+  2026-10-18; Iheb pending"); the ADR 0007 reviewer table is filled accordingly.
+- Iheb to accept or revise D33–D35 (and D36) in the review of this PR; when all four have
+  accepted, set D33–D35 to Approved.
+
+**Evidence [verified]:** `bootstrap_ci(statistic, n, *, clusters=...)` signature checked in
+`src/evaluation/bootstrap.py`. Test output in the PR report. No external data read, no model run.
+
+**Gate:** D36 needs explicit approval by all four before F4. AI does not approve or merge.
+
+---
+
 ## Open items
+
+**Part C: external comparison (Entry 53)**
+- [ ] Approve D36 (all four) before F4.
+- [ ] Iheb to accept or revise D33–D35 (and D36) in the review of this PR; when all four have
+  accepted, set D33–D35 to Approved (Entry 53).
+
 
 **Khalil: Stage 13 preparation**
 - [x] Rename synthetic-test branch to the D23-compliant `chore/stage13-synthetic-reporting`.
@@ -1274,6 +1310,9 @@ D33–D35 remain proposals. No production code, real predictions or external dat
 ## Current status — updated 2026-10-18
 
 **What was done:**
+- **D36 proposed** (ADR 0008, Entry 53): the baseline is scored with the CNN in the single external
+  run, so RQ2 can be answered externally; approval by all four pending.
+- **PR #27 merged** as `3dc20b7`: synthetic reporting tests (Entries 51–52).
 - **Synthetic integration tests prepared:** eight invented speakers and 14,960 windows (Entry 51); no real predictions.
 - **PR #21 merged** as `65ce1d2`; its documentation is in main.
 - **PR #23 merged** as `3f2f4bb`: per-speaker helper and tests (Entries 42–44).
@@ -1313,17 +1352,16 @@ D33–D35 remain proposals. No production code, real predictions or external dat
 - Stage briefs (`docs/stages/`, D32): 00–01 accepted, 02–03 merged; teach-back completion tracked separately.
 
 **Branches:**
-- `origin/main`: fetched at `72a9646`, including merged PR #26 and Entries 1–50.
-- `docs/stage13-evaluation-decisions`: PR #26 merged; D33–D35 remain Proposed pending
-  explicit decision confirmations.
-- `chore/stage13-synthetic-reporting`: PR #27; main integrated locally, log entry renumbered
-  to 51. Commit/push, retarget to main and updated CI remain pending.
+- `origin/main`: fetched at `3dc20b7`, including merged PRs #26–#28 and Entries 1–52.
+- `docs/stage6-d36-baseline-external`: D36 proposal (Entry 53); committed locally, not pushed.
+- D33–D35 remain Proposed: accepted by Donia, Malak and Khalil (author) via PR #26; Iheb pending.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
 
 **What's next:**
-1. Review proposed D33–D35; record explicit decisions before implementation or the external run.
+1. Review proposed D33–D35 and D36; record explicit decisions before implementation, F4 or the
+   external run.
    Briefs 02–03 are now merged; track teach-back review separately. Malak writes briefs 04–05.
 2. **Stage 6 is current (waiting for F3):** Malak is on preprocessing profile v1 + tests + compute
    benchmark, on a separate branch.

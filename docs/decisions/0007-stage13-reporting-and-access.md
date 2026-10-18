@@ -154,10 +154,10 @@ own reviewed code/test changes. F3, real Part C work, F4 and the Stage 13 review
 
 | Reviewer | D33 | D34 | D35 | Date / evidence |
 |---|---|---|---|---|
-| Donia Mabrouk | Pending | Pending | Pending | — |
+| Donia Mabrouk | ✅ | ✅ | ✅ | 2026-10-18, PR #26, after her requested changes were incorporated |
 | Iheb Zemzemi | Pending | Pending | Pending | — |
-| Malak Ben Salem | Pending | Pending | Pending | — |
-| Khalil Dridi | Pending | Pending | Pending | — |
+| Malak Ben Salem | ✅ | ✅ | ✅ | 2026-10-18, PR #26 |
+| Khalil Dridi | ✅ | ✅ | ✅ | Author, PR #26 |
 
 ## Links
 
