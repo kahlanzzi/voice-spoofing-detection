@@ -1030,9 +1030,30 @@ tests (writable temporary directory; pytest cache and bytecode writes disabled).
 
 ---
 
+### Entry 49 — Synthetic reporting integration tests (2026-10-18)
+
+**What / AI assistance:** Codex prepared six integration tests at Khalil's request, using invented
+scores for eight speakers, unequal sizes, 1,870 REAL and 13,090 FAKE windows, seed 2026, and one
+fixed example threshold/band. Known error/deferral counts verify the per-speaker table; an
+independent count-level oracle verifies clustered accuracy intervals with 2,000 resamples.
+Tests also cover macro versus pooled accuracy, artificial filter accounting and missing-speaker
+roster comparison. No dataset, audio, trained model or real prediction file is used.
+
+**Evidence:** Prepared tests: `6 passed in 1.71s`. Full installed suite: `317 passed in 11.57s`, including governance tests
+(writable temporary directory; pytest cache and bytecode writes disabled).
+**Limitations:** These are integration tests of existing helpers, not a production reporting
+layer, eight-speaker enforcement, a file-level implementation or real model performance.
+D33–D35 remain proposals in PR #26. Tests do not select their final conventions.
+**Branch:** requested rename from `test/stage13-synthetic-reporting` (Codex's incorrect prefix)
+to `chore/stage13-synthetic-reporting` under D23; stacked on the pending proposal branch.
+**Gate:** Review, branch rename, commit/push and CI pending. No external run authorized.
+
+---
+
 ## Open items
 
 **Khalil: Stage 13 preparation**
+- [ ] Review synthetic integration tests (Entry 49); rename branch to the D23-compliant chore prefix.
 - [x] PR #21 merged into main as `65ce1d2`; PR #23 base changed to main.
 - [x] PR #23 integrated and merged as `3f2f4bb` after passing CI (Entries 42–44).
 - [x] PR #24 merged into main as `6786c12` (Entries 45–46).
@@ -1188,6 +1209,7 @@ tests (writable temporary directory; pytest cache and bytecode writes disabled).
 ## Current status — updated 2026-10-18
 
 **What was done:**
+- **Synthetic integration tests prepared:** eight invented speakers and 14,960 windows (Entry 49); no real predictions.
 - **PR #21 merged** as `65ce1d2`; its documentation is in main.
 - **PR #23 merged** as `3f2f4bb`: per-speaker helper and tests (Entries 42–44).
 - **PR #24 merged** as `6786c12`: speaker-average helper and tests (Entries 45–46).
@@ -1223,9 +1245,11 @@ tests (writable temporary directory; pytest cache and bytecode writes disabled).
 - A stage-brief structure (`docs/stages/`, D32, Entry 37) and the first two briefs (00, 01; in review).
 
 **Branches:**
-- `main`: synchronized at `6786c12`; PRs #21, #23 and #24 are merged.
-- `docs/stage13-evaluation-decisions`: documentation-only proposals D33–D35 and Entry 47;
-  team review pending. The implementation branches are retained locally/remotely.
+- `main`: last synchronized at `6786c12`; PRs #21, #23 and #24 merged.
+- `docs/stage13-evaluation-decisions` (PR #26): D33–D35 proposed, Donia corrections pushed;
+  final decision confirmations remain pending.
+- Synthetic tests are stacked on PR #26; rename the local `test/stage13-synthetic-reporting`
+  to `chore/stage13-synthetic-reporting` before commit/push. Retarget to main after parent merge.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
