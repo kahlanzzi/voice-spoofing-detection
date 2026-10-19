@@ -1213,7 +1213,7 @@ reviewed both.
 **What:** on `docs/stage18-stack-followup` (Iheb), the follow-up promised in ADR 0008:
 `docs/architecture.md` (online tier, component diagram, module table, UC-01 flow), the Dashboard
 row of ADR 0002 (pointer to ADR 0008) and the `AGENTS.md` roadmap row now name the React web app;
-ADR 0008 status set to Accepted (PR #35). Open items for PR #14 and PR #35 ticked.
+ADR 0008 status set to Accepted (PR #35, approved by Donia; Malak and Khalil informed on 2026-10-19, objections to be handled by a new decision). Open items for PR #14 and PR #35 ticked.
 
 **Evidence [verified by Iheb]:** `python -m pytest -q` passes on the branch; docs-only change.
 
