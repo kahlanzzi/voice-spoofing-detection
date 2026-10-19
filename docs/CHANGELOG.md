@@ -10,8 +10,11 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 
 ### Added
 - Corrected official Stage 6 FoR evidence: byte-identical validation runs, passing D18/shortcut checks, and the no-training Tesla T4 benchmark selecting batch size 256.
+- D38 / ADR 0008 (proposed): React + TypeScript analyst interface replaces Streamlit; Overview page as new scope.
+- D39 (proposed): Stage 6 preprocessing profile v1 evidence, F3 identifiers, shortcut/D18 caveats and no-training benchmark; human review pending.
 - Stage 7 MFCC/SVM baseline: train-only scaler, NumPy scorer, deterministic non-pickle artifact, and D37 fitting (16-point grid on val-A, D29 threshold on val-B) with `configs/baseline.yaml`.
 - D35 runner implementation requirement: synthetic integration test of shared frozen preprocessing, with trimming and centred padding per 2 s window.
+- Proposed D36 (ADR 0009): the MFCC/SVM baseline is scored with the CNN in the single external run, for RQ2; approval pending.
 - Deterministic eight-speaker synthetic integration tests for metric tables, averages, filter counts and clustered accuracy intervals.
 - Proposed Stage 13 reporting conventions and exact guarded-run access scope (D33–D35, ADR 0007); approval pending.
 - Equal-speaker rate summaries with explicit undefined-value handling and synthetic tests (D19 preparation; report convention pending review).
