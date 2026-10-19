@@ -1210,7 +1210,7 @@ reviewed both.
 
 ---
 
-### Entry 57 — D36 proposed: baseline in the single external run (2026-10-18)
+### Entry 58 — D36 proposed: baseline in the single external run (2026-10-18)
 
 **Authorship:** requested and specified by Donia Mabrouk (Part C owner). Drafted by **Claude Code**
 (Claude Opus 5.5), an AI tool, from the repository documents only; Donia reviews before push.
@@ -1218,14 +1218,14 @@ reviewed both.
 **What:** on `docs/stage6-d36-baseline-external` (docs only, no code):
 - Gap found in the briefs review (Entry 47): Protocol §1 RQ2 compares CNN and baseline
   externally, but §8 scores only the frozen CNN bundle, so the external half of RQ2 has no run.
-- Proposed **D36** with [ADR 0008](decisions/0008-baseline-in-external-run.md): both frozen models
+- Proposed **D36** with [ADR 0009](decisions/0009-baseline-in-external-run.md): both frozen models
   scored on the same windows in the one Stage 13 run, under the D35 dataset-wide claim; baseline
   forced binary at its D29 threshold plus EER/AUC; paired CNN − baseline EER difference with a
   speaker-clustered paired bootstrap CI; baseline artifact hashed in F4, not in the ModelBundle;
   C→D amended to one stored-score file per model with identical columns.
 - Review fixes (Donia): baseline stored-score values defined (raw = SVM score, p = NA, prediction
   forced binary, never "uncertain"); the "drop external RQ2" alternative now cites Protocol §12.
-- Register row D36 and ADR table row 0008; Protocol §14 change-log row; CHANGELOG line.
+- Register row D36 and ADR table row 0009; Protocol §14 change-log row; CHANGELOG line.
 - **D33–D35 acceptance recorded:** PR #26 was approved by Donia (after her requested changes were
   incorporated) and Malak; Khalil is the author; Iheb has not approved. ADR 0007 requires all
   four, so D33–D35 stay Proposed ("accepted by Donia, Malak and Khalil (author) via PR #26,
@@ -1244,10 +1244,10 @@ reviewed both.
 
 ## Open items
 
-**Part C: external comparison (Entry 57)**
+**Part C: external comparison (Entry 58)**
 - [x] Approve D36 (all four) before F4. (PR #29, 2026-10-19)
 - [x] Iheb to accept or revise D33–D35 (and D36) in the review of this PR; when all four have
-  accepted, set D33–D35 to Approved (Entry 57). (PR #29, 2026-10-19)
+  accepted, set D33–D35 to Approved (Entry 58). (PR #29, 2026-10-19)
 
 **Khalil: Stage 13 preparation**
 - [ ] Implement the D35 per-window frozen preprocessing integration test (Entry 55).
@@ -1414,7 +1414,7 @@ reviewed both.
 
 **What was done:**
 - Added the D35 per-window preprocessing integration-test requirement (Entry 55); implementation pending.
-- **D36 proposed** (ADR 0008, Entry 57): the baseline is scored with the CNN in the single external
+- **D36 proposed** (ADR 0009, Entry 58): the baseline is scored with the CNN in the single external
   run, so RQ2 can be answered externally; approved by all four (PR #29, 2026-10-19).
 - **PR #27 merged** as `3dc20b7`: synthetic reporting tests (Entries 51–52).
 - **Synthetic integration tests prepared:** eight invented speakers and 14,960 windows (Entry 51); no real predictions.
@@ -1472,7 +1472,7 @@ reviewed both.
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
 
 **What's next:**
-1. D33–D36 are approved; ADR 0007/0008 implementation (runner, both artifacts verified before any audio read) is required before Stage 13.
+1. D33–D36 are approved; ADR 0007/0009 implementation (runner, both artifacts verified before any audio read) is required before Stage 13.
    Briefs 02–03 are now merged; track teach-back review separately. Malak writes briefs 04–05.
 2. **Stage 6 is current (waiting for F3):** Malak is on preprocessing profile v1 + tests + compute
    benchmark, on a separate branch.

@@ -1,4 +1,4 @@
-# 0008. Baseline in the single external run
+# 0009. Baseline in the single external run
 
 - **Status:** Approved — not permission to run (all four deciders; PR #29, 2026-10-19)
 - **Date:** 2026-10-18
