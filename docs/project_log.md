@@ -1533,6 +1533,31 @@ needs to be opened. Do not mark them accepted until Donia completes the D32 teac
 
 ---
 
+### Entry 69 — Stage 6 D32 brief and D39 status recorded (2026-10-19)
+
+**What [doc]:** added `docs/stages/stage06-preprocessing.md` alongside the Stage 4 and 5 briefs.
+It summarizes the reviewed Stage 6 candidate and links to the official FoR-only evidence, config,
+implementation and Colab runner. Updated the stage index and changelog so all three briefs are
+listed together for review.
+
+**Decision [verified from PR history]:** PR #34 was approved by Donia and Iheb and merged at
+`4707476`; D39/F3 is therefore recorded as approved. The D32 teach-back for the Stage 6 brief, and
+acceptance of all three retrospective briefs, remain separate review gates.
+
+**Evidence:** the brief cites Entry 66 and the seven committed files under
+`docs/audit_evidence/stage6_preprocessing/`. It preserves the train-only shortcut rule, reports the
+all-split silence AUC only as descriptive, and records that the initial diagnostic archive was not
+retained. No dataset or audio was added.
+
+**AI assistance:** Codex drafted the Stage 6 brief and documentation updates from the D32 template,
+the merged decision register, project log, config and committed reports. Malak owns review; Donia
+and Iheb's teach-back review remains pending. AI does not approve or merge.
+
+**Gate:** Stages 4, 5 and 6 briefs are prepared together on the documentation branch; the combined
+regular PR and D32 teach-back reviews are still pending.
+
+---
+
 ## Open items
 
 **Part C: external comparison (Entry 58)**
@@ -1618,8 +1643,9 @@ needs to be opened. Do not mark them accepted until Donia completes the D32 teac
   numbers and no unverified archive hash is claimed.
 - [x] Approve and merge the official Stage 6 evidence and review corrections (PR #34, merged at
   `4707476`).
-- [ ] Record D39/F3's final status in the decision register and write `docs/stages/stage06-preprocessing.md`;
-  complete its D32 teach-back before marking Stage 6 done.
+- [x] Record D39/F3 as approved after Donia and Iheb approved PR #34, merged at `4707476`.
+- [x] Prepare `docs/stages/stage06-preprocessing.md` from the D32 template (Entry 69).
+- [ ] Complete the D32 teach-back for the Stage 6 brief before marking Stage 6 done.
 
 **Stage 7 harness: protocol clarifications (Entry 31; Protocol §12, next free D-ID when decided)**
 - [x] Baseline threshold: own val-B EER point, forced binary only (Donia, before Stage 7 results): D29 (Entry 32).
@@ -1652,8 +1678,9 @@ needs to be opened. Do not mark them accepted until Donia completes the D32 teac
 - [x] Team review of `docs/stage6-stage-briefs` (approves D32): approved by all three, 2026-10-18.
 - [ ] Write stage briefs 00–03 (Donia). 00–01 accepted (merged as PR #25 after teach-back review);
   02–03 merged in `3ecb979` (Entry 47); confirm teach-back completion separately.
-- [x] Prepare stage briefs 04–05 on the docs branch (Entry 68).
-- [ ] Open a regular review PR; Donia completes the D32 teach-back and accepts briefs 04–05.
+- [x] Prepare stage briefs 04–06 on the docs branch (Entries 68–69).
+- [ ] Open one regular review PR containing briefs 04–06; Donia completes the D32 teach-back and
+  accepts each brief before the stage index marks them accepted.
 
 **Notebook (ported to the repo, `f8af88a`; pins and guards added in Entry 7)**
 - [x] Cell 1: real `REPO_URL`; clone with `-b <branch>`; print Python version and commit hash; capture and print the `pytest` output.
@@ -1756,8 +1783,8 @@ needs to be opened. Do not mark them accepted until Donia completes the D32 teac
   FAKE_other silence-AUC review flag.
 - **Stage 6 evidence and current-main documentation corrections are merged** (PR #34): D38 remains
   the React decision, Stage 6 is D39, history entries are numbered 59–66, the corrected ZIP hash is
-  recorded, and the first-run diagnostic archive is noted as not retained. D39/F3 remains proposed
-  in the decision register until its formal status is updated.
+  recorded, and the first-run diagnostic archive is noted as not retained. Donia and Iheb approved
+  PR #34; D39/F3 is approved. The Stage 6 D32 brief and teach-back remain pending.
 - **Stage 7 evaluation harness, steps 1–5, is merged** as PR #13 (Entry 31).
 - **Protocol clarifications D29–D31 are merged** as PR #16 (Entry 32).
 - **Stage 10 risk policy, steps R1–R2, is merged** as PR #17 (Entry 33).
@@ -1792,12 +1819,12 @@ needs to be opened. Do not mark them accepted until Donia completes the D32 teac
 - Governance rules that keep the external set metadata-only until the one guarded Stage 13 run.
 - Corrected Stage 6 FoR evidence under `docs/audit_evidence/stage6_preprocessing/`: exact profile,
   deterministic validation, shortcut/padding screens, D18 invariance and no-training T4 benchmark.
-- Stage briefs (`docs/stages/`, D32): 00–01 accepted, 02–03 merged, 04–05 ready for review on the
-  docs branch; teach-back completion tracked separately.
+- Stage briefs (`docs/stages/`, D32): 00–01 accepted, 02–03 merged, and 04–06 ready for review
+  together on the docs branch; teach-back completion tracked separately.
 
 **Branches:**
 - `origin/main`: fetched at `4707476`; PR #34 and its conflict-resolution commit are merged.
-- `docs/stages-04-05-briefs-malak`: based on current `main`; briefs pushed, regular review PR not yet opened.
+- `docs/stages-04-05-briefs-malak`: based on current `main`; briefs 04–06 prepared, regular review PR not yet opened.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
@@ -1812,5 +1839,5 @@ needs to be opened. Do not mark them accepted until Donia completes the D32 teac
    runner; resolve the external-run governance allowlist and verify the scikit-learn Colab install.
 4. Baseline B1–B2 and the D37 configuration are in main; real fitting still waits for F3.
 5. Then run the real Part C work on the frozen F3 preprocessing profile.
-6. Open the Stage 4/5 documentation PR, complete the D32 teach-back review, and record acceptance in the stage index.
-7. Complete the Stage 6 brief and teach-back before marking that stage done.
+6. Open one regular documentation PR with Stage 4, 5 and 6 briefs; complete each D32 teach-back and
+   record acceptance in the stage index.

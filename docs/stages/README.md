@@ -74,7 +74,7 @@ flowchart LR
 | 3 Experimental Protocol v1.0 | Donia (lead) | `stage03-protocol.md` | in review |
 | 4 Leakage-aware split | Malak | `stage04-split.md` | ready for review; teach-back pending |
 | 5 Dataset freeze (F2) | Malak | `stage05-dataset-freeze.md` | ready for review; teach-back pending |
-| 6 Preprocessing profile v1 | Malak | `stage06-preprocessing.md` | after the stage closes |
+| 6 Preprocessing profile v1 | Malak | `stage06-preprocessing.md` | ready for review; teach-back pending |
 | 7 Evaluation harness + baseline | Donia | `stage07-baseline.md` | after the stage closes |
 | 8 CNN training | Donia | `stage08-cnn-training.md` | after the stage closes |
 | 9 Model selection | Donia | `stage09-model-selection.md` | after the stage closes |
