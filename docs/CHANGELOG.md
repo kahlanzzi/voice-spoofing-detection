@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- D38 / ADR 0008 (proposed): React + TypeScript analyst interface replaces Streamlit; Overview page as new scope.
 - Stage 7 MFCC/SVM baseline: train-only scaler, NumPy scorer, deterministic non-pickle artifact, and D37 fitting (16-point grid on val-A, D29 threshold on val-B) with `configs/baseline.yaml`.
 - D35 runner implementation requirement: synthetic integration test of shared frozen preprocessing, with trimming and centred padding per 2 s window.
 - Deterministic eight-speaker synthetic integration tests for metric tables, averages, filter counts and clustered accuracy intervals.
