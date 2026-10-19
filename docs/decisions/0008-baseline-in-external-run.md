@@ -1,10 +1,10 @@
 # 0008. Baseline in the single external run
 
-- **Status:** Proposed — not approved, and not permission to run
+- **Status:** Approved — not permission to run (all four deciders; PR #29, 2026-10-19)
 - **Date:** 2026-10-18
-- **Register:** D36 in `README.md` (proposed)
+- **Register:** D36 in `README.md` (approved)
 - **Owner:** Donia Mabrouk (Part C, D26)
-- **Deciders:** Donia Mabrouk, Iheb Zemzemi, Malak Ben Salem, Khalil Dridi; responses pending
+- **Deciders:** Donia Mabrouk, Iheb Zemzemi, Malak Ben Salem, Khalil Dridi; all four accepted
 - **AI assistance:** Claude Code (Claude Opus 5.5) drafted this proposal from repository documents
   at Donia's request; Donia reviews before push.
 
@@ -81,9 +81,9 @@ register; do not infer agreement from silence or CI.
 | Reviewer | D36 | Date / evidence |
 |---|---|---|
 | Donia Mabrouk | ✅ | Author, 2026-10-18 |
-| Iheb Zemzemi | Pending | — |
-| Malak Ben Salem | Pending | — |
-| Khalil Dridi | Pending | — |
+| Iheb Zemzemi | ✅ | 2026-10-19, approved PR #29 (GitHub review) |
+| Malak Ben Salem | ✅ | 2026-10-19, approved PR #29 (GitHub review) |
+| Khalil Dridi | ✅ | 2026-10-19, approved PR #29 (GitHub review) |
 
 ## Links
 

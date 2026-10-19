@@ -273,5 +273,5 @@ on FoR only; nothing here touches DEEP-VOICE before Stage 13 (AGENTS.md hard rul
 | 0.1 | 2026-10-12 | Skeleton: sections, owners, reviewers, "Must decide" items. No content. | |
 | 1.0 | 2026-10-14 | All sections decided (team-accepted defaults). | #10 |
 | 1.0 | 2026-10-17 | Clarifications D29 (baseline threshold), D30 (search space), D31 (Stage 11 run once); no existing rule changed; fills gaps the protocol left open | (this PR) |
-| 1.0 | 2026-10-18 | D36 proposed: baseline scored in the single external run (RQ2); C→D stored scores per model | (this PR) |
+| 1.0 | 2026-10-18 | D36: baseline scored in the single external run (RQ2); C→D stored scores per model | #29 |
 | 1.0 | 2026-10-18 | D37: baseline grid, scaling and score fixed (completes §4 'grid: team choice'); no existing rule changed | (this PR) |
