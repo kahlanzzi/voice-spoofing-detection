@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 4 split and Stage 5 F2 retrospective briefs under `docs/stages/`; D32 teach-back review pending.
 - Corrected official Stage 6 FoR evidence: byte-identical validation runs, passing D18/shortcut checks, and the no-training Tesla T4 benchmark selecting batch size 256.
 - D38 / ADR 0008 (proposed): React + TypeScript analyst interface replaces Streamlit; Overview page as new scope.
 - D39 (proposed): Stage 6 preprocessing profile v1 evidence, F3 identifiers, shortcut/D18 caveats and no-training benchmark; human review pending.

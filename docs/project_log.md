@@ -1507,8 +1507,29 @@ are prepared but not committed; documentation-only, so tests were not rerun.
 **AI assistance:** **Codex** fetched current main and prepared the local merge/documentation update.
 AI did not commit, push, message reviewers, approve F3 or merge the PR.
 
-**Gate:** **WAITING FOR MALAK APPROVAL** of the local merge and review corrections, then commit/push
-and require green CI. Donia will re-review. F3 remains pending human review and merge.
+**Gate (at the time):** **WAITING FOR MALAK APPROVAL** of the local merge and review corrections,
+then commit/push and require green CI. This was resolved in PR #34; see the current status below.
+
+---
+
+### Entry 68 — Stage 4/5 D32 briefs submitted for review (2026-10-19)
+
+**What [doc]:** added the retrospective briefs `docs/stages/stage04-split.md` and
+`docs/stages/stage05-dataset-freeze.md` from the approved D32 template. Updated the stage index and
+changelog. The briefs summarize the already-closed Stage 4 split and Stage 5 F2 freeze, link to the
+existing reports/configuration, and include teach-back questions and re-run commands. No dataset or
+audio files were added.
+
+**Evidence [verified against committed records]:** Stage 4 facts and hashes cite its report, config,
+and Entries 25/28; Stage 5 manifest counts, hashes, checks, and determinism cite its report, D28,
+and Entries 30/36. The source links are in the briefs.
+
+**AI assistance:** Codex drafted the briefs from the D32 template and existing project records and
+evidence. Malak owns review of the content; Donia's teach-back review and acceptance remain pending.
+AI does not approve or merge.
+
+**Gate:** the two briefs are in review on `docs/stages-04-05-briefs-malak`. Do not mark them
+accepted until Donia completes the D32 teach-back.
 
 ---
 
@@ -1595,9 +1616,10 @@ and require green CI. Donia will re-review. F3 remains pending human review and 
   matching small repo evidence under `docs/audit_evidence/stage6_preprocessing/` (Entry 66).
 - [x] Record that the first-run diagnostic archive was not retained; Entry 64 preserves its summary
   numbers and no unverified archive hash is claimed.
-- [ ] Approve and commit the evidence and review corrections (Entry 67), approve D39/F3 through Donia
-  + Iheb review, and have a human merge. Then write `docs/stages/stage06-preprocessing.md` and complete
-  its teach-back review (D32). Do not mark Stage 6 done or begin Stage 7 model work before this gate.
+- [x] Approve and merge the official Stage 6 evidence and review corrections (PR #34, merged at
+  `4707476`).
+- [ ] Record D39/F3's final status in the decision register and write `docs/stages/stage06-preprocessing.md`;
+  complete its D32 teach-back before marking Stage 6 done.
 
 **Stage 7 harness: protocol clarifications (Entry 31; Protocol §12, next free D-ID when decided)**
 - [x] Baseline threshold: own val-B EER point, forced binary only (Donia, before Stage 7 results): D29 (Entry 32).
@@ -1630,7 +1652,8 @@ and require green CI. Donia will re-review. F3 remains pending human review and 
 - [x] Team review of `docs/stage6-stage-briefs` (approves D32): approved by all three, 2026-10-18.
 - [ ] Write stage briefs 00–03 (Donia). 00–01 accepted (merged as PR #25 after teach-back review);
   02–03 merged in `3ecb979` (Entry 47); confirm teach-back completion separately.
-- [ ] Write stage briefs 04–05 (Malak).
+- [x] Draft and submit stage briefs 04–05 for review (Entry 68).
+- [ ] Donia completes the D32 teach-back and accepts briefs 04–05.
 
 **Notebook (ported to the repo, `f8af88a`; pins and guards added in Entry 7)**
 - [x] Cell 1: real `REPO_URL`; clone with `-b <branch>`; print Python version and commit hash; capture and print the `pytest` output.
@@ -1728,12 +1751,13 @@ and require green CI. Donia will re-review. F3 remains pending human review and 
   successful no-training benchmark (Entry 64). Malak approved the 7.6 kHz Nyquist-edge correction;
   the diagnostic ZIP was not retained.
 - **Correction commit `6e17185` is pushed and verified against current main** (Entry 65).
-- **Official FoR evidence now passes every automated gate and is byte-identical across both runs**
-  (Entry 66). The seven small evidence files and D30 batch size 256 are prepared locally. D39/F3 remain
-  proposed pending Donia + Iheb review and human merge.
-- **Donia's Stage 6 documentary corrections and current-main sync are prepared locally** (Entry 67):
-  D38 remains the React decision, Stage 6 is D39, the Stage 6 history is numbered 59–66, the corrected
-  ZIP hash is verified, and the first-run diagnostic archive is recorded as not retained.
+- **Official FoR evidence passed every recorded gate and was merged in PR #34** at `4707476` after
+  reviewer approval (Entries 66–67). The evidence records D30 batch size 256 and the retained
+  FAKE_other silence-AUC review flag.
+- **Stage 6 evidence and current-main documentation corrections are merged** (PR #34): D38 remains
+  the React decision, Stage 6 is D39, history entries are numbered 59–66, the corrected ZIP hash is
+  recorded, and the first-run diagnostic archive is noted as not retained. D39/F3 remains proposed
+  in the decision register until its formal status is updated.
 - **Stage 7 evaluation harness, steps 1–5, is merged** as PR #13 (Entry 31).
 - **Protocol clarifications D29–D31 are merged** as PR #16 (Entry 32).
 - **Stage 10 risk policy, steps R1–R2, is merged** as PR #17 (Entry 33).
@@ -1768,13 +1792,12 @@ and require green CI. Donia will re-review. F3 remains pending human review and 
 - Governance rules that keep the external set metadata-only until the one guarded Stage 13 run.
 - Corrected Stage 6 FoR evidence under `docs/audit_evidence/stage6_preprocessing/`: exact profile,
   deterministic validation, shortcut/padding screens, D18 invariance and no-training T4 benchmark.
-- Stage briefs (`docs/stages/`, D32): 00–01 accepted, 02–03 merged; teach-back completion tracked separately.
+- Stage briefs (`docs/stages/`, D32): 00–01 accepted, 02–03 merged, 04–05 in review; teach-back
+  completion tracked separately.
 
 **Branches:**
-- `origin/main`: fetched at `e070889`; PRs #29 and #35 are merged, with main log Entries 57–58.
-- `feat/stage6-preprocessing-profile-malak`: pushed evidence base `bf91d8d`; at fetch, the branches
-  had 8 commits on each side. The current-main merge and Entry 67 documentation resolution are local,
-  uncommitted and awaiting Malak approval.
+- `origin/main`: fetched at `4707476`; PR #34 and its conflict-resolution commit are merged.
+- `docs/stages-04-05-briefs-malak`: based on current `main`; carries the Stage 4/5 brief review PR.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
@@ -1784,12 +1807,10 @@ and require green CI. Donia will re-review. F3 remains pending human review and 
 **What's next:**
 1. D33–D36 are approved; ADR 0007/0009 implementation (runner, both artifacts verified before any audio read) is required before Stage 13.
    Briefs 02–03 are now merged; track teach-back review separately. Malak writes briefs 04–05.
-2. **Stage 6 is current (waiting for F3):** Malak is on preprocessing profile v1 + tests + compute
-   benchmark, on a separate branch.
+2. Stage 6's evidence PR is merged; record D39/F3's formal status and complete its D32 brief/teach-back.
 3. Before Stage 13, implement the approved file-level view, speaker-average convention and guarded
    runner; resolve the external-run governance allowlist and verify the scikit-learn Colab install.
 4. Baseline B1–B2 and the D37 configuration are in main; real fitting still waits for F3.
 5. Then run the real Part C work on the frozen F3 preprocessing profile.
-6. Malak reviews and approves the Stage 6 evidence/config/docs corrections; then commits/pushes them and requires green CI.
-7. Donia and Iheb review the near-threshold silence flag and approve D39/F3 and the evidence PR; a human merges it. AI does not approve or merge.
-8. Complete the Stage 6 brief and retrospective briefs 04–05/teach-backs required by D32.
+6. Complete the Stage 4/5 D32 teach-back review and record acceptance in the stage index.
+7. Complete the Stage 6 brief and teach-back before marking that stage done.
