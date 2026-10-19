@@ -1,1 +1,5 @@
-# filled in Stage 8
+# D30 batch size selected by the Stage 6 no-training Tesla T4 benchmark at
+# implementation commit 6e1718547756ef04744ce0b3b1b73bb839920052.
+batch_size: 256
+
+# The remaining D30 model/search fields are filled before Stage 8 training.

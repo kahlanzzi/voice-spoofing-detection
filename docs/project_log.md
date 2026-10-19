@@ -895,7 +895,6 @@ approve or merge.
 
 **Gate:** briefs in review; teach-back review by Iheb (Stage 0) and Malak (Stage 1) (D32). AI does
 not approve or merge.
-
 ---
 
 ### Entry 39 — Khalil local setup and AI-tool answer (2026-10-17)
@@ -1255,6 +1254,264 @@ ADR 0008 status set to Accepted (PR #35, approved by Donia; Malak and Khalil inf
 
 ---
 
+### Entry 59 — Stage 6 preprocessing profile implementation candidate (2026-10-18)
+
+**What [verified locally]:** on `feat/stage6-preprocessing-profile-malak`, Malak approved the Stage 6
+plan and Codex implemented the F3 candidate only. `configs/preprocessing.yaml` records the strict
+profile and F2 ledger link. `src/preprocessing/` supplies one shared mono/resample, RMS edge-trim,
+length-fix, log-Mel and MFCC path; the official validator verifies the frozen F2 manifest and every
+sample hash before decode, re-screens RMS/silence/bandwidth, and runs D18 invariance. The benchmark
+uses disposable forward/backward operations without an optimizer, weight update, checkpoint or model
+metric. `notebooks/02_stage6_preprocessing_profile.ipynb` checks out an exact clean commit, performs
+two validation runs, compares all four files byte-for-byte, runs the benchmark, and exports candidate
+evidence. Proposed D39 records the settings and gate; it was renumbered because current main already
+assigned D33–D35 and D37, while D36 is reserved by an in-flight team branch.
+
+**Evidence [verified locally before the main update]:** focused `tests/preprocessing`: `29 passed in
+1.51s`; full suite: `295 passed in 45.36s`. Tests use synthetic arrays/files only. No real audio was
+opened and no model was trained. The real FoR validation, shortcut results, invariance results, GPU
+measurements, selected future batch size and determinism hashes do not exist yet; they require the
+clean Colab run.
+
+**AI assistance:** **Codex** drafted the configuration, implementation, tests, notebook and proposed
+decision after Malak approved the plan. Malak approved implementation commit `fdfa14f`; Donia and
+Iheb review the evidence PR. AI does not approve, freeze or merge.
+
+**Gate:** implementation candidate only. F3 is not effective; do not begin Stage 7 model work until
+the clean FoR run passes, D39/F3 evidence is reviewed, and the PR is merged by a human. D32 also
+requires the Stage 6 brief and teach-back review before the stage is marked done.
+
+---
+
+### Entry 60 — Stage 6 Colab manual-transfer fallback (2026-10-18)
+
+**What [verified in code; official run pending]:** after repeated Colab Drive mounts failed with
+`credential propagation was unsuccessful`, the Stage 6 notebook gained an explicit `manual` transfer
+mode. Malak can download the two pinned FoR inputs through the normal Drive web interface, upload
+`for_2sec_ff8c82c7.tar` and `for_2sec_REVISION.txt` to the temporary Colab `/content/` session, and
+download `stage6_evidence.zip` when the run finishes. The original `drive` mode remains available.
+
+**Boundary:** this changes only transport into and out of the temporary Colab runtime. It does not
+change the F2 manifest or hash ledger, preprocessing settings, validators, shortcut rules, D18
+invariance checks, compute benchmark or proposed D39. The notebook still checks out an exact clean
+commit and validates the pinned revision before extracting the FoR archive. No dataset is made public
+or committed, and DEEP-VOICE remains out of scope.
+
+**Evidence [verified locally before the main update]:** notebook JSON parses as nbformat 4.5 with 12
+cells; `git diff --check` passed; full suite: `295 passed in 9.24s`; DEEP-VOICE governance: `3 passed
+in 0.22s`; token scan found no secrets. No real audio was opened locally; the official two-run FoR
+evidence does not exist yet.
+
+**AI assistance:** **Codex** prepared the manual-transfer fallback after Malak chose not to wait for
+the external Colab authentication issue to be resolved. Malak approved correction commit `34e826b`.
+AI does not approve, push or merge.
+
+**Gate:** fallback committed and pushed; the official run must cite the final clean post-merge commit.
+F3 remains proposed and Stage 7 model work remains blocked.
+
+---
+
+### Entry 61 — Stage 6 branch synchronization with current main (2026-10-18)
+
+**What [merge candidate]:** Donia reported that the Stage 6 branch was 31 commits behind main. Malak
+paused the official Colab run. `origin/main` was fetched at `bf8096c` and merged without rewriting the
+published Stage 6 history. Incoming preprocessing code did not overlap; conflicts were limited to
+`docs/CHANGELOG.md`, `docs/decisions/README.md` and this append-only log. Both sides were preserved.
+The Stage 6 decision was renumbered from the colliding D33 to D39, and its log entries from 39–40 to
+55–56. D33–D35, in-flight D36 and D37 retain their team meanings.
+
+**Why:** the PR must be current with main, and both official Colab runs must cite the final clean
+post-merge commit. The compute benchmark—not a guess—will supply the future CNN batch size required
+by D30.
+
+**Evidence [verified locally]:** full merged suite: `395 passed in 33.43s`; DEEP-VOICE governance:
+`3 passed in 0.33s`; notebook JSON parses as nbformat 4.5 with 12 cells; `git diff --cached --check`
+passed; token scan found no secrets; decision and project-log ID checks found no duplicates. No FoR
+audio or DEEP-VOICE content was accessed during synchronization.
+
+**AI assistance:** **Codex** fetched main, inspected the overlaps and drafted the conflict resolution.
+Malak reviews and approves the merge commit. AI does not push or merge the PR.
+
+**Gate:** do not resume the official Colab run until the resolved branch passes all checks, Malak
+approves the merge commit, and the new final commit hash is pushed.
+
+---
+
+### Entry 62 — Stage 6 padding-shortcut correction before official run (2026-10-18)
+
+**What [verified locally; official run pending]:** after Donia's pre-run review, Malak approved a
+Stage 6-only correction that exposes the exact number of zero-padding samples added after edge
+trimming. The FoR validator now screens `padding_fraction` alongside RMS, silence and bandwidth and
+reports mean, median, p95 and maximum padding by class and F2 subgroup for both train-only and all-data scopes.
+Synthetic tests plant a padding cue and verify that the AUC screen and subgroup summary detect it.
+
+**Pre-declaration and boundary:** the train-only loudness AUC threshold of 0.75 was already recorded
+in `configs/preprocessing.yaml` and proposed D39 in implementation commit `fdfa14f`, before any
+official screen output was viewed. This correction extends proposed D39 before the official run; it
+does not change that threshold or the settled feature contract: log-Mel shape `(1, 64, 197)` with no
+additional CNN-feature normalization, plus 20 DCT-II, orthonormal MFCCs from the same natural-log Mel
+representation summarized as mean + standard deviation = 40 values. The shared
+`preprocess_waveform` function still applies trim and centred pad/crop independently to every input
+window. Stage 13's guarded external-window integration and tests remain Khalil's work and are not
+implemented or run here. No real FoR audio or DEEP-VOICE content was accessed locally.
+
+**Evidence [verified locally]:** focused preprocessing suite: `30 passed in 3.76s`; full suite:
+`396 passed in 26.32s`; DEEP-VOICE governance: `3 passed in 0.22s`; `git diff --check` passed. The
+official two-run FoR results, determinism hashes, GPU measurements and D30 batch size remain pending
+until this correction is reviewed, committed and pushed and its new exact commit is used in Colab.
+
+**AI assistance:** **Codex** implemented the approved padding measurement, screen, summary, tests and
+documentation. Malak approved the correction commit; Donia and Iheb review the evidence PR. AI does
+not approve, push or merge.
+
+**Gate:** do not run the official Colab cells from `c713111`; first review and commit this correction,
+push it, and use the resulting clean commit hash in the notebook.
+
+---
+
+### Entry 63 — Stage 6 synchronization after PR #32 (2026-10-18)
+
+**What [merge candidate]:** after the padding correction was pushed, `origin/main` advanced from
+`bf8096c` to `638339b` through PR #32. Malak paused Colab and approved another current-main merge.
+The incoming D35 documentation requires Khalil's future Stage 13 runner integration test to call the
+shared frozen preprocessing function separately for every complete 2 s window. It does not move that
+implementation or test into Stage 6.
+
+**Conflict resolution:** code merged without conflict. The append-only project log preserved main's
+Entries 55–56 and renumbered the still-unmerged Stage 6 Entries 55–58 to Entries 57–60. The Stage 6
+padding implementation and proposed D39 remain unchanged. Current status and open items now describe
+both work streams without claiming that Khalil's integration test is implemented.
+
+**Evidence [verified locally]:** full merged suite: `396 passed in 14.85s`; DEEP-VOICE governance:
+`3 passed in 0.32s`. Conflict-marker, sequential-entry, token and diff checks are completed before
+the merge commit. No FoR audio or DEEP-VOICE content was accessed during synchronization.
+
+**AI assistance:** **Codex** fetched current main, inspected the incoming scope and prepared the
+append-only conflict resolution. Malak approved the merge commit. AI does not push or merge the PR.
+
+**Gate:** do not resume the official Colab run until Malak approves this merge commit, it is pushed,
+and the notebook uses its new exact hash.
+
+---
+
+### Entry 64 — Stage 6 first official candidate and D18 Nyquist-edge correction (2026-10-18)
+
+**What [official candidate, not accepted as F3]:** Malak completed the FoR-only Colab validation
+twice from clean implementation commit `532877d`. The four validation artifacts were byte-identical;
+the pinned dataset checks, shortcut screens and no-training GPU benchmark completed. The benchmark
+selected candidate batch size 256 at 83.763 clips/s. However, D18 did not pass: 57 of 180 feature
+comparisons exceeded relative L2 0.01. The worst log-Mel relative L2 was 0.019605 and the worst MFCC
+relative L2 was 0.012685; cosine similarity remained above its 0.999 threshold. Therefore this run is
+diagnostic evidence only, batch size 256 is provisional, and F3 is not effective. The first-run
+diagnostic archive was not retained; this entry's summary numbers are the available record, and no
+archive hash is claimed or reconstructed.
+
+**Root cause [verified on the 30 frozen FoR train samples only]:** the unstable comparisons were
+concentrated in the final Mel band at the exact 8 kHz Nyquist edge. Changing resampler quality or
+disabling trimming did not fix the issue, and padding/trim decisions were unchanged. A 7.6 kHz Mel
+upper bound gave zero D18 failures with `soxr_hq`, `soxr_vhq`, polyphase and SciPy conversion probes;
+the worst independent-converter log-Mel relative L2 was 0.009961. No DEEP-VOICE audio, model
+training, optimizer, weight update or checkpoint was used.
+
+**Correction [approved by Malak; commit pending]:** set `features.fmax_hz` from 8000 to 7600, keep
+all other profile settings unchanged, and add a synthetic near-Nyquist regression test. Proposed D39
+now records the 0–7.6 kHz range and the reason for the correction. Local verification passed: 14
+focused preprocessing tests, the complete 397-test suite, and all 3 DEEP-VOICE governance tests.
+
+**AI assistance:** **Codex** inspected the downloaded evidence, isolated the Nyquist-edge cause using
+FoR-only diagnostics, proposed the 7.6 kHz correction, and implemented it after Malak's approval.
+Donia and Iheb still review the corrected official evidence and D39/F3. AI does not approve, push or
+merge.
+
+**Gate:** review, commit and push this correction first. Then restart the Colab runtime, use the new
+exact clean commit, rerun both validation copies and the benchmark, and accept the evidence only if
+every D18 and shortcut check passes and the validation artifacts are byte-identical.
+
+---
+
+### Entry 65 — Stage 6 Nyquist-edge correction committed and pushed (2026-10-19)
+
+**What [verified]:** Malak approved the Stage 6 7.6 kHz correction and committed it as `6e17185`
+(`fix(stage6): stabilize Mel Nyquist edge`). She pushed it to
+`origin/feat/stage6-preprocessing-profile-malak`; local HEAD and the remote branch are identical. A
+fresh fetch confirms the branch is zero commits behind `origin/main` at `638339b`.
+
+**Evidence:** the approved commit contains the profile/config correction, synthetic Nyquist-edge
+regression, D39 explanation, changelog and Entry 64. Its pre-commit verification was 14 focused
+preprocessing tests, the complete 397-test suite and all 3 DEEP-VOICE governance tests. The first
+candidate evidence remains diagnostic only; no corrected official run or F3 approval is claimed.
+
+**AI assistance:** **Codex** verified the remote branch and updated the append-only status after
+Malak's push. AI did not push or merge.
+
+**Gate:** use exact clean implementation commit `6e17185` for both corrected Colab validation runs
+and the no-training benchmark. Do not approve D39/F3 until every required check passes, the two runs
+are byte-identical, and Donia + Iheb review the evidence.
+
+---
+
+### Entry 66 — Corrected official Stage 6 evidence passes (2026-10-19)
+
+**What [verified candidate evidence]:** Malak ran the complete FoR-only Stage 6 notebook from exact
+clean implementation commit `6e1718547756ef04744ce0b3b1b73bb839920052`. Both validation runs
+processed all 17,721 frozen FoR rows, verified every sample/F2 hash and produced byte-identical copies
+of all four validation artifacts. The downloaded evidence ZIP SHA-256, recomputed from the local
+9,609-byte `stage6_evidence (1).zip`, is
+`5e66ceedfa446dadeb5e2d97ff388adc63c615f5214d8b3359c5bda73664ceb6` (64 hex characters); its seven extracted files
+were uploaded to Drive `processed/metadata/stage6/` and copied to
+`docs/audit_evidence/stage6_preprocessing/` for review.
+
+**Validation [verified]:** all checks pass. D18 has 180/180 passing comparisons; maximum relative L2
+is 0.0021238185 (limit 0.01) and minimum cosine is 0.9999977627 (limit 0.999). The train-only
+FAKE-vs-REAL RMS AUC is 0.698602, so D39's pre-declared loudness rule keeps `mode: none`. Every
+padding-fraction screen is low (maximum AUC 0.505879). One review flag is retained rather than hidden:
+the all-split FAKE_other-vs-REAL silence-fraction AUC is 0.750071 (moderate), while the pre-declared
+train view is 0.749901 (low). This is not an automated gate failure but requires explicit reviewer
+attention.
+
+**Benchmark [verified]:** Tesla T4, 15,637,086,208 bytes total VRAM, PyTorch `2.11.0+cu130`, Python
+3.13.15 and 90.666 FoR clips/s preprocessing throughput. All candidate sizes 16–256 fit; D30 batch
+size 256 is recorded in `configs/cnn.yaml`. Benchmark mode was forward/backward only with no optimizer,
+weight update, checkpoint or model metric. DEEP-VOICE was not accessed.
+
+**Checks [this evidence-preparation session]:** clean-branch full suite `397 passed in 40.91s`;
+DEEP-VOICE governance `3 passed in 0.19s`; token grep `no token found`. Independent evidence checks
+confirmed all recorded artifact hashes, exact profile/manifest hashes, row counts and thresholds.
+
+**AI assistance:** **Codex** inspected the evidence ZIP, independently checked hashes/counts/thresholds,
+copied only the seven small evidence files, recorded batch size 256 and prepared the documentation.
+AI did not approve, push or merge.
+
+**Gate:** **WAITING FOR APPROVAL.** Donia and Iheb review D39/F3, including the near-threshold
+all-split silence flag. After human approval, commit/push the evidence, require green CI and merge by a
+human. Only then write the Stage 6 brief/teach-back and mark Stage 6 complete.
+
+---
+
+### Entry 67 — Stage 6 review corrections after current-main update (2026-10-19)
+
+**What [verified locally]:** incorporated Donia's follow-up after PRs #29 and #35 merged. Preserved
+main's D38 React decision and added the Stage 6 candidate as D39; kept main's Entries 57–58 and
+renumbered the eight Stage 6 history entries to 59–66. Restored D30 to the exact `origin/main` row,
+corrected Entry 66's downloaded evidence ZIP SHA-256, and retained the blank line after Entry 38.
+D39 contains the config SHA, profile fingerprint, implementation commit and all four artifact hashes.
+
+**First-run evidence:** the diagnostic archive was not retained. Entry 64 preserves the initial-run
+summary numbers; no archive is reconstructed and no hash is claimed. This is non-blocking per Donia.
+
+**Checks:** `configs/preprocessing.yaml` remains unchanged and its SHA-256 is still
+`7bd35bfdcb9270dd55ea9e73449c7bf6c6a359a80335b2551c0c89dde77c8630`; it contains no D-ID comment.
+The ZIP hash matches the local corrected archive. The main sync and documentation conflict resolution
+are prepared but not committed; documentation-only, so tests were not rerun.
+
+**AI assistance:** **Codex** fetched current main and prepared the local merge/documentation update.
+AI did not commit, push, message reviewers, approve F3 or merge the PR.
+
+**Gate:** **WAITING FOR MALAK APPROVAL** of the local merge and review corrections, then commit/push
+and require green CI. Donia will re-review. F3 remains pending human review and merge.
+
+---
+
 ## Open items
 
 **Part C: external comparison (Entry 58)**
@@ -1316,6 +1573,31 @@ ADR 0008 status set to Accepted (PR #35, approved by Donia; Malak and Khalil inf
 - [x] Record the generated manifest hashes in proposed D28 and project-log Entry 30.
 - [x] Donia reviewed and approved the F2 PR; PR #15 merged as `89b37fc`, Stage 5 is done and F2 is
   effective (Entry 36).
+
+**Stage 6 gate**
+- [x] Implement preprocessing profile v1 candidate, shared transforms, tests, validation, no-training
+  compute benchmark and Colab runner (Entry 59).
+- [x] Review and commit the Stage 6 implementation candidate as `fdfa14f`; branch pushed.
+- [x] Review and commit the manual Colab transfer fallback as `34e826b`; branch pushed (Entry 60).
+- [x] Complete, approve and push the synchronization with `origin/main` at `bf8096c` as `c713111`
+  (Entry 61).
+- [x] Review, commit and push the padding-shortcut correction as `becc52b` (Entry 62).
+- [x] Complete, approve and push the synchronization with `origin/main` at `638339b` as `532877d`
+  (Entry 63); the first official candidate cited that exact merge commit.
+- [x] Diagnose the first official candidate's D18 failure and obtain Malak's approval for the 7.6 kHz
+  Nyquist-edge correction (Entry 64); local implementation and all 397 tests pass.
+- [x] Review, commit and push the 7.6 kHz correction as `6e17185` (Entry 65).
+- [x] Run the full pinned FoR manifest twice in Colab; every sample hash/check, shortcut rule and
+  D18 invariance check passed, and the four validation artifacts are byte-identical.
+- [x] Record the GPU type, VRAM, PyTorch version, preprocessing throughput and selected future batch
+  size; no optimizer, weight update, checkpoint or model metric is permitted in this benchmark.
+- [x] Upload the seven corrected evidence files to Drive `processed/metadata/stage6/` and prepare the
+  matching small repo evidence under `docs/audit_evidence/stage6_preprocessing/` (Entry 66).
+- [x] Record that the first-run diagnostic archive was not retained; Entry 64 preserves its summary
+  numbers and no unverified archive hash is claimed.
+- [ ] Approve and commit the evidence and review corrections (Entry 67), approve D39/F3 through Donia
+  + Iheb review, and have a human merge. Then write `docs/stages/stage06-preprocessing.md` and complete
+  its teach-back review (D32). Do not mark Stage 6 done or begin Stage 7 model work before this gate.
 
 **Stage 7 harness: protocol clarifications (Entry 31; Protocol §12, next free D-ID when decided)**
 - [x] Baseline threshold: own val-B EER point, forced binary only (Donia, before Stage 7 results): D29 (Entry 32).
@@ -1423,23 +1705,35 @@ ADR 0008 status set to Accepted (PR #35, approved by Donia; Malak and Khalil inf
 
 ---
 
-## Current status — updated 2026-10-18
+## Current status — updated 2026-10-19
 
 **What was done:**
 - Added the D35 per-window preprocessing integration-test requirement (Entry 55); implementation pending.
-- **D36 proposed** (ADR 0009, Entry 58): the baseline is scored with the CNN in the single external
-  run, so RQ2 can be answered externally; approved by all four (PR #29, 2026-10-19).
+- **D36 approved** (ADR 0009, Entry 58): the baseline is scored with the CNN in the single external
+  run, so RQ2 can be answered externally (PR #29, 2026-10-19).
 - **PR #27 merged** as `3dc20b7`: synthetic reporting tests (Entries 51–52).
 - **Synthetic integration tests prepared:** eight invented speakers and 14,960 windows (Entry 51); no real predictions.
 - **PR #21 merged** as `65ce1d2`; its documentation is in main.
 - **PR #23 merged** as `3f2f4bb`: per-speaker helper and tests (Entries 42–44).
 - **PR #24 merged** as `6786c12`: speaker-average helper and tests (Entries 45–46).
-- **PR #26 merged** as `72a9646`; D33–D35 remain proposed. ADR 0007 includes Donia's requested corrections (Entries 48–49); confirmation and team decisions remain pending.
+- **PR #26 merged** as `72a9646`; D33–D36 were approved by all four after PR #29 (Entry 58, 2026-10-19). ADR 0007/0009 implementation remains required before Stage 13.
 - **Lab 6 closeout in progress:** factual report sections and PR #21 CI evidence are documented (Entry 40); Donia's reported test is now recorded (Entry 41); her extension version, Iheb's answer and human verification/review remain pending.
 - **Stages 0–3 and Part A are complete.** Protocol v1.0 is frozen as F1 (PR #10).
 - **Stage 4 is complete** (Entry 28): PR #12 merged as `865faf4`.
 - **Stage 5 is complete and F2 is effective**: Donia approved PR #15, merged as `89b37fc`; D28 is
   approved (Entry 36).
+- **Stage 6 implementation `fdfa14f`, manual-transfer correction `34e826b`, current-main merges
+  `c713111`/`532877d` and padding-shortcut correction `becc52b` are pushed** (Entries 59–63).
+- **The first official FoR candidate exposed a D18 failure** despite byte-identical outputs and a
+  successful no-training benchmark (Entry 64). Malak approved the 7.6 kHz Nyquist-edge correction;
+  the diagnostic ZIP was not retained.
+- **Correction commit `6e17185` is pushed and verified against current main** (Entry 65).
+- **Official FoR evidence now passes every automated gate and is byte-identical across both runs**
+  (Entry 66). The seven small evidence files and D30 batch size 256 are prepared locally. D39/F3 remain
+  proposed pending Donia + Iheb review and human merge.
+- **Donia's Stage 6 documentary corrections and current-main sync are prepared locally** (Entry 67):
+  D38 remains the React decision, Stage 6 is D39, the Stage 6 history is numbered 59–66, the corrected
+  ZIP hash is verified, and the first-run diagnostic archive is recorded as not retained.
 - **Stage 7 evaluation harness, steps 1–5, is merged** as PR #13 (Entry 31).
 - **Protocol clarifications D29–D31 are merged** as PR #16 (Entry 32).
 - **Stage 10 risk policy, steps R1–R2, is merged** as PR #17 (Entry 33).
@@ -1472,14 +1766,17 @@ ADR 0008 status set to Accepted (PR #35, approved by Donia; Malak and Khalil inf
 - A tested ModelBundle format (`src/bundle/`) whose loader verifies every part before use,
   documented in `docs/model_bundle.md`.
 - Governance rules that keep the external set metadata-only until the one guarded Stage 13 run.
+- Corrected Stage 6 FoR evidence under `docs/audit_evidence/stage6_preprocessing/`: exact profile,
+  deterministic validation, shortcut/padding screens, D18 invariance and no-training T4 benchmark.
 - Stage briefs (`docs/stages/`, D32): 00–01 accepted, 02–03 merged; teach-back completion tracked separately.
 
 **Branches:**
-- `origin/main`: fetched at `bf8096c`; includes merged Entries 1–54 and baseline B1–B2.
-- `docs/stage13-preprocessing-test`: PR #32; main integrated locally, requirement at Entry 55;
-  merge commit, push and updated CI/review pending.
-- PRs #26 and #27 are merged. D33–D35 acceptance tracking remains separate from this update.
-- `docs/stage6-d36-baseline-external`: PR #29; main merged as `0fa62a9`; D33–D36 approved by all four (2026-10-19); awaiting merge.
+- `origin/main`: fetched at `e070889`; PRs #29 and #35 are merged, with main log Entries 57–58.
+- `feat/stage6-preprocessing-profile-malak`: pushed evidence base `bf91d8d`; at fetch, the branches
+  had 8 commits on each side. The current-main merge and Entry 67 documentation resolution are local,
+  uncommitted and awaiting Malak approval.
+- PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
+  prerequisite before Stage 13.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
@@ -1489,7 +1786,10 @@ ADR 0008 status set to Accepted (PR #35, approved by Donia; Malak and Khalil inf
    Briefs 02–03 are now merged; track teach-back review separately. Malak writes briefs 04–05.
 2. **Stage 6 is current (waiting for F3):** Malak is on preprocessing profile v1 + tests + compute
    benchmark, on a separate branch.
-3. Before Stage 13, record approved decisions for the file-level view, speaker-average undefined
-   values and governance allowlist. Verify the scikit-learn Colab install.
+3. Before Stage 13, implement the approved file-level view, speaker-average convention and guarded
+   runner; resolve the external-run governance allowlist and verify the scikit-learn Colab install.
 4. Baseline B1–B2 and the D37 configuration are in main; real fitting still waits for F3.
 5. Then run the real Part C work on the frozen F3 preprocessing profile.
+6. Malak reviews and approves the Stage 6 evidence/config/docs corrections; then commits/pushes them and requires green CI.
+7. Donia and Iheb review the near-threshold silence flag and approve D39/F3 and the evidence PR; a human merges it. AI does not approve or merge.
+8. Complete the Stage 6 brief and retrospective briefs 04–05/teach-backs required by D32.

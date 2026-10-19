@@ -1,0 +1,16 @@
+{
+  "byte_identical": true,
+  "code_commit": "6e1718547756ef04744ce0b3b1b73bb839920052",
+  "run_a_sha256": {
+    "invariance.csv": "1143312662ae06bb52199c6ca1d639cb016cfcdcc9929099dffa396c87fa245c",
+    "profile_report.json": "49c21d0051a5fa50d1173df97cad9e3882b46d3c94f715273a287c8165ed8dfd",
+    "profile_report.md": "fe2fa5131f440c7b36be6d682032c52e7b71946b84acf76236e52ee010ef3a43",
+    "shortcut_screen.csv": "6165e818bd22c5c95cce8d7ebf44e94aae71176670407b3a5df398df4c1d87a2"
+  },
+  "run_b_sha256": {
+    "invariance.csv": "1143312662ae06bb52199c6ca1d639cb016cfcdcc9929099dffa396c87fa245c",
+    "profile_report.json": "49c21d0051a5fa50d1173df97cad9e3882b46d3c94f715273a287c8165ed8dfd",
+    "profile_report.md": "fe2fa5131f440c7b36be6d682032c52e7b71946b84acf76236e52ee010ef3a43",
+    "shortcut_screen.csv": "6165e818bd22c5c95cce8d7ebf44e94aae71176670407b3a5df398df4c1d87a2"
+  }
+}

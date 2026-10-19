@@ -1,0 +1,64 @@
+{
+  "audio_scope": "FoR train subset only; DEEP-VOICE not accessed",
+  "code_version": {
+    "git_commit": "6e1718547756ef04744ce0b3b1b73bb839920052",
+    "git_dirty": false
+  },
+  "compute": {
+    "checkpoint_written": false,
+    "chosen_batch_size": 256,
+    "device": "cuda",
+    "gpu_name": "Tesla T4",
+    "results": [
+      {
+        "batch_size": 16,
+        "mean_step_seconds": 0.006631001100049616,
+        "peak_allocated_bytes": 163238400,
+        "status": "ok"
+      },
+      {
+        "batch_size": 32,
+        "mean_step_seconds": 0.012034223199862026,
+        "peak_allocated_bytes": 235028992,
+        "status": "ok"
+      },
+      {
+        "batch_size": 64,
+        "mean_step_seconds": 0.014763619199857202,
+        "peak_allocated_bytes": 240960512,
+        "status": "ok"
+      },
+      {
+        "batch_size": 128,
+        "mean_step_seconds": 0.027060092300007454,
+        "peak_allocated_bytes": 459752448,
+        "status": "ok"
+      },
+      {
+        "batch_size": 256,
+        "mean_step_seconds": 0.05665362309996454,
+        "peak_allocated_bytes": 901030912,
+        "status": "ok"
+      }
+    ],
+    "torch_version": "2.11.0+cu130",
+    "total_vram_bytes": 15637086208,
+    "weights_updated": false
+  },
+  "environment": {
+    "platform": "Linux-6.6.122+-x86_64-with-glibc2.39",
+    "python": "3.13.15"
+  },
+  "f2_manifest_sha256": "badfe948fb7b833357783dd18be00f6bb36253cf8699dc4c4beb4df2b07706f8",
+  "mode": "dry_run_no_optimizer",
+  "preprocessing": {
+    "clips_per_second": 90.66600739069045,
+    "rows": 256,
+    "seconds": 2.8235499429997617,
+    "split": "train"
+  },
+  "profile_config_sha256": "7bd35bfdcb9270dd55ea9e73449c7bf6c6a359a80335b2551c0c89dde77c8630",
+  "profile_fingerprint": "5b4f5849a9bb63f9016dd79969ff5bfb9e37006acbff1e26bbfee4ee2bad68f2",
+  "profile_version": "preprocessing-v1",
+  "stage": 6
+}

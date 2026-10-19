@@ -9,7 +9,9 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Corrected official Stage 6 FoR evidence: byte-identical validation runs, passing D18/shortcut checks, and the no-training Tesla T4 benchmark selecting batch size 256.
 - D38 / ADR 0008 (proposed): React + TypeScript analyst interface replaces Streamlit; Overview page as new scope.
+- D39 (proposed): Stage 6 preprocessing profile v1 evidence, F3 identifiers, shortcut/D18 caveats and no-training benchmark; human review pending.
 - Stage 7 MFCC/SVM baseline: train-only scaler, NumPy scorer, deterministic non-pickle artifact, and D37 fitting (16-point grid on val-A, D29 threshold on val-B) with `configs/baseline.yaml`.
 - D35 runner implementation requirement: synthetic integration test of shared frozen preprocessing, with trimming and centred padding per 2 s window.
 - Proposed D36 (ADR 0009): the MFCC/SVM baseline is scored with the CNN in the single external run, for RQ2; approval pending.
@@ -22,6 +24,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - Stage briefs 02 (threat model) and 03 (protocol) (`docs/stages/`, D32).
 - Stage briefs 00 (setup) and 01 (dataset audit) (`docs/stages/`, D32).
 - Stage briefs structure and template (`docs/stages/`, D32).
+- Stage 6 preprocessing profile v1 candidate, shared waveform/log-Mel/MFCC pipeline, FoR shortcut and invariance validation, no-training compute benchmark, tests and Colab runner.
 - ModelBundle format and verifying loader (hashes, versions, path safety, immutability, provenance).
 - Append-only, hash-chained run registry for D31 (claim before run).
 - Stage 10 risk policy: Platt calibration with smoothed targets, val-B EER threshold, uncertain band with ≤ 10% deferral, confidence, risk level, strict JSON policy file.
@@ -46,6 +49,9 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - `docs/experimental_protocol.md` v1.0 frozen (F1): all sections decided from the team-accepted defaults.
 
 ### Changed
+- Stage 6 Mel upper frequency is 7.6 kHz, keeping the final band below the 16 kHz Nyquist edge after the first official candidate exposed D18 resampling instability at 8 kHz.
+- Stage 6 shortcut validation now measures post-trim zero-padding, screens its class separability and reports padding by class and F2 subgroup.
+- Stage 6 Colab runner now supports a manual input/evidence transfer mode when Drive credential propagation is unavailable.
 - Docs aligned with D38: `architecture.md`, ADR 0002 (Dashboard row) and the `AGENTS.md` roadmap now name the React web app; ADR 0008 accepted.
 - Baseline tuning pre-declared: MFCC standardization on FoR train, RBF-SVM C × gamma grid, val-A EER selection, decision_function score (D37, proposed).
 - Refined proposed D33/D35 after Donia's review: existing bootstrap convention, dataset-wide run key and durable registry evidence; approval still pending.
