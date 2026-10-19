@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Corrected official Stage 6 FoR evidence: byte-identical validation runs, passing D18/shortcut checks, and the no-training Tesla T4 benchmark selecting batch size 256.
 - Stage 7 MFCC/SVM baseline: train-only scaler, NumPy scorer, deterministic non-pickle artifact, and D37 fitting (16-point grid on val-A, D29 threshold on val-B) with `configs/baseline.yaml`.
 - D35 runner implementation requirement: synthetic integration test of shared frozen preprocessing, with trimming and centred padding per 2 s window.
 - Deterministic eight-speaker synthetic integration tests for metric tables, averages, filter counts and clustered accuracy intervals.

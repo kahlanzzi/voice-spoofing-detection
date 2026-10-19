@@ -1386,6 +1386,43 @@ are byte-identical, and Donia + Iheb review the evidence.
 
 ---
 
+### Entry 64 — Corrected official Stage 6 evidence passes (2026-10-19)
+
+**What [verified candidate evidence]:** Malak ran the complete FoR-only Stage 6 notebook from exact
+clean implementation commit `6e1718547756ef04744ce0b3b1b73bb839920052`. Both validation runs
+processed all 17,721 frozen FoR rows, verified every sample/F2 hash and produced byte-identical copies
+of all four validation artifacts. The downloaded evidence ZIP SHA-256 is
+`5e66ceedfa446dadedb5e2d97ff388adc63c615f5214d8b3359c5bda73664ceb6`; its seven extracted files
+were uploaded to Drive `processed/metadata/stage6/` and copied to
+`docs/audit_evidence/stage6_preprocessing/` for review.
+
+**Validation [verified]:** all checks pass. D18 has 180/180 passing comparisons; maximum relative L2
+is 0.0021238185 (limit 0.01) and minimum cosine is 0.9999977627 (limit 0.999). The train-only
+FAKE-vs-REAL RMS AUC is 0.698602, so D38's pre-declared loudness rule keeps `mode: none`. Every
+padding-fraction screen is low (maximum AUC 0.505879). One review flag is retained rather than hidden:
+the all-split FAKE_other-vs-REAL silence-fraction AUC is 0.750071 (moderate), while the pre-declared
+train view is 0.749901 (low). This is not an automated gate failure but requires explicit reviewer
+attention.
+
+**Benchmark [verified]:** Tesla T4, 15,637,086,208 bytes total VRAM, PyTorch `2.11.0+cu130`, Python
+3.13.15 and 90.666 FoR clips/s preprocessing throughput. All candidate sizes 16–256 fit; D30 batch
+size 256 is recorded in `configs/cnn.yaml`. Benchmark mode was forward/backward only with no optimizer,
+weight update, checkpoint or model metric. DEEP-VOICE was not accessed.
+
+**Checks [this evidence-preparation session]:** clean-branch full suite `397 passed in 40.91s`;
+DEEP-VOICE governance `3 passed in 0.19s`; token grep `no token found`. Independent evidence checks
+confirmed all recorded artifact hashes, exact profile/manifest hashes, row counts and thresholds.
+
+**AI assistance:** **Codex** inspected the evidence ZIP, independently checked hashes/counts/thresholds,
+copied only the seven small evidence files, recorded batch size 256 and prepared the documentation.
+AI did not approve, push or merge.
+
+**Gate:** **WAITING FOR APPROVAL.** Donia and Iheb review D38/F3, including the near-threshold
+all-split silence flag. After human approval, commit/push the evidence, require green CI and merge by a
+human. Only then write the Stage 6 brief/teach-back and mark Stage 6 complete.
+
+---
+
 ## Open items
 
 **Khalil: Stage 13 preparation**
@@ -1455,11 +1492,13 @@ are byte-identical, and Donia + Iheb review the evidence.
 - [x] Diagnose the first official candidate's D18 failure and obtain Malak's approval for the 7.6 kHz
   Nyquist-edge correction (Entry 62); local implementation and all 397 tests pass.
 - [x] Review, commit and push the 7.6 kHz correction as `6e17185` (Entry 63).
-- [ ] Run the full pinned FoR manifest twice in Colab; require every sample hash/check, shortcut rule
-  and D18 invariance check to pass and the four validation artifacts to be byte-identical.
-- [ ] Record the GPU type, VRAM, PyTorch version, preprocessing throughput and selected future batch
+- [x] Run the full pinned FoR manifest twice in Colab; every sample hash/check, shortcut rule and
+  D18 invariance check passed, and the four validation artifacts are byte-identical.
+- [x] Record the GPU type, VRAM, PyTorch version, preprocessing throughput and selected future batch
   size; no optimizer, weight update, checkpoint or model metric is permitted in this benchmark.
-- [ ] Commit the small evidence files, approve D38/F3 through Donia + Iheb review, merge by a human,
+- [x] Upload the seven corrected evidence files to Drive `processed/metadata/stage6/` and prepare the
+  matching small repo evidence under `docs/audit_evidence/stage6_preprocessing/` (Entry 64).
+- [ ] Approve and commit the small evidence files, approve D38/F3 through Donia + Iheb review, merge by a human,
   then write `docs/stages/stage06-preprocessing.md` and complete its teach-back review (D32). Do not
   mark Stage 6 done or begin Stage 7 model work before this gate.
 
@@ -1569,7 +1608,7 @@ are byte-identical, and Donia + Iheb review the evidence.
 
 ---
 
-## Current status — updated 2026-10-18
+## Current status — updated 2026-10-19
 
 **What was done:**
 - Added the D35 per-window preprocessing integration-test requirement (Entry 55); implementation pending.
@@ -1587,8 +1626,10 @@ are byte-identical, and Donia + Iheb review the evidence.
   `c713111`/`532877d` and padding-shortcut correction `becc52b` are pushed** (Entries 57–61).
 - **The first official FoR candidate exposed a D18 failure** despite byte-identical outputs and a
   successful no-training benchmark (Entry 62). Malak approved the 7.6 kHz Nyquist-edge correction.
-- **Correction commit `6e17185` is pushed and verified against current main** (Entry 63). Corrected
-  official evidence does not yet exist, so F3 remains pending.
+- **Correction commit `6e17185` is pushed and verified against current main** (Entry 63).
+- **Official FoR evidence now passes every automated gate and is byte-identical across both runs**
+  (Entry 64). The seven small evidence files and D30 batch size 256 are prepared locally. D38/F3 remain
+  proposed pending Donia + Iheb review and human merge.
 - **Stage 7 evaluation harness, steps 1–5, is merged** as PR #13 (Entry 31).
 - **Protocol clarifications D29–D31 are merged** as PR #16 (Entry 32).
 - **Stage 10 risk policy, steps R1–R2, is merged** as PR #17 (Entry 33).
@@ -1621,23 +1662,24 @@ are byte-identical, and Donia + Iheb review the evidence.
 - A tested ModelBundle format (`src/bundle/`) whose loader verifies every part before use,
   documented in `docs/model_bundle.md`.
 - Governance rules that keep the external set metadata-only until the one guarded Stage 13 run.
+- Corrected Stage 6 FoR evidence under `docs/audit_evidence/stage6_preprocessing/`: exact profile,
+  deterministic validation, shortcut/padding screens, D18 invariance and no-training T4 benchmark.
 - Stage briefs (`docs/stages/`, D32): 00–01 accepted, 02–03 merged; teach-back completion tracked separately.
 
 **Branches:**
 - `origin/main`: fetched at `638339b`; includes merged PR #32 and Entries 1–56.
-- `feat/stage6-preprocessing-profile-malak`: approved 7.6 kHz correction `6e17185` is pushed; local
-  HEAD matches the remote branch and is zero commits behind current main.
+- `feat/stage6-preprocessing-profile-malak`: push-record commit `f659a37` is pushed and zero commits
+  behind current main; successful evidence/config/docs integration is local and awaiting approval.
 - PRs #26 and #27 are merged. D33–D35 acceptance tracking remains separate from this update.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
 
 **What's next:**
-1. Use exact clean implementation commit `6e17185` in a fresh Colab runtime and run the official
-   FoR-only Stage 6 notebook twice;
-   require all shortcut/D18 checks and deterministic hashes to pass, then record the corrected benchmark
-   batch size required by D30.
-2. Donia and Iheb approve D38/F3 and the evidence PR; a human merges it. AI does not approve or merge.
+1. Malak reviews and approves the Stage 6 evidence/config/docs commit; then pushes it and requires
+   green CI.
+2. Donia and Iheb review the near-threshold silence flag and approve D38/F3 and the evidence PR; a
+   human merges it. AI does not approve or merge.
 3. Complete the Stage 6 brief, retrospective briefs 04–05 and teach-backs required by D32.
 4. Separately review proposed D33–D35 before their affected work; no real Part C or external
    run proceeds before its applicable freeze and approvals.
