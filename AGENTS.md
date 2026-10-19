@@ -116,7 +116,7 @@ required CI check `checks`, branch up to date; no direct pushes.
 | 12 | **ModelBundle freeze** | C · Donia | |
 | 13 | **DEEP-VOICE external run (once, guarded)**, stores per-sample scores | D · Khalil; review: all four | |
 | 14–16 | Robustness (FoR only) · calibration analysis · error analysis | D · Malak (14), Khalil (15, 16) | |
-| 17–19 | API (FastAPI) · dashboard (Streamlit) · tests/CI/Docker/docs | E · Iheb; Stage 19 report: all four | |
+| 17–19 | API (FastAPI) · web app (React, D38) · tests/CI/Docker/docs | E · Iheb; Stage 19 report: all four | |
 
 Review rule (D26): the consumer reviews the producer.
 

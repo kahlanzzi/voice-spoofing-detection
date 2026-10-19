@@ -1207,8 +1207,6 @@ reviewed both.
 
 **Gate:** team review of this PR (all three reviewers). AI agents do not merge.
 
----
-
 ### Entry 58 — D36 proposed: baseline in the single external run (2026-10-18)
 
 **Authorship:** requested and specified by Donia Mabrouk (Part C owner). Drafted by **Claude Code**
@@ -1238,6 +1236,21 @@ reviewed both.
 **Approval (2026-10-19):** Malak, Khalil and Iheb approved PR #29 on GitHub; Iheb's review answers this entry's request to accept or revise D33–D36. D33–D36 are Approved; D35 approval does not authorize the external run.
 
 **Gate:** D33–D36 approved by all four. AI does not approve or merge.
+
+### Entry 59 — Docs aligned with D38 (2026-10-19)
+
+**What:** on `docs/stage18-stack-followup` (Iheb), the follow-up promised in ADR 0008:
+`docs/architecture.md` (online tier, component diagram, module table, UC-01 flow), the Dashboard
+row of ADR 0002 (pointer to ADR 0008) and the `AGENTS.md` roadmap row now name the React web app;
+ADR 0008 status set to Accepted (PR #35, approved by Donia; Malak and Khalil informed on 2026-10-19, objections to be handled by a new decision). Open items for PR #14 and PR #35 ticked.
+
+**Evidence [verified by Iheb]:** `python -m pytest -q` passes on the branch; docs-only change.
+
+**AI assistance:** **Claude** (claude.ai chat) prepared the edits; Iheb reviewed the diff.
+
+**Gate:** review of this PR. AI agents do not merge.
+
+---
 
 ---
 
@@ -1520,7 +1533,7 @@ and require green CI. Donia will re-review. F3 remains pending human review and 
   the file-level view and governance allowlist decisions. No convention is approved by this update. (D33–D35 approved, PR #29, 2026-10-19)
 
 **GitHub / repo**
-- [ ] Team review of PR `docs/stage18-frontend-stack` (D38, Entry 57); after approval, a follow-up PR updates `docs/architecture.md`, ADR 0002 and the `AGENTS.md` roadmap row.
+- [x] Team review of PR `docs/stage18-frontend-stack` (D38, Entry 57): merged as PR #35. Follow-up docs PR `docs/stage18-stack-followup` (Entry 59) updates `docs/architecture.md`, ADR 0002 and the `AGENTS.md` roadmap row.
 - [x] PR `stage-0-git-workflow`: merged as PR #1 (approved and merged by Malak, 2026-10-05).
 - [x] Iheb and Malak accept the collaborator invitations (accepted; Entry 14).
 - [x] Branch protection on `main` is active: PR + 1 approval + required CI check `checks` + branch up to date; no direct pushes (confirmed, Entry 18).
@@ -1534,7 +1547,7 @@ and require green CI. Donia will re-review. F3 remains pending human review and 
 - [x] Review and merge PR `docs/stage3-repo-cleanup` (Entry 18): merged as PR #7 (Entry 19).
 - [x] Delete merged branches: remote has only `main` (Entry 19).
 - [x] Review and merge PR `docs/stage3-protocol-skeleton` (Entry 19): merged as PR #8; branch deleted (Entry 20).
-- [ ] Review and merge PR `chore/stage5-ai-tooling` (Entry 27); after merge each member sets `CONTEXT7_API_KEY` locally (never committed) and approves the project MCP server in their own tool.
+- [x] Review and merge PR `chore/stage5-ai-tooling` (Entry 27): merged as PR #14. Using Context7 is optional per member: set `CONTEXT7_API_KEY` locally (never committed) and approve the project MCP server in your own tool (ADR 0006).
 - [x] Stage 13 governance: decide (new decision, before Stage 13) how the guarded external-run code is added to the DEEP-VOICE allowlist of `tests/governance/test_deepvoice_access.py`. (decided by D35, PR #29, 2026-10-19; implementation pending)
 - [x] `LICENSE` (MIT, code only, D25) and the README statement that datasets are not redistributed: in `chore/repo-structure` instead of a separate PR B (Entry 17).
 - [x] Decide whether branch protection should require code-owner review: **no** (review of Entry 16).

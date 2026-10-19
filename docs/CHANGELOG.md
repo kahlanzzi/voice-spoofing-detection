@@ -52,6 +52,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - Stage 6 Mel upper frequency is 7.6 kHz, keeping the final band below the 16 kHz Nyquist edge after the first official candidate exposed D18 resampling instability at 8 kHz.
 - Stage 6 shortcut validation now measures post-trim zero-padding, screens its class separability and reports padding by class and F2 subgroup.
 - Stage 6 Colab runner now supports a manual input/evidence transfer mode when Drive credential propagation is unavailable.
+- Docs aligned with D38: `architecture.md`, ADR 0002 (Dashboard row) and the `AGENTS.md` roadmap now name the React web app; ADR 0008 accepted.
 - Baseline tuning pre-declared: MFCC standardization on FoR train, RBF-SVM C × gamma grid, val-A EER selection, decision_function score (D37, proposed).
 - Refined proposed D33/D35 after Donia's review: existing bootstrap convention, dataset-wide run key and durable registry evidence; approval still pending.
 - Stage 5 closed after PR #15 review and merge: D28 approved, F2 effective, Stage 6 current.

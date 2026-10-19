@@ -18,7 +18,7 @@ The stack was set across the Execution Plan, the `AGENTS.md` roadmap and D15; th
 | Language | **Python 3.13** (Colab runtime 3.13.15); local 3.14 allowed for editing and quick tests; CI on 3.13 | D15 |
 | Deep learning | **PyTorch** (CNN on log-Mel spectrograms) | Execution Plan Phase 0 (0.10) and Phase 4 |
 | API | **FastAPI** (`POST /analyze-audio`) | Execution Plan Phase 7; SRS FR-02; roadmap Stages 17–19 |
-| Dashboard | **Streamlit** (the Execution Plan also allows React; the roadmap fixes Streamlit) | Execution Plan Phase 8; roadmap Stages 17–19 |
+| Dashboard | **Streamlit** (the Execution Plan also allows React; the roadmap fixes Streamlit). **Superseded by [ADR 0008](0008-web-frontend-react.md) (D38): React + TypeScript web app.** | Execution Plan Phase 8; roadmap Stages 17–19 |
 | Compute and data | **Google Colab** (GPU) + shared **Google Drive** for datasets and archives; Kaggle as fallback | Execution Plan "Data & Compute Workflow" |
 | Experiment tracking | **Weights & Biases** | Execution Plan Phase 0 (0.6) |
 
