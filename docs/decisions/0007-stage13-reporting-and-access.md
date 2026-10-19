@@ -1,10 +1,10 @@
 # 0007. Stage 13 reporting conventions and guarded access
 
-- **Status:** Proposed — not approved or permission to run
+- **Status:** Approved — not permission to run (all four deciders; PR #26 and PR #29, 2026-10-19)
 - **Date:** 2026-10-18
-- **Register:** Proposed D33–D35 in `README.md`; recheck IDs against main before merge
+- **Register:** D33–D35 in `README.md` (approved)
 - **Owner:** Khalil Dridi (D26)
-- **Deciders:** Donia Mabrouk, Iheb Zemzemi, Malak Ben Salem, Khalil Dridi; responses pending
+- **Deciders:** Donia Mabrouk, Iheb Zemzemi, Malak Ben Salem, Khalil Dridi; all four accepted
 - **AI assistance:** Codex drafted this proposal from repository documents at Khalil's request.
 
 ## Context
@@ -163,10 +163,10 @@ own reviewed code/test changes. F3, real Part C work, F4 and the Stage 13 review
 
 | Reviewer | D33 | D34 | D35 | Date / evidence |
 |---|---|---|---|---|
-| Donia Mabrouk | Pending | Pending | Pending | — |
-| Iheb Zemzemi | Pending | Pending | Pending | — |
-| Malak Ben Salem | Pending | Pending | Pending | — |
-| Khalil Dridi | Pending | Pending | Pending | — |
+| Donia Mabrouk | ✅ | ✅ | ✅ | 2026-10-18, PR #26, after her requested changes were incorporated |
+| Iheb Zemzemi | ✅ | ✅ | ✅ | 2026-10-19, approved PR #29 (GitHub review), which asked him to accept or revise D33–D36 |
+| Malak Ben Salem | ✅ | ✅ | ✅ | 2026-10-18, PR #26 |
+| Khalil Dridi | ✅ | ✅ | ✅ | Author, PR #26 |
 
 ## Links
 
