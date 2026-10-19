@@ -1512,7 +1512,7 @@ then commit/push and require green CI. This was resolved in PR #34; see the curr
 
 ---
 
-### Entry 68 — Stage 4/5 D32 briefs submitted for review (2026-10-19)
+### Entry 68 — Stage 4/5 D32 briefs prepared for review (2026-10-19)
 
 **What [doc]:** added the retrospective briefs `docs/stages/stage04-split.md` and
 `docs/stages/stage05-dataset-freeze.md` from the approved D32 template. Updated the stage index and
@@ -1528,8 +1528,8 @@ and Entries 30/36. The source links are in the briefs.
 evidence. Malak owns review of the content; Donia's teach-back review and acceptance remain pending.
 AI does not approve or merge.
 
-**Gate:** the two briefs are in review on `docs/stages-04-05-briefs-malak`. Do not mark them
-accepted until Donia completes the D32 teach-back.
+**Gate:** the two briefs are ready for review on `docs/stages-04-05-briefs-malak`; a regular PR still
+needs to be opened. Do not mark them accepted until Donia completes the D32 teach-back.
 
 ---
 
@@ -1652,8 +1652,8 @@ accepted until Donia completes the D32 teach-back.
 - [x] Team review of `docs/stage6-stage-briefs` (approves D32): approved by all three, 2026-10-18.
 - [ ] Write stage briefs 00–03 (Donia). 00–01 accepted (merged as PR #25 after teach-back review);
   02–03 merged in `3ecb979` (Entry 47); confirm teach-back completion separately.
-- [x] Draft and submit stage briefs 04–05 for review (Entry 68).
-- [ ] Donia completes the D32 teach-back and accepts briefs 04–05.
+- [x] Prepare stage briefs 04–05 on the docs branch (Entry 68).
+- [ ] Open a regular review PR; Donia completes the D32 teach-back and accepts briefs 04–05.
 
 **Notebook (ported to the repo, `f8af88a`; pins and guards added in Entry 7)**
 - [x] Cell 1: real `REPO_URL`; clone with `-b <branch>`; print Python version and commit hash; capture and print the `pytest` output.
@@ -1792,12 +1792,12 @@ accepted until Donia completes the D32 teach-back.
 - Governance rules that keep the external set metadata-only until the one guarded Stage 13 run.
 - Corrected Stage 6 FoR evidence under `docs/audit_evidence/stage6_preprocessing/`: exact profile,
   deterministic validation, shortcut/padding screens, D18 invariance and no-training T4 benchmark.
-- Stage briefs (`docs/stages/`, D32): 00–01 accepted, 02–03 merged, 04–05 in review; teach-back
-  completion tracked separately.
+- Stage briefs (`docs/stages/`, D32): 00–01 accepted, 02–03 merged, 04–05 ready for review on the
+  docs branch; teach-back completion tracked separately.
 
 **Branches:**
 - `origin/main`: fetched at `4707476`; PR #34 and its conflict-resolution commit are merged.
-- `docs/stages-04-05-briefs-malak`: based on current `main`; carries the Stage 4/5 brief review PR.
+- `docs/stages-04-05-briefs-malak`: based on current `main`; briefs pushed, regular review PR not yet opened.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
@@ -1812,5 +1812,5 @@ accepted until Donia completes the D32 teach-back.
    runner; resolve the external-run governance allowlist and verify the scikit-learn Colab install.
 4. Baseline B1–B2 and the D37 configuration are in main; real fitting still waits for F3.
 5. Then run the real Part C work on the frozen F3 preprocessing profile.
-6. Complete the Stage 4/5 D32 teach-back review and record acceptance in the stage index.
+6. Open the Stage 4/5 documentation PR, complete the D32 teach-back review, and record acceptance in the stage index.
 7. Complete the Stage 6 brief and teach-back before marking that stage done.
