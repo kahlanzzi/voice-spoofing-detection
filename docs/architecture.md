@@ -11,7 +11,7 @@ The system has **two lifecycles around one shared core** (SDD §2.1):
 
 - **Research tier** (Colab / Kaggle notebooks): dataset audit, training, model selection, risk-policy
   fit, evaluation, and the single guarded DEEP-VOICE run.
-- **Online tier** (two containers, `api` + `dashboard`): analyzes one short recording per request
+- **Online tier** (two containers, `api` + `web`): analyzes one short recording per request
   and returns prediction (authentic / synthetic / uncertain), confidence and LOW/MEDIUM/HIGH risk
   level, with a decision-support notice.
 
@@ -27,7 +27,7 @@ event-driven styles were rejected: nothing in the SRS needs independent scaling 
 ```mermaid
 flowchart LR
     subgraph Online["Online tier (docker-compose)"]
-        Dash[Analyst Dashboard<br/>Streamlit] --> GW[API Gateway<br/>FastAPI]
+        Dash[Analyst web app<br/>React, D38] --> GW[API Gateway<br/>FastAPI]
         Client[API Client] --> GW
         GW --> AC[Access Control]
         GW --> AS[Analysis Service<br/>facade]
@@ -77,7 +77,7 @@ load a bundle that the research tier has already frozen.
 | Training & Tuning | Fits the risk policy on val-B (research tier) | `src/tuning/` (Stage 10) |
 | Evaluation | One harness for baseline and CNN; required metric set (D4); external-run guard | `src/evaluation/` (Stage 7, 13) |
 | API | FastAPI gateway, analysis facade, records, logs | `api/` (Stage 17) |
-| Dashboard | Streamlit UI; calls the API only, no detector logic | `dashboard/` (Stage 18) |
+| Web app | React + TypeScript analyst interface (D38, ADR 0008); calls the API only, no detector logic | `web/` (Stage 18) |
 | Configs | Dataset pins (D21) and run configs | `configs/*.yaml` |
 
 ## 4. Data model
@@ -97,7 +97,7 @@ registry** (at most one external run per dataset; PC-05), and **dataset manifest
 
 ## 5. Key flows
 
-- **UC-01 Analyze audio (SDD Fig. 5):** dashboard → API Gateway → Analysis Service → intake
+- **UC-01 Analyze audio (SDD Fig. 5):** web app → API Gateway → Analysis Service → intake
   validation → preprocessing → detector score → risk decision → record metadata → release audio →
   result. An invalid file returns a structured 4xx error with no inference and no record (NFR-06).
 - **UC-08 External generalization test (SDD Fig. 6):** notebook → Evaluation Service → External
