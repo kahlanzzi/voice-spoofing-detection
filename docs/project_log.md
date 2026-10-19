@@ -1191,6 +1191,23 @@ merged entries retained, sequential numbering and conflict-marker checks passed.
 **Gate:** Finish the merge commit, push PR #32 and obtain updated CI/human review.
 The runner integration test is still future implementation work; no external data accessed.
 
+### Entry 57 — Analyst interface decision proposed: React instead of Streamlit (2026-10-19)
+
+**What:** on `docs/stage18-frontend-stack` (Iheb), D38 / ADR 0008 propose replacing the Streamlit
+dashboard with a React + TypeScript web app, after course-professor feedback. Only the analyst
+interface changes; FastAPI, `src/` and the §11 contract are unchanged. A clickable mockup (sign-in,
+Overview, Analyze with all states, History, System status) was accepted by Iheb. The Overview page
+is new scope, limited to figures from stored records and built last; fallback to Streamlit by
+decision if the Analyze flow is not merged by week 10.
+
+**Evidence [verified by Iheb]:** `python -m pytest -q` passes on the branch; docs-only change.
+
+**AI assistance:** **Claude** (claude.ai chat) drafted ADR 0008 and built the mockup, applying the
+Impeccable design guidance (markdown only; its downloaded binary and hooks were not run). Iheb
+reviewed both.
+
+**Gate:** team review of this PR (all three reviewers). AI agents do not merge.
+
 ---
 
 ### Entry 57 — D36 proposed: baseline in the single external run (2026-10-18)
@@ -1246,6 +1263,7 @@ The runner integration test is still future implementation work; no external dat
   the file-level view and governance allowlist decisions. No convention is approved by this update. (D33–D35 approved, PR #29, 2026-10-19)
 
 **GitHub / repo**
+- [ ] Team review of PR `docs/stage18-frontend-stack` (D38, Entry 57); after approval, a follow-up PR updates `docs/architecture.md`, ADR 0002 and the `AGENTS.md` roadmap row.
 - [x] PR `stage-0-git-workflow`: merged as PR #1 (approved and merged by Malak, 2026-10-05).
 - [x] Iheb and Malak accept the collaborator invitations (accepted; Entry 14).
 - [x] Branch protection on `main` is active: PR + 1 approval + required CI check `checks` + branch up to date; no direct pushes (confirmed, Entry 18).
