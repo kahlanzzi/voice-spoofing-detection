@@ -1210,7 +1210,44 @@ reviewed both.
 
 ---
 
+### Entry 58 — D36 proposed: baseline in the single external run (2026-10-18)
+
+**Authorship:** requested and specified by Donia Mabrouk (Part C owner). Drafted by **Claude Code**
+(Claude Opus 5.5), an AI tool, from the repository documents only; Donia reviews before push.
+
+**What:** on `docs/stage6-d36-baseline-external` (docs only, no code):
+- Gap found in the briefs review (Entry 47): Protocol §1 RQ2 compares CNN and baseline
+  externally, but §8 scores only the frozen CNN bundle, so the external half of RQ2 has no run.
+- Proposed **D36** with [ADR 0009](decisions/0009-baseline-in-external-run.md): both frozen models
+  scored on the same windows in the one Stage 13 run, under the D35 dataset-wide claim; baseline
+  forced binary at its D29 threshold plus EER/AUC; paired CNN − baseline EER difference with a
+  speaker-clustered paired bootstrap CI; baseline artifact hashed in F4, not in the ModelBundle;
+  C→D amended to one stored-score file per model with identical columns.
+- Review fixes (Donia): baseline stored-score values defined (raw = SVM score, p = NA, prediction
+  forced binary, never "uncertain"); the "drop external RQ2" alternative now cites Protocol §12.
+- Register row D36 and ADR table row 0009; Protocol §14 change-log row; CHANGELOG line.
+- **D33–D35 acceptance recorded:** PR #26 was approved by Donia (after her requested changes were
+  incorporated) and Malak; Khalil is the author; Iheb has not approved. ADR 0007 requires all
+  four, so D33–D35 stay Proposed ("accepted by Donia, Malak and Khalil (author) via PR #26,
+  2026-10-18; Iheb pending"); the ADR 0007 reviewer table is filled accordingly.
+- Iheb to accept or revise D33–D35 (and D36) in the review of this PR; when all four have
+  accepted, set D33–D35 to Approved.
+
+**Evidence [verified]:** `bootstrap_ci(statistic, n, *, clusters=...)` signature checked in
+`src/evaluation/bootstrap.py`. Test output in the PR report. No external data read, no model run.
+
+**Approval (2026-10-19):** Malak, Khalil and Iheb approved PR #29 on GitHub; Iheb's review answers this entry's request to accept or revise D33–D36. D33–D36 are Approved; D35 approval does not authorize the external run.
+
+**Gate:** D33–D36 approved by all four. AI does not approve or merge.
+
+---
+
 ## Open items
+
+**Part C: external comparison (Entry 58)**
+- [x] Approve D36 (all four) before F4. (PR #29, 2026-10-19)
+- [x] Iheb to accept or revise D33–D35 (and D36) in the review of this PR; when all four have
+  accepted, set D33–D35 to Approved (Entry 58). (PR #29, 2026-10-19)
 
 **Khalil: Stage 13 preparation**
 - [ ] Implement the D35 per-window frozen preprocessing integration test (Entry 55).
@@ -1220,10 +1257,10 @@ reviewed both.
 - [x] PR #21 merged into main as `65ce1d2`; PR #23 base changed to main.
 - [x] PR #23 integrated and merged as `3f2f4bb` after passing CI (Entries 42–44).
 - [x] PR #24 merged into main as `6786c12` (Entries 45–46).
-- [ ] Review proposed D33–D35 and ADR 0007; record explicit approval or requested revisions (Entry 48).
+- [x] Review proposed D33–D35 and ADR 0007; record explicit approval or requested revisions (Entry 48). (approved by all four, PR #29, 2026-10-19)
 - [ ] Complete clustered CIs, speaker completeness checks and filter/file-level reporting.
-- [ ] Before Stage 13, approve and record the speaker-average undefined-value convention alongside
-  the file-level view and governance allowlist decisions. No convention is approved by this update.
+- [x] Before Stage 13, approve and record the speaker-average undefined-value convention alongside
+  the file-level view and governance allowlist decisions. No convention is approved by this update. (D33–D35 approved, PR #29, 2026-10-19)
 
 **GitHub / repo**
 - [ ] Team review of PR `docs/stage18-frontend-stack` (D38, Entry 57); after approval, a follow-up PR updates `docs/architecture.md`, ADR 0002 and the `AGENTS.md` roadmap row.
@@ -1241,7 +1278,7 @@ reviewed both.
 - [x] Delete merged branches: remote has only `main` (Entry 19).
 - [x] Review and merge PR `docs/stage3-protocol-skeleton` (Entry 19): merged as PR #8; branch deleted (Entry 20).
 - [ ] Review and merge PR `chore/stage5-ai-tooling` (Entry 27); after merge each member sets `CONTEXT7_API_KEY` locally (never committed) and approves the project MCP server in their own tool.
-- [ ] Stage 13 governance: decide (new decision, before Stage 13) how the guarded external-run code is added to the DEEP-VOICE allowlist of `tests/governance/test_deepvoice_access.py`.
+- [x] Stage 13 governance: decide (new decision, before Stage 13) how the guarded external-run code is added to the DEEP-VOICE allowlist of `tests/governance/test_deepvoice_access.py`. (decided by D35, PR #29, 2026-10-19; implementation pending)
 - [x] `LICENSE` (MIT, code only, D25) and the README statement that datasets are not redistributed: in `chore/repo-structure` instead of a separate PR B (Entry 17).
 - [x] Decide whether branch protection should require code-owner review: **no** (review of Entry 16).
 - [x] Compare `CONTRIBUTING.md`, the `.github/` templates, `docs/decisions/TEMPLATE.md` and ADR 0001 with the actual CS 488 template and align them (keep D20 checkbox, stacked PRs, D23 naming, human in the loop): done on `chore/repo-structure` (Entry 17).
@@ -1271,7 +1308,7 @@ reviewed both.
 - [x] Baseline threshold: own val-B EER point, forced binary only (Donia, before Stage 7 results): D29 (Entry 32).
 - [x] Exact CNN model-selection search space in `configs/` (Donia, before Stage 8): D30 (Entry 32).
 - [x] Enforcement of "Stage 11 runs once" (run registry) (Donia, before Stage 11): D31 (Entry 32).
-- [ ] File-level decisions for DEEP-VOICE: frozen band on the file mean of p, secondary view (Khalil, before Stage 13).
+- [x] File-level decisions for DEEP-VOICE: frozen band on the file mean of p, secondary view (Khalil, before Stage 13). (D34 approved, PR #29, 2026-10-19)
 - [ ] Colab install of scikit-learn 1.9.1 [to verify] at the first Stage 7 Colab run.
 - [ ] Approve D37 (team review) (Entry 53).
 - [x] Write the baseline grid and scaling in `configs/` before Stage 7 training (D37): `configs/baseline.yaml` (Entry 54).
@@ -1377,6 +1414,9 @@ reviewed both.
 
 **What was done:**
 - Added the D35 per-window preprocessing integration-test requirement (Entry 55); implementation pending.
+- **D36 proposed** (ADR 0009, Entry 58): the baseline is scored with the CNN in the single external
+  run, so RQ2 can be answered externally; approved by all four (PR #29, 2026-10-19).
+- **PR #27 merged** as `3dc20b7`: synthetic reporting tests (Entries 51–52).
 - **Synthetic integration tests prepared:** eight invented speakers and 14,960 windows (Entry 51); no real predictions.
 - **PR #21 merged** as `65ce1d2`; its documentation is in main.
 - **PR #23 merged** as `3f2f4bb`: per-speaker helper and tests (Entries 42–44).
@@ -1426,12 +1466,13 @@ reviewed both.
 - `docs/stage13-preprocessing-test`: PR #32; main integrated locally, requirement at Entry 55;
   merge commit, push and updated CI/review pending.
 - PRs #26 and #27 are merged. D33–D35 acceptance tracking remains separate from this update.
+- `docs/stage6-d36-baseline-external`: PR #29; main merged as `0fa62a9`; D33–D36 approved by all four (2026-10-19); awaiting merge.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
 
 **What's next:**
-1. Review proposed D33–D35; record explicit decisions before implementation or the external run.
+1. D33–D36 are approved; ADR 0007/0009 implementation (runner, both artifacts verified before any audio read) is required before Stage 13.
    Briefs 02–03 are now merged; track teach-back review separately. Malak writes briefs 04–05.
 2. **Stage 6 is current (waiting for F3):** Malak is on preprocessing profile v1 + tests + compute
    benchmark, on a separate branch.
