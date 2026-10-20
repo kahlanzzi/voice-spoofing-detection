@@ -5,7 +5,7 @@
 | **Stage** | 3 — Experimental Protocol v1.0 (freeze F1) |
 | **Owner** | Donia Mabrouk (lead; D26, Part A) |
 | **Reviewer(s)** | Iheb Zemzemi, Malak Ben Salem, Khalil Dridi (D26: Stage 3 sign-off by all four) |
-| **Status** | In review |
+| **Status** | Accepted (PR #40) |
 | **Date** | 2026-10-18 |
 | **Related PRs** | #7 (`docs/stage3-repo-cleanup`: team of four, D26; Entry 18) · #8 (`docs/stage3-protocol-skeleton`, v0.1; Entry 19) · #10 (`docs/stage3-protocol-v1`, v1.0 = F1, signed by all four; Entry 21) · #16 (`docs/stage7-protocol-clarifications`, D29–D31; Entry 32) |
 

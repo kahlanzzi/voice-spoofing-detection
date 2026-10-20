@@ -10,9 +10,11 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 
 ### Added
 - Stage 7 step 1: verified MFCC feature cache for train/val-A/val-B (non-pickle npz + strict JSON, bound to F3 and F2; test split refused), with design note and 35 synthetic tests.
+- D40 (approved, PR #40): W&B logging from Stage 8; baseline provenance via committed reports.
+- H7 pre-registered: silence-fraction shortcut test on REAL clips (Stage 16).
 - Stage 4 split, Stage 5 F2, and Stage 6 preprocessing retrospective briefs under `docs/stages/`; D32 teach-back reviews pending.
 - Corrected official Stage 6 FoR evidence: byte-identical validation runs, passing D18/shortcut checks, and the no-training Tesla T4 benchmark selecting batch size 256.
-- D38 / ADR 0008 (proposed): React + TypeScript analyst interface replaces Streamlit; Overview page as new scope.
+- D38 / ADR 0008 (approved, PR #40): React + TypeScript analyst interface replaces Streamlit; Overview page as new scope.
 - D39 approved after PR #34 review and merge: Stage 6 preprocessing profile v1, F3 identifiers, shortcut/D18 caveats and no-training benchmark.
 - Stage 7 MFCC/SVM baseline: train-only scaler, NumPy scorer, deterministic non-pickle artifact, and D37 fitting (16-point grid on val-A, D29 threshold on val-B) with `configs/baseline.yaml`.
 - D35 runner implementation requirement: synthetic integration test of shared frozen preprocessing, with trimming and centred padding per 2 s window.
@@ -34,7 +36,6 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - Stage 5 metadata-only F2 freeze generator, pinned config, deterministic manifests, hash ledger and tests.
 - Shared AI tooling v1 (D27, ADR 0006): `pr-prep` skill, Context7 in `.mcp.json` (key via env var); GitHub MCP excluded.
 - Stage 4 FoR-only leakage-aware split code, frozen split config, automated checks and tests.
-
 - `AGENTS.md` as the single AI context for all tools (D22); `CLAUDE.md` imports it.
 - Decision register moved to `docs/decisions/README.md`, with ADRs 0001–0005 (D24).
 - `CONTRIBUTING.md`, PR and issue templates aligned with the CS 488 template.
@@ -52,6 +53,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - `docs/experimental_protocol.md` v1.0 frozen (F1): all sections decided from the team-accepted defaults.
 
 ### Changed
+- Stage 6 closed: briefs 04–06 accepted (PR #37); Stage 7 current. Register statuses D29–D31 and Protocol §14 rows now cite PRs #16 and #30. CONTRIBUTING: check open PRs before claiming IDs. D37 status recorded as approved (PR #30).
 - Stage 6 Mel upper frequency is 7.6 kHz, keeping the final band below the 16 kHz Nyquist edge after the first official candidate exposed D18 resampling instability at 8 kHz.
 - Stage 6 shortcut validation now measures post-trim zero-padding, screens its class separability and reports padding by class and F2 subgroup.
 - Stage 6 Colab runner now supports a manual input/evidence transfer mode when Drive credential propagation is unavailable.

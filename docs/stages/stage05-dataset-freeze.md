@@ -5,7 +5,7 @@
 | **Stage** | 5 — Dataset freeze (F2) |
 | **Owner** | Malak Ben Salem (D26, Part B) |
 | **Reviewer(s)** | Donia Mabrouk (consumer; D26) |
-| **Status** | Ready for review — retrospective brief; teach-back pending |
+| **Status** | Accepted (PR #37) |
 | **Date** | 2026-10-19 |
 | **Related PRs** | #15 (F2 implementation and evidence; merged as `89b37fc`) · #22 (administrative closeout; merged as `02f53e2`) |
 

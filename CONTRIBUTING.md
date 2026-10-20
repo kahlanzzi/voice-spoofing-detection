@@ -64,6 +64,7 @@ chore(ci): run pytest on Python 3.13
 - If you changed behavior, update `docs/CHANGELOG.md` **in the same PR**.
 - If the PR records a decision, add the D-ID row to `docs/decisions/README.md`, and an ADR for a
   major decision (D24).
+- Before claiming a new D-ID, ADR number or project-log entry number, check open PRs and remote branches as well as main; numbers are taken at merge time, and the PR that merges second renumbers.
 - **Stacked PRs:** if your branch starts from another open branch, switch the PR base to `main` once
   the PR below it is merged, *before* merging. Never merge a PR whose base is not `main` unless that
   is intended.

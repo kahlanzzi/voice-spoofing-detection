@@ -1,6 +1,6 @@
 # 0008. Analyst interface: React web app instead of Streamlit
 
-- **Status:** Accepted (merged via PR #35, 2026-10-19)
+- **Status:** Approved (merged via PR #35, 2026-10-19; confirmed by all four via PR #40, 2026-10-20)
 - **Date:** 2026-10-19
 - **Register:** D38 in `README.md` (recheck the next free D-ID against `main` before merge)
 - **Deciders:** Iheb Zemzemi (author, Part E owner), Donia Mabrouk, Malak Ben Salem, Khalil Dridi

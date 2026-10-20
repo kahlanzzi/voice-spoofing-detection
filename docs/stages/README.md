@@ -70,11 +70,11 @@ flowchart LR
 |---|---|---|---|
 | 0 Repository + environment | Donia | `stage00-setup.md` | accepted (PR #25) |
 | 1 Dataset audit | Donia | `stage01-dataset-audit.md` | accepted (PR #25) |
-| 2 Threat model | Donia | `stage02-threat-model.md` | in review |
-| 3 Experimental Protocol v1.0 | Donia (lead) | `stage03-protocol.md` | in review |
-| 4 Leakage-aware split | Malak | `stage04-split.md` | ready for review; teach-back pending |
-| 5 Dataset freeze (F2) | Malak | `stage05-dataset-freeze.md` | ready for review; teach-back pending |
-| 6 Preprocessing profile v1 | Malak | `stage06-preprocessing.md` | ready for review; teach-back pending |
+| 2 Threat model | Donia | `stage02-threat-model.md` | accepted (PR #40; D32 teach-back: Khalil for Stage 2; Iheb, Malak and Khalil for Stage 3) |
+| 3 Experimental Protocol v1.0 | Donia (lead) | `stage03-protocol.md` | accepted (PR #40; D32 teach-back: Khalil for Stage 2; Iheb, Malak and Khalil for Stage 3) |
+| 4 Leakage-aware split | Malak | `stage04-split.md` | accepted (PR #37; D32 teach-back by Donia with AI assistance) |
+| 5 Dataset freeze (F2) | Malak | `stage05-dataset-freeze.md` | accepted (PR #37; D32 teach-back by Donia with AI assistance) |
+| 6 Preprocessing profile v1 | Malak | `stage06-preprocessing.md` | accepted (PR #37; D32 teach-back by Donia with AI assistance) |
 | 7 Evaluation harness + baseline | Donia | `stage07-baseline.md` | after the stage closes |
 | 8 CNN training | Donia | `stage08-cnn-training.md` | after the stage closes |
 | 9 Model selection | Donia | `stage09-model-selection.md` | after the stage closes |
