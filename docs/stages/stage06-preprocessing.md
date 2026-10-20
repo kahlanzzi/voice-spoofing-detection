@@ -5,7 +5,7 @@
 | **Stage** | 6 — Preprocessing profile v1 |
 | **Owner** | Malak Ben Salem (D26, Part B) |
 | **Reviewer(s)** | Donia Mabrouk and Iheb Zemzemi (D26 / PR #34) |
-| **Status** | Ready for review — retrospective brief; D32 teach-back pending |
+| **Status** | Accepted (PR #37) |
 | **Date** | 2026-10-19 |
 | **Related PRs** | #34 (Stage 6 evidence and review corrections; merged at `4707476`) |
 

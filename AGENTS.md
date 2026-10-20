@@ -79,7 +79,7 @@ documents, propose a fix, and wait for approval.
   runs `pytest -q` on 3.13. Data roots and all paths come from
   config or CLI arguments. Never hardcode a Colab or Drive path.
 - Every run is `dataset version + config + code version → results`. Configs live in `configs/*.yaml`.
-  Log runs to W&B.
+  Log runs to W&B (from Stage 8; D40).
 - Fail loudly on invalid input (e.g., raise on an ambiguous label). Never skip bad files silently;
   record them.
 - `tests/` mirrors `src/`. Every new function gets a pytest test. Run `pytest -q` before reporting.
@@ -108,8 +108,8 @@ required CI check `checks`, branch up to date; no direct pushes.
 | 3 | Experimental Protocol v1.0 (freeze) | A · Donia (lead); sign-off: all four | done |
 | 4 | Leakage-aware split | B · Malak; review: Donia | done |
 | 5 | Dataset freeze (F2: manifests + hashes) | B · Malak; review: Donia | done |
-| 6 | Preprocessing profile v1 + tests + compute benchmark | B · Malak | ← CURRENT |
-| 7 | Evaluation harness + MFCC/SVM baseline | C · Donia | |
+| 6 | Preprocessing profile v1 + tests + compute benchmark | B · Malak | done |
+| 7 | Evaluation harness + MFCC/SVM baseline | C · Donia | ← CURRENT |
 | 8–9 | CNN training + model selection (FoR val-A) | C · Donia | |
 | 10 | Risk policy + calibration fit (FoR val-B) | C · Donia | |
 | 11 | FoR internal test (once) | C · Donia | |

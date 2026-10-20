@@ -5,7 +5,7 @@
 | **Stage** | 4 — Leakage-aware FoR-2sec split |
 | **Owner** | Malak Ben Salem (D26, Part B) |
 | **Reviewer(s)** | Donia Mabrouk (consumer; D26) |
-| **Status** | Ready for review — retrospective brief; teach-back pending |
+| **Status** | Accepted (PR #37) |
 | **Date** | 2026-10-19 |
 | **Related PRs** | #12 (`feat/stage4-split`; merged as `865faf4`, Entry 28) |
 
