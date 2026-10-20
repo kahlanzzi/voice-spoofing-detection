@@ -1615,7 +1615,7 @@ of this PR, so the index still lists 02–03 as in review.
 
 **Record corrections [verified against PR history as provided]:** D29–D31 statuses and the matching
 Protocol §14 row now cite PR #16 instead of "this PR"; the D37 §14 row cites PR #30 (approved by
-Khalil and Malak on 2026-10-18, Donia author). D37's and D38's register statuses are unchanged here;
+Khalil and Malak on 2026-10-18, Donia author). D38's register status is unchanged here;
 D38 was agreed by all four in person, and written confirmation will be their approval of this PR.
 CONTRIBUTING now asks to check open PRs and remote branches before claiming a D-ID, ADR number or
 log entry number. D37's register status now records its approval via PR #30.
@@ -1936,11 +1936,10 @@ for briefs 02–03 and D38, come through the review of this PR.
   confirmation pending (Entry 72).
 
 **Branches:**
-- `origin/main`: at `7538a1d` (PR #37 merged).
-- `docs/stage7-housekeeping`: from `7538a1d`; one docs-only commit (Entry 72), not pushed yet.
+- `origin/main`: at the PR #39 merge (Stage 7 step 1, Entry 71).
+- `docs/stage7-housekeeping`: this PR; main merged; D40, H7, D38 confirmation and briefs 02–03 await approval by all four (Entry 72).
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
-- `feat/stage7-baseline-fit`: Stage 7 step 1 PR open (commits `dc3b2db`, `6f8413f`, `5fd4b29`, plus this merge); reviewer Khalil; real build waits for the housekeeping PR (D40) (Entry 71).
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
@@ -1950,7 +1949,7 @@ for briefs 02–03 and D38, come through the review of this PR.
    Briefs 02–03: written teach-back confirmation via the `docs/stage7-housekeeping` review.
 2. Team review of `docs/stage7-housekeeping`: approve D40, confirm D38 and briefs 02–03.
 3. Before Stage 13, implement the approved file-level view, speaker-average convention and guarded
-   runner; resolve the external-run governance allowlist and verify the scikit-learn Colab install.
-4. Baseline B1–B2 and the D37 configuration are in main; real fitting still waits for F3.
+   runner; resolve the external-run governance allowlist.
+4. Baseline B1–B2, the D37 config and the MFCC cache (PR #39) are in main; the real feature build and baseline fit (Stage 7 steps 2–3) follow this PR's merge (D40).
 5. Then run the real Part C work on the frozen F3 preprocessing profile.
 6. Set up the W&B project and key handling before the first Stage 8 run (proposed D40).
