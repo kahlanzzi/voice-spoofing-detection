@@ -1610,13 +1610,13 @@ entry and the CHANGELOG line; AI did not push, open or merge a PR.
 completed with AI assistance (Claude explained the §7 answers; Donia reviewed them against the
 briefs and evidence). Briefs 04–06 are marked accepted (PR #37); `AGENTS.md` marks Stage 6 done and
 Stage 7 current. Briefs 02–03: teach-back completed by Khalil (Stage 2) and by Iheb, Malak and
-Khalil (Stage 3), reported by Donia on 2026-10-20; their written confirmation will be their approval
-of this PR, so the index still lists 02–03 as in review.
+Khalil (Stage 3), reported by Donia on 2026-10-20; confirmed in writing by their approval of PR #40;
+briefs 02–03 are accepted.
 
 **Record corrections [verified against PR history as provided]:** D29–D31 statuses and the matching
 Protocol §14 row now cite PR #16 instead of "this PR"; the D37 §14 row cites PR #30 (approved by
 Khalil and Malak on 2026-10-18, Donia author). D38's register status is unchanged here;
-D38 was agreed by all four in person, and written confirmation will be their approval of this PR.
+D38 was agreed by all four in person, and confirmed in writing by their approval of PR #40.
 CONTRIBUTING now asks to check open PRs and remote branches before claiming a D-ID, ADR number or
 log entry number. D37's register status now records its approval via PR #30.
 
@@ -1646,8 +1646,7 @@ https://colab.research.google.com/drive/1k-nBdzEfY_m9FdigsINXOaw9cqbRfcev .
 Donia ran them. Claude Code applied this entry's documentation edits from Donia's instructions on
 `docs/stage7-housekeeping`. Team review is required; AI does not approve or merge.
 
-**Gate:** docs-only commit on `docs/stage7-housekeeping`; D40 approval, and the written confirmations
-for briefs 02–03 and D38, come through the review of this PR.
+**Gate:** approved by all four in PR #40 (2026-10-20): D40 approved, H7 pre-registration accepted, D38 confirmed, briefs 02–03 teach-backs confirmed and accepted. AI does not approve or merge.
 
 ---
 
@@ -1750,9 +1749,9 @@ for briefs 02–03 and D38, come through the review of this PR.
 - [x] Colab install of scikit-learn 1.9.1: verified in Donia's Colab environment check at `bf8096c`
   (366 passed; Entry 72). Stage 7 notebooks mount Drive before installing `requirements.txt`.
 - [x] Approve D37 (team review) (Entry 53): approved via PR #30 (Khalil, Malak), 2026-10-18 (Entry 72).
-- [ ] Approve proposed D40 (W&B from Stage 8) in the `docs/stage7-housekeeping` review (Entry 72).
-- [ ] D38: record written confirmation (approval of the `docs/stage7-housekeeping` PR) and update
-  its register status (Entry 72).
+- [x] Approve proposed D40 (W&B from Stage 8) in the `docs/stage7-housekeeping` review (Entry 72). (PR #40, 2026-10-20)
+- [x] D38: record written confirmation (approval of the `docs/stage7-housekeeping` PR) and update
+  its register status (Entry 72). (PR #40, 2026-10-20)
 - [x] Write the baseline grid and scaling in `configs/` before Stage 7 training (D37): `configs/baseline.yaml` (Entry 54).
 - [x] Human review of `feat/stage7-baseline-code` (B1–B2) after D37 approval (Entry 54): merged as PR #31.
 - [x] Stage 7 step 1: verified MFCC cache for train/val-A/val-B (Entry 71)
@@ -1778,14 +1777,14 @@ for briefs 02–03 and D38, come through the review of this PR.
 
 **Stage briefs (D32, Entry 37)**
 - [x] Team review of `docs/stage6-stage-briefs` (approves D32): approved by all three, 2026-10-18.
-- [ ] Write stage briefs 00–03 (Donia). 00–01 accepted (merged as PR #25 after teach-back review);
-  02–03 merged in `3ecb979` (Entry 47); confirm teach-back completion separately.
+- [x] Write stage briefs 00–03 (Donia). 00–01 accepted (merged as PR #25 after teach-back review);
+  02–03 merged in `3ecb979` (Entry 47); confirm teach-back completion separately. (02–03 accepted, PR #40)
 - [x] Prepare stage briefs 04–06 on the docs branch (Entries 68–69).
 - [x] Open one regular review PR containing briefs 04–06 on `docs/stage4-6-briefs-malak`.
 - [x] Donia completes the D32 teach-back and accepts each brief before the stage index marks them accepted.
   (04–06 accepted, PR #37; Entry 72)
-- [ ] Briefs 02–03: written confirmation of the reported teach-backs (Khalil; Iheb, Malak, Khalil)
-  via approval of the `docs/stage7-housekeeping` PR, then mark them accepted (Entry 72).
+- [x] Briefs 02–03: written confirmation of the reported teach-backs (Khalil; Iheb, Malak, Khalil)
+  via approval of the `docs/stage7-housekeeping` PR, then mark them accepted (Entry 72). (PR #40, 2026-10-20)
 
 **Notebook (ported to the repo, `f8af88a`; pins and guards added in Entry 7)**
 - [x] Cell 1: real `REPO_URL`; clone with `-b <branch>`; print Python version and commit hash; capture and print the `pytest` output.
@@ -1837,7 +1836,7 @@ for briefs 02–03 and D38, come through the review of this PR.
 - [x] Assign the three tracks (0.9): done via D26 (parts A–E with owners, Entry 18).
 - [ ] Confirm compute per person (0.7), set the weekly sync + channel (0.8).
 - [ ] Set up W&B (0.6) before Stage 8: project and key handling (`.env`) before the first Stage 8
-  run (proposed D40, Entry 72).
+  run (D40, Entry 72).
 - [x] Agree the PR merge order: `stage-0-git-workflow` → `stage-1-audit-run` → `stage-2-threat-model` (merged; Entry 14).
 
 **Execution Plan phases (from the Entry 12 comparison)**
@@ -1865,8 +1864,8 @@ for briefs 02–03 and D38, come through the review of this PR.
 
 **What was done:**
 - **Stage 6 is complete; Stage 7 is current** (Entry 72): PR #37 merged at `7538a1d`; briefs 04–06
-  accepted after Donia's D32 teach-back (with AI assistance). D40 (W&B from Stage 8) proposed and H7
-  (silence shortcut, Stage 16) pre-registered on `docs/stage7-housekeeping`. Donia's Colab
+  accepted after Donia's D32 teach-back (with AI assistance). D40 (W&B from Stage 8) approved and H7
+  (silence shortcut, Stage 16) pre-registered (PR #40). Donia's Colab
   environment check at `bf8096c`: Python 3.13.16, scikit-learn 1.9.1, 366 tests passed.
 - Added the D35 per-window preprocessing integration-test requirement (Entry 55); implementation pending.
 - **D36 approved** (ADR 0009, Entry 58): the baseline is scored with the CNN in the single external
@@ -1932,12 +1931,11 @@ for briefs 02–03 and D38, come through the review of this PR.
 - Governance rules that keep the external set metadata-only until the one guarded Stage 13 run.
 - Corrected Stage 6 FoR evidence under `docs/audit_evidence/stage6_preprocessing/`: exact profile,
   deterministic validation, shortcut/padding screens, D18 invariance and no-training T4 benchmark.
-- Stage briefs (`docs/stages/`, D32): 00–01 and 04–06 accepted; 02–03 teach-backs reported, written
-  confirmation pending (Entry 72).
+- Stage briefs (`docs/stages/`, D32): 00–01 and 04–06 accepted; 02–03 accepted (PR #40).
 
 **Branches:**
 - `origin/main`: at the PR #39 merge (Stage 7 step 1, Entry 71).
-- `docs/stage7-housekeeping`: this PR; main merged; D40, H7, D38 confirmation and briefs 02–03 await approval by all four (Entry 72).
+- `docs/stage7-housekeeping`: PR #40, approved by all four; awaiting merge (Entry 72).
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
@@ -1946,10 +1944,9 @@ for briefs 02–03 and D38, come through the review of this PR.
 
 **What's next:**
 1. D33–D36 are approved; ADR 0007/0009 implementation (runner, both artifacts verified before any audio read) is required before Stage 13.
-   Briefs 02–03: written teach-back confirmation via the `docs/stage7-housekeeping` review.
-2. Team review of `docs/stage7-housekeeping`: approve D40, confirm D38 and briefs 02–03.
-3. Before Stage 13, implement the approved file-level view, speaker-average convention and guarded
+   Briefs 00–06 are accepted.
+2. Before Stage 13, implement the approved file-level view, speaker-average convention and guarded
    runner; resolve the external-run governance allowlist.
-4. Baseline B1–B2, the D37 config and the MFCC cache (PR #39) are in main; the real feature build and baseline fit (Stage 7 steps 2–3) follow this PR's merge (D40).
-5. Then run the real Part C work on the frozen F3 preprocessing profile.
-6. Set up the W&B project and key handling before the first Stage 8 run (proposed D40).
+3. Baseline B1–B2, the D37 config and the MFCC cache (PR #39) are in main; the real feature build and baseline fit (Stage 7 steps 2–3) follow this PR's merge (D40).
+4. Then run the real Part C work on the frozen F3 preprocessing profile.
+5. Set up the W&B project and key handling before the first Stage 8 run (D40).

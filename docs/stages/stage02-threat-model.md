@@ -5,7 +5,7 @@
 | **Stage** | 2 — Threat model |
 | **Owner** | Donia Mabrouk (D26, Part A) |
 | **Reviewer(s)** | Khalil Dridi (his Stages 13, 15 and 16 test and report against the threat limits; D26) |
-| **Status** | In review |
+| **Status** | Accepted (PR #40) |
 | **Date** | 2026-10-18 |
 | **Related PRs** | #3 (`stage-2-threat-model`, approved by Malak, merged into `stage-1-audit-run` by mistake, 2026-10-05) · #4 (`stage-2-into-main`, re-delivery to `main`, approved by Iheb, 2026-10-06) · #5 (`docs/stage2-closeout`, sign-offs, Entry 14) — source: Entry 14, Entry 15 |
 
