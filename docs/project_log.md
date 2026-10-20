@@ -1508,8 +1508,8 @@ are prepared but not committed; documentation-only, so tests were not rerun.
 **AI assistance:** **Codex** fetched current main and prepared the local merge/documentation update.
 AI did not commit, push, message reviewers, approve F3 or merge the PR.
 
-**Gate (at the time):** **WAITING FOR MALAK APPROVAL** of the local merge and review corrections,
-then commit/push and require green CI.
+**Gate:** **WAITING FOR MALAK APPROVAL** of the local merge and review corrections, then commit/push
+and require green CI. Donia will re-review. F3 remains pending human review and merge.
 
 ---
 
