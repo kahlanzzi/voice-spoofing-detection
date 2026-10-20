@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 7 step 1: verified MFCC feature cache for train/val-A/val-B (non-pickle npz + strict JSON, bound to F3 and F2; test split refused), with design note and 35 synthetic tests.
 - Corrected official Stage 6 FoR evidence: byte-identical validation runs, passing D18/shortcut checks, and the no-training Tesla T4 benchmark selecting batch size 256.
 - D38 / ADR 0008 (proposed): React + TypeScript analyst interface replaces Streamlit; Overview page as new scope.
 - D39 (proposed): Stage 6 preprocessing profile v1 evidence, F3 identifiers, shortcut/D18 caveats and no-training benchmark; human review pending.
