@@ -895,6 +895,7 @@ approve or merge.
 
 **Gate:** briefs in review; teach-back review by Iheb (Stage 0) and Malak (Stage 1) (D32). AI does
 not approve or merge.
+
 ---
 
 ### Entry 39 — Khalil local setup and AI-tool answer (2026-10-17)
@@ -1508,7 +1509,7 @@ are prepared but not committed; documentation-only, so tests were not rerun.
 AI did not commit, push, message reviewers, approve F3 or merge the PR.
 
 **Gate (at the time):** **WAITING FOR MALAK APPROVAL** of the local merge and review corrections,
-then commit/push and require green CI. This was resolved in PR #34; see the current status below.
+then commit/push and require green CI.
 
 ---
 
@@ -1528,8 +1529,8 @@ and Entries 30/36. The source links are in the briefs.
 evidence. Malak owns review of the content; Donia's teach-back review and acceptance remain pending.
 AI does not approve or merge.
 
-**Gate:** the two briefs are ready for review on `docs/stages-04-05-briefs-malak`; a regular PR still
-needs to be opened. Do not mark them accepted until Donia completes the D32 teach-back.
+**Gate:** Stages 4–6 are ready for review in the regular PR on `docs/stage4-6-briefs-malak`.
+Do not mark them accepted until Donia completes the D32 teach-back.
 
 ---
 
@@ -1555,6 +1556,27 @@ and Iheb's teach-back review remains pending. AI does not approve or merge.
 
 **Gate:** Stages 4, 5 and 6 briefs are prepared together on the documentation branch; the combined
 regular PR and D32 teach-back reviews are still pending.
+
+---
+
+### Entry 70 — Factual corrections after Stage 4–6 brief review (2026-10-20)
+
+**Record corrections:** Entry 59 was assigned twice: `Entry 59 (D38 docs)` refers to Iheb's
+architecture follow-up; `Entry 59 (Stage 6)` refers to Malak's preprocessing implementation. Entry
+67's statement that the blank line after Entry 38 was retained did not hold after the final merge; the
+missing blank line is restored here. Stage 6 history entries are 59–67, with the collision disclosed
+rather than silently renumbered.
+
+**Stage 6 brief corrections:** batch size 256 is attributed to D39 and `configs/cnn.yaml`, not D30;
+the padding means are identified as all-split alongside the train-only values; approval is cited to
+Entry 69; the anti-aliasing statement distinguishes verified test scope from its hypothesized effect.
+
+**AI assistance:** Codex applied Donia's requested documentation corrections. Malak remains
+responsible for review; Donia's D32 teach-back and acceptance of the briefs remain pending. No audio
+or dataset files were added.
+
+**Gate:** corrections are prepared on `docs/stage4-6-briefs-malak`; human push/CI and Donia's D32
+teach-back/re-review remain.
 
 ---
 
@@ -1679,8 +1701,8 @@ regular PR and D32 teach-back reviews are still pending.
 - [ ] Write stage briefs 00–03 (Donia). 00–01 accepted (merged as PR #25 after teach-back review);
   02–03 merged in `3ecb979` (Entry 47); confirm teach-back completion separately.
 - [x] Prepare stage briefs 04–06 on the docs branch (Entries 68–69).
-- [ ] Open one regular review PR containing briefs 04–06; Donia completes the D32 teach-back and
-  accepts each brief before the stage index marks them accepted.
+- [x] Open one regular review PR containing briefs 04–06 on `docs/stage4-6-briefs-malak`.
+- [ ] Donia completes the D32 teach-back and accepts each brief before the stage index marks them accepted.
 
 **Notebook (ported to the repo, `f8af88a`; pins and guards added in Entry 7)**
 - [x] Cell 1: real `REPO_URL`; clone with `-b <branch>`; print Python version and commit hash; capture and print the `pytest` output.
@@ -1755,7 +1777,7 @@ regular PR and D32 teach-back reviews are still pending.
 
 ---
 
-## Current status — updated 2026-10-19
+## Current status — updated 2026-10-20
 
 **What was done:**
 - Added the D35 per-window preprocessing integration-test requirement (Entry 55); implementation pending.
@@ -1779,12 +1801,13 @@ regular PR and D32 teach-back reviews are still pending.
   the diagnostic ZIP was not retained.
 - **Correction commit `6e17185` is pushed and verified against current main** (Entry 65).
 - **Official FoR evidence passed every recorded gate and was merged in PR #34** at `4707476` after
-  reviewer approval (Entries 66–67). The evidence records D30 batch size 256 and the retained
-  FAKE_other silence-AUC review flag.
+  reviewer approval (Entries 66–67). The evidence records batch size 256 in D39 and
+  `configs/cnn.yaml`, plus the retained FAKE_other silence-AUC review flag.
 - **Stage 6 evidence and current-main documentation corrections are merged** (PR #34): D38 remains
-  the React decision, Stage 6 is D39, history entries are numbered 59–66, the corrected ZIP hash is
-  recorded, and the first-run diagnostic archive is noted as not retained. Donia and Iheb approved
-  PR #34; D39/F3 is approved. The Stage 6 D32 brief and teach-back remain pending.
+  the React decision and Stage 6 is D39. History entries 59–67 include the disclosed duplicate 59;
+  Entry 70 records the correction and restored Entry 38 spacing. The corrected ZIP hash is recorded,
+  and the first-run diagnostic archive is noted as not retained. Donia and Iheb approved PR #34;
+  D39/F3 is approved. The Stage 6 D32 brief and teach-back remain pending.
 - **Stage 7 evaluation harness, steps 1–5, is merged** as PR #13 (Entry 31).
 - **Protocol clarifications D29–D31 are merged** as PR #16 (Entry 32).
 - **Stage 10 risk policy, steps R1–R2, is merged** as PR #17 (Entry 33).
@@ -1819,12 +1842,12 @@ regular PR and D32 teach-back reviews are still pending.
 - Governance rules that keep the external set metadata-only until the one guarded Stage 13 run.
 - Corrected Stage 6 FoR evidence under `docs/audit_evidence/stage6_preprocessing/`: exact profile,
   deterministic validation, shortcut/padding screens, D18 invariance and no-training T4 benchmark.
-- Stage briefs (`docs/stages/`, D32): 00–01 accepted, 02–03 merged, and 04–06 ready for review
-  together on the docs branch; teach-back completion tracked separately.
+- Stage briefs (`docs/stages/`, D32): 00–01 accepted, 02–03 merged, and 04–06 in the open review PR
+  on `docs/stage4-6-briefs-malak`; teach-back completion tracked separately.
 
 **Branches:**
 - `origin/main`: fetched at `4707476`; PR #34 and its conflict-resolution commit are merged.
-- `docs/stages-04-05-briefs-malak`: based on current `main`; briefs 04–06 prepared, regular review PR not yet opened.
+- `docs/stage4-6-briefs-malak`: based on current `main`; briefs 04–06 are in the open regular review PR.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 

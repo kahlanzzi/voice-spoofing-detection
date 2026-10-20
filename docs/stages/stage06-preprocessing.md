@@ -53,7 +53,8 @@ The official validation reads FoR only. DEEP-VOICE is not an input and was not a
    through the same pipeline, and comparing the outputs against the 16 kHz references.
 8. Run two clean validations and compare artifacts byte-for-byte. Separately benchmark candidate
    batches on the Tesla T4 with forward/backward only; no optimizer, weight update or checkpoint is
-   allowed. The largest candidate within 80% of available VRAM supplies D30's batch size.
+   allowed. The largest candidate within 80% of available VRAM was selected; batch size 256 is
+   recorded in D39 and `configs/cnn.yaml`.
 
 Detailed settings and implementation are in [`configs/preprocessing.yaml`](../../configs/preprocessing.yaml),
 [`src/preprocessing/`](../../src/preprocessing/), and the
@@ -63,14 +64,13 @@ Detailed settings and implementation are in [`configs/preprocessing.yaml`](../..
 
 - **D18** — mono averaging and 16 kHz resampling are shared everywhere; the measured tolerance is
   fixed so preprocessing cannot vary silently across components.
-- **D39** — freeze the candidate's waveform, trimming, feature, loudness and compute settings; the
-  8 kHz Mel edge failed the first D18 candidate, so the corrected 7.6 kHz edge is used.
-- **D30** — choose the CNN batch size from the measured GPU budget before training; the benchmark
-  selected 256.
+- **D39** — approve the waveform, trimming, feature, loudness and compute profile; the 8 kHz Mel
+  edge failed the first D18 candidate, so the corrected 7.6 kHz edge is used. The benchmark's
+  selected batch size is recorded in D39 and `configs/cnn.yaml`.
 - **D26** — Stage 6's consumer receives the frozen profile I/O through the B→C hand-over; the
   downstream runner must apply it consistently to each complete 2 s window.
 
-D39/F3 was approved by Donia and Iheb in PR #34 and merged at `4707476` (Entry 67). The brief's
+D39/F3 was approved by Donia and Iheb in PR #34 and merged at `4707476` (Entry 69). The brief's
 D32 teach-back is a separate closeout requirement.
 
 ## 5. Evidence
@@ -85,15 +85,17 @@ D32 teach-back is a separate closeout requirement.
   threshold, so loudness normalization remains off. Train-only FAKE_other-vs-REAL silence AUC was
   **0.749901 (LOW)**; the **0.750071 MODERATE** all-split value is descriptive, includes test, and is
   not a gate — source: `shortcut_screen.csv`, D39 and Entry 66.
-- [verified] Mean post-trim padding was **0.003747** of a 2 s window for FAKE and **0.004567** for
-  REAL; the report also gives per-subgroup summaries — source: `profile_report.md`.
+- [verified] All-split mean post-trim padding was **0.003747** of a 2 s window for FAKE and
+  **0.004567** for REAL; the train-only means were **0.003688** and **0.004619**, respectively. The
+  report also gives per-subgroup summaries — source: `profile_report.md`.
 - [verified] The final config SHA-256 is
   `7bd35bfdcb9270dd55ea9e73449c7bf6c6a359a80335b2551c0c89dde77c8630`; its profile fingerprint is
   `5b4f5849a9bb63f9016dd79969ff5bfb9e37006acbff1e26bbfee4ee2bad68f2` — source: D39 and
   `profile_report.json`.
 - [verified] The Tesla T4 benchmark processed 256 train clips at **90.666 clips/s**, selected batch
   size **256** with **15,637,086,208 bytes** total VRAM, and performed zero optimizer steps or
-  checkpoint writes — source: `benchmark.md` and `benchmark.json`; D30 records the batch size.
+  checkpoint writes — source: `benchmark.md` and `benchmark.json`; the selected batch size is
+  recorded in D39 and `configs/cnn.yaml`.
 - [verified] The two corrected validation runs were byte-identical. The initial 8 kHz diagnostic
   archive was not retained; Entry 64 records its summary and does not claim an archive hash — source:
   Entries 64–67 and `determinism.json`.
@@ -102,8 +104,9 @@ D32 teach-back is a separate closeout requirement.
 
 - [verified limitation] The 7.6 kHz edge was selected after examining the same 30 converted clips
   used by D18; the invariance check is therefore not an independent test of that choice.
-- [verified limitation] D18 starts from 16 kHz FoR audio and upsamples it to test rates. It does not
-  test anti-aliasing when downsampling natively wideband audio.
+- [verified scope; effect [hypothesis]] D18 starts from 16 kHz FoR audio and upsamples it to test
+  rates. It does not test anti-aliasing when downsampling natively wideband audio; the effect of
+  that untested case is unknown.
 - [verified limitation] Edge trimming removes only leading and trailing low-energy frames; internal
   pauses remain. Carry this limitation into Stage 16; do not alter the frozen profile after seeing
   model results.
@@ -116,7 +119,7 @@ D32 teach-back is a separate closeout requirement.
 
 ## 7. Questions the professor may ask
 
-1. **Q:** Why did the first candidate use 7.6 kHz instead of 8 kHz?
+1. **Q:** Why does the final profile use 7.6 kHz instead of 8 kHz?
    **A:** The 8 kHz Mel edge was unstable on the first D18 resampling run. The correction moved the
    edge below Nyquist; it passed the declared tolerance, with the same-clip selection limitation
    disclosed above.
@@ -167,4 +170,4 @@ python -m src.preprocessing.benchmark \
 The validation should report 17,721 rows and all checks passing; compare both validation outputs
 byte-for-byte. The benchmark requires a CUDA GPU and should report batch size 256 for the recorded
 environment. Do not supply DEEP-VOICE or overwrite committed evidence. See Entry 66 for the official
-run provenance and Entry 67 for the review/merge record.
+run provenance and Entry 69 for the review/merge record.
