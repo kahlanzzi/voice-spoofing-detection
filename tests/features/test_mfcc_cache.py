@@ -78,7 +78,9 @@ def _build(corpus, profile, split, out):
 
 def test_shapes_dtypes_labels_and_path_order(corpus, profile, tmp_path):
     meta = _build(corpus, profile, "train", tmp_path / "cache")
-    features, labels, paths, loaded = load_mfcc_cache(tmp_path / "cache", "train", profile)
+    features, labels, paths, loaded = load_mfcc_cache(
+        tmp_path / "cache", "train", profile, expected_f2_manifest_sha256=PROVENANCE["f2_manifest_sha256"]
+    )
     assert features.shape == (4, 40) and features.dtype == np.float32
     assert labels.dtype == np.int8 and paths.dtype.kind == "U"
     assert paths.tolist() == [
@@ -96,7 +98,9 @@ def test_shapes_dtypes_labels_and_path_order(corpus, profile, tmp_path):
 @pytest.mark.parametrize("split", ["val-A", "val-B"])
 def test_validation_splits_are_cached(corpus, profile, tmp_path, split):
     _build(corpus, profile, split, tmp_path / split)
-    _, labels, paths, meta = load_mfcc_cache(tmp_path / split, split, profile)
+    _, labels, paths, meta = load_mfcc_cache(
+        tmp_path / split, split, profile, expected_f2_manifest_sha256=PROVENANCE["f2_manifest_sha256"]
+    )
     root, manifest = corpus
     assert paths.tolist() == sorted(manifest.loc[manifest.split == split, "path"])
     assert meta["n_rows"] == len(labels)
@@ -110,7 +114,9 @@ def test_test_and_unknown_splits_raise_before_reading(corpus, profile, tmp_path,
     with pytest.raises(ValueError, match="never cached"):
         _build(corpus, profile, split, tmp_path / "cache")
     with pytest.raises(ValueError, match="never cached"):
-        load_mfcc_cache(tmp_path / "cache", split, profile)
+        load_mfcc_cache(
+            tmp_path / "cache", split, profile, expected_f2_manifest_sha256=PROVENANCE["f2_manifest_sha256"]
+        )
     assert calls == []
     assert not (tmp_path / "cache").exists()
 
@@ -184,7 +190,9 @@ def test_npz_has_no_object_arrays(corpus, profile, tmp_path):
 def test_features_equal_extract_features(corpus, profile, tmp_path):
     root, _ = corpus
     _build(corpus, profile, "train", tmp_path / "cache")
-    features, _, paths, _ = load_mfcc_cache(tmp_path / "cache", "train", profile)
+    features, _, paths, _ = load_mfcc_cache(
+        tmp_path / "cache", "train", profile, expected_f2_manifest_sha256=PROVENANCE["f2_manifest_sha256"]
+    )
     for row, rel in zip(features, paths):
         waveform, rate = sf.read(root / rel, dtype="float32", always_2d=False)
         np.testing.assert_array_equal(row, extract_features(waveform, rate, profile)[2])
@@ -214,7 +222,9 @@ def test_load_refuses_tampered_npz(corpus, profile, tmp_path):
     features[0, 0] += 1.0
     _rewrite_npz(out / "train.npz", features=features)
     with pytest.raises(ValueError, match="npz SHA-256 check failed"):
-        load_mfcc_cache(out, "train", profile)
+        load_mfcc_cache(
+            out, "train", profile, expected_f2_manifest_sha256=PROVENANCE["f2_manifest_sha256"]
+        )
 
 
 @pytest.mark.parametrize("change, message", [
@@ -232,7 +242,9 @@ def test_load_refuses_changed_json(corpus, profile, tmp_path, change, message):
     change(meta)
     (out / "train.json").write_text(json.dumps(meta), encoding="utf-8")
     with pytest.raises(ValueError, match=message):
-        load_mfcc_cache(out, "train", profile)
+        load_mfcc_cache(
+            out, "train", profile, expected_f2_manifest_sha256=PROVENANCE["f2_manifest_sha256"]
+        )
 
 
 def test_load_refuses_other_profile_fingerprint(corpus, profile, tmp_path):
@@ -241,7 +253,9 @@ def test_load_refuses_other_profile_fingerprint(corpus, profile, tmp_path):
     other = dataclasses.replace(profile, features={**profile.features, "fmax_hz": 8000.0})
     assert other.fingerprint() != profile.fingerprint()
     with pytest.raises(ValueError, match="profile fingerprint check failed"):
-        load_mfcc_cache(out, "train", other)
+        load_mfcc_cache(
+            out, "train", other, expected_f2_manifest_sha256=PROVENANCE["f2_manifest_sha256"]
+        )
 
 
 @pytest.mark.parametrize("change, message", [
@@ -258,7 +272,9 @@ def test_load_refuses_bad_arrays_even_with_matching_hash(corpus, profile, tmp_pa
     _rewrite_npz(out / "train.npz", **change)
     _rehash(out)
     with pytest.raises(ValueError, match=message):
-        load_mfcc_cache(out, "train", profile)
+        load_mfcc_cache(
+            out, "train", profile, expected_f2_manifest_sha256=PROVENANCE["f2_manifest_sha256"]
+        )
 
 
 def test_load_refuses_object_array(corpus, profile, tmp_path):
@@ -271,18 +287,24 @@ def test_load_refuses_object_array(corpus, profile, tmp_path):
     (out / "train.npz").write_bytes(buffer.getvalue())
     _rehash(out)
     with pytest.raises(ValueError):
-        load_mfcc_cache(out, "train", profile)
+        load_mfcc_cache(
+            out, "train", profile, expected_f2_manifest_sha256=PROVENANCE["f2_manifest_sha256"]
+        )
 
 
 def test_load_refuses_missing_file_and_corrupt_npz(corpus, profile, tmp_path):
     out = tmp_path / "cache"
     _build(corpus, profile, "train", out)
     with pytest.raises(ValueError, match="missing cache file"):
-        load_mfcc_cache(out, "val-A", profile)
+        load_mfcc_cache(
+            out, "val-A", profile, expected_f2_manifest_sha256=PROVENANCE["f2_manifest_sha256"]
+        )
     (out / "train.npz").write_bytes(b"not a zip")
     _rehash(out)
     with pytest.raises(ValueError, match="npz read check failed"):
-        load_mfcc_cache(out, "train", profile)
+        load_mfcc_cache(
+            out, "train", profile, expected_f2_manifest_sha256=PROVENANCE["f2_manifest_sha256"]
+        )
 
 
 def test_cli_records_provenance_from_files(corpus, profile, tmp_path, monkeypatch):
@@ -297,7 +319,9 @@ def test_cli_records_provenance_from_files(corpus, profile, tmp_path, monkeypatc
     cache_module.main(["--root", str(root), "--manifest", str(manifest_path),
                        "--profile", str(profile_path), "--split", "val-A",
                        "--out", str(tmp_path / "out")])
-    _, _, _, meta = load_mfcc_cache(tmp_path / "out", "val-A", profile)
+    _, _, _, meta = load_mfcc_cache(
+        tmp_path / "out", "val-A", profile, expected_f2_manifest_sha256=_sha(manifest_path)
+    )
     assert meta["code_commit"] == "d" * 40
     assert meta["f2_manifest_sha256"] == _sha(manifest_path)
     assert meta["profile_config_sha256"] == _sha(profile_path)
@@ -313,3 +337,28 @@ def test_cli_refuses_dirty_worktree_before_reading(monkeypatch, tmp_path):
     with pytest.raises(PreprocessingError, match="clean Git worktree"):
         cache_module.run(tmp_path, tmp_path / "m.csv", tmp_path / "p.yaml", "train", tmp_path / "o")
     assert calls == [] and not (tmp_path / "o").exists()
+
+
+def test_load_reads_npz_once_and_checks_the_loaded_bytes(corpus, profile, tmp_path, monkeypatch):
+    out = tmp_path / "cache"
+    _build(corpus, profile, "train", out)
+    reads = []
+    original = Path.read_bytes
+
+    def counting(self):
+        if self.name == "train.npz":
+            reads.append(self)
+        return original(self)
+
+    monkeypatch.setattr(Path, "read_bytes", counting)
+    load_mfcc_cache(out, "train", profile,
+                    expected_f2_manifest_sha256=PROVENANCE["f2_manifest_sha256"])
+    assert len(reads) == 1
+
+
+def test_load_default_refuses_non_f2_manifest_hash(corpus, profile, tmp_path):
+    out = tmp_path / "cache"
+    _build(corpus, profile, "train", out)
+    assert PROVENANCE["f2_manifest_sha256"] != cache_module.F2_MANIFEST_SHA256
+    with pytest.raises(ValueError, match="F2 manifest check failed"):
+        load_mfcc_cache(out, "train", profile)

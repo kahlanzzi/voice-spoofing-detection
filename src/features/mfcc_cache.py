@@ -16,6 +16,7 @@ fingerprint checks.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import io
 import json
 import re
@@ -31,6 +32,7 @@ from src.models.baseline import N_FEATURES, _write_npz
 from src.preprocessing.features import extract_features
 from src.preprocessing.profile import PreprocessingProfile, load_profile
 from src.preprocessing.validation import (
+    F2_MANIFEST_SHA256,
     code_version,
     load_f2_manifest,
     read_verified_audio,
@@ -152,12 +154,17 @@ def _int(meta: dict[str, Any], key: str) -> int:
 
 
 def load_mfcc_cache(
-    out_dir: Path, split: str, profile: PreprocessingProfile
+    out_dir: Path,
+    split: str,
+    profile: PreprocessingProfile,
+    *,
+    expected_f2_manifest_sha256: str = F2_MANIFEST_SHA256,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict[str, Any]]:
     """Read and verify one cached split; return (features, labels, paths, metadata).
 
-    Any failed check raises ValueError naming it: missing file, JSON keys or values, npz SHA-256,
-    profile fingerprint, npz entries, shapes, dtypes or label values.
+    Any failed check raises ValueError naming it: missing file, JSON keys or values, F2 manifest
+    hash (default: the approved D28 value), npz SHA-256, profile fingerprint, npz entries, shapes,
+    dtypes or label values.
     """
     _check_split(split)
     out_dir = Path(out_dir)
@@ -185,8 +192,15 @@ def load_mfcc_cache(
     for key in ("profile_fingerprint", "profile_config_sha256", "f2_manifest_sha256", "npz_sha256"):
         _check_hex(key, meta[key], _SHA256)
     _check_hex("code_commit", meta["code_commit"], _COMMIT)
+    if meta["f2_manifest_sha256"] != expected_f2_manifest_sha256:
+        raise ValueError(
+            f"F2 manifest check failed: cache was built from {meta['f2_manifest_sha256']}, "
+            f"expected {expected_f2_manifest_sha256}"
+        )
 
-    actual = sha256_file(npz_path)
+    # One read: the bytes whose hash is checked are the bytes np.load parses.
+    npz_bytes = npz_path.read_bytes()
+    actual = hashlib.sha256(npz_bytes).hexdigest()
     if actual != meta["npz_sha256"]:
         raise ValueError(
             f"npz SHA-256 check failed: expected {meta['npz_sha256']}, got {actual}"
@@ -203,7 +217,7 @@ def load_mfcc_cache(
 
     # A non-zip file makes np.load try pickle, which allow_pickle=False refuses with ValueError.
     try:
-        with np.load(io.BytesIO(npz_path.read_bytes()), allow_pickle=False) as npz:
+        with np.load(io.BytesIO(npz_bytes), allow_pickle=False) as npz:
             names = set(npz.files)
             arrays = {key: npz[key] for key in names & _NPZ_KEYS}
     except (zipfile.BadZipFile, OSError, EOFError, ValueError) as exc:

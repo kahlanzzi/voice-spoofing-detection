@@ -38,10 +38,13 @@ The npz is written by the deterministic writer of `src/models/baseline.py` (unco
    decoding), then `extract_features(waveform, sample_rate, profile)[2]` gives the 40-value vector.
 4. Only after every row succeeds is `out_dir` created and the npz then the JSON written; if a write
    fails, the folder is removed.
-5. `load_mfcc_cache` reads the JSON (exact keys, schema 1, split, counts, digests), checks the npz
-   SHA-256, the profile fingerprint and version, loads the npz with `allow_pickle=False` (exact
-   entries) and checks shapes, dtypes, finiteness, label values and counts, and path order. Each
-   failure raises `ValueError` naming the check.
+5. `load_mfcc_cache` reads the JSON (exact keys, schema 1, split, counts, digests) and checks
+   `f2_manifest_sha256` against `expected_f2_manifest_sha256` (keyword argument, default the
+   approved D28 value `F2_MANIFEST_SHA256` from `src.preprocessing.validation`; a mismatch raises
+   "F2 manifest check failed"). It then reads the npz into memory once, checks the SHA-256 of
+   those bytes, checks the profile fingerprint and version, and loads the same bytes with
+   `allow_pickle=False` (exact entries); it checks shapes, dtypes, finiteness, label values and
+   counts, and path order. Each failure raises `ValueError` naming the check.
 6. The CLI refuses a dirty worktree (`code_version`, before reading any input), loads the manifest
    with `load_f2_manifest` (approved F2 hash and schema) and records the SHA-256 of the manifest and
    profile files and the commit.
@@ -58,7 +61,11 @@ The npz is written by the deterministic writer of `src/models/baseline.py` (unco
 - **(c) Hash and fingerprint binding.** Each sample hash is checked before decoding, and the JSON
   binds the arrays to the F2 manifest hash, the profile config hash and fingerprint and the code
   commit. Loading with a different profile fails, so features from another profile cannot reach
-  the fit silently; a changed npz fails its hash.
+  the fit silently; a changed npz fails its hash. The npz is read once and the hashed bytes are the
+  parsed bytes, so the file cannot change between the check and the load. By default, loading
+  also refuses a cache whose recorded manifest hash is not the approved F2 value, so a cache
+  built from another manifest cannot reach the official fit; tests pass their synthetic hash
+  explicitly.
 - **(d) Deterministic bytes.** Sorted rows, the fixed-metadata npz writer and sorted JSON keys make
   two builds byte-identical, so a reviewer can rebuild and compare `npz_sha256`.
 - **(e) All or nothing.** A cache missing a failed clip would bias the fit silently; any failure
@@ -90,4 +97,6 @@ val-B and test, with a manifest whose hashes match the files; seed 2026.
 | Same features as the profile | `test_features_equal_extract_features` (exact equality) |
 | Tampering | `test_load_refuses_tampered_npz`, `test_load_refuses_changed_json` (extra, missing, renamed key; split; schema; counts), `test_load_refuses_bad_arrays_even_with_matching_hash`, `test_load_refuses_missing_file_and_corrupt_npz` |
 | Profile binding | `test_load_refuses_other_profile_fingerprint` |
+| Single read | `test_load_reads_npz_once_and_checks_the_loaded_bytes` (`Path.read_bytes` spy: npz read exactly once) |
+| F2 binding | `test_load_default_refuses_non_f2_manifest_hash` (default expected hash = approved F2 value) |
 | CLI | `test_cli_records_provenance_from_files`, `test_cli_refuses_dirty_worktree_before_reading` |
