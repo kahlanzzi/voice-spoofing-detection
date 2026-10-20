@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 7 step 1: verified MFCC feature cache for train/val-A/val-B (non-pickle npz + strict JSON, bound to F3 and F2; test split refused), with design note and 35 synthetic tests.
 - D40 (proposed): W&B logging from Stage 8; baseline provenance via committed reports.
 - H7 pre-registered: silence-fraction shortcut test on REAL clips (Stage 16).
 - Stage 4 split, Stage 5 F2, and Stage 6 preprocessing retrospective briefs under `docs/stages/`; D32 teach-back reviews pending.

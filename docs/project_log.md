@@ -1580,6 +1580,28 @@ teach-back/re-review remain.
 
 ---
 
+### Entry 71 — Stage 7 step 1: verified MFCC feature cache (2026-10-20)
+
+**What:** on `feat/stage7-baseline-fit` (commits `dc3b2db`, `6f8413f`), added
+`src/features/mfcc_cache.py` with `build_mfcc_cache`, `load_mfcc_cache` and a CLI, the design note
+`docs/feature_cache.md`, and 35 tests in `tests/features/test_mfcc_cache.py`. Only the train, val-A
+and val-B splits are allowed; the test split is refused in code before any file is read (D31). The
+cache is a non-pickle, byte-deterministic npz plus strict JSON, bound to the F3 profile fingerprint
+(D39) and, by default, to the approved F2 manifest hash (D28). The npz is read once, so the checked
+bytes are the loaded bytes.
+
+**Evidence [verified]:** `python -m pytest -q` → 432 passed; `tests/governance` → 3 passed (local
+`.venv`, Python 3.14.7). Synthetic WAV files only; no dataset was read, no Colab run, no model fitted.
+
+**AI assistance:** **Claude Code** wrote the code, tests and design note from Donia's specification.
+**Claude (claude.ai)** reviewed both diffs with Donia and requested the single-read and F2-binding
+fixes (commit `6f8413f`). Donia reviewed every change before commit. Claude Code also wrote this
+entry and the CHANGELOG line; AI did not push, open or merge a PR.
+
+**Gate:** PR #37 merged at `7538a1d`; the real feature build and baseline fit (Stage 7 steps 2–3) wait for the housekeeping PR, which records D40 (W&B used from Stage 8; baseline provenance in committed JSON reports). **WAITING FOR HUMAN REVIEW.**
+
+---
+
 ### Entry 72 — Stage 6 closed, Stage 7 housekeeping, D40 and H7 proposed (2026-10-20)
 
 **Numbering:** follows Entry 71 (Stage 7 step 1, PR #39).
@@ -1733,6 +1755,8 @@ for briefs 02–03 and D38, come through the review of this PR.
   its register status (Entry 72).
 - [x] Write the baseline grid and scaling in `configs/` before Stage 7 training (D37): `configs/baseline.yaml` (Entry 54).
 - [x] Human review of `feat/stage7-baseline-code` (B1–B2) after D37 approval (Entry 54): merged as PR #31.
+- [x] Stage 7 step 1: verified MFCC cache for train/val-A/val-B (Entry 71)
+- [ ] Stage 7 steps 2–3: real feature build, baseline fit in Colab and docs/results/baseline.md, after the housekeeping PR (D40); #37 merged
 
 **Stage 10 risk policy (Entry 33)**
 - [x] Human review of `feat/stage10-risk-policy` (R1–R2); CI green on Python 3.13: merged as PR #17.
@@ -1887,6 +1911,8 @@ for briefs 02–03 and D38, come through the review of this PR.
 - **D37 recorded on main** (Entry 53): baseline grid, train-only scaling and score; Entry 53 records team approval.
 - **Stage 7 baseline code, steps B1–B2** on `feat/stage7-baseline-code` (Entry 54): scorer,
   non-pickle deterministic artifact, D37 fitting and `configs/baseline.yaml`; synthetic tests only.
+- **Stage 7 step 1, verified MFCC cache** on `feat/stage7-baseline-fit` (Entry 71): train/val-A/val-B
+  only, bound to F3 and F2; synthetic tests only, no real features built.
 
 **What we have:**
 - The approved FoR split and the F2 manifests and hash ledger (D28).
@@ -1914,6 +1940,7 @@ for briefs 02–03 and D38, come through the review of this PR.
 - `docs/stage7-housekeeping`: from `7538a1d`; one docs-only commit (Entry 72), not pushed yet.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
+- `feat/stage7-baseline-fit`: Stage 7 step 1 PR open (commits `dc3b2db`, `6f8413f`, `5fd4b29`, plus this merge); reviewer Khalil; real build waits for the housekeeping PR (D40) (Entry 71).
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
