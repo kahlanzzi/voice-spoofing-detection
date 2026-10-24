@@ -1650,6 +1650,37 @@ Donia ran them. Claude Code applied this entry's documentation edits from Donia'
 
 ---
 
+### Entry 73 — Stage 7 step 2A: baseline run orchestrator and Colab notebook (2026-10-24)
+
+**Numbering:** follows Entry 72; the number is fixed at merge time (Khalil's open PR #33 may also
+need a number).
+
+**What:** on `feat/stage7-baseline-run` (commits `f0fcc58`, `c6c3468`), added
+`src/tuning/baseline_run.py` (`run` and a CLI). It loads the train, val-A and val-B MFCC caches
+(F2 binding, F3 fingerprint and profile config hash checked), calls `fit_baseline` (selection on
+val-A, D29 threshold on val-B; D9, D37), saves the non-pickle artifact, and writes the selection,
+threshold, run (full provenance, including environment versions) and subgroup reports. The
+subgroup report (REAL vs FAKE_mp3 and REAL vs FAKE_other EER on val-A and val-B) is descriptive
+only and was pre-declared on 2026-10-24, before any real run. `notebooks/03_stage7_baseline.ipynb`
+runs every step twice from an exact clean commit and asserts byte identity; the artifact goes to
+Drive `checkpoints/` only, never to Git; existing evidence or artifact folders are never
+overwritten. Design note `docs/baseline_run.md`; 13 tests in `tests/tuning/test_baseline_run.py`.
+
+**Evidence [verified]:** `python -m pytest -q` → 445 passed; `tests/governance` → 3 passed;
+nbformat validation passed (local `.venv`, Python 3.14.7). Synthetic data only; no real data, no
+Colab run, no real fit.
+
+**AI assistance:** **Claude Code** wrote the code, tests, notebook and design note from Donia's
+specification. **Claude (claude.ai)** reviewed the diff with Donia and asked for three provenance
+improvements (full commit, no evidence overwrite, environment versions; commit `c6c3468`). Donia
+reviewed every change. Claude Code also wrote this entry and the CHANGELOG line; AI did not push,
+open or merge a PR.
+
+**Gate:** after merge, the real run uses the merge commit on `main` (Stage 7 step 2B); its results
+go in a separate PR with `docs/results/baseline.md`. **WAITING FOR HUMAN REVIEW.**
+
+---
+
 ## Open items
 
 **Part C: external comparison (Entry 58)**
@@ -1755,7 +1786,8 @@ Donia ran them. Claude Code applied this entry's documentation edits from Donia'
 - [x] Write the baseline grid and scaling in `configs/` before Stage 7 training (D37): `configs/baseline.yaml` (Entry 54).
 - [x] Human review of `feat/stage7-baseline-code` (B1–B2) after D37 approval (Entry 54): merged as PR #31.
 - [x] Stage 7 step 1: verified MFCC cache for train/val-A/val-B (Entry 71)
-- [ ] Stage 7 steps 2–3: real feature build, baseline fit in Colab and docs/results/baseline.md, after the housekeeping PR (D40); #37 merged
+- [x] Stage 7 step 2A: baseline run orchestrator and Colab notebook (Entry 73)
+- [ ] Stage 7 steps 2B–3: real cache build and baseline fit in Colab from the merged commit, then docs/results/baseline.md (Entry 73)
 
 **Stage 10 risk policy (Entry 33)**
 - [x] Human review of `feat/stage10-risk-policy` (R1–R2); CI green on Python 3.13: merged as PR #17.
@@ -1860,7 +1892,7 @@ Donia ran them. Claude Code applied this entry's documentation edits from Donia'
 
 ---
 
-## Current status — updated 2026-10-20
+## Current status — updated 2026-10-24
 
 **What was done:**
 - **Stage 6 is complete; Stage 7 is current** (Entry 72): PR #37 merged at `7538a1d`; briefs 04–06
@@ -1912,6 +1944,9 @@ Donia ran them. Claude Code applied this entry's documentation edits from Donia'
   non-pickle deterministic artifact, D37 fitting and `configs/baseline.yaml`; synthetic tests only.
 - **Stage 7 step 1, verified MFCC cache** on `feat/stage7-baseline-fit` (Entry 71): train/val-A/val-B
   only, bound to F3 and F2; synthetic tests only, no real features built.
+- **Stage 7 step 2A, baseline run orchestrator and Colab notebook 03** on `feat/stage7-baseline-run`
+  (Entry 73): reports with full provenance, descriptive pre-declared subgroup report; synthetic
+  tests only, no real fit.
 
 **What we have:**
 - The approved FoR split and the F2 manifests and hash ledger (D28).
@@ -1934,8 +1969,8 @@ Donia ran them. Claude Code applied this entry's documentation edits from Donia'
 - Stage briefs (`docs/stages/`, D32): 00–01 and 04–06 accepted; 02–03 accepted (PR #40).
 
 **Branches:**
-- `origin/main`: at the PR #39 merge (Stage 7 step 1, Entry 71).
-- `docs/stage7-housekeeping`: PR #40, approved by all four; awaiting merge (Entry 72).
+- `origin/main`: at `42bc029` (PR #40 merged, Entry 72).
+- `feat/stage7-baseline-run`: Stage 7 step 2A, local commits; awaiting push and PR (Entry 73).
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
