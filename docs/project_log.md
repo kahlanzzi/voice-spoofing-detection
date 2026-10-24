@@ -1696,7 +1696,8 @@ Drive `checkpoints/baseline/baseline-v1/`, not in Git.
 
 **What:** on `docs/stage7-baseline-results`, committed the eight evidence files (three cache JSON
 files, four reports, `determinism.json`) to `docs/audit_evidence/stage7_baseline/` and wrote
-`docs/results/baseline.md`. No code change; no `.npz` cache or artifact committed.
+`docs/results/baseline.md`. No code change; no `.npz` cache or artifact committed. Added the
+Stage 7 brief docs/stages/stage07-baseline.md (D32); teach-back by Khalil and Iheb pending.
 
 **Headline numbers [verified against the evidence files] (validation only, not test):** selected
 C 10, γ 0.1 (exact val-A EER tie with C 100, γ 0.1; D37 tie rule → smaller C); val-A EER 0.149%
@@ -1726,8 +1727,8 @@ the results document from the committed files. **Claude (claude.ai)** checked th
 consistency with Donia and drafted the interpretation. Donia ran the notebook and reviewed
 everything. AI did not push, open or merge a PR.
 
-**Gate:** team review of the results PR; then the Stage 7 brief (D32) and teach-back by Khalil.
-**WAITING FOR HUMAN REVIEW.**
+**Gate:** team review of the results PR, including the Stage 7 brief and its D32 teach-back
+(Khalil, Iheb). **WAITING FOR HUMAN REVIEW.**
 
 ---
 
@@ -1838,7 +1839,7 @@ everything. AI did not push, open or merge a PR.
 - [x] Stage 7 step 1: verified MFCC cache for train/val-A/val-B (Entry 71)
 - [x] Stage 7 step 2A: baseline run orchestrator and Colab notebook (Entry 73)
 - [x] Stage 7 steps 2B–3: real cache build and baseline fit in Colab from the merged commit, then docs/results/baseline.md (Entry 73) (Entry 74)
-- [ ] Stage 7 brief docs/stages/stage07-baseline.md (D32) and teach-back by Khalil
+- [ ] Stage 7 brief docs/stages/stage07-baseline.md (D32): written; teach-back by Khalil and Iheb pending (Entry 74)
 
 **Stage 10 risk policy (Entry 33)**
 - [x] Human review of `feat/stage10-risk-policy` (R1–R2); CI green on Python 3.13: merged as PR #17.

@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 7 brief `docs/stages/stage07-baseline.md` (D32), in review; teach-back by Khalil and Iheb pending.
 - Stage 7 steps 2B–3: official baseline evidence (cache JSON files, selection/threshold/run/subgroup reports, determinism record) and `docs/results/baseline.md` with validation results (val-A EER 0.149%, val-B EER 0.0), interpretation [hypothesis] and limitations.
 - Stage 7 step 2A: baseline run orchestrator (train/val-A/val-B caches → fit, non-pickle artifact, selection/threshold/run/subgroup reports) and Colab notebook 03 with byte-identity checks; design note and 13 synthetic tests.
 - Stage 7 step 1: verified MFCC feature cache for train/val-A/val-B (non-pickle npz + strict JSON, bound to F3 and F2; test split refused), with design note and 35 synthetic tests.
