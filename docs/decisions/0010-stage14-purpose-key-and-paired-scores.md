@@ -1,6 +1,6 @@
 # 0010. Stage 14 robustness runs: registry purpose key and paired clean scores
 
-- **Status:** Proposed
+- **Status:** Approved (all four; PR #46, 2026-10-24)
 - **Date:** 2026-10-24
 - **Register:** D41 (amends D31)
 - **Deciders:** Donia Mabrouk, Iheb Zemzemi, Malak Ben Salem, Khalil Dridi
@@ -16,7 +16,7 @@ records the CNN bundle seed and all three training seeds.
 
 ## Decision
 
-Propose amending D31's key to `(dataset, split, evaluation_purpose, model_set)`, with exactly two
+Amend D31's key to `(dataset, split, evaluation_purpose, model_set)`, with exactly two
 code-defined purposes: `stage11_test` and `stage14_robustness`; refuse every other value, and require
 a new decision to add a purpose. Stage 11 stores clean per-clip scores for `baseline-v1` and all three
 CNN seeds. Stage 14 makes one run per frozen model set—the `baseline-v1` artifact
@@ -32,12 +32,12 @@ meaningful only at ≥5 absolute percentage points with the paired 95% CI exclud
 - Stage 14 does not make a second clean pass, fit or tune models, recalibrate, change thresholds, or
   select models. It applies degradations before the unchanged F3 profile.
 - The existing H6 CNN endpoint and §9 degradation levels remain unchanged.
-- No FoR test access for this comparison until all four approve D41 and the registry and score-storage
-  implementation is reviewed. Updating Protocol §§7/9 text is likewise gated on approval.
+- D41 is approved, but there is no FoR test access for this comparison until the registry and
+  score-storage implementation is reviewed.
 - Adding another evaluation purpose requires a new decision; unrecognized purpose values fail closed.
 
 ## Links
 
-- [Decision register](README.md): D31 and proposed D41.
+- [Decision register](README.md): D31 and D41.
 - [Experimental Protocol](../experimental_protocol.md): §§7, 9 and 14.
 - [Evaluation harness](../evaluation_harness.md): run registry and paired bootstrap convention.

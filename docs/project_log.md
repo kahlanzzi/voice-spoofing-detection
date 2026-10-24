@@ -1812,13 +1812,14 @@ runs in the Stage 8 notebook after PR B merges.
 
 ---
 
-### Entry 78 (provisional) — Proposed D41: Stage 14 robustness runs: registry purpose key and paired clean scores (2026-10-24)
+### Entry 78 — D41 approved: Stage 14 robustness runs: registry purpose key and paired clean scores (2026-10-24)
 
-**Numbering:** follows Entry 77; 78 is provisional and will be fixed at merge time if another log
-entry merges first.
+**Numbering:** follows Entry 77 and is the next free number on main at approval time. Re-check
+immediately before merging PR #46 if another project-log entry merges first.
 
-- **Owner:** Malak Ben Salem; **reviewers:** all four (D24/D26; proposed major decision).
-- **Amends D31.** Propose a registry key `(dataset, split, evaluation_purpose, model_set)` with a
+- **Owner:** Malak Ben Salem; **reviewers:** Donia, Khalil, Iheb and Malak approved via team review;
+  approval recorded in PR #46 (D24/D26).
+- **Amends D31.** The registry key is `(dataset, split, evaluation_purpose, model_set)` with a
   closed purpose allowlist implemented in code: exactly `stage11_test` and `stage14_robustness`.
   Any other value is refused; adding a purpose requires a new decision. Each allowed purpose/model
   set may claim once. This distinguishes Stage 11 test scoring from Stage 14 robustness conditions
@@ -1835,16 +1836,15 @@ entry merges first.
   Baseline EER increase at 3.4 kHz is meaningful only if it is at least 5 absolute percentage points
   and the paired CI excludes 0. Retain H6's CNN false-synthetic-rate endpoint on REAL at 3.4 kHz and
   all existing §9 conditions. This is diagnostic evidence, not proof of a sole cause.
-- **Protocol record:** proposed D41 amendment adds per-clip score storage to §7's Stage 11 run and
-  the baseline model to §9; its §14 history row records that proposal. Update the frozen protocol
-  text only after D41 approval.
+- **Protocol record:** D41 adds per-clip score storage to §7's Stage 11 run and the baseline model to
+  §9; its §14 history row records PR #46.
 - **Basis:** D31's existing guard permits one run per model set, while D36 defines the baseline
   artifact in F4. Main's `docs/results/baseline.md` and Entry 74 now contain hash-verified baseline
   evidence; no test-split result was accessed for this proposal.
 - **AI assistance:** Codex revised the decision, ADR and records from Donia's review. No dataset,
   audio, checkpoint or test result was accessed, and no experiment was run.
-- **Gate:** **PROPOSED — WAITING FOR ALL-FOUR REVIEW.** Do not access FoR test audio for this
-  comparison until D41 is approved and the registry and score-storage implementation is reviewed.
+- **Gate:** **APPROVED — IMPLEMENTATION REVIEW REQUIRED.** Do not access FoR test audio for this
+  comparison until the registry and score-storage implementation is reviewed.
 
 ---
 
@@ -2061,7 +2061,8 @@ entry merges first.
 - [ ] Check that Khalil, Iheb and Malak accepted the W&B invite with the Member role
 
 **Stage 14 robustness (D41)**
-- [ ] Obtain all-four approval for proposed D41/ADR 0010; then implement and review the closed-purpose registry and Stage 11 per-clip scores before any Stage 11 or Stage 14 FoR test access.
+- [x] Obtain all-four approval for D41/ADR 0010 (PR #46, 2026-10-24).
+- [ ] Implement and review the closed-purpose registry and Stage 11 per-clip scores before any Stage 11 or Stage 14 FoR test access.
 
 **Later stages (reminders)**
 - [ ] `configs/robustness.yaml` → Stage 14. `docker-compose.yml` → Stage 17.
@@ -2161,7 +2162,7 @@ entry merges first.
 
 **Branches:**
 - `origin/main`: at `2f18f60` (PR #45 merged; verified log-Mel cache, Entry 77).
-- `docs/stage14-baseline-robustness-malak`: D41 proposal, updated from current main; awaiting the approval commit.
+- `docs/stage14-baseline-robustness-malak`: PR #46 open; D41 and ADR 0010 approved; implementation review remains pending.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
@@ -2174,5 +2175,5 @@ entry merges first.
 2. Before Stage 13, implement the approved file-level view, speaker-average convention and guarded
    runner; resolve the external-run governance allowlist.
 3. Stage 7 is closed (PR #43); Stages 8–9 are current. Continue the frozen Part C work and preserve the recorded validation-only scope of Entry 74.
-4. All four review proposed D41 (including ADR 0010); only after approval implement and review the closed-purpose registry and Stage 11 per-clip score storage. Do not access FoR test audio for the Stage 14 comparison before both gates are met.
+4. D41 and ADR 0010 are approved in PR #46. Implement and review the closed-purpose registry and Stage 11 per-clip score storage before any FoR test access for the Stage 14 comparison.
 5. Then run the real Part C work on the frozen F3 preprocessing profile, and set up the W&B project before the first Stage 8 run (D40).
