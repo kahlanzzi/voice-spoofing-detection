@@ -1,0 +1,41 @@
+{
+  "purpose": "descriptive only; not used for selection, threshold or any decision (pre-declared 2026-10-24)",
+  "splits": {
+    "val-A": {
+      "REAL_vs_FAKE_mp3": {
+        "eer": 0.0,
+        "n_bonafide": 660,
+        "n_spoof": 570
+      },
+      "REAL_vs_FAKE_other": {
+        "eer": 0.0030303030303030303,
+        "n_bonafide": 660,
+        "n_spoof": 100
+      },
+      "counts": {
+        "FAKE_mp3": 570,
+        "FAKE_other": 100,
+        "REAL": 660
+      },
+      "n_rows": 1330
+    },
+    "val-B": {
+      "REAL_vs_FAKE_mp3": {
+        "eer": 0.0,
+        "n_bonafide": 660,
+        "n_spoof": 569
+      },
+      "REAL_vs_FAKE_other": {
+        "eer": 0.0,
+        "n_bonafide": 660,
+        "n_spoof": 100
+      },
+      "counts": {
+        "FAKE_mp3": 569,
+        "FAKE_other": 100,
+        "REAL": 660
+      },
+      "n_rows": 1329
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "artifact_sha256": "42cc4d53a7cd881f56e4fa54fcf4797de8885b404d0a2b31c293555c868df10a",
+  "baseline_config_sha256": "8bd94e3796396d9a7e81d1d97287a5d196038d400641b0ad4de43ec5d6e31670",
+  "caches": {
+    "train": {
+      "n_rows": 12404,
+      "npz_sha256": "7eaefc4d75692fd4a9536756e3ac3eb5c701b0055a65058bffba13c3ce4f0ab5"
+    },
+    "val-A": {
+      "n_rows": 1330,
+      "npz_sha256": "04227c58b25f208771693db6262f39fd5276518811a13d60b9e7f9a560772bbd"
+    },
+    "val-B": {
+      "n_rows": 1329,
+      "npz_sha256": "04f91e3e4957ba25f1edd9b3b7af7b830249e4f617695b96d83674ac2d7783c7"
+    }
+  },
+  "code_commit": "297c352c91bfc9daafa2943ba04154194aa33248",
+  "environment": {
+    "librosa": "1.0.0",
+    "numpy": "2.5.3",
+    "python": "3.13.16",
+    "scikit-learn": "1.9.1",
+    "scipy": "1.16.3",
+    "soundfile": "0.14.0",
+    "soxr": "1.1.0"
+  },
+  "f2_manifest_sha256": "badfe948fb7b833357783dd18be00f6bb36253cf8699dc4c4beb4df2b07706f8",
+  "profile_config_sha256": "7bd35bfdcb9270dd55ea9e73449c7bf6c6a359a80335b2551c0c89dde77c8630",
+  "profile_fingerprint": "5b4f5849a9bb63f9016dd79969ff5bfb9e37006acbff1e26bbfee4ee2bad68f2",
+  "schema_version": 1,
+  "selected_C": 10.0,
+  "selected_gamma": 0.1,
+  "val_a_eer": 0.0014925373134327957,
+  "val_b_eer": 0.0,
+  "val_b_threshold": 0.13285804202427817,
+  "version": "baseline-v1"
+}
