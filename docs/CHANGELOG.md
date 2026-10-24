@@ -84,6 +84,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - D26 completed with the v2.1 §5 hand-overs; per-folder `CODEOWNERS` (owner + consumer reviewer); project log header updated.
 
 ### Fixed
+- `tests/` is now a regular package (`tests/__init__.py`) with an import-root guard (`tests/test_import_roots.py`), so a site-packages `tests` package on Colab can no longer shadow it and break `from tests._torch import ...`.
 - Stale `CLAUDE.md` mentions → `AGENTS.md` in `configs/audit.yaml` and the Stage 1 notebook intro.
 - Corrected Stage 6 brief and log references after review: D39 batch-size source, padding scopes, approval entry, duplicate Entry 59 disclosure, Entry 38 spacing, and current branch/status.
 
