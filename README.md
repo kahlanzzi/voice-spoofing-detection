@@ -5,7 +5,7 @@
 
 **Team:** Donia Mabrouk, Iheb Zemzemi, Malak Ben Salem, Khalil Dridi
 **Course:** Semester AI project (MUST University); repository structure from the CS 488 template
-**Status:** 🚧 In development: Stages 0–2 done, Stage 3 (Experimental Protocol v1.0) current
+**Status:** 🚧 In development: Stages 0–7 done; Stage 8 PR C (Colab notebook) in review; next: official Colab run, then PR D
 (roadmap in [AGENTS.md](AGENTS.md))
 
 ---
