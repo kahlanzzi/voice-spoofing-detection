@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 7 step 2A: baseline run orchestrator (train/val-A/val-B caches → fit, non-pickle artifact, selection/threshold/run/subgroup reports) and Colab notebook 03 with byte-identity checks; design note and 13 synthetic tests.
 - Stage 7 step 1: verified MFCC feature cache for train/val-A/val-B (non-pickle npz + strict JSON, bound to F3 and F2; test split refused), with design note and 35 synthetic tests.
 - D40 (approved, PR #40): W&B logging from Stage 8; baseline provenance via committed reports.
 - H7 pre-registered: silence-fraction shortcut test on REAL clips (Stage 16).
