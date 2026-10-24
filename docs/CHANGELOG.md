@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 8 PR A: verified log-Mel cache (1, 64, 197) for train/val-A/val-B (non-pickle npz + strict JSON, bound to F3 and F2; test split refused), with design note and 44 synthetic tests.
 - D42 (approved, PR #44): CNN design and training details; W&B setup documented (D40).
 - Stage 7 brief `docs/stages/stage07-baseline.md` (D32), in review; teach-back by Khalil and Iheb pending.
 - Stage 7 steps 2B–3: official baseline evidence (cache JSON files, selection/threshold/run/subgroup reports, determinism record) and `docs/results/baseline.md` with validation results (val-A EER 0.149%, val-B EER 0.0), interpretation [hypothesis] and limitations.

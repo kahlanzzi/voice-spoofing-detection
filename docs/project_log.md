@@ -1788,10 +1788,34 @@ holds an empty `WANDB_API_KEY=` with its handling rule, and `docs/setup.md` has 
 
 ---
 
-### Entry 77 (provisional) — Proposed D41: Stage 14 robustness runs: registry purpose key and paired clean scores (2026-10-24)
+### Entry 77 — Stage 8 PR A: verified log-Mel cache (2026-10-24)
 
-**Numbering:** follows Entry 76; 77 is provisional and will be fixed at merge time based on whether
-this entry or the log-Mel PR merges first.
+**Numbering:** follows Entry 76; the number is fixed at merge time (Malak's D41 and Khalil's PR #33
+also need numbers).
+
+**What:** `src/features/logmel_cache.py` (build, load, CLI) caches the F3 log-Mel (1, 64, 197)
+float32 for train, val-A and val-B only, with the MFCC cache's guarantees: test split refused in
+code before any read, sample hashes checked before decoding, all or nothing, non-pickle
+byte-deterministic npz plus strict JSON, F2 binding by default, profile fingerprint, single read.
+The D42 train-only normalization statistics are not stored here; the training code computes them.
+Design note `docs/logmel_cache.md`; 44 tests in `tests/features/test_logmel_cache.py`.
+
+**Evidence [verified]:** `python -m pytest -q` → 489 passed; `tests/governance` → 3 passed (local
+`.venv`, Python 3.14.7). Synthetic data only; no real data, no Colab, no torch.
+
+**AI assistance:** **Claude Code** wrote the code, tests and design note from Donia's
+specification; **Claude** (claude.ai) reviewed the diff with Donia. Donia reviewed every change.
+AI did not push, open or merge a PR.
+
+**Gate:** Stage 8 PR B (CNN code, dependencies, `configs/cnn.yaml`) follows; the real cache build
+runs in the Stage 8 notebook after PR B merges.
+
+---
+
+### Entry 78 (provisional) — Proposed D41: Stage 14 robustness runs: registry purpose key and paired clean scores (2026-10-24)
+
+**Numbering:** follows Entry 77; 78 is provisional and will be fixed at merge time if another log
+entry merges first.
 
 - **Owner:** Malak Ben Salem; **reviewers:** all four (D24/D26; proposed major decision).
 - **Amends D31.** Propose a registry key `(dataset, split, evaluation_purpose, model_set)` with a
@@ -2032,7 +2056,8 @@ this entry or the log-Mel PR merges first.
 **Stage 8 CNN training**
 - [ ] Stage 8 brief docs/stages/stage08-cnn-training.md (D32) when the stage closes
 - [x] Approve D42 (team) before any CNN code (Entry 76) (PR #44, 2026-10-24)
-- [ ] Stage 8 code PR: pin torch, safetensors and wandb, and decide how CI installs torch (Iheb reviews)
+- [x] Stage 8 PR A: verified log-Mel cache for train/val-A/val-B (Entry 77)
+- [ ] Stage 8 PR B: CNN code, dependency pins (requirements-cnn.txt; Colab uses its preinstalled torch, asserted at 2.11.0; CI installs CPU-only torch), configs/cnn.yaml (D30 grid + D42), W&B allow-list wrapper; Iheb and Khalil review
 - [ ] Check that Khalil, Iheb and Malak accepted the W&B invite with the Member role
 
 **Stage 14 robustness (D41)**
@@ -2050,6 +2075,8 @@ this entry or the log-Mel PR merges first.
 ## Current status — updated 2026-10-24
 
 **What was done:**
+- **Stage 8 PR A, verified log-Mel cache** on `feat/stage8-logmel-cache` (Entry 77): train/val-A/val-B
+  only, bound to F3 and F2; synthetic tests only, no real features built.
 - Stage 8 preparation (Entry 76): D42 (CNN design and training details) approved (PR #44); W&B project
   and key handling set up (D40), invites pending.
 - Stage 7 closed (Entry 75): brief accepted after the D32 teach-back by Khalil and Iheb; Stages 8–9 current.
@@ -2133,8 +2160,8 @@ this entry or the log-Mel PR merges first.
 - Stage briefs (`docs/stages/`, D32): 00–07 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), and 07 (PR #43).
 
 **Branches:**
-- `origin/main`: at `a76c1a5` (PR #44 merged; D42 approved).
-- `docs/stage14-baseline-robustness-malak`: D41 proposal, updated from current main; awaiting all-four review.
+- `origin/main`: at `2f18f60` (PR #45 merged; verified log-Mel cache, Entry 77).
+- `docs/stage14-baseline-robustness-malak`: D41 proposal, updated from current main; awaiting the approval commit.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
