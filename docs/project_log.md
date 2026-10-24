@@ -1758,7 +1758,8 @@ does not approve or merge. **WAITING FOR HUMAN REVIEW.**
 
 ### Entry 76 — Stage 8 preparation: D42 proposed, W&B set up (2026-10-24)
 
-**Numbering:** follows Entry 75; D42 is Entry 76. D41 is Entry 77; Khalil's PR #33 still needs a
+**Numbering:** follows Entry 75; D42 is Entry 76. D41 and the log-Mel PR may both provisionally
+hold Entry 77; whichever merges second takes the next free number. Khalil's PR #33 still needs a
 log number.
 
 **What:** D42 is proposed in `docs/decisions/README.md`, with a Protocol §14 change-log row. It fixes
@@ -1787,7 +1788,10 @@ holds an empty `WANDB_API_KEY=` with its handling rule, and `docs/setup.md` has 
 
 ---
 
-### Entry 77 — Proposed D41: Stage 14 robustness runs: registry purpose key and paired clean scores (2026-10-24)
+### Entry 77 (provisional) — Proposed D41: Stage 14 robustness runs: registry purpose key and paired clean scores (2026-10-24)
+
+**Numbering:** follows Entry 76; 77 is provisional and will be fixed at merge time based on whether
+this entry or the log-Mel PR merges first.
 
 - **Owner:** Malak Ben Salem; **reviewers:** all four (D24/D26; proposed major decision).
 - **Amends D31.** Propose a registry key `(dataset, split, evaluation_purpose, model_set)` with a
