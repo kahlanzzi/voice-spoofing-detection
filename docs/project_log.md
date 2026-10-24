@@ -1783,7 +1783,7 @@ holds an empty `WANDB_API_KEY=` with its handling rule, and `docs/setup.md` has 
 **AI assistance:** **Claude** (claude.ai) drafted D42 and guided the W&B setup with Donia;
 **Claude Code** wrote this commit. AI did not push, open or merge a PR.
 
-**Gate:** D42 needs team approval before any CNN code. **WAITING FOR APPROVAL.**
+**Gate:** D42 approved by Iheb, Malak and Khalil via PR #44 (2026-10-24); CNN code may start. AI does not approve or merge.
 
 ---
 
@@ -1994,7 +1994,7 @@ holds an empty `WANDB_API_KEY=` with its handling rule, and `docs/setup.md` has 
 
 **Stage 8 CNN training**
 - [ ] Stage 8 brief docs/stages/stage08-cnn-training.md (D32) when the stage closes
-- [ ] Approve D42 (team) before any CNN code (Entry 76)
+- [x] Approve D42 (team) before any CNN code (Entry 76) (PR #44, 2026-10-24)
 - [ ] Stage 8 code PR: pin torch, safetensors and wandb, and decide how CI installs torch (Iheb reviews)
 - [ ] Check that Khalil, Iheb and Malak accepted the W&B invite with the Member role
 
@@ -2013,7 +2013,7 @@ holds an empty `WANDB_API_KEY=` with its handling rule, and `docs/setup.md` has 
 ## Current status — updated 2026-10-24
 
 **What was done:**
-- Stage 8 preparation (Entry 76): D42 (CNN design and training details) proposed; W&B project
+- Stage 8 preparation (Entry 76): D42 (CNN design and training details) approved (PR #44); W&B project
   and key handling set up (D40), invites pending.
 - Stage 7 closed (Entry 75): brief accepted after the D32 teach-back by Khalil and Iheb; Stages 8–9 current.
 - **Stage 7 steps 2B–3, official baseline evidence and validation results** on
@@ -2095,8 +2095,7 @@ holds an empty `WANDB_API_KEY=` with its handling rule, and `docs/setup.md` has 
 
 **Branches:**
 - `origin/main`: at `8444f21` (PR #43 merged; Stage 7 closed).
-- `docs/stage8-d42-cnn-design`: D42 proposed and W&B setup documented; local commit, awaiting push
-  and PR (Entry 76).
+- `docs/stage8-d42-cnn-design`: PR #44, approved; awaiting merge (Entry 76).
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
