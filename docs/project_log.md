@@ -1756,6 +1756,37 @@ does not approve or merge. **WAITING FOR HUMAN REVIEW.**
 
 ---
 
+### Entry 76 — Stage 8 preparation: D42 proposed, W&B set up (2026-10-24)
+
+**Numbering:** follows Entry 75; the number is fixed at merge time (Malak's D41 and Khalil's PR #33
+also need numbers).
+
+**What:** D42 is proposed in `docs/decisions/README.md`, with a Protocol §14 change-log row. It fixes
+the CNN on the F3 log-Mel (1, 64, 197): per-Mel-bin standardization from the FoR train cache only
+(stored in the checkpoint; no per-clip normalization); Conv3×3 → BatchNorm → ReLU → MaxPool blocks
+with 16/32/64(/128) channels, as benchmarked for batch 256 in Stage 6; global average pooling,
+dropout 0.3 and one logit as the raw score; BCEWithLogitsLoss without class weights; Adam with
+constant learning rate, no weight decay, float32; early stopping on strictly lower val-A EER with
+the earliest best epoch restored; val-B not scored before Stage 10; a log-Mel cache built like the
+MFCC cache; safetensors checkpoint with strict JSON metadata; seeded, cudnn-deterministic training
+with reproducibility reported as observed; per-epoch W&B metrics only. It is fixed before any CNN
+code or result exists, so that no model choice can be tuned against results (as D37 did for the
+baseline). Dependency pinning (torch, safetensors, wandb) is left to the Stage 8 code PR.
+
+**W&B setup (D40):** done by Donia on 2026-10-24: Academic plan, organization
+`voice-spoofing-detection-must-org`, team `voice-spoofing-detection-must`, private project
+`voice-spoofing-detection`. Khalil, Iheb and Malak were invited (acceptance pending). The API key is
+stored only in Donia's local `.env`, verified git-ignored (`git check-ignore` → `.gitignore:7`;
+`git status` clean). Colab Secrets will be set with the first Stage 8 notebook. `.env.example` now
+holds an empty `WANDB_API_KEY=` with its handling rule, and `docs/setup.md` has a W&B section.
+
+**AI assistance:** **Claude** (claude.ai) drafted D42 and guided the W&B setup with Donia;
+**Claude Code** wrote this commit. AI did not push, open or merge a PR.
+
+**Gate:** D42 needs team approval before any CNN code. **WAITING FOR APPROVAL.**
+
+---
+
 ## Open items
 
 **Part C: external comparison (Entry 58)**
@@ -1944,8 +1975,9 @@ does not approve or merge. **WAITING FOR HUMAN REVIEW.**
 - [x] Stage 2: threat model §14 sign-off (Malak PR #3, Iheb PR #4). §13 open questions still open (see Stage 2 gate).
 - [x] Assign the three tracks (0.9): done via D26 (parts A–E with owners, Entry 18).
 - [ ] Confirm compute per person (0.7), set the weekly sync + channel (0.8).
-- [ ] Set up W&B (0.6) before Stage 8: project and key handling (`.env`) before the first Stage 8
-  run (D40, Entry 72).
+- [x] Set up W&B (0.6) before Stage 8: project and key handling (`.env`) before the first Stage 8
+  run (D40, Entry 72). (W&B project and key handling set up, Entry 76; Colab Secrets with the first
+  Stage 8 notebook)
 - [x] Agree the PR merge order: `stage-0-git-workflow` → `stage-1-audit-run` → `stage-2-threat-model` (merged; Entry 14).
 
 **Execution Plan phases (from the Entry 12 comparison)**
@@ -1962,6 +1994,9 @@ does not approve or merge. **WAITING FOR HUMAN REVIEW.**
 
 **Stage 8 CNN training**
 - [ ] Stage 8 brief docs/stages/stage08-cnn-training.md (D32) when the stage closes
+- [ ] Approve D42 (team) before any CNN code (Entry 76)
+- [ ] Stage 8 code PR: pin torch, safetensors and wandb, and decide how CI installs torch (Iheb reviews)
+- [ ] Check that Khalil, Iheb and Malak accepted the W&B invite with the Member role
 
 **Stage 14 robustness (D41)**
 - [ ] D41 (Malak): baseline through the Stage 14 degradations, with a pre-declared criterion, decided before the FoR test split is seen
@@ -1978,6 +2013,8 @@ does not approve or merge. **WAITING FOR HUMAN REVIEW.**
 ## Current status — updated 2026-10-24
 
 **What was done:**
+- Stage 8 preparation (Entry 76): D42 (CNN design and training details) proposed; W&B project
+  and key handling set up (D40), invites pending.
 - Stage 7 closed (Entry 75): brief accepted after the D32 teach-back by Khalil and Iheb; Stages 8–9 current.
 - **Stage 7 steps 2B–3, official baseline evidence and validation results** on
   `docs/stage7-baseline-results` (Entry 74): run from `297c352` with byte-identical reruns; C 10,
@@ -2057,8 +2094,9 @@ does not approve or merge. **WAITING FOR HUMAN REVIEW.**
 - Stage briefs (`docs/stages/`, D32): 00–01 and 04–06 accepted; 02–03 accepted (PR #40).
 
 **Branches:**
-- `origin/main`: PR #42 merged (Stage 7 results and brief).
-- `docs/stage7-closeout`: Stage 7 closeout (D32); local commit, awaiting push and PR (Entry 75).
+- `origin/main`: at `8444f21` (PR #43 merged; Stage 7 closed).
+- `docs/stage8-d42-cnn-design`: D42 proposed and W&B setup documented; local commit, awaiting push
+  and PR (Entry 76).
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 

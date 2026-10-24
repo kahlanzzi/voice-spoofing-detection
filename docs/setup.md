@@ -46,6 +46,18 @@ pytest -q
    Colab or Drive path in `src/`.
 5. Put tokens in Colab secrets or environment variables, never in a notebook cell.
 
+## Weights & Biases (D40)
+
+- W&B accounts sign in through CoreWeave Forge (`forge.coreweave.com`); the SDK and `api.wandb.ai`
+  are unchanged.
+- Entity `voice-spoofing-detection-must`, project `voice-spoofing-detection` (private, Academic plan).
+- Each member uses their own API key, stored only in `.env` locally and in Colab Secrets (key name
+  `WANDB_API_KEY`) in notebooks; never in code, cells, commits or prompts.
+- W&B receives FoR training and validation metrics and configs only; never audio, test-split or
+  external data.
+- W&B Training, Sandboxes, Inference and the ARIA agent are not used: data must not leave Colab and
+  Drive (D27 for AI tools).
+
 ## Datasets and pins
 
 | Dataset | Role | Pin (D21, `configs/audit.yaml`) |
