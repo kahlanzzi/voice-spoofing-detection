@@ -1917,6 +1917,80 @@ from the merged commit).
 
 ---
 
+### Entry 81 — Stage 8 PR C: Colab notebook 04 for the CNN search (2026-10-24)
+
+**Numbering:** follows Entry 80; the number is fixed at merge time.
+
+**What:** on `feat/stage8-colab-notebook` (`c8740af`):
+- `notebooks/04_stage8_cnn.ipynb` (outputs cleared), the official Stage 8 runner: Drive mount,
+  clean detached checkout of the full commit, environment checks, FoR extraction, full test suite,
+  train and val-A log-Mel caches built twice, one `src.tuning.cnn_search` run on GPU, export to Drive
+  with a hash manifest. Every hyperparameter comes from `configs/cnn.yaml`; the notebook has only
+  `REPO_URL`, `COMMIT`, `VERSION` and `DRIVE_ROOT`.
+- `tests/governance/test_notebook_04_stage8.py` (14 tests): static checks of the notebook JSON
+  (parsed with `ast`, never executed).
+
+**Choices and reasons:**
+- **FoR integrity: revision marker only (Option A).** The repo pins FoR by its HF revision (D21) and
+  stores no archive SHA-256, so the notebook checks `for_2sec_REVISION.txt` against
+  `configs/audit.yaml` as notebook 03 does. The tar's SHA-256 is computed and recorded in the export
+  manifest as `for_archive_sha256_observed`: evidence only, never asserted or compared. D21 is
+  unchanged; making it a pin would need a new decision.
+- **Full-SHA pin:** `len(COMMIT) == 40` and `HEAD == COMMIT`, so a short prefix cannot select an
+  unintended commit.
+- **Drive only:** the run is long and its outputs are large; manual upload/download adds steps
+  without adding checks.
+- **Fail-fast refusal of existing outputs:** `checkpoints/cnn/<VERSION>/` or
+  `processed/metadata/stage8/` already on Drive stops the notebook before any expensive work; the
+  check runs again before export, and the folders are created with `exist_ok=False`.
+- **Skip check from JUnit XML:** pytest runs with `REQUIRE_TORCH_TESTS=1` and writes
+  `/content/pytest_stage8.xml`; the notebook requires tests > 0 and failures = errors = skipped = 0
+  from the XML, not from terminal text.
+- **W&B key loaded last:** the Colab secret is read just before the search, so pytest and the cache
+  builds never see it. It is never printed and `wandb.login` is not called; W&B folders are under
+  `/content/wandb_runtime`, outside the clone.
+- **Caches built twice and compared:** the cache writer is deterministic (fixed zip entry metadata,
+  sorted JSON without time fields), covered by `test_two_builds_are_byte_identical`. Both builds must
+  have the same files and SHA-256s, and every cache must record the F3 config SHA-256 and fingerprint
+  read from the Stage 6 evidence (D39). val-B is not built (D42); test is never requested.
+- **One search run, no reaction to EER:** one call, no retry, no logic on EER values; selection and
+  ties are pre-declared (D30, D42).
+- **Clean worktree around every CLI call:** caches, pytest XML, W&B files and the search output are
+  all outside the clone; the check also refuses ignored files other than `__pycache__`, because
+  `.gitignore` hides `wandb/` from `git status`.
+- **Two Drive hash checks:** the first, right after copying, checks the copy; after
+  `drive.flush_and_unmount()` and a forced remount, every file is hashed again against the manifest,
+  which checks what Drive actually stored and fails on a missing or extra file.
+- **Export manifest** `processed/metadata/stage8/stage8_export_manifest.json`: per-file path, size and
+  SHA-256; commit, version; Python, torch, CUDA, cuDNN and GPU name; UTC time; FoR revision and
+  observed archive SHA-256; pytest counts; cache SHA-256s; F3 config SHA-256 and fingerprint.
+  Exactly `seed_0`, `seed_1` and `seed_2` must be exported.
+
+**Differences from notebook 03:** full-SHA pin instead of a prefix match; Drive only (no manual
+mode); existing outputs refused at the start as well as before export; FoR revision read from
+`configs/audit.yaml` instead of a literal; JUnit skip check (03 has none); Python 3.13 (D15) and
+torch 2.11.0 asserted, with a fresh-process re-check after the install; long commands streamed line
+by line; pytest without its cache provider; re-hash after flush and remount; a static test (03 has
+none).
+
+**Evidence [verified]:** `REQUIRE_TORCH_TESTS=1 python -m pytest -q` → 713 passed;
+`tests/governance` → 17 passed (local `.venv`, Python 3.14.7, torch 2.11.0+cpu). 17 deliberately
+broken copies of the notebook (outside the repo) were each caught by the static tests.
+**The notebook has not yet been run in Colab; the official run uses this PR's merge commit as
+`COMMIT`.**
+
+**Decisions:** no new decision (next D-ID stays D43).
+
+**AI assistance:** **Claude Code** wrote the notebook, the static test and this entry;
+**Claude** (claude.ai), acting as reviewer, wrote the Claude Code prompts and reviewed every diff,
+including Option A, the W&B key order, the Python 3.13 assert, the seed check, the manifest fields
+and the Drive re-hash. Donia ran every command, checked the real outputs and approved each change.
+AI did not push, open or merge a PR.
+
+**Gate:** review of PR C; then the official Colab run from the merge commit, then PR D (evidence).
+
+---
+
 ## Open items
 
 **Part C: external comparison (Entry 58)**
@@ -2128,7 +2202,9 @@ from the merged commit).
 - [x] Stage 8 PR A: verified log-Mel cache for train/val-A/val-B (Entry 77)
 - [x] Stage 8 PR B1: dependencies and CI, CNN, normalization, determinism, checkpoint (Entry 79)
 - [x] Stage 8 PR B2: training loop with early stopping, W&B allow-list wrapper, configs/cnn.yaml with drift guard, search orchestrator (D30 tie rule, seeds 1–2, select_bundle_seed); record the real GPU peak memory (D42 BatchNorm correction, Entry 79) (Entry 80)
-- [ ] Stage 8 PR C: Colab notebook 04 (Drive first, clean detached checkout, torch 2.11.0 asserted, W&B key from Colab Secrets, WANDB_DIR outside the repo, log-Mel caches built twice and byte-compared, D30 search on GPU, checkpoints to Drive checkpoints/cnn/ only, real peak GPU memory recorded)
+- [ ] Stage 8 PR C: Colab notebook 04 (Drive first, clean detached checkout, torch 2.11.0 asserted, W&B key from Colab Secrets, WANDB_DIR outside the repo, log-Mel caches built twice and byte-compared, D30 search on GPU, checkpoints to Drive checkpoints/cnn/ only, real peak GPU memory recorded) — written, in review (Entry 81)
+- [ ] Stage 8 official Colab run of notebook 04 from the PR C merge commit
+- [ ] Stage 8 PR D: commit the reviewed run evidence (reports, export manifest)
 - [ ] Check that Khalil, Iheb and Malak accepted the W&B invite with the Member role
 
 **Stage 14 robustness (D41)**
@@ -2146,7 +2222,11 @@ from the merged commit).
 
 ## Current status — updated 2026-10-24
 
+**Status:** Stage 8 PR C (Colab notebook) in review; next: official Colab run, then PR D.
+
 **What was done:**
+- **Stage 8 PR C, Colab notebook 04** on `feat/stage8-colab-notebook` (Entry 81): official runner
+  for the caches and the D30 search, with a static test; not yet run in Colab.
 - **Stage 8 PR B2, CNN training loop, W&B allow-list and D30 search** on
   `feat/stage8-cnn-training` (Entry 80): `configs/cnn.yaml` with drift guard, D42 early stopping,
   allow-list W&B logger, search orchestrator; synthetic tests only, no real training run.
@@ -2237,9 +2317,8 @@ from the merged commit).
 - Stage briefs (`docs/stages/`, D32): 00–07 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), and 07 (PR #43).
 
 **Branches:**
-- `origin/main`: at `a0bd69b` (PR B1 merged).
-- `feat/stage8-cnn-foundations`: Stage 8 PR B1 (Entry 79), committed locally; not pushed, review by Iheb (deps, CI) and Khalil.
-- `feat/stage8-cnn-training`: Stage 8 PR B2 (Entry 80), committed locally; not pushed, review by Khalil.
+- `origin/main`: at `fa6190a` (PR B1 merged as #47, PR B2 as #48).
+- `feat/stage8-colab-notebook`: Stage 8 PR C (Entry 81), in review.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
@@ -2251,6 +2330,6 @@ from the merged commit).
    Briefs 00–06 are accepted.
 2. Before Stage 13, implement the approved file-level view, speaker-average convention and guarded
    runner; resolve the external-run governance allowlist.
-3. Stage 7 is closed (PR #43); Stages 8–9 are current. Continue the frozen Part C work and preserve the recorded validation-only scope of Entry 74.
+3. Stage 7 is closed (PR #43); Stages 8–9 are current: Stage 8 PR C (Colab notebook) in review; next: official Colab run, then PR D. Preserve the recorded validation-only scope of Entry 74.
 4. D41 and ADR 0010 are approved in PR #46. Implement and review the closed-purpose registry and Stage 11 per-clip score storage before any FoR test access for the Stage 14 comparison.
-5. Then run the real Part C work on the frozen F3 preprocessing profile, and set up the W&B project before the first Stage 8 run (D40).
+5. Then run the real Part C work on the frozen F3 preprocessing profile; the W&B project is set up (entity `voice-spoofing-detection-must`, project `voice-spoofing-detection`, D40), and teammates' Member invites are pending (see Open items).
