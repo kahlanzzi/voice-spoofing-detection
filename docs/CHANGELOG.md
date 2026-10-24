@@ -56,6 +56,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - `docs/experimental_protocol.md` v1.0 frozen (F1): all sections decided from the team-accepted defaults.
 
 ### Changed
+- Stage 7 closed: brief accepted after the D32 teach-back (Khalil, Iheb); Stages 8–9 current.
 - Stage 6 closed: briefs 04–06 accepted (PR #37); Stage 7 current. Register statuses D29–D31 and Protocol §14 rows now cite PRs #16 and #30. CONTRIBUTING: check open PRs before claiming IDs. D37 status recorded as approved (PR #30).
 - Stage 6 Mel upper frequency is 7.6 kHz, keeping the final band below the 16 kHz Nyquist edge after the first official candidate exposed D18 resampling instability at 8 kHz.
 - Stage 6 shortcut validation now measures post-trim zero-padding, screens its class separability and reports padding by class and F2 subgroup.

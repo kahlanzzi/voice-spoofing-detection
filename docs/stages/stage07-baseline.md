@@ -5,7 +5,7 @@
 | **Stage** | 7 — Evaluation harness + MFCC/SVM baseline |
 | **Owner** | Donia Mabrouk (D26, Part C) |
 | **Reviewer(s)** | Khalil Dridi and Iheb Zemzemi (D26: consumers of Part C) |
-| **Status** | In review |
+| **Status** | Accepted (closeout PR docs/stage7-closeout) |
 | **Date** | 2026-10-24 |
 | **Related PRs** | #13 (evaluation harness), #16 (D29–D31), #30 (D37), #31 (baseline code), #39 (MFCC cache), #41 (baseline run code and notebook), and the results branch `docs/stage7-baseline-results` |
 
@@ -184,7 +184,7 @@ for s in ["train", "val-A", "val-B"]:
 print("commit", det["code_commit"] == run["code_commit"])
 ```
 
-The four test folders gave 295 passed at this commit. The full run is
+The four test folders gave 295 passed on main after PR #42. The full run is
 [`notebooks/03_stage7_baseline.ipynb`](../../notebooks/03_stage7_baseline.ipynb) (run copy, view-only:
 link in [results/baseline.md](../results/baseline.md) §1). It needs the pinned FoR archive in Drive
 and a Colab runtime; output folders must be new, and committed evidence is never overwritten.
