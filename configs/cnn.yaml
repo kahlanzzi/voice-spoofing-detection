@@ -1,5 +1,27 @@
+# CNN training and model selection (Stage 8-9; D30, D42). Read by src/training/cnn_config.py.
+# Written before any CNN training run, as D30 requires. Changing a value needs a new decision;
+# tests/training/test_cnn_config.py fails if this file drifts from D30 + D42.
+decision: [D30, D42]
+grid:                               # D30: 4 configurations, n_blocks outer, learning_rate inner
+  n_blocks: [3, 4]
+  learning_rate: [0.001, 0.0003]
+optimizer: adam                     # D30; constant learning rate, float32 (D42)
+weight_decay: 0.0                   # D42
+loss: bce_with_logits               # D42
+class_weights: none                 # D42: train is balanced (6,244 spoof / 6,160 bonafide)
+dropout: 0.3                        # D42 head dropout
+max_epochs: 30                      # D30
+patience: 5                         # D30
 # D30 batch size selected by the Stage 6 no-training Tesla T4 benchmark at
 # implementation commit 6e1718547756ef04744ce0b3b1b73bb839920052.
 batch_size: 256
-
-# The remaining D30 model/search fields are filled before Stage 8 training.
+early_stopping:                     # D42: strictly lower val-A EER improves; ties keep the earliest epoch
+  metric: val_a_eer
+  improvement: strictly_lower
+  tie: earliest_epoch
+search_seed: 0                      # D30: the 4 search runs use seed 0
+final_seeds: [0, 1, 2]              # D11, D30: seed 0 is the reused search run
+tie_rule: [n_blocks_ascending, learning_rate_descending]   # D30: 3 blocks before 4, then 1e-3 before 3e-4
+wandb:                              # D40; the API key comes from .env (WANDB_API_KEY), never from here
+  entity: voice-spoofing-detection-must
+  project: voice-spoofing-detection

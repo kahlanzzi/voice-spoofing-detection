@@ -18,6 +18,7 @@ tools all read it. Project rules live in `../AGENTS.md`.
 | [risk_policy.md](risk_policy.md) | Risk policy (Stage 10): band rule in the core, Platt calibration, ... | a risk-policy step is added |
 | [baseline.md](baseline.md) | MFCC/SVM baseline (Stage 7, evaluation only): scaler, NumPy scorer, non-pickle artifact | a baseline step is added |
 | [cnn.md](cnn.md) | D42 CNN (Stage 8): model, train-only normalization, seeding, safetensors checkpoint | a CNN step is added |
+| [cnn_training.md](cnn_training.md) | CNN training (Stage 8): configs/cnn.yaml drift guard, D42 early stopping, W&B allow-list, D30 search and selection | the training loop, search or W&B logging changes |
 | [stages/](stages/) | Stage briefs (D32): one short explanation per closed stage, from `stages/TEMPLATE.md` | a stage closes |
 | [model_bundle.md](model_bundle.md) | ModelBundle (Stage 12): format, verifying loader, tests | the bundle format changes |
 | [setup-report.md](setup-report.md) | Lab 6 setup report (skeleton) | the Lab 6 report is written |

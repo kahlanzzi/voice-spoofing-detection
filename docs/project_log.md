@@ -1885,6 +1885,38 @@ wrapper, `configs/cnn.yaml`, search orchestrator) follows.
 
 ---
 
+### Entry 80 — Stage 8 PR B2: CNN training loop, W&B allow-list and D30 search (2026-10-24)
+
+**Numbering:** follows Entry 79; the number is fixed at merge time.
+
+**What:** on `feat/stage8-cnn-training` (`07304a6`, `2bde299`):
+- **Config:** `configs/cnn.yaml` filled with exactly D30 + D42, read by a strict, type-exact drift
+  guard (`src/training/cnn_config.py`).
+- **Training loop:** `train_one` (`src/training/train_cnn.py`) with D42 early stopping (strictly
+  lower val-A EER, earliest tie, patience 5, max 30, best-epoch weights restored), train-only
+  statistics, and no val-B, test or external input.
+- **W&B:** an allow-list logger (`src/training/wandb_logger.py`): exact keys, scalar metrics,
+  forbidden key parts, no uploads, offline/disabled modes.
+- **Search:** the D30 orchestrator (`src/tuning/cnn_search.py`): train and val-A caches only, 4
+  search runs on seed 0, D30 tie rule, seeds 1–2 for the winner, `select_bundle_seed`, checkpoints
+  for the 3 seeds, search/selection/run reports with full provenance including CUDA/cuDNN versions
+  and peak GPU memory per run.
+- Design note `docs/cnn_training.md`.
+
+**Evidence [verified]:** `python -m pytest -q` → 699 passed, 0 skipped; `tests/governance` → 3
+passed (local `.venv`, Python 3.14.7, torch 2.11.0+cpu). Synthetic data, CPU only; W&B never
+contacted. The real `wandb.Settings` object was constructed in a test.
+
+**AI assistance:** **Claude Code** wrote the code, tests and docs from Donia's specification;
+**Claude** (claude.ai) reviewed the diff with Donia and asked for the real `wandb.Settings` test, the
+`wandb/` ignore rule and the CUDA/cuDNN versions. Donia reviewed every change. AI did not push, open
+or merge a PR.
+
+**Gate:** Khalil reviews; then PR C (Colab notebook 04: real cache build and the D30 search on GPU,
+from the merged commit).
+
+---
+
 ## Open items
 
 **Part C: external comparison (Entry 58)**
@@ -2095,7 +2127,8 @@ wrapper, `configs/cnn.yaml`, search orchestrator) follows.
 - [x] Approve D42 (team) before any CNN code (Entry 76) (PR #44, 2026-10-24)
 - [x] Stage 8 PR A: verified log-Mel cache for train/val-A/val-B (Entry 77)
 - [x] Stage 8 PR B1: dependencies and CI, CNN, normalization, determinism, checkpoint (Entry 79)
-- [ ] Stage 8 PR B2: training loop with early stopping, W&B allow-list wrapper, configs/cnn.yaml with drift guard, search orchestrator (D30 tie rule, seeds 1–2, select_bundle_seed); record the real GPU peak memory (D42 BatchNorm correction, Entry 79)
+- [x] Stage 8 PR B2: training loop with early stopping, W&B allow-list wrapper, configs/cnn.yaml with drift guard, search orchestrator (D30 tie rule, seeds 1–2, select_bundle_seed); record the real GPU peak memory (D42 BatchNorm correction, Entry 79) (Entry 80)
+- [ ] Stage 8 PR C: Colab notebook 04 (Drive first, clean detached checkout, torch 2.11.0 asserted, W&B key from Colab Secrets, WANDB_DIR outside the repo, log-Mel caches built twice and byte-compared, D30 search on GPU, checkpoints to Drive checkpoints/cnn/ only, real peak GPU memory recorded)
 - [ ] Check that Khalil, Iheb and Malak accepted the W&B invite with the Member role
 
 **Stage 14 robustness (D41)**
@@ -2114,6 +2147,9 @@ wrapper, `configs/cnn.yaml`, search orchestrator) follows.
 ## Current status — updated 2026-10-24
 
 **What was done:**
+- **Stage 8 PR B2, CNN training loop, W&B allow-list and D30 search** on
+  `feat/stage8-cnn-training` (Entry 80): `configs/cnn.yaml` with drift guard, D42 early stopping,
+  allow-list W&B logger, search orchestrator; synthetic tests only, no real training run.
 - **Stage 8 PR B1, CNN foundations** on `feat/stage8-cnn-foundations` (Entry 79): torch dependencies
   and CI, D42 CNN, train-only normalization, `set_seed`, safetensors checkpoint; synthetic tests only.
 - **Stage 8 PR A, verified log-Mel cache** on `feat/stage8-logmel-cache` (Entry 77): train/val-A/val-B
@@ -2201,8 +2237,9 @@ wrapper, `configs/cnn.yaml`, search orchestrator) follows.
 - Stage briefs (`docs/stages/`, D32): 00–07 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), and 07 (PR #43).
 
 **Branches:**
-- `origin/main`: at `90f54aa` (PR #46 merged; D41 approved).
+- `origin/main`: at `a0bd69b` (PR B1 merged).
 - `feat/stage8-cnn-foundations`: Stage 8 PR B1 (Entry 79), committed locally; not pushed, review by Iheb (deps, CI) and Khalil.
+- `feat/stage8-cnn-training`: Stage 8 PR B2 (Entry 80), committed locally; not pushed, review by Khalil.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
