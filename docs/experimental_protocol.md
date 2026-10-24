@@ -278,3 +278,4 @@ on FoR only; nothing here touches DEEP-VOICE before Stage 13 (AGENTS.md hard rul
 | 1.0 | 2026-10-18 | D37: baseline grid, scaling and score fixed (completes §4 'grid: team choice'); no existing rule changed | #30 |
 | 1.0 | 2026-10-20 | D40 narrows §4's 'every run logged to W&B' to Stage 8 onwards (§4 text unchanged; D40 governs); H7 pre-registered (silence, Stage 16) | #40 |
 | 1.0 (proposed amendment) | 2026-10-24 | D41 proposes per-clip clean-score storage in §7 and adding `baseline-v1` beside the bundle CNN in §9; requires all-four approval before protocol text changes or FoR test access | pending |
+| 1.0 | 2026-10-24 | D42: CNN design and training details fixed (completes §4 'size: team choice'); no existing rule changed | #44 |

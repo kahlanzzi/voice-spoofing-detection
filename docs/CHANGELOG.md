@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- D42 (approved, PR #44): CNN design and training details; W&B setup documented (D40).
 - Stage 7 brief `docs/stages/stage07-baseline.md` (D32), in review; teach-back by Khalil and Iheb pending.
 - Stage 7 steps 2B–3: official baseline evidence (cache JSON files, selection/threshold/run/subgroup reports, determinism record) and `docs/results/baseline.md` with validation results (val-A EER 0.149%, val-B EER 0.0), interpretation [hypothesis] and limitations.
 - Proposed D41: purpose-keyed Stage 11/14 registry with a fixed purpose allowlist, Stage 11 clean per-clip scores, and paired Stage 14 robustness comparisons; no FoR test access until approved and implemented.
