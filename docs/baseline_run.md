@@ -24,7 +24,7 @@ python -m src.tuning.baseline_run --cache-dir <folder with train/ val-A/ val-B/>
 | `artifact/` | `baseline.npz` + `baseline.json` (`save`, non-pickle) |
 | `selection_report.json` | all 16 grid rows with val-A EER, selected C and gamma, scikit-learn version, SVC settings |
 | `threshold_report.json` | D29 threshold, val-B EER there, val-B class counts |
-| `run_report.json` | `schema_version` 1, `version`, `code_commit`, `profile_fingerprint`, `profile_config_sha256`, `f2_manifest_sha256`, `baseline_config_sha256`, `caches` (`npz_sha256` and `n_rows` per split), `artifact_sha256`, `selected_C`, `selected_gamma`, `val_a_eer` (at the selected configuration), `val_b_threshold`, `val_b_eer` |
+| `run_report.json` | `schema_version` 1, `version`, `code_commit`, `environment` (`python`, `numpy`, `scipy`, `scikit-learn`, `librosa`, `soxr`, `soundfile` versions), `profile_fingerprint`, `profile_config_sha256`, `f2_manifest_sha256`, `baseline_config_sha256`, `caches` (`npz_sha256` and `n_rows` per split), `artifact_sha256`, `selected_C`, `selected_gamma`, `val_a_eer` (at the selected configuration), `val_b_threshold`, `val_b_eer` |
 | `subgroup_report.json` | `purpose` (descriptive only), and per val-A / val-B: `n_rows`, `counts` per subgroup, and `eer`, `n_bonafide`, `n_spoof` for REAL vs FAKE_mp3 and REAL vs FAKE_other |
 
 All JSON files have sorted keys and are written with `allow_nan=False`.
@@ -56,7 +56,9 @@ All JSON files have sorted keys and are written with `allow_nan=False`.
   cache JSON files and `artifact_sha256`.
 - **(c) Provenance in one file.** `run_report.json` binds the artifact hash to the code commit,
   F3 profile, F2 manifest, baseline config and the exact cache bytes, so a reviewer can trace the
-  artifact to every input.
+  artifact to every input. It also records the Python and package versions (`environment`):
+  feature values depend on librosa/soxr (D39) and the fit on NumPy/SciPy/scikit-learn, and the
+  profile fingerprint does not cover library versions, so a rerun can be compared like for like.
 - **(d) Subgroup breakdown descriptive and pre-declared.** The per-subgroup EERs show whether the
   baseline behaves differently on MP3-compressed fakes, a known FoR shortcut risk
   ([dataset_audit.md](dataset_audit.md)). They are declared here (2026-10-24) before any real run,

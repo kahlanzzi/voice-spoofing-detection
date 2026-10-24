@@ -13,6 +13,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
+import sklearn
 import soundfile as sf
 
 import src.tuning.baseline_fit as fit_module
@@ -97,11 +98,16 @@ def test_end_to_end_outputs_keys_and_hashes(patched, tmp_path, profile):
     data = json.loads((out / "run_report.json").read_text(encoding="utf-8"))
     assert data == report and list(data) == sorted(data)
     assert set(data) == {
-        "schema_version", "version", "code_commit", "profile_fingerprint", "profile_config_sha256",
+        "schema_version", "version", "code_commit", "environment", "profile_fingerprint",
+        "profile_config_sha256",
         "f2_manifest_sha256", "baseline_config_sha256", "caches", "artifact_sha256", "selected_C",
         "selected_gamma", "val_a_eer", "val_b_threshold", "val_b_eer",
     }
     assert (data["schema_version"], data["version"], data["code_commit"]) == (1, "baseline-test", COMMIT)
+    assert set(data["environment"]) == {"python", "numpy", "scipy", "scikit-learn", "librosa",
+                                        "soxr", "soundfile"}
+    assert all(isinstance(v, str) and v for v in data["environment"].values())
+    assert data["environment"]["scikit-learn"] == sklearn.__version__
     assert data["artifact_sha256"] == artifact_sha256(out / "artifact")
     assert data["profile_fingerprint"] == profile.fingerprint()
     assert data["profile_config_sha256"] == _sha(PROFILE_PATH)

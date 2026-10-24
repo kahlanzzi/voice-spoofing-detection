@@ -16,7 +16,10 @@ record. Nothing is written unless every step succeeds.
 from __future__ import annotations
 
 import argparse
+import importlib
+import importlib.metadata
 import json
+import platform
 import shutil
 from pathlib import Path
 from typing import Any
@@ -47,6 +50,20 @@ SUBGROUP_REPORT = "subgroup_report.json"
 SUBGROUP_PURPOSE = (
     "descriptive only; not used for selection, threshold or any decision (pre-declared 2026-10-24)"
 )
+# Report name -> import name of the packages whose versions shape the features and the fit.
+ENVIRONMENT_PACKAGES = {
+    "numpy": "numpy", "scipy": "scipy", "scikit-learn": "sklearn", "librosa": "librosa",
+    "soxr": "soxr", "soundfile": "soundfile",
+}
+
+
+def environment() -> dict[str, str]:
+    """Python and package versions for run_report.json: __version__, else the installed metadata."""
+    out = {"python": platform.python_version()}
+    for name, module in ENVIRONMENT_PACKAGES.items():
+        version = getattr(importlib.import_module(module), "__version__", None)
+        out[name] = str(version) if version else importlib.metadata.version(name)
+    return out
 
 
 def _json_text(data: dict[str, Any]) -> str:
@@ -136,6 +153,7 @@ def run(cache_dir, profile_path, config_path, manifest_path, out_dir, version: s
             "schema_version": SCHEMA_VERSION,
             "version": version,
             "code_commit": commit,
+            "environment": environment(),
             "profile_fingerprint": profile.fingerprint(),
             "profile_config_sha256": profile_config_sha256,
             "f2_manifest_sha256": sha256_file(manifest_path),
