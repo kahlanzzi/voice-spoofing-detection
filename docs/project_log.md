@@ -1732,6 +1732,30 @@ everything. AI did not push, open or merge a PR.
 
 ---
 
+### Entry 75 — Stage 7 closed (D32) (2026-10-24)
+
+**Numbering:** follows Entry 74; the number is fixed at merge time (Malak's D41 and Khalil's PR #33
+also need numbers).
+
+**What:** the Stage 7 brief docs/stages/stage07-baseline.md was merged with PR #42. Khalil and Iheb
+completed its D32 teach-back face to face, reported by Donia on 2026-10-24; their written
+confirmation will be their approval of this closeout PR. On `docs/stage7-closeout`, the brief
+status is set to accepted, the stage-briefs index and the `AGENTS.md` roadmap are updated, and the
+brief's §8 test sentence now says the four test folders gave 295 passed on main after PR #42.
+
+**Checks:** the four-folder test command (tests/evaluation, tests/models, tests/tuning,
+tests/features) on main gave 295 passed.
+
+**Status:** Stage 7 is done; Stages 8–9 are current.
+
+**AI assistance:** **Claude Code** applied the edits from Donia's specification. AI did not push,
+open or merge a PR.
+
+**Gate:** approval of this PR by Khalil and Iheb is the written confirmation of the teach-back; AI
+does not approve or merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
 ## Open items
 
 **Part C: external comparison (Entry 58)**
@@ -1839,7 +1863,7 @@ everything. AI did not push, open or merge a PR.
 - [x] Stage 7 step 1: verified MFCC cache for train/val-A/val-B (Entry 71)
 - [x] Stage 7 step 2A: baseline run orchestrator and Colab notebook (Entry 73)
 - [x] Stage 7 steps 2B–3: real cache build and baseline fit in Colab from the merged commit, then docs/results/baseline.md (Entry 73) (Entry 74)
-- [ ] Stage 7 brief docs/stages/stage07-baseline.md (D32): written; teach-back by Khalil and Iheb pending (Entry 74)
+- [x] Stage 7 brief docs/stages/stage07-baseline.md (D32): written; teach-back by Khalil and Iheb pending (Entry 74) (teach-back face to face, Entry 75)
 
 **Stage 10 risk policy (Entry 33)**
 - [x] Human review of `feat/stage10-risk-policy` (R1–R2); CI green on Python 3.13: merged as PR #17.
@@ -1936,6 +1960,9 @@ everything. AI did not push, open or merge a PR.
 - [ ] Threat model §13 Q2: access control (below).
 - [ ] Decide the access-control mechanism (SRS §7.4) before the API stage (Stage 17), at the latest. The oracle-abuse residual risk (threat model §10.1) depends on it.
 
+**Stage 8 CNN training**
+- [ ] Stage 8 brief docs/stages/stage08-cnn-training.md (D32) when the stage closes
+
 **Stage 14 robustness (D41)**
 - [ ] D41 (Malak): baseline through the Stage 14 degradations, with a pre-declared criterion, decided before the FoR test split is seen
 
@@ -1951,6 +1978,7 @@ everything. AI did not push, open or merge a PR.
 ## Current status — updated 2026-10-24
 
 **What was done:**
+- Stage 7 closed (Entry 75): brief accepted after the D32 teach-back by Khalil and Iheb; Stages 8–9 current.
 - **Stage 7 steps 2B–3, official baseline evidence and validation results** on
   `docs/stage7-baseline-results` (Entry 74): run from `297c352` with byte-identical reruns; C 10,
   γ 0.1; val-A EER 0.149%, val-B EER 0.0 (validation only); interpreted as an in-domain upper bound
@@ -2029,8 +2057,8 @@ everything. AI did not push, open or merge a PR.
 - Stage briefs (`docs/stages/`, D32): 00–01 and 04–06 accepted; 02–03 accepted (PR #40).
 
 **Branches:**
-- `origin/main`: at `297c352` (PR #41 merged, Entry 73).
-- `docs/stage7-baseline-results`: Stage 7 steps 2B–3, evidence and results; local commit, awaiting push and PR (Entry 74).
+- `origin/main`: PR #42 merged (Stage 7 results and brief).
+- `docs/stage7-closeout`: Stage 7 closeout (D32); local commit, awaiting push and PR (Entry 75).
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 

@@ -109,8 +109,8 @@ required CI check `checks`, branch up to date; no direct pushes.
 | 4 | Leakage-aware split | B · Malak; review: Donia | done |
 | 5 | Dataset freeze (F2: manifests + hashes) | B · Malak; review: Donia | done |
 | 6 | Preprocessing profile v1 + tests + compute benchmark | B · Malak | done |
-| 7 | Evaluation harness + MFCC/SVM baseline | C · Donia | ← CURRENT |
-| 8–9 | CNN training + model selection (FoR val-A) | C · Donia | |
+| 7 | Evaluation harness + MFCC/SVM baseline | C · Donia | done |
+| 8–9 | CNN training + model selection (FoR val-A) | C · Donia | ← CURRENT |
 | 10 | Risk policy + calibration fit (FoR val-B) | C · Donia | |
 | 11 | FoR internal test (once) | C · Donia | |
 | 12 | **ModelBundle freeze** | C · Donia | |
