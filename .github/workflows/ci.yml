@@ -29,7 +29,14 @@ jobs:
       - name: Install Python deps
         run: pip install -r requirements.txt
 
+      - name: Install CNN deps (CPU torch, then safetensors and wandb)
+        run: |
+          pip install torch==2.11.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements-cnn.txt
+
       - name: Run tests
+        env:
+          REQUIRE_TORCH_TESTS: "1"   # torch tests fail instead of skipping if torch is missing
         run: pytest -q
 
       # --- Docs reminder (always runs, never fails the build) -----------------

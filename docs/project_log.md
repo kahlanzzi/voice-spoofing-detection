@@ -1848,6 +1848,43 @@ immediately before merging PR #46 if another project-log entry merges first.
 
 ---
 
+### Entry 79 — Stage 8 PR B1: CNN foundations (2026-10-24)
+
+**Numbering:** follows Entry 78; the number is fixed at merge time.
+
+**What:** on `feat/stage8-cnn-foundations` (`f396698`):
+- **Dependencies and CI:** `requirements-cnn.txt` pins safetensors 0.8.0 and wandb 0.31.0. torch
+  2.11.0 is not installed from any requirements file: Colab uses its preinstalled CUDA build
+  (asserted in the notebook); CI and local development install the CPU build. CI sets
+  `REQUIRE_TORCH_TESTS=1`, so torch tests fail instead of skipping (`tests/_torch.py`).
+  `docs/setup.md` has a "CNN dependencies (Stage 8)" section.
+- **Model:** the D42 CNN, `src/models/cnn.py` (3 or 4 blocks only, one logit per clip).
+- **Normalization:** NumPy-only, train-only per-Mel-bin statistics, `src/training/normalization.py`.
+- **Determinism:** `set_seed`, `src/training/determinism.py`.
+- **Checkpoint:** non-pickle safetensors weights plus strict JSON metadata and `checkpoint_sha256`,
+  `src/models/cnn_checkpoint.py`; the loader never calls `torch.load` or pickle and accepts an
+  optional `expected_sha256`.
+- Design note `docs/cnn.md`. No training loop, no W&B, no `configs/cnn.yaml` (PR B2).
+
+**Evidence [verified]:** `python -m pytest -q` → 600 passed, 0 skipped (torch 2.11.0+cpu installed
+locally); `tests/governance` → 3 passed (local `.venv`, Python 3.14.7). Synthetic tensors only; no
+dataset, no Colab.
+
+**Correction to the D42 wording** (recorded here; D42 itself is not edited): D42 says the channels
+are "the network the Stage 6 benchmark measured". Channels, pooling and head match, but the
+benchmark network had no BatchNorm, which D42 adds. The benchmark peak was 0.90 GB of 15.6 GB, so
+batch 256 is expected to stay well within the 80% VRAM limit **[hypothesis]**; PR B2 / the Stage 8
+run records the real peak.
+
+**AI assistance:** **Claude Code** wrote the code, tests and docs from Donia's specification and
+found the BatchNorm discrepancy; **Claude** (claude.ai) reviewed the diff with Donia and drafted D42
+(including the inaccurate wording). Donia reviewed every change. AI did not push, open or merge a PR.
+
+**Gate:** Iheb reviews the dependency and CI changes, Khalil the rest. PR B2 (training loop, W&B
+wrapper, `configs/cnn.yaml`, search orchestrator) follows.
+
+---
+
 ## Open items
 
 **Part C: external comparison (Entry 58)**
@@ -2057,7 +2094,8 @@ immediately before merging PR #46 if another project-log entry merges first.
 - [ ] Stage 8 brief docs/stages/stage08-cnn-training.md (D32) when the stage closes
 - [x] Approve D42 (team) before any CNN code (Entry 76) (PR #44, 2026-10-24)
 - [x] Stage 8 PR A: verified log-Mel cache for train/val-A/val-B (Entry 77)
-- [ ] Stage 8 PR B: CNN code, dependency pins (requirements-cnn.txt; Colab uses its preinstalled torch, asserted at 2.11.0; CI installs CPU-only torch), configs/cnn.yaml (D30 grid + D42), W&B allow-list wrapper; Iheb and Khalil review
+- [x] Stage 8 PR B1: dependencies and CI, CNN, normalization, determinism, checkpoint (Entry 79)
+- [ ] Stage 8 PR B2: training loop with early stopping, W&B allow-list wrapper, configs/cnn.yaml with drift guard, search orchestrator (D30 tie rule, seeds 1–2, select_bundle_seed); record the real GPU peak memory (D42 BatchNorm correction, Entry 79)
 - [ ] Check that Khalil, Iheb and Malak accepted the W&B invite with the Member role
 
 **Stage 14 robustness (D41)**
@@ -2076,6 +2114,8 @@ immediately before merging PR #46 if another project-log entry merges first.
 ## Current status — updated 2026-10-24
 
 **What was done:**
+- **Stage 8 PR B1, CNN foundations** on `feat/stage8-cnn-foundations` (Entry 79): torch dependencies
+  and CI, D42 CNN, train-only normalization, `set_seed`, safetensors checkpoint; synthetic tests only.
 - **Stage 8 PR A, verified log-Mel cache** on `feat/stage8-logmel-cache` (Entry 77): train/val-A/val-B
   only, bound to F3 and F2; synthetic tests only, no real features built.
 - Stage 8 preparation (Entry 76): D42 (CNN design and training details) approved (PR #44); W&B project
@@ -2161,8 +2201,8 @@ immediately before merging PR #46 if another project-log entry merges first.
 - Stage briefs (`docs/stages/`, D32): 00–07 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), and 07 (PR #43).
 
 **Branches:**
-- `origin/main`: at `2f18f60` (PR #45 merged; verified log-Mel cache, Entry 77).
-- `docs/stage14-baseline-robustness-malak`: PR #46 open; D41 and ADR 0010 approved; implementation review remains pending.
+- `origin/main`: at `90f54aa` (PR #46 merged; D41 approved).
+- `feat/stage8-cnn-foundations`: Stage 8 PR B1 (Entry 79), committed locally; not pushed, review by Iheb (deps, CI) and Khalil.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 

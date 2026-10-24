@@ -35,6 +35,20 @@ pip install -r requirements.txt
 pytest -q
 ```
 
+## CNN dependencies (Stage 8)
+
+The CNN code (D42) needs PyTorch, safetensors and wandb. Locally, after `requirements.txt`:
+
+```bash
+python -m pip install torch==2.11.0 --index-url https://download.pytorch.org/whl/cpu
+python -m pip install -r requirements-cnn.txt
+```
+
+- `torch==2.11.0` is not in any requirements file. Colab uses its preinstalled CUDA build (the
+  notebook asserts 2.11.0); CI and local development install the CPU build from the command above.
+- CI sets `REQUIRE_TORCH_TESTS=1`, so a torch test fails instead of skipping if torch is missing.
+  Locally without torch, those tests are skipped.
+
 ## Colab
 
 1. Open a notebook from `notebooks/` in Colab (Python 3.13 runtime, GPU when training).
