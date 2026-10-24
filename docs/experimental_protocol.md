@@ -158,6 +158,10 @@ on FoR only; nothing here touches DEEP-VOICE before Stage 13 (AGENTS.md hard rul
 - **Decided:**
   - Run once: the baseline and all 3 CNN seeds on the same FoR test split; this is the single Stage 11
     run (FR-12; D11) (team choice, 2026-10-14).
+  - Registry and stored clean scores (D41): use the code-closed purpose `stage11_test`, with one claim
+    per frozen model set. Store stable clip ID, label, D14 group ID and raw score for `baseline-v1`
+    and all three CNN seeds; also store calibrated p and prediction for CNNs, and the D29 forced-binary
+    prediction with calibrated p marked not applicable for the baseline.
   - Reporting: all D4 metrics with class counts, per subgroup (D4; FR-14).
   - H5 "clearly lower": FAKE_other recall ≥ 5 points below FAKE_mp3 recall, and the 95% CI of the
     difference excludes 0 (H5) (team choice, 2026-10-14).
@@ -201,6 +205,14 @@ on FoR only; nothing here touches DEEP-VOICE before Stage 13 (AGENTS.md hard rul
     excludes 0 (H6) (team choice, 2026-10-14).
   - Pipeline: the degradation is applied to the waveform, then the same frozen preprocessing profile
     (D26 B→Stage 14).
+  - Models and registry (D41): evaluate the frozen ModelBundle CNN bundle seed (F4) and `baseline-v1`
+    (artifact SHA-256 `42cc4d53a7cd881f56e4fa54fcf4797de8885b404d0a2b31c293555c868df10a`),
+    with one code-closed `stage14_robustness` claim per model set covering the complete condition grid
+    in one pass. Reuse the matching Stage 11 clean scores; do not make a second clean pass.
+  - Paired comparison (D41): pair clean and degraded rows by stable clip ID and calculate paired 95%
+    percentile CIs from 2,000 D14-group bootstrap resamples with seed 2026. The baseline's primary
+    endpoint is the 3.4 kHz EER increase; it is meaningful only at ≥5 absolute percentage points with
+    the paired CI excluding 0. No fitting, tuning, recalibration, threshold change or model selection.
 - **Note:** FAKE clips already carry MP3 history (D16), so the compression curve also informs H5;
   it is reported, not avoided.
 - **Status:** Decided
@@ -277,4 +289,5 @@ on FoR only; nothing here touches DEEP-VOICE before Stage 13 (AGENTS.md hard rul
 | 1.0 | 2026-10-18 | D36: baseline scored in the single external run (RQ2); C→D stored scores per model | #29 |
 | 1.0 | 2026-10-18 | D37: baseline grid, scaling and score fixed (completes §4 'grid: team choice'); no existing rule changed | #30 |
 | 1.0 | 2026-10-20 | D40 narrows §4's 'every run logged to W&B' to Stage 8 onwards (§4 text unchanged; D40 governs); H7 pre-registered (silence, Stage 16) | #40 |
+| 1.0 | 2026-10-24 | D41: per-clip clean-score storage in §7 and `baseline-v1` beside the bundle CNN in §9; implementation review remains required before FoR test access | #46 |
 | 1.0 | 2026-10-24 | D42: CNN design and training details fixed (completes §4 'size: team choice'); no existing rule changed | #44 |

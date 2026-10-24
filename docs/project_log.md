@@ -1758,8 +1758,9 @@ does not approve or merge. **WAITING FOR HUMAN REVIEW.**
 
 ### Entry 76 — Stage 8 preparation: D42 proposed, W&B set up (2026-10-24)
 
-**Numbering:** follows Entry 75; the number is fixed at merge time (Malak's D41 and Khalil's PR #33
-also need numbers).
+**Numbering:** follows Entry 75; D42 is Entry 76. D41 and the log-Mel PR may both provisionally
+hold Entry 77; whichever merges second takes the next free number. Khalil's PR #33 still needs a
+log number.
 
 **What:** D42 is proposed in `docs/decisions/README.md`, with a Protocol §14 change-log row. It fixes
 the CNN on the F3 log-Mel (1, 64, 197): per-Mel-bin standardization from the FoR train cache only
@@ -1808,6 +1809,42 @@ AI did not push, open or merge a PR.
 
 **Gate:** Stage 8 PR B (CNN code, dependencies, `configs/cnn.yaml`) follows; the real cache build
 runs in the Stage 8 notebook after PR B merges.
+
+---
+
+### Entry 78 — D41 approved: Stage 14 robustness runs: registry purpose key and paired clean scores (2026-10-24)
+
+**Numbering:** follows Entry 77 and is the next free number on main at approval time. Re-check
+immediately before merging PR #46 if another project-log entry merges first.
+
+- **Owner:** Malak Ben Salem; **reviewers:** Donia, Khalil, Iheb and Malak approved via team review;
+  approval recorded in PR #46 (D24/D26).
+- **Amends D31.** The registry key is `(dataset, split, evaluation_purpose, model_set)` with a
+  closed purpose allowlist implemented in code: exactly `stage11_test` and `stage14_robustness`.
+  Any other value is refused; adding a purpose requires a new decision. Each allowed purpose/model
+  set may claim once. This distinguishes Stage 11 test scoring from Stage 14 robustness conditions
+  without opening an unbounded route to repeat test-split runs.
+- **Models and scope:** Stage 11 stores per-clip clean scores for `baseline-v1` (D36/F4 artifact
+  SHA-256 `42cc4d53a7cd881f56e4fa54fcf4797de8885b404d0a2b31c293555c868df10a`) and all three CNN
+  seeds, including the ModelBundle CNN bundle seed. Stage 14 evaluates `baseline-v1` and the frozen
+  ModelBundle CNN (bundle seed, F4), one registry claim per model set over the full Protocol §9 grid
+  in one pass. Store stable clip ID, label and D14 group ID with each Stage 11 score; baseline stores
+  raw score and D29 forced-binary prediction, with calibrated p not applicable.
+- **Pairing and criterion:** reuse the corresponding Stage 11 clean scores (no second clean pass);
+  apply each pre-declared degradation before unchanged F3. Pair clean/degraded rows by clip ID and
+  compute paired 95% percentile CIs from 2,000 D14-group bootstrap resamples with seed `2026`.
+  Baseline EER increase at 3.4 kHz is meaningful only if it is at least 5 absolute percentage points
+  and the paired CI excludes 0. Retain H6's CNN false-synthetic-rate endpoint on REAL at 3.4 kHz and
+  all existing §9 conditions. This is diagnostic evidence, not proof of a sole cause.
+- **Protocol record:** D41 adds per-clip score storage to §7's Stage 11 run and the baseline model to
+  §9; its §14 history row records PR #46.
+- **Basis:** D31's existing guard permits one run per model set, while D36 defines the baseline
+  artifact in F4. Main's `docs/results/baseline.md` and Entry 74 now contain hash-verified baseline
+  evidence; no test-split result was accessed for this proposal.
+- **AI assistance:** Codex revised the decision, ADR and records from Donia's review. No dataset,
+  audio, checkpoint or test result was accessed, and no experiment was run.
+- **Gate:** **APPROVED — IMPLEMENTATION REVIEW REQUIRED.** Do not access FoR test audio for this
+  comparison until the registry and score-storage implementation is reviewed.
 
 ---
 
@@ -2024,7 +2061,8 @@ runs in the Stage 8 notebook after PR B merges.
 - [ ] Check that Khalil, Iheb and Malak accepted the W&B invite with the Member role
 
 **Stage 14 robustness (D41)**
-- [ ] D41 (Malak): baseline through the Stage 14 degradations, with a pre-declared criterion, decided before the FoR test split is seen
+- [x] Obtain all-four approval for D41/ADR 0010 (PR #46, 2026-10-24).
+- [ ] Implement and review the closed-purpose registry and Stage 11 per-clip scores before any Stage 11 or Stage 14 FoR test access.
 
 **Later stages (reminders)**
 - [ ] `configs/robustness.yaml` → Stage 14. `docker-compose.yml` → Stage 17.
@@ -2078,7 +2116,8 @@ runs in the Stage 8 notebook after PR B merges.
   the React decision and Stage 6 is D39. History entries 59–67 include the disclosed duplicate 59;
   Entry 70 records the correction and restored Entry 38 spacing. The corrected ZIP hash is recorded,
   and the first-run diagnostic archive is noted as not retained. Donia and Iheb approved PR #34;
-  D39/F3 is approved. The Stage 6 D32 brief and teach-back remain pending.
+  D39/F3 and the Stage 6 D32 brief/teach-back are complete.
+- **Stage 7 is closed** after PR #43; its evidence and accepted D32 brief are recorded in Entries 74–75.
 - **Stage 7 evaluation harness, steps 1–5, is merged** as PR #13 (Entry 31).
 - **Protocol clarifications D29–D31 are merged** as PR #16 (Entry 32).
 - **Stage 10 risk policy, steps R1–R2, is merged** as PR #17 (Entry 33).
@@ -2107,8 +2146,9 @@ runs in the Stage 8 notebook after PR B merges.
   helpers for Stage 13.
 - Pre-declared rules for the baseline threshold, CNN selection and the single Stage 11 run (D29–D31),
   and baseline tuning, scaling and score (D37, Entry 53).
-- A tested MFCC/SVM baseline (`src/models/baseline.py`, `src/tuning/baseline_fit.py`), documented in
-  `docs/baseline.md`; not yet fitted on real features (waits for F3).
+- A tested MFCC/SVM baseline (`src/models/baseline.py`, `src/tuning/baseline_fit.py`); Stage 7
+  validation evidence and artifact provenance are committed in `docs/results/baseline.md` and
+  `docs/audit_evidence/stage7_baseline/`, with hash verification recorded in Entry 74.
 - A tested risk-policy fit (`src/tuning`) and core apply / save / load (`src/risk`), documented in
   `docs/risk_policy.md`; not yet fitted on real val-B scores.
 - A tested append-only run registry (`src/evaluation/run_registry.py`) that refuses a second
@@ -2118,11 +2158,11 @@ runs in the Stage 8 notebook after PR B merges.
 - Governance rules that keep the external set metadata-only until the one guarded Stage 13 run.
 - Corrected Stage 6 FoR evidence under `docs/audit_evidence/stage6_preprocessing/`: exact profile,
   deterministic validation, shortcut/padding screens, D18 invariance and no-training T4 benchmark.
-- Stage briefs (`docs/stages/`, D32): 00–01 and 04–06 accepted; 02–03 accepted (PR #40).
+- Stage briefs (`docs/stages/`, D32): 00–07 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), and 07 (PR #43).
 
 **Branches:**
-- `origin/main`: at `a76c1a5` (PR #44 merged; D42 approved).
-- `feat/stage8-logmel-cache`: Stage 8 PR A, log-Mel cache; awaiting push and PR (Entry 77).
+- `origin/main`: at `2f18f60` (PR #45 merged; verified log-Mel cache, Entry 77).
+- `docs/stage14-baseline-robustness-malak`: PR #46 open; D41 and ADR 0010 approved; implementation review remains pending.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
@@ -2134,6 +2174,6 @@ runs in the Stage 8 notebook after PR B merges.
    Briefs 00–06 are accepted.
 2. Before Stage 13, implement the approved file-level view, speaker-average convention and guarded
    runner; resolve the external-run governance allowlist.
-3. Baseline B1–B2, the D37 config and the MFCC cache (PR #39) are in main; the real feature build and baseline fit (Stage 7 steps 2–3) follow this PR's merge (D40).
-4. Then run the real Part C work on the frozen F3 preprocessing profile.
-5. Set up the W&B project and key handling before the first Stage 8 run (D40).
+3. Stage 7 is closed (PR #43); Stages 8–9 are current. Continue the frozen Part C work and preserve the recorded validation-only scope of Entry 74.
+4. D41 and ADR 0010 are approved in PR #46. Implement and review the closed-purpose registry and Stage 11 per-clip score storage before any FoR test access for the Stage 14 comparison.
+5. Then run the real Part C work on the frozen F3 preprocessing profile, and set up the W&B project before the first Stage 8 run (D40).
