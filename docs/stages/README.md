@@ -75,7 +75,7 @@ flowchart LR
 | 4 Leakage-aware split | Malak | `stage04-split.md` | accepted (PR #37; D32 teach-back by Donia with AI assistance) |
 | 5 Dataset freeze (F2) | Malak | `stage05-dataset-freeze.md` | accepted (PR #37; D32 teach-back by Donia with AI assistance) |
 | 6 Preprocessing profile v1 | Malak | `stage06-preprocessing.md` | accepted (PR #37; D32 teach-back by Donia with AI assistance) |
-| 7 Evaluation harness + baseline | Donia | `stage07-baseline.md` | after the stage closes |
+| 7 Evaluation harness + baseline | Donia | `stage07-baseline.md` | accepted (D32 teach-back: Khalil and Iheb, face to face, reported 2026-10-24; confirmed by approval of the docs/stage7-closeout PR) |
 | 8 CNN training | Donia | `stage08-cnn-training.md` | after the stage closes |
 | 9 Model selection | Donia | `stage09-model-selection.md` | after the stage closes |
 | 10 Risk policy + calibration | Donia | `stage10-risk-policy.md` | after the stage closes |

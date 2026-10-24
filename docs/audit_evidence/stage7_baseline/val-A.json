@@ -1,0 +1,13 @@
+{
+  "code_commit": "297c352c91bfc9daafa2943ba04154194aa33248",
+  "f2_manifest_sha256": "badfe948fb7b833357783dd18be00f6bb36253cf8699dc4c4beb4df2b07706f8",
+  "n_bonafide": 660,
+  "n_rows": 1330,
+  "n_spoof": 670,
+  "npz_sha256": "04227c58b25f208771693db6262f39fd5276518811a13d60b9e7f9a560772bbd",
+  "profile_config_sha256": "7bd35bfdcb9270dd55ea9e73449c7bf6c6a359a80335b2551c0c89dde77c8630",
+  "profile_fingerprint": "5b4f5849a9bb63f9016dd79969ff5bfb9e37006acbff1e26bbfee4ee2bad68f2",
+  "profile_version": "preprocessing-v1",
+  "schema_version": 1,
+  "split": "val-A"
+}

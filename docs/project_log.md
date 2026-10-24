@@ -1681,36 +1681,111 @@ go in a separate PR with `docs/results/baseline.md`. **WAITING FOR HUMAN REVIEW.
 
 ---
 
-### Entry 74 (provisional) — Proposed D41: Stage 14 one-time robustness protocol (2026-10-24)
+### Entry 74 — Stage 7 steps 2B–3: official baseline evidence and validation results (2026-10-24)
 
-- **Owner:** Malak Ben Salem; **reviewer:** Khalil Dridi (D26).
-- **Requirement / decision served:** D3, D7, D11, D14, D26, H6; extend Stage 14's pre-registered
-  robustness evaluation to compare the evaluation-only MFCC/RBF-SVM baseline with the CNN.
-- **Proposal:** key the append-only registry by `(dataset, split, evaluation_purpose, model_set)`,
-  preserving one claim per key. Stage 14 gets one registered run per frozen model set (CNN and
-  MFCC/RBF-SVM), and each run covers the entire existing Protocol §9 grid in a single pass. Before
-  Stage 11 test access, store per-clip clean scores for the baseline and all CNN seeds with stable
-  clip ID, label and D14 group ID; baseline raw score and D29 forced-binary prediction are stored,
-  calibrated p is not applicable. Stage 14 reuses these clean scores, does not score clean audio a
-  second time, and applies each waveform degradation before the unchanged F3 profile. No fitting,
-  tuning, recalibration, threshold changes or model selection are permitted.
-- **Paired inference and primary criterion:** match clean (Stage 11) and degraded (Stage 14) scores by
-  clip ID; compute paired 95% percentile CIs with 2,000 resamples of D14 near-duplicate groups and
-  the protocol seed. Baseline EER increase at 3.4 kHz is meaningful only at ≥5 absolute percentage
-  points with the paired CI excluding 0. H6's CNN false-synthetic-rate endpoint and every existing
-  degradation condition remain unchanged. This is diagnostic evidence, not proof of a sole cause.
-- **Registry and storage requirement:** D41 must be approved before Stage 11 accesses the test data; the registry-key and score-
-  storage changes must be implemented and reviewed before either Stage 11 or Stage 14 runs. Each
-  Stage 14 model-set run must refuse a repeat, without weakening the Stage 11 one-run guard.
-- **Basis:** [doc] Protocol §§7 and 9 fix the one-time Stage 11 test, Stage 14 degradation grid, F3
-  pipeline, and FoR group bootstrap; H6 preregisters its CNN endpoint. D36 says Stage 11 evaluates
-  the baseline and all three CNN seeds. Donia reports the baseline has been fitted and suggests a
-  bandwidth shortcut; the reported metrics were not independently re-run for this documentation
-  change. D41 makes clean/degraded pairing and the registry purpose explicit before test access.
-- **AI assistance:** Codex drafted the decision and log wording. No dataset, audio, checkpoint or test
-  result was accessed, and no experiment was run.
-- **Gate:** **PROPOSED — WAITING FOR TEAM REVIEW.** Do not access the FoR test split until D41 is
-  approved and the registry and score-storage changes are implemented and reviewed.
+**Numbering:** follows Entry 73; the number is fixed at merge time (Khalil's open PR #33 may also
+need a number).
+
+**Run:** Donia ran `notebooks/03_stage7_baseline.ipynb` on Colab on 2026-10-24 from merge commit
+`297c352c91bfc9daafa2943ba04154194aa33248` (PR #41); Python 3.13.16, NumPy 2.5.3, SciPy 1.16.3,
+scikit-learn 1.9.1, librosa 1.0.0, soxr 1.1.0, soundfile 0.14.0. Notebook (view-only):
+<https://colab.research.google.com/drive/1AFQ4twXQmbW4SXN9iuqU37PZXakaEiGx>. Caches and fit were
+each run twice with byte-identical outputs (`determinism.json`). Artifact `baseline-v1`,
+`artifact_sha256` `42cc4d53a7cd881f56e4fa54fcf4797de8885b404d0a2b31c293555c868df10a`, stored in
+Drive `checkpoints/baseline/baseline-v1/`, not in Git.
+
+**What:** on `docs/stage7-baseline-results`, committed the eight evidence files (three cache JSON
+files, four reports, `determinism.json`) to `docs/audit_evidence/stage7_baseline/` and wrote
+`docs/results/baseline.md`. No code change; no `.npz` cache or artifact committed. Added the
+Stage 7 brief docs/stages/stage07-baseline.md (D32); teach-back by Khalil and Iheb pending.
+
+**Headline numbers [verified against the evidence files] (validation only, not test):** selected
+C 10, γ 0.1 (exact val-A EER tie with C 100, γ 0.1; D37 tie rule → smaller C); val-A EER 0.149%
+(`selection_report.json`); D29 threshold 0.13285804202427817 with val-B EER 0.0 on 660 bonafide /
+669 spoof (`threshold_report.json`). Descriptive subgroups: val-B REAL vs FAKE_mp3 and vs
+FAKE_other both 0.0; val-A 0.0 and 0.30% (`subgroup_report.json`).
+
+**Hash verification [verified]:** SHA-256 of each committed cache JSON = `determinism.json`
+`cache_sha256` (3/3); SHA-256 of each committed report = `run_sha256` (4/4); `run_report.json`
+`npz_sha256` = `determinism.json` `cache_sha256` for train/val-A/val-B (3/3); `code_commit` equal
+in both files. All passed. F2 hash = D28, profile config hash and fingerprint = D39,
+`configs/baseline.yaml` hash = `baseline_config_sha256`, row counts = Stage 4 sizes
+12,404 / 1,330 / 1,329.
+
+**Interpretation [hypothesis]:** the near-perfect separation is too good to read as a solved task.
+Likely contributors are an in-domain upper bound (shared TTS generators and probably speakers, no
+speaker metadata, 0.95 grouping removes only near-duplicates), a bandwidth shortcut (FAKE median
+99%-energy bandwidth about 3.3 kHz vs REAL about 5.1 kHz; FAKE_other separates too, so MP3 history
+alone does not explain it; H6) and loudness/silence cues (D39: RMS AUC 0.699, FAKE_other silence
+AUC about 0.75; H7). H1 may hit a ceiling but stays unchanged and will be reported as
+pre-registered; the D36 external comparison becomes the main test of RQ2. No feature, grid or
+threshold change after seeing the results (Protocol §12). Details and limitations:
+`docs/results/baseline.md`.
+
+**AI assistance:** **Claude Code** committed the evidence, ran the hash verification and drafted
+the results document from the committed files. **Claude (claude.ai)** checked the reports'
+consistency with Donia and drafted the interpretation. Donia ran the notebook and reviewed
+everything. AI did not push, open or merge a PR.
+
+**Gate:** team review of the results PR, including the Stage 7 brief and its D32 teach-back
+(Khalil, Iheb). **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 75 — Stage 7 closed (D32) (2026-10-24)
+
+**Numbering:** follows Entry 74; the number is fixed at merge time (Malak's D41 and Khalil's PR #33
+also need numbers).
+
+**What:** the Stage 7 brief docs/stages/stage07-baseline.md was merged with PR #42. Khalil and Iheb
+completed its D32 teach-back face to face, reported by Donia on 2026-10-24; their written
+confirmation will be their approval of this closeout PR. On `docs/stage7-closeout`, the brief
+status is set to accepted, the stage-briefs index and the `AGENTS.md` roadmap are updated, and the
+brief's §8 test sentence now says the four test folders gave 295 passed on main after PR #42.
+
+**Checks:** the four-folder test command (tests/evaluation, tests/models, tests/tuning,
+tests/features) on main gave 295 passed.
+
+**Status:** Stage 7 is done; Stages 8–9 are current.
+
+**AI assistance:** **Claude Code** applied the edits from Donia's specification. AI did not push,
+open or merge a PR.
+
+**Gate:** approval of this PR by Khalil and Iheb is the written confirmation of the teach-back; AI
+does not approve or merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 76 — Proposed D41: Stage 14 robustness runs: registry purpose key and paired clean scores (2026-10-24)
+
+- **Owner:** Malak Ben Salem; **reviewers:** all four (D24/D26; proposed major decision).
+- **Amends D31.** Propose a registry key `(dataset, split, evaluation_purpose, model_set)` with a
+  closed purpose allowlist implemented in code: exactly `stage11_test` and `stage14_robustness`.
+  Any other value is refused; adding a purpose requires a new decision. Each allowed purpose/model
+  set may claim once. This distinguishes Stage 11 test scoring from Stage 14 robustness conditions
+  without opening an unbounded route to repeat test-split runs.
+- **Models and scope:** Stage 11 stores per-clip clean scores for `baseline-v1` (D36/F4 artifact
+  SHA-256 `42cc4d53a7cd881f56e4fa54fcf4797de8885b404d0a2b31c293555c868df10a`) and all three CNN
+  seeds, including the ModelBundle CNN bundle seed. Stage 14 evaluates `baseline-v1` and the frozen
+  ModelBundle CNN (bundle seed, F4), one registry claim per model set over the full Protocol §9 grid
+  in one pass. Store stable clip ID, label and D14 group ID with each Stage 11 score; baseline stores
+  raw score and D29 forced-binary prediction, with calibrated p not applicable.
+- **Pairing and criterion:** reuse the corresponding Stage 11 clean scores (no second clean pass);
+  apply each pre-declared degradation before unchanged F3. Pair clean/degraded rows by clip ID and
+  compute paired 95% percentile CIs from 2,000 D14-group bootstrap resamples with seed `2026`.
+  Baseline EER increase at 3.4 kHz is meaningful only if it is at least 5 absolute percentage points
+  and the paired CI excludes 0. Retain H6's CNN false-synthetic-rate endpoint on REAL at 3.4 kHz and
+  all existing §9 conditions. This is diagnostic evidence, not proof of a sole cause.
+- **Protocol record:** proposed D41 amendment adds per-clip score storage to §7's Stage 11 run and
+  the baseline model to §9; its §14 history row records that proposal. Update the frozen protocol
+  text only after D41 approval.
+- **Basis:** D31's existing guard permits one run per model set, while D36 defines the baseline
+  artifact in F4. Main's `docs/results/baseline.md` and Entry 74 now contain hash-verified baseline
+  evidence; no test-split result was accessed for this proposal.
+- **AI assistance:** Codex revised the decision, ADR and records from Donia's review. No dataset,
+  audio, checkpoint or test result was accessed, and no experiment was run.
+- **Gate:** **PROPOSED — WAITING FOR ALL-FOUR REVIEW.** Do not access FoR test audio for this
+  comparison until D41 is approved and the registry and score-storage implementation is reviewed.
 
 ---
 
@@ -1823,7 +1898,8 @@ go in a separate PR with `docs/results/baseline.md`. **WAITING FOR HUMAN REVIEW.
 - [x] Human review of `feat/stage7-baseline-code` (B1–B2) after D37 approval (Entry 54): merged as PR #31.
 - [x] Stage 7 step 1: verified MFCC cache for train/val-A/val-B (Entry 71)
 - [x] Stage 7 step 2A: baseline run orchestrator and Colab notebook (Entry 73)
-- [ ] Stage 7 steps 2B–3: real cache build and baseline fit in Colab from the merged commit, then docs/results/baseline.md (Entry 73)
+- [x] Stage 7 steps 2B–3: real cache build and baseline fit in Colab from the merged commit, then docs/results/baseline.md (Entry 73) (Entry 74)
+- [x] Stage 7 brief docs/stages/stage07-baseline.md (D32): written; teach-back by Khalil and Iheb pending (Entry 74) (teach-back face to face, Entry 75)
 
 **Stage 10 risk policy (Entry 33)**
 - [x] Human review of `feat/stage10-risk-policy` (R1–R2); CI green on Python 3.13: merged as PR #17.
@@ -1835,6 +1911,7 @@ go in a separate PR with `docs/results/baseline.md`. **WAITING FOR HUMAN REVIEW.
 - [ ] Stage 11: record the registry SHA-256 and line count right after the run (project-log entry
   and results PR).
 - [ ] Stage 11 stores per-clip path, group, raw score, calibrated p and prediction for the FoR test split (required by H7, Entry 72)
+- [ ] Report H1 as pre-registered even if both models are near 0% EER in-domain (results/baseline.md)
 
 **Stage 12 ModelBundle (Entry 35)**
 - [x] Human review of `feat/stage12-bundle-format`; CI green on Python 3.13: merged as PR #19.
@@ -1919,6 +1996,12 @@ go in a separate PR with `docs/results/baseline.md`. **WAITING FOR HUMAN REVIEW.
 - [ ] Threat model §13 Q2: access control (below).
 - [ ] Decide the access-control mechanism (SRS §7.4) before the API stage (Stage 17), at the latest. The oracle-abuse residual risk (threat model §10.1) depends on it.
 
+**Stage 8 CNN training**
+- [ ] Stage 8 brief docs/stages/stage08-cnn-training.md (D32) when the stage closes
+
+**Stage 14 robustness (D41)**
+- [ ] Obtain all-four approval for proposed D41/ADR 0010; then implement and review the closed-purpose registry and Stage 11 per-clip scores before any Stage 11 or Stage 14 FoR test access.
+
 **Later stages (reminders)**
 - [ ] `configs/robustness.yaml` → Stage 14. `docker-compose.yml` → Stage 17.
 - [ ] Stage 17: verify the ModelBundle checkpoint hash at load (threat model §10, tampering recommendation).
@@ -1931,6 +2014,11 @@ go in a separate PR with `docs/results/baseline.md`. **WAITING FOR HUMAN REVIEW.
 ## Current status — updated 2026-10-24
 
 **What was done:**
+- Stage 7 closed (Entry 75): brief accepted after the D32 teach-back by Khalil and Iheb; Stages 8–9 current.
+- **Stage 7 steps 2B–3, official baseline evidence and validation results** on
+  `docs/stage7-baseline-results` (Entry 74): run from `297c352` with byte-identical reruns; C 10,
+  γ 0.1; val-A EER 0.149%, val-B EER 0.0 (validation only); interpreted as an in-domain upper bound
+  with possible shortcuts [hypothesis] in `docs/results/baseline.md`.
 - **Stage 6 is complete; Stage 7 is current** (Entry 72): PR #37 merged at `7538a1d`; briefs 04–06
   accepted after Donia's D32 teach-back (with AI assistance). D40 (W&B from Stage 8) approved and H7
   (silence shortcut, Stage 16) pre-registered (PR #40). Donia's Colab
@@ -1962,7 +2050,8 @@ go in a separate PR with `docs/results/baseline.md`. **WAITING FOR HUMAN REVIEW.
   the React decision and Stage 6 is D39. History entries 59–67 include the disclosed duplicate 59;
   Entry 70 records the correction and restored Entry 38 spacing. The corrected ZIP hash is recorded,
   and the first-run diagnostic archive is noted as not retained. Donia and Iheb approved PR #34;
-  D39/F3 is approved. The Stage 6 D32 brief and teach-back remain pending.
+  D39/F3 and the Stage 6 D32 brief/teach-back are complete.
+- **Stage 7 is closed** after PR #43; its evidence and accepted D32 brief are recorded in Entries 74–75.
 - **Stage 7 evaluation harness, steps 1–5, is merged** as PR #13 (Entry 31).
 - **Protocol clarifications D29–D31 are merged** as PR #16 (Entry 32).
 - **Stage 10 risk policy, steps R1–R2, is merged** as PR #17 (Entry 33).
@@ -1991,9 +2080,9 @@ go in a separate PR with `docs/results/baseline.md`. **WAITING FOR HUMAN REVIEW.
   helpers for Stage 13.
 - Pre-declared rules for the baseline threshold, CNN selection and the single Stage 11 run (D29–D31),
   and baseline tuning, scaling and score (D37, Entry 53).
-- A tested MFCC/SVM baseline (`src/models/baseline.py`, `src/tuning/baseline_fit.py`), documented in
-  `docs/baseline.md`; Donia reports the real Stage 7 fit is now complete. The result files were not
-  independently checked as part of this D41 documentation change.
+- A tested MFCC/SVM baseline (`src/models/baseline.py`, `src/tuning/baseline_fit.py`); Stage 7
+  validation evidence and artifact provenance are committed in `docs/results/baseline.md` and
+  `docs/audit_evidence/stage7_baseline/`, with hash verification recorded in Entry 74.
 - A tested risk-policy fit (`src/tuning`) and core apply / save / load (`src/risk`), documented in
   `docs/risk_policy.md`; not yet fitted on real val-B scores.
 - A tested append-only run registry (`src/evaluation/run_registry.py`) that refuses a second
@@ -2003,11 +2092,11 @@ go in a separate PR with `docs/results/baseline.md`. **WAITING FOR HUMAN REVIEW.
 - Governance rules that keep the external set metadata-only until the one guarded Stage 13 run.
 - Corrected Stage 6 FoR evidence under `docs/audit_evidence/stage6_preprocessing/`: exact profile,
   deterministic validation, shortcut/padding screens, D18 invariance and no-training T4 benchmark.
-- Stage briefs (`docs/stages/`, D32): 00–01 and 04–06 accepted; 02–03 accepted (PR #40).
+- Stage briefs (`docs/stages/`, D32): 00–07 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), and 07 (PR #43).
 
 **Branches:**
-- `origin/main`: at `297c352` (PR #41 merged; Stage 7 step 2A implementation).
-- `docs/stage14-baseline-robustness-malak`: proposed D41 documentation, based on `297c352`.
+- `origin/main`: at `8444f21` (PR #43 merged; Stage 7 closeout complete).
+- `docs/stage14-baseline-robustness-malak`: D41 proposal, updated from current main; awaiting all-four review.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
@@ -2019,6 +2108,6 @@ go in a separate PR with `docs/results/baseline.md`. **WAITING FOR HUMAN REVIEW.
    Briefs 00–06 are accepted.
 2. Before Stage 13, implement the approved file-level view, speaker-average convention and guarded
    runner; resolve the external-run governance allowlist.
-3. Stage 7 step 2A is merged at `297c352` (PR #41). Record and review the real baseline run evidence before treating Donia's reported metrics as verified.
-4. Review and approve proposed D41 before accessing FoR test results for the added Stage 14 baseline comparison; Stage 14 remains future work.
+3. Stage 7 is closed (PR #43); Stages 8–9 are current. Continue the frozen Part C work and preserve the recorded validation-only scope of Entry 74.
+4. All four review proposed D41 (including ADR 0010); only after approval implement and review the closed-purpose registry and Stage 11 per-clip score storage. Do not access FoR test audio for the Stage 14 comparison before both gates are met.
 5. Then run the real Part C work on the frozen F3 preprocessing profile, and set up the W&B project before the first Stage 8 run (D40).
