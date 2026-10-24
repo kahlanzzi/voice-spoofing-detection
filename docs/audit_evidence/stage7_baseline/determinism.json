@@ -1,0 +1,22 @@
+{
+  "artifact_sha256": "42cc4d53a7cd881f56e4fa54fcf4797de8885b404d0a2b31c293555c868df10a",
+  "cache_sha256": {
+    "train.json": "a6c8035f1965beb2c1ae76314f383a7387c5b352ae9b971c56755c3ab60fc743",
+    "train.npz": "7eaefc4d75692fd4a9536756e3ac3eb5c701b0055a65058bffba13c3ce4f0ab5",
+    "val-A.json": "f74dbcb1ca30a1d083a2e5b640f66e532d4832b498c2322db9b6c8dce30d0958",
+    "val-A.npz": "04227c58b25f208771693db6262f39fd5276518811a13d60b9e7f9a560772bbd",
+    "val-B.json": "2e261c456ea6a9217cd40a2e8dd19a0059cda18c14fac8ccc2ddd70d8f7f6ed7",
+    "val-B.npz": "04f91e3e4957ba25f1edd9b3b7af7b830249e4f617695b96d83674ac2d7783c7"
+  },
+  "caches_byte_identical": true,
+  "code_commit": "297c352c91bfc9daafa2943ba04154194aa33248",
+  "run_sha256": {
+    "artifact/baseline.json": "5a2dbea1f523749d7f6bd6d2cc1a77939a26224591269733f8781d7ce8ef995e",
+    "artifact/baseline.npz": "c490bbdbe2fdfe0d5ef3970ecb21793b56b93ef0b927d89c148f13b2f0fc5b10",
+    "run_report.json": "f446fe0fd6d8d7472b6fac5e3fef3019949ae0e58a7d0b0408c0121f949480c5",
+    "selection_report.json": "100a1fe689f33064a6376883d03be9dfd59fd0d5f2fbd3e8bff832dd78a30059",
+    "subgroup_report.json": "44b87bf940e4aebfd543cfe1533a8b9759427474687a840abf3fd51f3001758c",
+    "threshold_report.json": "7da1b01285a6c4a45597b14e9e7f8a6eb5acd7b12cd408ba773f811d5f8f4627"
+  },
+  "runs_byte_identical": true
+}

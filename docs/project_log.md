@@ -1681,6 +1681,57 @@ go in a separate PR with `docs/results/baseline.md`. **WAITING FOR HUMAN REVIEW.
 
 ---
 
+### Entry 74 — Stage 7 steps 2B–3: official baseline evidence and validation results (2026-10-24)
+
+**Numbering:** follows Entry 73; the number is fixed at merge time (Khalil's open PR #33 may also
+need a number).
+
+**Run:** Donia ran `notebooks/03_stage7_baseline.ipynb` on Colab on 2026-10-24 from merge commit
+`297c352c91bfc9daafa2943ba04154194aa33248` (PR #41); Python 3.13.16, NumPy 2.5.3, SciPy 1.16.3,
+scikit-learn 1.9.1, librosa 1.0.0, soxr 1.1.0, soundfile 0.14.0. Notebook (view-only):
+<https://colab.research.google.com/drive/1AFQ4twXQmbW4SXN9iuqU37PZXakaEiGx>. Caches and fit were
+each run twice with byte-identical outputs (`determinism.json`). Artifact `baseline-v1`,
+`artifact_sha256` `42cc4d53a7cd881f56e4fa54fcf4797de8885b404d0a2b31c293555c868df10a`, stored in
+Drive `checkpoints/baseline/baseline-v1/`, not in Git.
+
+**What:** on `docs/stage7-baseline-results`, committed the eight evidence files (three cache JSON
+files, four reports, `determinism.json`) to `docs/audit_evidence/stage7_baseline/` and wrote
+`docs/results/baseline.md`. No code change; no `.npz` cache or artifact committed. Added the
+Stage 7 brief docs/stages/stage07-baseline.md (D32); teach-back by Khalil and Iheb pending.
+
+**Headline numbers [verified against the evidence files] (validation only, not test):** selected
+C 10, γ 0.1 (exact val-A EER tie with C 100, γ 0.1; D37 tie rule → smaller C); val-A EER 0.149%
+(`selection_report.json`); D29 threshold 0.13285804202427817 with val-B EER 0.0 on 660 bonafide /
+669 spoof (`threshold_report.json`). Descriptive subgroups: val-B REAL vs FAKE_mp3 and vs
+FAKE_other both 0.0; val-A 0.0 and 0.30% (`subgroup_report.json`).
+
+**Hash verification [verified]:** SHA-256 of each committed cache JSON = `determinism.json`
+`cache_sha256` (3/3); SHA-256 of each committed report = `run_sha256` (4/4); `run_report.json`
+`npz_sha256` = `determinism.json` `cache_sha256` for train/val-A/val-B (3/3); `code_commit` equal
+in both files. All passed. F2 hash = D28, profile config hash and fingerprint = D39,
+`configs/baseline.yaml` hash = `baseline_config_sha256`, row counts = Stage 4 sizes
+12,404 / 1,330 / 1,329.
+
+**Interpretation [hypothesis]:** the near-perfect separation is too good to read as a solved task.
+Likely contributors are an in-domain upper bound (shared TTS generators and probably speakers, no
+speaker metadata, 0.95 grouping removes only near-duplicates), a bandwidth shortcut (FAKE median
+99%-energy bandwidth about 3.3 kHz vs REAL about 5.1 kHz; FAKE_other separates too, so MP3 history
+alone does not explain it; H6) and loudness/silence cues (D39: RMS AUC 0.699, FAKE_other silence
+AUC about 0.75; H7). H1 may hit a ceiling but stays unchanged and will be reported as
+pre-registered; the D36 external comparison becomes the main test of RQ2. No feature, grid or
+threshold change after seeing the results (Protocol §12). Details and limitations:
+`docs/results/baseline.md`.
+
+**AI assistance:** **Claude Code** committed the evidence, ran the hash verification and drafted
+the results document from the committed files. **Claude (claude.ai)** checked the reports'
+consistency with Donia and drafted the interpretation. Donia ran the notebook and reviewed
+everything. AI did not push, open or merge a PR.
+
+**Gate:** team review of the results PR, including the Stage 7 brief and its D32 teach-back
+(Khalil, Iheb). **WAITING FOR HUMAN REVIEW.**
+
+---
+
 ## Open items
 
 **Part C: external comparison (Entry 58)**
@@ -1787,7 +1838,8 @@ go in a separate PR with `docs/results/baseline.md`. **WAITING FOR HUMAN REVIEW.
 - [x] Human review of `feat/stage7-baseline-code` (B1–B2) after D37 approval (Entry 54): merged as PR #31.
 - [x] Stage 7 step 1: verified MFCC cache for train/val-A/val-B (Entry 71)
 - [x] Stage 7 step 2A: baseline run orchestrator and Colab notebook (Entry 73)
-- [ ] Stage 7 steps 2B–3: real cache build and baseline fit in Colab from the merged commit, then docs/results/baseline.md (Entry 73)
+- [x] Stage 7 steps 2B–3: real cache build and baseline fit in Colab from the merged commit, then docs/results/baseline.md (Entry 73) (Entry 74)
+- [ ] Stage 7 brief docs/stages/stage07-baseline.md (D32): written; teach-back by Khalil and Iheb pending (Entry 74)
 
 **Stage 10 risk policy (Entry 33)**
 - [x] Human review of `feat/stage10-risk-policy` (R1–R2); CI green on Python 3.13: merged as PR #17.
@@ -1799,6 +1851,7 @@ go in a separate PR with `docs/results/baseline.md`. **WAITING FOR HUMAN REVIEW.
 - [ ] Stage 11: record the registry SHA-256 and line count right after the run (project-log entry
   and results PR).
 - [ ] Stage 11 stores per-clip path, group, raw score, calibrated p and prediction for the FoR test split (required by H7, Entry 72)
+- [ ] Report H1 as pre-registered even if both models are near 0% EER in-domain (results/baseline.md)
 
 **Stage 12 ModelBundle (Entry 35)**
 - [x] Human review of `feat/stage12-bundle-format`; CI green on Python 3.13: merged as PR #19.
@@ -1883,6 +1936,9 @@ go in a separate PR with `docs/results/baseline.md`. **WAITING FOR HUMAN REVIEW.
 - [ ] Threat model §13 Q2: access control (below).
 - [ ] Decide the access-control mechanism (SRS §7.4) before the API stage (Stage 17), at the latest. The oracle-abuse residual risk (threat model §10.1) depends on it.
 
+**Stage 14 robustness (D41)**
+- [ ] D41 (Malak): baseline through the Stage 14 degradations, with a pre-declared criterion, decided before the FoR test split is seen
+
 **Later stages (reminders)**
 - [ ] `configs/robustness.yaml` → Stage 14. `docker-compose.yml` → Stage 17.
 - [ ] Stage 17: verify the ModelBundle checkpoint hash at load (threat model §10, tampering recommendation).
@@ -1895,6 +1951,10 @@ go in a separate PR with `docs/results/baseline.md`. **WAITING FOR HUMAN REVIEW.
 ## Current status — updated 2026-10-24
 
 **What was done:**
+- **Stage 7 steps 2B–3, official baseline evidence and validation results** on
+  `docs/stage7-baseline-results` (Entry 74): run from `297c352` with byte-identical reruns; C 10,
+  γ 0.1; val-A EER 0.149%, val-B EER 0.0 (validation only); interpreted as an in-domain upper bound
+  with possible shortcuts [hypothesis] in `docs/results/baseline.md`.
 - **Stage 6 is complete; Stage 7 is current** (Entry 72): PR #37 merged at `7538a1d`; briefs 04–06
   accepted after Donia's D32 teach-back (with AI assistance). D40 (W&B from Stage 8) approved and H7
   (silence shortcut, Stage 16) pre-registered (PR #40). Donia's Colab
@@ -1969,8 +2029,8 @@ go in a separate PR with `docs/results/baseline.md`. **WAITING FOR HUMAN REVIEW.
 - Stage briefs (`docs/stages/`, D32): 00–01 and 04–06 accepted; 02–03 accepted (PR #40).
 
 **Branches:**
-- `origin/main`: at `42bc029` (PR #40 merged, Entry 72).
-- `feat/stage7-baseline-run`: Stage 7 step 2A, local commits; awaiting push and PR (Entry 73).
+- `origin/main`: at `297c352` (PR #41 merged, Entry 73).
+- `docs/stage7-baseline-results`: Stage 7 steps 2B–3, evidence and results; local commit, awaiting push and PR (Entry 74).
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
