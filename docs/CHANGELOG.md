@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 8 PR B1: torch dependencies and CI (`requirements-cnn.txt`, CPU torch in CI, torch tests fail instead of skipping), D42 CNN, train-only per-Mel-bin normalization, `set_seed`, and a non-pickle safetensors checkpoint with strict JSON and `checkpoint_sha256`; design note `docs/cnn.md`.
 - Stage 8 PR A: verified log-Mel cache (1, 64, 197) for train/val-A/val-B (non-pickle npz + strict JSON, bound to F3 and F2; test split refused), with design note and 44 synthetic tests.
 - D42 (approved, PR #44): CNN design and training details; W&B setup documented (D40).
 - Stage 7 brief `docs/stages/stage07-baseline.md` (D32), in review; teach-back by Khalil and Iheb pending.
