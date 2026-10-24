@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Proposed D41: one Stage 14 registry key per frozen model set; use Stage 11 clean scores and evaluate the full degradation grid once, with paired group-bootstrap intervals; awaiting approval before FoR test access.
 - Stage 7 step 2A: baseline run orchestrator (train/val-A/val-B caches → fit, non-pickle artifact, selection/threshold/run/subgroup reports) and Colab notebook 03 with byte-identity checks; design note and 13 synthetic tests.
 - Stage 7 step 1: verified MFCC feature cache for train/val-A/val-B (non-pickle npz + strict JSON, bound to F3 and F2; test split refused), with design note and 35 synthetic tests.
 - D40 (approved, PR #40): W&B logging from Stage 8; baseline provenance via committed reports.

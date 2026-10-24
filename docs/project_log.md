@@ -1681,6 +1681,39 @@ go in a separate PR with `docs/results/baseline.md`. **WAITING FOR HUMAN REVIEW.
 
 ---
 
+### Entry 74 (provisional) — Proposed D41: Stage 14 one-time robustness protocol (2026-10-24)
+
+- **Owner:** Malak Ben Salem; **reviewer:** Khalil Dridi (D26).
+- **Requirement / decision served:** D3, D7, D11, D14, D26, H6; extend Stage 14's pre-registered
+  robustness evaluation to compare the evaluation-only MFCC/RBF-SVM baseline with the CNN.
+- **Proposal:** key the append-only registry by `(dataset, split, evaluation_purpose, model_set)`,
+  preserving one claim per key. Stage 14 gets one registered run per frozen model set (CNN and
+  MFCC/RBF-SVM), and each run covers the entire existing Protocol §9 grid in a single pass. Before
+  Stage 11 test access, store per-clip clean scores for the baseline and all CNN seeds with stable
+  clip ID, label and D14 group ID; baseline raw score and D29 forced-binary prediction are stored,
+  calibrated p is not applicable. Stage 14 reuses these clean scores, does not score clean audio a
+  second time, and applies each waveform degradation before the unchanged F3 profile. No fitting,
+  tuning, recalibration, threshold changes or model selection are permitted.
+- **Paired inference and primary criterion:** match clean (Stage 11) and degraded (Stage 14) scores by
+  clip ID; compute paired 95% percentile CIs with 2,000 resamples of D14 near-duplicate groups and
+  the protocol seed. Baseline EER increase at 3.4 kHz is meaningful only at ≥5 absolute percentage
+  points with the paired CI excluding 0. H6's CNN false-synthetic-rate endpoint and every existing
+  degradation condition remain unchanged. This is diagnostic evidence, not proof of a sole cause.
+- **Registry and storage requirement:** D41 must be approved before Stage 11 accesses the test data; the registry-key and score-
+  storage changes must be implemented and reviewed before either Stage 11 or Stage 14 runs. Each
+  Stage 14 model-set run must refuse a repeat, without weakening the Stage 11 one-run guard.
+- **Basis:** [doc] Protocol §§7 and 9 fix the one-time Stage 11 test, Stage 14 degradation grid, F3
+  pipeline, and FoR group bootstrap; H6 preregisters its CNN endpoint. D36 says Stage 11 evaluates
+  the baseline and all three CNN seeds. Donia reports the baseline has been fitted and suggests a
+  bandwidth shortcut; the reported metrics were not independently re-run for this documentation
+  change. D41 makes clean/degraded pairing and the registry purpose explicit before test access.
+- **AI assistance:** Codex drafted the decision and log wording. No dataset, audio, checkpoint or test
+  result was accessed, and no experiment was run.
+- **Gate:** **PROPOSED — WAITING FOR TEAM REVIEW.** Do not access the FoR test split until D41 is
+  approved and the registry and score-storage changes are implemented and reviewed.
+
+---
+
 ## Open items
 
 **Part C: external comparison (Entry 58)**
@@ -1700,6 +1733,9 @@ go in a separate PR with `docs/results/baseline.md`. **WAITING FOR HUMAN REVIEW.
 - [ ] Complete clustered CIs, speaker completeness checks and filter/file-level reporting.
 - [x] Before Stage 13, approve and record the speaker-average undefined-value convention alongside
   the file-level view and governance allowlist decisions. No convention is approved by this update. (D33–D35 approved, PR #29, 2026-10-19)
+
+**Stage 14: robustness (Malak)**
+- [ ] Review and approve proposed D41 before FoR test access; implement and review the evaluation-purpose registry key and Stage 11 per-clip score storage before testing.
 
 **GitHub / repo**
 - [ ] D27: confirm whether the team approved it (PR #14 merged) and update its register status (Entry 72)
@@ -1956,7 +1992,8 @@ go in a separate PR with `docs/results/baseline.md`. **WAITING FOR HUMAN REVIEW.
 - Pre-declared rules for the baseline threshold, CNN selection and the single Stage 11 run (D29–D31),
   and baseline tuning, scaling and score (D37, Entry 53).
 - A tested MFCC/SVM baseline (`src/models/baseline.py`, `src/tuning/baseline_fit.py`), documented in
-  `docs/baseline.md`; not yet fitted on real features (waits for F3).
+  `docs/baseline.md`; Donia reports the real Stage 7 fit is now complete. The result files were not
+  independently checked as part of this D41 documentation change.
 - A tested risk-policy fit (`src/tuning`) and core apply / save / load (`src/risk`), documented in
   `docs/risk_policy.md`; not yet fitted on real val-B scores.
 - A tested append-only run registry (`src/evaluation/run_registry.py`) that refuses a second
@@ -1969,8 +2006,8 @@ go in a separate PR with `docs/results/baseline.md`. **WAITING FOR HUMAN REVIEW.
 - Stage briefs (`docs/stages/`, D32): 00–01 and 04–06 accepted; 02–03 accepted (PR #40).
 
 **Branches:**
-- `origin/main`: at `42bc029` (PR #40 merged, Entry 72).
-- `feat/stage7-baseline-run`: Stage 7 step 2A, local commits; awaiting push and PR (Entry 73).
+- `origin/main`: at `297c352` (PR #41 merged; Stage 7 step 2A implementation).
+- `docs/stage14-baseline-robustness-malak`: proposed D41 documentation, based on `297c352`.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
@@ -1982,6 +2019,6 @@ go in a separate PR with `docs/results/baseline.md`. **WAITING FOR HUMAN REVIEW.
    Briefs 00–06 are accepted.
 2. Before Stage 13, implement the approved file-level view, speaker-average convention and guarded
    runner; resolve the external-run governance allowlist.
-3. Baseline B1–B2, the D37 config and the MFCC cache (PR #39) are in main; the real feature build and baseline fit (Stage 7 steps 2–3) follow this PR's merge (D40).
-4. Then run the real Part C work on the frozen F3 preprocessing profile.
-5. Set up the W&B project and key handling before the first Stage 8 run (D40).
+3. Stage 7 step 2A is merged at `297c352` (PR #41). Record and review the real baseline run evidence before treating Donia's reported metrics as verified.
+4. Review and approve proposed D41 before accessing FoR test results for the added Stage 14 baseline comparison; Stage 14 remains future work.
+5. Then run the real Part C work on the frozen F3 preprocessing profile, and set up the W&B project before the first Stage 8 run (D40).
