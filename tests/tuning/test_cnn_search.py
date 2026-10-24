@@ -216,7 +216,8 @@ def test_end_to_end_outputs_checkpoints_and_reports(patched, tmp_path, profile, 
     }
     assert (data["schema_version"], data["version"], data["code_commit"]) == (1, "cnn-test", COMMIT)
     assert set(data["environment"]) == {"python", "numpy", "torch", "safetensors", "wandb",
-                                        "cuda_available", "gpu_name", "device"}
+                                        "cuda_available", "cuda_version", "cudnn_version",
+                                        "gpu_name", "device"}
     assert data["environment"]["torch"] == torch.__version__ and data["environment"]["device"] == "cpu"
     assert data["profile_fingerprint"] == profile.fingerprint()
     assert data["profile_config_sha256"] == _sha(PROFILE_PATH)

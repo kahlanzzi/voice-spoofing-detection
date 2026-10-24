@@ -1,6 +1,8 @@
 """Allow-list W&B logger (D40, D42). A fake wandb module records every call; nothing reaches the network."""
 from __future__ import annotations
 
+import importlib
+import os
 import sys
 import types
 
@@ -9,7 +11,7 @@ import pytest
 
 from src.training.cnn_config import EXPECTED
 from src.training.wandb_logger import CONFIG_KEYS, SETTINGS, RunLogger
-from tests._torch import require_torch
+from tests._torch import ENV_VAR, require_torch
 
 PROVENANCE = {
     "seed": 0, "n_blocks": 3, "learning_rate": 0.001, "code_commit": "a" * 40,
@@ -107,6 +109,22 @@ def test_full_run_sends_only_allowed_calls(fake_wandb, mode):
     assert fake_wandb.calls[2][1] == EPOCH
     assert fake_wandb.calls[3][1] == SUMMARY
     assert not {"save", "Artifact", "log_artifact", "run.save", "run.log_artifact"} & set(names)
+
+
+def test_settings_are_accepted_by_the_installed_wandb():
+    """SETTINGS must use names the pinned wandb accepts (it rejects unknown keys); no init, no network."""
+    try:
+        wandb = importlib.import_module("wandb")
+    except ImportError as exc:
+        if os.environ.get(ENV_VAR) == "1":
+            pytest.fail(f"wandb is required ({ENV_VAR}=1) but cannot be imported: {exc}", pytrace=False)
+        pytest.skip(f"wandb not installed ({exc})")
+    settings = wandb.Settings(**SETTINGS)
+    assert {key: getattr(settings, key) for key in SETTINGS} == SETTINGS
+    from pydantic import ValidationError  # wandb.Settings is a pydantic model
+
+    with pytest.raises(ValidationError):  # proves an unknown or misspelled key would not pass silently
+        wandb.Settings(not_a_wandb_setting=True)
 
 
 def test_disabled_mode_never_imports_wandb(monkeypatch):

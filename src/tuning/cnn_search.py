@@ -67,6 +67,8 @@ def environment(device: str) -> dict[str, str]:
         "safetensors": importlib.metadata.version("safetensors"),
         "wandb": importlib.metadata.version("wandb"),  # metadata only: wandb is not imported here
         "cuda_available": str(cuda).lower(),
+        "cuda_version": torch.version.cuda or "none",  # CUDA torch was built with; None on CPU builds
+        "cudnn_version": str(torch.backends.cudnn.version()) if cuda else "none",
         "gpu_name": torch.cuda.get_device_name(0) if cuda else "none",
         "device": str(device),
     }

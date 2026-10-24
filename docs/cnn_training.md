@@ -118,7 +118,7 @@ device)` and a CLI (`python -m src.tuning.cnn_search --cache-dir â€¦ --profile â
 | `checkpoints/seed_<s>/` | the selected configuration's checkpoint for seeds 0, 1, 2 (`save_checkpoint`, full metadata incl. environment, determinism, F2, profile and cache hashes) |
 | `search_report.json` | `search_seed`; 4 rows: `n_blocks`, `learning_rate`, `best_epoch`, `best_val_a_eer`, `epochs_run`, `history` |
 | `selection_report.json` | `selected`, `selected_val_a_eer`, `tie_rule`, `tie_rule_decided`, `tied_rows`, `seeds` (per seed: the row fields + `reused_search_run`), `bundle_seed` |
-| `run_report.json` | `schema_version`, `version`, `code_commit`, `environment` (python, numpy, torch, safetensors, wandb, `cuda_available`, `gpu_name`, `device`), `profile_fingerprint`, `profile_config_sha256`, `f2_manifest_sha256`, `cnn_config_sha256`, `caches` (npz hash, rows), the two cache hashes, `checkpoint_sha256` per seed, `peak_gpu_memory_bytes` per run (6 runs), `wandb_mode`, `wandb_runs`, `selected`, `bundle_seed` |
+| `run_report.json` | `schema_version`, `version`, `code_commit`, `environment` (python, numpy, torch, safetensors, wandb, `cuda_available`, `cuda_version`, `cudnn_version` (`"none"` without CUDA), `gpu_name`, `device`), `profile_fingerprint`, `profile_config_sha256`, `f2_manifest_sha256`, `cnn_config_sha256`, `caches` (npz hash, rows), the two cache hashes, `checkpoint_sha256` per seed, `peak_gpu_memory_bytes` per run (6 runs), `wandb_mode`, `wandb_runs`, `selected`, `bundle_seed` |
 
 All JSON is written with sorted keys and `allow_nan=False`.
 
@@ -145,6 +145,7 @@ All JSON is written with sorted keys and `allow_nan=False`.
   not promised (D42).
 - W&B still records its own run metadata (system information) at init; only code, console output
   and requirements files are turned off. The allow-list governs what this code sends.
+- W&B writes run files to ./wandb; it is git-ignored, and the Stage 8 notebook sets WANDB_DIR outside the repository so official runs keep a clean worktree.
 - Config values sent to W&B may be lists and mappings of scalars (the `cnn.yaml` layout); metric
   values must be scalars.
 - The end-to-end test uses tiny epochs through a test-only config patch; the real 30-epoch,
