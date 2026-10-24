@@ -1809,9 +1809,6 @@ does not approve or merge. **WAITING FOR HUMAN REVIEW.**
 - [x] Before Stage 13, approve and record the speaker-average undefined-value convention alongside
   the file-level view and governance allowlist decisions. No convention is approved by this update. (D33–D35 approved, PR #29, 2026-10-19)
 
-**Stage 14: robustness (Malak)**
-- [ ] Review and approve proposed D41 before FoR test access; implement and review the evaluation-purpose registry key and Stage 11 per-clip score storage before testing.
-
 **GitHub / repo**
 - [ ] D27: confirm whether the team approved it (PR #14 merged) and update its register status (Entry 72)
 - [x] Team review of PR `docs/stage18-frontend-stack` (D38, Entry 57): merged as PR #35. Follow-up docs PR `docs/stage18-stack-followup` (Entry 59) updates `docs/architecture.md`, ADR 0002 and the `AGENTS.md` roadmap row.
