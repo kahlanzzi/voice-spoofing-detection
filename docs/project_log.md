@@ -1991,8 +1991,27 @@ AI did not push, open or merge a PR.
 
 ---
 
+### Entry 83 — Synthetic clustered discrimination checks (2026-10-18)
+
+**Numbering:** renumbered from provisional Entry 57 after updating this branch against current
+main. At this update, main contains Entries 1–81 and open PR #50 reserves Entry 82, so
+this entry uses the next free number.
+
+**Owner:** Khalil Dridi. **AI assistance:** Codex prepared synthetic tests and documentation.
+**Scope [doc]:** Existing D4/D11 pooled EER and ROC-AUC; no D33–D35 acceptance or access change.
+**Work:** Two cases use eight invented unequal-size, single-class speaker groups and tied
+scores. Independent two-score ROC/count oracles verify point estimates, percentile bounds and
+exact invalid-resample counts, with 2,000 whole-speaker draws and seed 2026.
+**Evidence [verified]:** Candidate tests: 2 passed in 3.91s. Existing full suite plus
+candidate tests: 368 passed in 13.71s; no dataset/audio/model access.
+**Integration:** Updated with current main before merge preparation. Open PRs were checked for
+entry-number collisions; PR #50 currently reserves Entry 82. No real data was accessed.
+**Gate:** Human review and CI pending → WAITING FOR APPROVAL. Stage 13 remains incomplete.
+
+---
 ## Open items
 
+- [ ] Review synthetic clustered discrimination tests and obtain CI (Entry 83).
 **Part C: external comparison (Entry 58)**
 - [x] Approve D36 (all four) before F4. (PR #29, 2026-10-19)
 - [x] Iheb to accept or revise D33–D35 (and D36) in the review of this PR; when all four have
@@ -2086,7 +2105,7 @@ AI did not push, open or merge a PR.
 - [x] Baseline threshold: own val-B EER point, forced binary only (Donia, before Stage 7 results): D29 (Entry 32).
 - [x] Exact CNN model-selection search space in `configs/` (Donia, before Stage 8): D30 (Entry 32).
 - [x] Enforcement of "Stage 11 runs once" (run registry) (Donia, before Stage 11): D31 (Entry 32).
-- [x] File-level decisions for DEEP-VOICE: frozen band on the file mean of p, secondary view (Khalil, before Stage 13). (D34 approved, PR #29, 2026-10-19)
+<<- [x] File-level decisions for DEEP-VOICE: frozen band on the file mean of p, secondary view (Khalil, before Stage 13). (D34 approved, PR #29, 2026-10-19)
 - [x] Colab install of scikit-learn 1.9.1: verified in Donia's Colab environment check at `bf8096c`
   (366 passed; Entry 72). Stage 7 notebooks mount Drive before installing `requirements.txt`.
 - [x] Approve D37 (team review) (Entry 53): approved via PR #30 (Khalil, Malak), 2026-10-18 (Entry 72).
@@ -2225,7 +2244,7 @@ AI did not push, open or merge a PR.
 **Status:** Stage 8 PR C (Colab notebook) in review; next: official Colab run, then PR D.
 
 **What was done:**
-- **Stage 8 PR C, Colab notebook 04** on `feat/stage8-colab-notebook` (Entry 81): official runner
+<<- **Stage 8 PR C, Colab notebook 04** on `feat/stage8-colab-notebook` (Entry 81): official runner
   for the caches and the D30 search, with a static test; not yet run in Colab.
 - **Stage 8 PR B2, CNN training loop, W&B allow-list and D30 search** on
   `feat/stage8-cnn-training` (Entry 80): `configs/cnn.yaml` with drift guard, D42 early stopping,
@@ -2245,6 +2264,7 @@ AI did not push, open or merge a PR.
   accepted after Donia's D32 teach-back (with AI assistance). D40 (W&B from Stage 8) approved and H7
   (silence shortcut, Stage 16) pre-registered (PR #40). Donia's Colab
   environment check at `bf8096c`: Python 3.13.16, scikit-learn 1.9.1, 366 tests passed.
+- Prepared synthetic clustered EER/AUC checks with invalid-resample count oracles (Entry 83); human review pending.
 - Added the D35 per-window preprocessing integration-test requirement (Entry 55); implementation pending.
 - **D36 approved** (ADR 0009, Entry 58): the baseline is scored with the CNN in the single external
   run, so RQ2 can be answered externally (PR #29, 2026-10-19).
@@ -2317,7 +2337,7 @@ AI did not push, open or merge a PR.
 - Stage briefs (`docs/stages/`, D32): 00–07 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), and 07 (PR #43).
 
 **Branches:**
-- `origin/main`: at `fa6190a` (PR B1 merged as #47, PR B2 as #48).
+<<- `origin/main`: at `fa6190a` (PR B1 merged as #47, PR B2 as #48).
 - `feat/stage8-colab-notebook`: Stage 8 PR C (Entry 81), in review.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
