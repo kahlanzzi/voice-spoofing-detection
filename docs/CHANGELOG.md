@@ -9,9 +9,26 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
-- Synthetic clustered EER/ROC-AUC integration tests with count-based oracles and exact invalid-resample accounting (D4/D11).
+<<- Synthetic clustered EER/ROC-AUC integration tests with count-based oracles and exact invalid-resample accounting (D4/D11).
+- Stage 8 PR C: Colab notebook 04 for the official CNN run (Drive only, full-SHA clean checkout, torch 2.11.0 and Python 3.13 asserted, JUnit skip check, train/val-A log-Mel caches built twice and compared, one D30 search, W&B key loaded last, hashed Drive export re-verified after remount) and its static test `tests/governance/test_notebook_04_stage8.py`.
+- Stage 8 PR B2: `configs/cnn.yaml` (exactly D30 + D42) with a strict drift guard, `train_one` with D42 early stopping on val-A, an allow-list W&B logger, and the D30 search orchestrator (4 runs, tie rule, seeds 1–2, bundle seed, checkpoints and provenance reports); design note `docs/cnn_training.md`.
+- Stage 8 PR B1: torch dependencies and CI (`requirements-cnn.txt`, CPU torch in CI, torch tests fail instead of skipping), D42 CNN, train-only per-Mel-bin normalization, `set_seed`, and a non-pickle safetensors checkpoint with strict JSON and `checkpoint_sha256`; design note `docs/cnn.md`.
+- Stage 8 PR A: verified log-Mel cache (1, 64, 197) for train/val-A/val-B (non-pickle npz + strict JSON, bound to F3 and F2; test split refused), with design note and 44 synthetic tests.
+- D42 (approved, PR #44): CNN design and training details; W&B setup documented (D40).
+- Stage 7 brief `docs/stages/stage07-baseline.md` (D32), in review; teach-back by Khalil and Iheb pending.
+- Stage 7 steps 2B–3: official baseline evidence (cache JSON files, selection/threshold/run/subgroup reports, determinism record) and `docs/results/baseline.md` with validation results (val-A EER 0.149%, val-B EER 0.0), interpretation [hypothesis] and limitations.
+- Approved D41 (PR #46): purpose-keyed Stage 11/14 registry with a fixed purpose allowlist, Stage 11 clean per-clip scores, and paired Stage 14 robustness comparisons; no FoR test access until the implementation is reviewed.
+- Stage 7 step 2A: baseline run orchestrator (train/val-A/val-B caches → fit, non-pickle artifact, selection/threshold/run/subgroup reports) and Colab notebook 03 with byte-identity checks; design note and 13 synthetic tests.
+- Stage 7 step 1: verified MFCC feature cache for train/val-A/val-B (non-pickle npz + strict JSON, bound to F3 and F2; test split refused), with design note and 35 synthetic tests.
+- D40 (approved, PR #40): W&B logging from Stage 8; baseline provenance via committed reports.
+- H7 pre-registered: silence-fraction shortcut test on REAL clips (Stage 16).
+- Stage 4 split, Stage 5 F2, and Stage 6 preprocessing retrospective briefs under `docs/stages/`; D32 teach-back reviews pending.
+- Corrected official Stage 6 FoR evidence: byte-identical validation runs, passing D18/shortcut checks, and the no-training Tesla T4 benchmark selecting batch size 256.
+- D38 / ADR 0008 (approved, PR #40): React + TypeScript analyst interface replaces Streamlit; Overview page as new scope.
+- D39 approved after PR #34 review and merge: Stage 6 preprocessing profile v1, F3 identifiers, shortcut/D18 caveats and no-training benchmark.
 - Stage 7 MFCC/SVM baseline: train-only scaler, NumPy scorer, deterministic non-pickle artifact, and D37 fitting (16-point grid on val-A, D29 threshold on val-B) with `configs/baseline.yaml`.
 - D35 runner implementation requirement: synthetic integration test of shared frozen preprocessing, with trimming and centred padding per 2 s window.
+- Proposed D36 (ADR 0009): the MFCC/SVM baseline is scored with the CNN in the single external run, for RQ2; approval pending.
 - Deterministic eight-speaker synthetic integration tests for metric tables, averages, filter counts and clustered accuracy intervals.
 - Proposed Stage 13 reporting conventions and exact guarded-run access scope (D33–D35, ADR 0007); approval pending.
 - Equal-speaker rate summaries with explicit undefined-value handling and synthetic tests (D19 preparation; report convention pending review).
@@ -21,6 +38,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - Stage briefs 02 (threat model) and 03 (protocol) (`docs/stages/`, D32).
 - Stage briefs 00 (setup) and 01 (dataset audit) (`docs/stages/`, D32).
 - Stage briefs structure and template (`docs/stages/`, D32).
+- Stage 6 preprocessing profile v1 candidate, shared waveform/log-Mel/MFCC pipeline, FoR shortcut and invariance validation, no-training compute benchmark, tests and Colab runner.
 - ModelBundle format and verifying loader (hashes, versions, path safety, immutability, provenance).
 - Append-only, hash-chained run registry for D31 (claim before run).
 - Stage 10 risk policy: Platt calibration with smoothed targets, val-B EER threshold, uncertain band with ≤ 10% deferral, confidence, risk level, strict JSON policy file.
@@ -45,6 +63,12 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - `docs/experimental_protocol.md` v1.0 frozen (F1): all sections decided from the team-accepted defaults.
 
 ### Changed
+- Stage 7 closed: brief accepted after the D32 teach-back (Khalil, Iheb); Stages 8–9 current.
+- Stage 6 closed: briefs 04–06 accepted (PR #37); Stage 7 current. Register statuses D29–D31 and Protocol §14 rows now cite PRs #16 and #30. CONTRIBUTING: check open PRs before claiming IDs. D37 status recorded as approved (PR #30).
+- Stage 6 Mel upper frequency is 7.6 kHz, keeping the final band below the 16 kHz Nyquist edge after the first official candidate exposed D18 resampling instability at 8 kHz.
+- Stage 6 shortcut validation now measures post-trim zero-padding, screens its class separability and reports padding by class and F2 subgroup.
+- Stage 6 Colab runner now supports a manual input/evidence transfer mode when Drive credential propagation is unavailable.
+- Docs aligned with D38: `architecture.md`, ADR 0002 (Dashboard row) and the `AGENTS.md` roadmap now name the React web app; ADR 0008 accepted.
 - Baseline tuning pre-declared: MFCC standardization on FoR train, RBF-SVM C × gamma grid, val-A EER selection, decision_function score (D37, proposed).
 - Refined proposed D33/D35 after Donia's review: existing bootstrap convention, dataset-wide run key and durable registry evidence; approval still pending.
 - Stage 5 closed after PR #15 review and merge: D28 approved, F2 effective, Stage 6 current.
@@ -62,6 +86,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 
 ### Fixed
 - Stale `CLAUDE.md` mentions → `AGENTS.md` in `configs/audit.yaml` and the Stage 1 notebook intro.
+- Corrected Stage 6 brief and log references after review: D39 batch-size source, padding scopes, approval entry, duplicate Entry 59 disclosure, Entry 38 spacing, and current branch/status.
 
 ## 2026-10-06 — Stages 0–2
 

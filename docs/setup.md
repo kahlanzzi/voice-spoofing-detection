@@ -35,6 +35,20 @@ pip install -r requirements.txt
 pytest -q
 ```
 
+## CNN dependencies (Stage 8)
+
+The CNN code (D42) needs PyTorch, safetensors and wandb. Locally, after `requirements.txt`:
+
+```bash
+python -m pip install torch==2.11.0 --index-url https://download.pytorch.org/whl/cpu
+python -m pip install -r requirements-cnn.txt
+```
+
+- `torch==2.11.0` is not in any requirements file. Colab uses its preinstalled CUDA build (the
+  notebook asserts 2.11.0); CI and local development install the CPU build from the command above.
+- CI sets `REQUIRE_TORCH_TESTS=1`, so a torch test fails instead of skipping if torch is missing.
+  Locally without torch, those tests are skipped.
+
 ## Colab
 
 1. Open a notebook from `notebooks/` in Colab (Python 3.13 runtime, GPU when training).
@@ -45,6 +59,18 @@ pytest -q
 4. Data roots and output folders come from `configs/*.yaml` or CLI arguments. Never hardcode a
    Colab or Drive path in `src/`.
 5. Put tokens in Colab secrets or environment variables, never in a notebook cell.
+
+## Weights & Biases (D40)
+
+- W&B accounts sign in through CoreWeave Forge (`forge.coreweave.com`); the SDK and `api.wandb.ai`
+  are unchanged.
+- Entity `voice-spoofing-detection-must`, project `voice-spoofing-detection` (private, Academic plan).
+- Each member uses their own API key, stored only in `.env` locally and in Colab Secrets (key name
+  `WANDB_API_KEY`) in notebooks; never in code, cells, commits or prompts.
+- W&B receives FoR training and validation metrics and configs only; never audio, test-split or
+  external data.
+- W&B Training, Sandboxes, Inference and the ARIA agent are not used: data must not leave Colab and
+  Drive (D27 for AI tools).
 
 ## Datasets and pins
 

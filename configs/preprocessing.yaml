@@ -1,0 +1,75 @@
+# Stage 6 preprocessing profile v1 candidate (freeze F3 after reviewed evidence).
+#
+# Real FoR audio may be read only by the Stage 6 validation command after the
+# implementation is committed and the worktree is clean. DEEP-VOICE is never an
+# input to Stage 6.
+
+schema_version: 1
+profile_version: "preprocessing-v1"
+protocol_version: "1.0"
+f2_ledger_sha256: "c9fc2e230c0883028459d0b2b8de4f6ee537676cd5a4e259e9d0f545c60943cc"
+
+waveform:
+  sample_rate_hz: 16000
+  duration_seconds: 2.0
+  samples: 32000
+  mono_method: "mean"
+  length_policy: "center_pad_or_crop"
+
+resampling:
+  method: "soxr_hq"
+  fix_length: true
+  scale: false
+
+silence:
+  detector: "frame_rms_dbfs"
+  frame_ms: 20.0
+  hop_ms: 20.0
+  threshold_dbfs: -50.0
+  trim_edges: true
+  all_silent_policy: "preserve"
+  external_min_speech_fraction: 0.50
+
+loudness:
+  # Stage 1 RMS separability was below the pre-registered 0.75 flag. The
+  # official train-only Stage 6 re-screen must confirm this before F3.
+  mode: "none"
+  selection_split: "train"
+  separability_auc_threshold: 0.75
+  target_dbfs: -20.0
+  max_gain_db: 20.0
+  peak_ceiling: 0.99
+
+features:
+  n_fft: 512
+  win_length: 400
+  hop_length: 160
+  window: "hann"
+  center: false
+  n_mels: 64
+  fmin_hz: 0.0
+  # Keep the last Mel band below the 16 kHz Nyquist edge. The first official
+  # FoR candidate run showed that an 8 kHz edge band was not stable after
+  # deterministic sample-rate conversion; 7.6 kHz passes the D18 converters.
+  fmax_hz: 7600.0
+  mel_power: 1.0
+  log_epsilon: 1.0e-6
+  mfcc_count: 20
+  mfcc_dct_type: 2
+  mfcc_norm: "ortho"
+
+validation:
+  invariance_sample_per_subgroup: 10
+  invariance_sample_rates_hz: [40000, 44100, 48000]
+  max_relative_l2_error: 0.01
+  min_cosine_similarity: 0.999
+  shortcut_auc_flag: 0.75
+  shortcut_auc_high: 0.90
+
+benchmark:
+  preprocessing_samples: 256
+  candidate_batch_sizes: [16, 32, 64, 128, 256]
+  max_vram_fraction: 0.80
+  warmup_steps: 3
+  measured_steps: 10
+  mode: "dry_run_no_optimizer"

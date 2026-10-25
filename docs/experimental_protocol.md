@@ -51,6 +51,7 @@ on FoR only; nothing here touches DEEP-VOICE before Stage 13 (AGENTS.md hard rul
   |---|---|---|---|
   | H5 | If the CNN relies on MP3 traces, its recall on FAKE_other is clearly lower than on FAKE_mp3. | Subgroup recall on the FoR test split | 11 / 16 |
   | H6 | If the CNN relies on bandwidth, band-limiting REAL clips to ~3.4 kHz raises false FAKE calls. | Robustness test on FoR test REAL clips | 14 |
+  | H7 | If the CNN relies on pauses (silence), genuine REAL clips with many pauses are flagged as synthetic more often than REAL clips with few. | On the FoR test split, from the stored Stage 11 per-clip outputs (no second test run, D31): forced-binary false-synthetic rate of the bundle CNN at its frozen threshold on REAL clips in the top quartile of silence fraction vs the bottom quartile; quartile boundaries from REAL clips of the train split only; silence fraction from the frozen Stage 6 shortcut_stats on the F3 waveform. 'Raises' = at least 5 points higher and the 95% CI of the difference excludes 0 (bootstrap, 2,000 resamples, seed 2026, clustered by near-duplicate group; Protocol §5). Reported descriptively: Spearman correlation of calibrated p with silence fraction within FAKE_other, and the same comparison for the baseline. Requires Stage 11 to store per-clip path, group, raw score, calibrated p and prediction. | 16 |
 - **Status:** Decided
 
 ## 2. Data and split
@@ -157,6 +158,10 @@ on FoR only; nothing here touches DEEP-VOICE before Stage 13 (AGENTS.md hard rul
 - **Decided:**
   - Run once: the baseline and all 3 CNN seeds on the same FoR test split; this is the single Stage 11
     run (FR-12; D11) (team choice, 2026-10-14).
+  - Registry and stored clean scores (D41): use the code-closed purpose `stage11_test`, with one claim
+    per frozen model set. Store stable clip ID, label, D14 group ID and raw score for `baseline-v1`
+    and all three CNN seeds; also store calibrated p and prediction for CNNs, and the D29 forced-binary
+    prediction with calibrated p marked not applicable for the baseline.
   - Reporting: all D4 metrics with class counts, per subgroup (D4; FR-14).
   - H5 "clearly lower": FAKE_other recall ≥ 5 points below FAKE_mp3 recall, and the 95% CI of the
     difference excludes 0 (H5) (team choice, 2026-10-14).
@@ -200,6 +205,14 @@ on FoR only; nothing here touches DEEP-VOICE before Stage 13 (AGENTS.md hard rul
     excludes 0 (H6) (team choice, 2026-10-14).
   - Pipeline: the degradation is applied to the waveform, then the same frozen preprocessing profile
     (D26 B→Stage 14).
+  - Models and registry (D41): evaluate the frozen ModelBundle CNN bundle seed (F4) and `baseline-v1`
+    (artifact SHA-256 `42cc4d53a7cd881f56e4fa54fcf4797de8885b404d0a2b31c293555c868df10a`),
+    with one code-closed `stage14_robustness` claim per model set covering the complete condition grid
+    in one pass. Reuse the matching Stage 11 clean scores; do not make a second clean pass.
+  - Paired comparison (D41): pair clean and degraded rows by stable clip ID and calculate paired 95%
+    percentile CIs from 2,000 D14-group bootstrap resamples with seed 2026. The baseline's primary
+    endpoint is the 3.4 kHz EER increase; it is meaningful only at ≥5 absolute percentage points with
+    the paired CI excluding 0. No fitting, tuning, recalibration, threshold change or model selection.
 - **Note:** FAKE clips already carry MP3 history (D16), so the compression curve also informs H5;
   it is reported, not avoided.
 - **Status:** Decided
@@ -272,5 +285,9 @@ on FoR only; nothing here touches DEEP-VOICE before Stage 13 (AGENTS.md hard rul
 |---|---|---|---|
 | 0.1 | 2026-10-12 | Skeleton: sections, owners, reviewers, "Must decide" items. No content. | |
 | 1.0 | 2026-10-14 | All sections decided (team-accepted defaults). | #10 |
-| 1.0 | 2026-10-17 | Clarifications D29 (baseline threshold), D30 (search space), D31 (Stage 11 run once); no existing rule changed; fills gaps the protocol left open | (this PR) |
-| 1.0 | 2026-10-18 | D37: baseline grid, scaling and score fixed (completes §4 'grid: team choice'); no existing rule changed | (this PR) |
+| 1.0 | 2026-10-17 | Clarifications D29 (baseline threshold), D30 (search space), D31 (Stage 11 run once); no existing rule changed; fills gaps the protocol left open | #16 |
+| 1.0 | 2026-10-18 | D36: baseline scored in the single external run (RQ2); C→D stored scores per model | #29 |
+| 1.0 | 2026-10-18 | D37: baseline grid, scaling and score fixed (completes §4 'grid: team choice'); no existing rule changed | #30 |
+| 1.0 | 2026-10-20 | D40 narrows §4's 'every run logged to W&B' to Stage 8 onwards (§4 text unchanged; D40 governs); H7 pre-registered (silence, Stage 16) | #40 |
+| 1.0 | 2026-10-24 | D41: per-clip clean-score storage in §7 and `baseline-v1` beside the bundle CNN in §9; implementation review remains required before FoR test access | #46 |
+| 1.0 | 2026-10-24 | D42: CNN design and training details fixed (completes §4 'size: team choice'); no existing rule changed | #44 |

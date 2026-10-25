@@ -1,0 +1,7 @@
+# CNN dependencies (Stage 8, D42), pinned to the exact versions in use (2026-10-24).
+# Must install on Python 3.13 (official, D15; CI, Colab) and 3.14 (local development).
+# Install after requirements.txt and after torch (see docs/setup.md, "CNN dependencies").
+#
+# torch==2.11.0 is NOT installed from this file: Colab uses its preinstalled CUDA build (the notebook asserts 2.11.0); CI and local development install the CPU build from https://download.pytorch.org/whl/cpu.
+safetensors==0.8.0
+wandb==0.31.0

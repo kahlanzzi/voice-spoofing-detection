@@ -1191,28 +1191,831 @@ merged entries retained, sequential numbering and conflict-marker checks passed.
 **Gate:** Finish the merge commit, push PR #32 and obtain updated CI/human review.
 The runner integration test is still future implementation work; no external data accessed.
 
+### Entry 57 — Analyst interface decision proposed: React instead of Streamlit (2026-10-19)
+
+**What:** on `docs/stage18-frontend-stack` (Iheb), D38 / ADR 0008 propose replacing the Streamlit
+dashboard with a React + TypeScript web app, after course-professor feedback. Only the analyst
+interface changes; FastAPI, `src/` and the §11 contract are unchanged. A clickable mockup (sign-in,
+Overview, Analyze with all states, History, System status) was accepted by Iheb. The Overview page
+is new scope, limited to figures from stored records and built last; fallback to Streamlit by
+decision if the Analyze flow is not merged by week 10.
+
+**Evidence [verified by Iheb]:** `python -m pytest -q` passes on the branch; docs-only change.
+
+**AI assistance:** **Claude** (claude.ai chat) drafted ADR 0008 and built the mockup, applying the
+Impeccable design guidance (markdown only; its downloaded binary and hooks were not run). Iheb
+reviewed both.
+
+**Gate:** team review of this PR (all three reviewers). AI agents do not merge.
+
+### Entry 58 — D36 proposed: baseline in the single external run (2026-10-18)
+
+**Authorship:** requested and specified by Donia Mabrouk (Part C owner). Drafted by **Claude Code**
+(Claude Opus 5.5), an AI tool, from the repository documents only; Donia reviews before push.
+
+**What:** on `docs/stage6-d36-baseline-external` (docs only, no code):
+- Gap found in the briefs review (Entry 47): Protocol §1 RQ2 compares CNN and baseline
+  externally, but §8 scores only the frozen CNN bundle, so the external half of RQ2 has no run.
+- Proposed **D36** with [ADR 0009](decisions/0009-baseline-in-external-run.md): both frozen models
+  scored on the same windows in the one Stage 13 run, under the D35 dataset-wide claim; baseline
+  forced binary at its D29 threshold plus EER/AUC; paired CNN − baseline EER difference with a
+  speaker-clustered paired bootstrap CI; baseline artifact hashed in F4, not in the ModelBundle;
+  C→D amended to one stored-score file per model with identical columns.
+- Review fixes (Donia): baseline stored-score values defined (raw = SVM score, p = NA, prediction
+  forced binary, never "uncertain"); the "drop external RQ2" alternative now cites Protocol §12.
+- Register row D36 and ADR table row 0009; Protocol §14 change-log row; CHANGELOG line.
+- **D33–D35 acceptance recorded:** PR #26 was approved by Donia (after her requested changes were
+  incorporated) and Malak; Khalil is the author; Iheb has not approved. ADR 0007 requires all
+  four, so D33–D35 stay Proposed ("accepted by Donia, Malak and Khalil (author) via PR #26,
+  2026-10-18; Iheb pending"); the ADR 0007 reviewer table is filled accordingly.
+- Iheb to accept or revise D33–D35 (and D36) in the review of this PR; when all four have
+  accepted, set D33–D35 to Approved.
+
+**Evidence [verified]:** `bootstrap_ci(statistic, n, *, clusters=...)` signature checked in
+`src/evaluation/bootstrap.py`. Test output in the PR report. No external data read, no model run.
+
+**Approval (2026-10-19):** Malak, Khalil and Iheb approved PR #29 on GitHub; Iheb's review answers this entry's request to accept or revise D33–D36. D33–D36 are Approved; D35 approval does not authorize the external run.
+
+**Gate:** D33–D36 approved by all four. AI does not approve or merge.
+
+### Entry 59 — Docs aligned with D38 (2026-10-19)
+
+**What:** on `docs/stage18-stack-followup` (Iheb), the follow-up promised in ADR 0008:
+`docs/architecture.md` (online tier, component diagram, module table, UC-01 flow), the Dashboard
+row of ADR 0002 (pointer to ADR 0008) and the `AGENTS.md` roadmap row now name the React web app;
+ADR 0008 status set to Accepted (PR #35, approved by Donia; Malak and Khalil informed on 2026-10-19, objections to be handled by a new decision). Open items for PR #14 and PR #35 ticked.
+
+**Evidence [verified by Iheb]:** `python -m pytest -q` passes on the branch; docs-only change.
+
+**AI assistance:** **Claude** (claude.ai chat) prepared the edits; Iheb reviewed the diff.
+
+**Gate:** review of this PR. AI agents do not merge.
+
 ---
 
-### Entry 57 — Synthetic clustered discrimination checks (2026-10-18)
+---
+
+### Entry 59 — Stage 6 preprocessing profile implementation candidate (2026-10-18)
+
+**What [verified locally]:** on `feat/stage6-preprocessing-profile-malak`, Malak approved the Stage 6
+plan and Codex implemented the F3 candidate only. `configs/preprocessing.yaml` records the strict
+profile and F2 ledger link. `src/preprocessing/` supplies one shared mono/resample, RMS edge-trim,
+length-fix, log-Mel and MFCC path; the official validator verifies the frozen F2 manifest and every
+sample hash before decode, re-screens RMS/silence/bandwidth, and runs D18 invariance. The benchmark
+uses disposable forward/backward operations without an optimizer, weight update, checkpoint or model
+metric. `notebooks/02_stage6_preprocessing_profile.ipynb` checks out an exact clean commit, performs
+two validation runs, compares all four files byte-for-byte, runs the benchmark, and exports candidate
+evidence. Proposed D39 records the settings and gate; it was renumbered because current main already
+assigned D33–D35 and D37, while D36 is reserved by an in-flight team branch.
+
+**Evidence [verified locally before the main update]:** focused `tests/preprocessing`: `29 passed in
+1.51s`; full suite: `295 passed in 45.36s`. Tests use synthetic arrays/files only. No real audio was
+opened and no model was trained. The real FoR validation, shortcut results, invariance results, GPU
+measurements, selected future batch size and determinism hashes do not exist yet; they require the
+clean Colab run.
+
+**AI assistance:** **Codex** drafted the configuration, implementation, tests, notebook and proposed
+decision after Malak approved the plan. Malak approved implementation commit `fdfa14f`; Donia and
+Iheb review the evidence PR. AI does not approve, freeze or merge.
+
+**Gate:** implementation candidate only. F3 is not effective; do not begin Stage 7 model work until
+the clean FoR run passes, D39/F3 evidence is reviewed, and the PR is merged by a human. D32 also
+requires the Stage 6 brief and teach-back review before the stage is marked done.
+
+---
+
+### Entry 60 — Stage 6 Colab manual-transfer fallback (2026-10-18)
+
+**What [verified in code; official run pending]:** after repeated Colab Drive mounts failed with
+`credential propagation was unsuccessful`, the Stage 6 notebook gained an explicit `manual` transfer
+mode. Malak can download the two pinned FoR inputs through the normal Drive web interface, upload
+`for_2sec_ff8c82c7.tar` and `for_2sec_REVISION.txt` to the temporary Colab `/content/` session, and
+download `stage6_evidence.zip` when the run finishes. The original `drive` mode remains available.
+
+**Boundary:** this changes only transport into and out of the temporary Colab runtime. It does not
+change the F2 manifest or hash ledger, preprocessing settings, validators, shortcut rules, D18
+invariance checks, compute benchmark or proposed D39. The notebook still checks out an exact clean
+commit and validates the pinned revision before extracting the FoR archive. No dataset is made public
+or committed, and DEEP-VOICE remains out of scope.
+
+**Evidence [verified locally before the main update]:** notebook JSON parses as nbformat 4.5 with 12
+cells; `git diff --check` passed; full suite: `295 passed in 9.24s`; DEEP-VOICE governance: `3 passed
+in 0.22s`; token scan found no secrets. No real audio was opened locally; the official two-run FoR
+evidence does not exist yet.
+
+**AI assistance:** **Codex** prepared the manual-transfer fallback after Malak chose not to wait for
+the external Colab authentication issue to be resolved. Malak approved correction commit `34e826b`.
+AI does not approve, push or merge.
+
+**Gate:** fallback committed and pushed; the official run must cite the final clean post-merge commit.
+F3 remains proposed and Stage 7 model work remains blocked.
+
+---
+
+### Entry 61 — Stage 6 branch synchronization with current main (2026-10-18)
+
+**What [merge candidate]:** Donia reported that the Stage 6 branch was 31 commits behind main. Malak
+paused the official Colab run. `origin/main` was fetched at `bf8096c` and merged without rewriting the
+published Stage 6 history. Incoming preprocessing code did not overlap; conflicts were limited to
+`docs/CHANGELOG.md`, `docs/decisions/README.md` and this append-only log. Both sides were preserved.
+The Stage 6 decision was renumbered from the colliding D33 to D39, and its log entries from 39–40 to
+55–56. D33–D35, in-flight D36 and D37 retain their team meanings.
+
+**Why:** the PR must be current with main, and both official Colab runs must cite the final clean
+post-merge commit. The compute benchmark—not a guess—will supply the future CNN batch size required
+by D30.
+
+**Evidence [verified locally]:** full merged suite: `395 passed in 33.43s`; DEEP-VOICE governance:
+`3 passed in 0.33s`; notebook JSON parses as nbformat 4.5 with 12 cells; `git diff --cached --check`
+passed; token scan found no secrets; decision and project-log ID checks found no duplicates. No FoR
+audio or DEEP-VOICE content was accessed during synchronization.
+
+**AI assistance:** **Codex** fetched main, inspected the overlaps and drafted the conflict resolution.
+Malak reviews and approves the merge commit. AI does not push or merge the PR.
+
+**Gate:** do not resume the official Colab run until the resolved branch passes all checks, Malak
+approves the merge commit, and the new final commit hash is pushed.
+
+---
+
+### Entry 62 — Stage 6 padding-shortcut correction before official run (2026-10-18)
+
+**What [verified locally; official run pending]:** after Donia's pre-run review, Malak approved a
+Stage 6-only correction that exposes the exact number of zero-padding samples added after edge
+trimming. The FoR validator now screens `padding_fraction` alongside RMS, silence and bandwidth and
+reports mean, median, p95 and maximum padding by class and F2 subgroup for both train-only and all-data scopes.
+Synthetic tests plant a padding cue and verify that the AUC screen and subgroup summary detect it.
+
+**Pre-declaration and boundary:** the train-only loudness AUC threshold of 0.75 was already recorded
+in `configs/preprocessing.yaml` and proposed D39 in implementation commit `fdfa14f`, before any
+official screen output was viewed. This correction extends proposed D39 before the official run; it
+does not change that threshold or the settled feature contract: log-Mel shape `(1, 64, 197)` with no
+additional CNN-feature normalization, plus 20 DCT-II, orthonormal MFCCs from the same natural-log Mel
+representation summarized as mean + standard deviation = 40 values. The shared
+`preprocess_waveform` function still applies trim and centred pad/crop independently to every input
+window. Stage 13's guarded external-window integration and tests remain Khalil's work and are not
+implemented or run here. No real FoR audio or DEEP-VOICE content was accessed locally.
+
+**Evidence [verified locally]:** focused preprocessing suite: `30 passed in 3.76s`; full suite:
+`396 passed in 26.32s`; DEEP-VOICE governance: `3 passed in 0.22s`; `git diff --check` passed. The
+official two-run FoR results, determinism hashes, GPU measurements and D30 batch size remain pending
+until this correction is reviewed, committed and pushed and its new exact commit is used in Colab.
+
+**AI assistance:** **Codex** implemented the approved padding measurement, screen, summary, tests and
+documentation. Malak approved the correction commit; Donia and Iheb review the evidence PR. AI does
+not approve, push or merge.
+
+**Gate:** do not run the official Colab cells from `c713111`; first review and commit this correction,
+push it, and use the resulting clean commit hash in the notebook.
+
+---
+
+### Entry 63 — Stage 6 synchronization after PR #32 (2026-10-18)
+
+**What [merge candidate]:** after the padding correction was pushed, `origin/main` advanced from
+`bf8096c` to `638339b` through PR #32. Malak paused Colab and approved another current-main merge.
+The incoming D35 documentation requires Khalil's future Stage 13 runner integration test to call the
+shared frozen preprocessing function separately for every complete 2 s window. It does not move that
+implementation or test into Stage 6.
+
+**Conflict resolution:** code merged without conflict. The append-only project log preserved main's
+Entries 55–56 and renumbered the still-unmerged Stage 6 Entries 55–58 to Entries 57–60. The Stage 6
+padding implementation and proposed D39 remain unchanged. Current status and open items now describe
+both work streams without claiming that Khalil's integration test is implemented.
+
+**Evidence [verified locally]:** full merged suite: `396 passed in 14.85s`; DEEP-VOICE governance:
+`3 passed in 0.32s`. Conflict-marker, sequential-entry, token and diff checks are completed before
+the merge commit. No FoR audio or DEEP-VOICE content was accessed during synchronization.
+
+**AI assistance:** **Codex** fetched current main, inspected the incoming scope and prepared the
+append-only conflict resolution. Malak approved the merge commit. AI does not push or merge the PR.
+
+**Gate:** do not resume the official Colab run until Malak approves this merge commit, it is pushed,
+and the notebook uses its new exact hash.
+
+---
+
+### Entry 64 — Stage 6 first official candidate and D18 Nyquist-edge correction (2026-10-18)
+
+**What [official candidate, not accepted as F3]:** Malak completed the FoR-only Colab validation
+twice from clean implementation commit `532877d`. The four validation artifacts were byte-identical;
+the pinned dataset checks, shortcut screens and no-training GPU benchmark completed. The benchmark
+selected candidate batch size 256 at 83.763 clips/s. However, D18 did not pass: 57 of 180 feature
+comparisons exceeded relative L2 0.01. The worst log-Mel relative L2 was 0.019605 and the worst MFCC
+relative L2 was 0.012685; cosine similarity remained above its 0.999 threshold. Therefore this run is
+diagnostic evidence only, batch size 256 is provisional, and F3 is not effective. The first-run
+diagnostic archive was not retained; this entry's summary numbers are the available record, and no
+archive hash is claimed or reconstructed.
+
+**Root cause [verified on the 30 frozen FoR train samples only]:** the unstable comparisons were
+concentrated in the final Mel band at the exact 8 kHz Nyquist edge. Changing resampler quality or
+disabling trimming did not fix the issue, and padding/trim decisions were unchanged. A 7.6 kHz Mel
+upper bound gave zero D18 failures with `soxr_hq`, `soxr_vhq`, polyphase and SciPy conversion probes;
+the worst independent-converter log-Mel relative L2 was 0.009961. No DEEP-VOICE audio, model
+training, optimizer, weight update or checkpoint was used.
+
+**Correction [approved by Malak; commit pending]:** set `features.fmax_hz` from 8000 to 7600, keep
+all other profile settings unchanged, and add a synthetic near-Nyquist regression test. Proposed D39
+now records the 0–7.6 kHz range and the reason for the correction. Local verification passed: 14
+focused preprocessing tests, the complete 397-test suite, and all 3 DEEP-VOICE governance tests.
+
+**AI assistance:** **Codex** inspected the downloaded evidence, isolated the Nyquist-edge cause using
+FoR-only diagnostics, proposed the 7.6 kHz correction, and implemented it after Malak's approval.
+Donia and Iheb still review the corrected official evidence and D39/F3. AI does not approve, push or
+merge.
+
+**Gate:** review, commit and push this correction first. Then restart the Colab runtime, use the new
+exact clean commit, rerun both validation copies and the benchmark, and accept the evidence only if
+every D18 and shortcut check passes and the validation artifacts are byte-identical.
+
+---
+
+### Entry 65 — Stage 6 Nyquist-edge correction committed and pushed (2026-10-19)
+
+**What [verified]:** Malak approved the Stage 6 7.6 kHz correction and committed it as `6e17185`
+(`fix(stage6): stabilize Mel Nyquist edge`). She pushed it to
+`origin/feat/stage6-preprocessing-profile-malak`; local HEAD and the remote branch are identical. A
+fresh fetch confirms the branch is zero commits behind `origin/main` at `638339b`.
+
+**Evidence:** the approved commit contains the profile/config correction, synthetic Nyquist-edge
+regression, D39 explanation, changelog and Entry 64. Its pre-commit verification was 14 focused
+preprocessing tests, the complete 397-test suite and all 3 DEEP-VOICE governance tests. The first
+candidate evidence remains diagnostic only; no corrected official run or F3 approval is claimed.
+
+**AI assistance:** **Codex** verified the remote branch and updated the append-only status after
+Malak's push. AI did not push or merge.
+
+**Gate:** use exact clean implementation commit `6e17185` for both corrected Colab validation runs
+and the no-training benchmark. Do not approve D39/F3 until every required check passes, the two runs
+are byte-identical, and Donia + Iheb review the evidence.
+
+---
+
+### Entry 66 — Corrected official Stage 6 evidence passes (2026-10-19)
+
+**What [verified candidate evidence]:** Malak ran the complete FoR-only Stage 6 notebook from exact
+clean implementation commit `6e1718547756ef04744ce0b3b1b73bb839920052`. Both validation runs
+processed all 17,721 frozen FoR rows, verified every sample/F2 hash and produced byte-identical copies
+of all four validation artifacts. The downloaded evidence ZIP SHA-256, recomputed from the local
+9,609-byte `stage6_evidence (1).zip`, is
+`5e66ceedfa446dadeb5e2d97ff388adc63c615f5214d8b3359c5bda73664ceb6` (64 hex characters); its seven extracted files
+were uploaded to Drive `processed/metadata/stage6/` and copied to
+`docs/audit_evidence/stage6_preprocessing/` for review.
+
+**Validation [verified]:** all checks pass. D18 has 180/180 passing comparisons; maximum relative L2
+is 0.0021238185 (limit 0.01) and minimum cosine is 0.9999977627 (limit 0.999). The train-only
+FAKE-vs-REAL RMS AUC is 0.698602, so D39's pre-declared loudness rule keeps `mode: none`. Every
+padding-fraction screen is low (maximum AUC 0.505879). One review flag is retained rather than hidden:
+the all-split FAKE_other-vs-REAL silence-fraction AUC is 0.750071 (moderate), while the pre-declared
+train view is 0.749901 (low). This is not an automated gate failure but requires explicit reviewer
+attention.
+
+**Benchmark [verified]:** Tesla T4, 15,637,086,208 bytes total VRAM, PyTorch `2.11.0+cu130`, Python
+3.13.15 and 90.666 FoR clips/s preprocessing throughput. All candidate sizes 16–256 fit; D30 batch
+size 256 is recorded in `configs/cnn.yaml`. Benchmark mode was forward/backward only with no optimizer,
+weight update, checkpoint or model metric. DEEP-VOICE was not accessed.
+
+**Checks [this evidence-preparation session]:** clean-branch full suite `397 passed in 40.91s`;
+DEEP-VOICE governance `3 passed in 0.19s`; token grep `no token found`. Independent evidence checks
+confirmed all recorded artifact hashes, exact profile/manifest hashes, row counts and thresholds.
+
+**AI assistance:** **Codex** inspected the evidence ZIP, independently checked hashes/counts/thresholds,
+copied only the seven small evidence files, recorded batch size 256 and prepared the documentation.
+AI did not approve, push or merge.
+
+**Gate:** **WAITING FOR APPROVAL.** Donia and Iheb review D39/F3, including the near-threshold
+all-split silence flag. After human approval, commit/push the evidence, require green CI and merge by a
+human. Only then write the Stage 6 brief/teach-back and mark Stage 6 complete.
+
+---
+
+### Entry 67 — Stage 6 review corrections after current-main update (2026-10-19)
+
+**What [verified locally]:** incorporated Donia's follow-up after PRs #29 and #35 merged. Preserved
+main's D38 React decision and added the Stage 6 candidate as D39; kept main's Entries 57–58 and
+renumbered the eight Stage 6 history entries to 59–66. Restored D30 to the exact `origin/main` row,
+corrected Entry 66's downloaded evidence ZIP SHA-256, and retained the blank line after Entry 38.
+D39 contains the config SHA, profile fingerprint, implementation commit and all four artifact hashes.
+
+**First-run evidence:** the diagnostic archive was not retained. Entry 64 preserves the initial-run
+summary numbers; no archive is reconstructed and no hash is claimed. This is non-blocking per Donia.
+
+**Checks:** `configs/preprocessing.yaml` remains unchanged and its SHA-256 is still
+`7bd35bfdcb9270dd55ea9e73449c7bf6c6a359a80335b2551c0c89dde77c8630`; it contains no D-ID comment.
+The ZIP hash matches the local corrected archive. The main sync and documentation conflict resolution
+are prepared but not committed; documentation-only, so tests were not rerun.
+
+**AI assistance:** **Codex** fetched current main and prepared the local merge/documentation update.
+AI did not commit, push, message reviewers, approve F3 or merge the PR.
+
+**Gate:** **WAITING FOR MALAK APPROVAL** of the local merge and review corrections, then commit/push
+and require green CI. Donia will re-review. F3 remains pending human review and merge.
+
+---
+
+### Entry 68 — Stage 4/5 D32 briefs prepared for review (2026-10-19)
+
+**What [doc]:** added the retrospective briefs `docs/stages/stage04-split.md` and
+`docs/stages/stage05-dataset-freeze.md` from the approved D32 template. Updated the stage index and
+changelog. The briefs summarize the already-closed Stage 4 split and Stage 5 F2 freeze, link to the
+existing reports/configuration, and include teach-back questions and re-run commands. No dataset or
+audio files were added.
+
+**Evidence [verified against committed records]:** Stage 4 facts and hashes cite its report, config,
+and Entries 25/28; Stage 5 manifest counts, hashes, checks, and determinism cite its report, D28,
+and Entries 30/36. The source links are in the briefs.
+
+**AI assistance:** Codex drafted the briefs from the D32 template and existing project records and
+evidence. Malak owns review of the content; Donia's teach-back review and acceptance remain pending.
+AI does not approve or merge.
+
+**Gate:** Stages 4–6 are ready for review in the regular PR on `docs/stage4-6-briefs-malak`.
+Do not mark them accepted until Donia completes the D32 teach-back.
+
+---
+
+### Entry 69 — Stage 6 D32 brief and D39 status recorded (2026-10-19)
+
+**What [doc]:** added `docs/stages/stage06-preprocessing.md` alongside the Stage 4 and 5 briefs.
+It summarizes the reviewed Stage 6 candidate and links to the official FoR-only evidence, config,
+implementation and Colab runner. Updated the stage index and changelog so all three briefs are
+listed together for review.
+
+**Decision [verified from PR history]:** PR #34 was approved by Donia and Iheb and merged at
+`4707476`; D39/F3 is therefore recorded as approved. The D32 teach-back for the Stage 6 brief, and
+acceptance of all three retrospective briefs, remain separate review gates.
+
+**Evidence:** the brief cites Entry 66 and the seven committed files under
+`docs/audit_evidence/stage6_preprocessing/`. It preserves the train-only shortcut rule, reports the
+all-split silence AUC only as descriptive, and records that the initial diagnostic archive was not
+retained. No dataset or audio was added.
+
+**AI assistance:** Codex drafted the Stage 6 brief and documentation updates from the D32 template,
+the merged decision register, project log, config and committed reports. Malak owns review; Donia
+and Iheb's teach-back review remains pending. AI does not approve or merge.
+
+**Gate:** Stages 4, 5 and 6 briefs are prepared together on the documentation branch; the combined
+regular PR and D32 teach-back reviews are still pending.
+
+---
+
+### Entry 70 — Factual corrections after Stage 4–6 brief review (2026-10-20)
+
+**Record corrections:** Entry 59 was assigned twice: `Entry 59 (D38 docs)` refers to Iheb's
+architecture follow-up; `Entry 59 (Stage 6)` refers to Malak's preprocessing implementation. Entry
+67's statement that the blank line after Entry 38 was retained did not hold after the final merge; the
+missing blank line is restored here. Stage 6 history entries are 59–67, with the collision disclosed
+rather than silently renumbered.
+
+**Stage 6 brief corrections:** batch size 256 is attributed to D39 and `configs/cnn.yaml`, not D30;
+the padding means are identified as all-split alongside the train-only values; approval is cited to
+Entry 69; the anti-aliasing statement distinguishes verified test scope from its hypothesized effect.
+
+**AI assistance:** Codex applied Donia's requested documentation corrections. Malak remains
+responsible for review; Donia's D32 teach-back and acceptance of the briefs remain pending. No audio
+or dataset files were added.
+
+**Gate:** corrections are prepared on `docs/stage4-6-briefs-malak`; human push/CI and Donia's D32
+teach-back/re-review remain.
+
+---
+
+### Entry 71 — Stage 7 step 1: verified MFCC feature cache (2026-10-20)
+
+**What:** on `feat/stage7-baseline-fit` (commits `dc3b2db`, `6f8413f`), added
+`src/features/mfcc_cache.py` with `build_mfcc_cache`, `load_mfcc_cache` and a CLI, the design note
+`docs/feature_cache.md`, and 35 tests in `tests/features/test_mfcc_cache.py`. Only the train, val-A
+and val-B splits are allowed; the test split is refused in code before any file is read (D31). The
+cache is a non-pickle, byte-deterministic npz plus strict JSON, bound to the F3 profile fingerprint
+(D39) and, by default, to the approved F2 manifest hash (D28). The npz is read once, so the checked
+bytes are the loaded bytes.
+
+**Evidence [verified]:** `python -m pytest -q` → 432 passed; `tests/governance` → 3 passed (local
+`.venv`, Python 3.14.7). Synthetic WAV files only; no dataset was read, no Colab run, no model fitted.
+
+**AI assistance:** **Claude Code** wrote the code, tests and design note from Donia's specification.
+**Claude (claude.ai)** reviewed both diffs with Donia and requested the single-read and F2-binding
+fixes (commit `6f8413f`). Donia reviewed every change before commit. Claude Code also wrote this
+entry and the CHANGELOG line; AI did not push, open or merge a PR.
+
+**Gate:** PR #37 merged at `7538a1d`; the real feature build and baseline fit (Stage 7 steps 2–3) wait for the housekeeping PR, which records D40 (W&B used from Stage 8; baseline provenance in committed JSON reports). **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 72 — Stage 6 closed, Stage 7 housekeeping, D40 and H7 proposed (2026-10-20)
+
+**Numbering:** follows Entry 71 (Stage 7 step 1, PR #39).
+
+**Stage 6 closed [doc]:** PR #37 merged at `7538a1d` with briefs 04–06. Donia's D32 teach-back was
+completed with AI assistance (Claude explained the §7 answers; Donia reviewed them against the
+briefs and evidence). Briefs 04–06 are marked accepted (PR #37); `AGENTS.md` marks Stage 6 done and
+Stage 7 current. Briefs 02–03: teach-back completed by Khalil (Stage 2) and by Iheb, Malak and
+Khalil (Stage 3), reported by Donia on 2026-10-20; confirmed in writing by their approval of PR #40;
+briefs 02–03 are accepted.
+
+**Record corrections [verified against PR history as provided]:** D29–D31 statuses and the matching
+Protocol §14 row now cite PR #16 instead of "this PR"; the D37 §14 row cites PR #30 (approved by
+Khalil and Malak on 2026-10-18, Donia author). D38's register status is unchanged here;
+D38 was agreed by all four in person, and confirmed in writing by their approval of PR #40.
+CONTRIBUTING now asks to check open PRs and remote branches before claiming a D-ID, ADR number or
+log entry number. D37's register status now records its approval via PR #30.
+
+**Proposed D40 [doc]:** W&B logging applies from Stage 8 (every CNN training and model-selection
+run, including quick tests); the deterministic Stage 7 baseline fit is not logged to W&B, and its
+provenance is the committed selection report, threshold report, feature-cache JSON files and
+`artifact_sha256`. Waits for team approval.
+
+**Pre-registered H7 [hypothesis]:** silence-fraction shortcut test on FoR test REAL clips, from the
+stored Stage 11 per-clip outputs (no second test run, D31); tested in Stage 16. Added to the register
+and Protocol §1. Requires Stage 11 to store per-clip path, group, raw score, calibrated p and
+prediction.
+
+**Colab environment check [verified by Donia, reported]:** run on 2026-10-18 at `main` `bf8096c`,
+fresh CPU runtime, no data, no Drive, no external set. Python 3.13.16; `requirements.txt` installs;
+scikit-learn 1.9.1, numpy 2.5.3, scipy 1.16.3, pandas 3.0.6; `python -m pytest -q` → 366 passed in
+23.79s; `google.colab` and `google.colab.drive` import after the install. `pip check` on the whole
+Colab environment reports 8 conflicts, all in Colab-preinstalled packages the project does not import
+(google-colab wants pandas 2.2.3; diffusers, datasets, tokenizers, gradio-client want
+huggingface-hub < 2.0; moviepy, pytensor, ipython): recorded, not fixed. A clean venv could not be
+created (Colab lacks `ensurepip`); clean-install consistency is covered by CI on Python 3.13.
+`drive.mount()` was not run. Rule for Stage 7 notebooks: mount Drive before installing
+`requirements.txt`. Notebook (view-only, shared with the team):
+https://colab.research.google.com/drive/1k-nBdzEfY_m9FdigsINXOaw9cqbRfcev .
+
+**AI assistance:** Claude (claude.ai) wrote both Colab check cells and interpreted their output;
+Donia ran them. Claude Code applied this entry's documentation edits from Donia's instructions on
+`docs/stage7-housekeeping`. Team review is required; AI does not approve or merge.
+
+**Gate:** approved by all four in PR #40 (2026-10-20): D40 approved, H7 pre-registration accepted, D38 confirmed, briefs 02–03 teach-backs confirmed and accepted. AI does not approve or merge.
+
+---
+
+### Entry 73 — Stage 7 step 2A: baseline run orchestrator and Colab notebook (2026-10-24)
+
+**Numbering:** follows Entry 72; the number is fixed at merge time (Khalil's open PR #33 may also
+need a number).
+
+**What:** on `feat/stage7-baseline-run` (commits `f0fcc58`, `c6c3468`), added
+`src/tuning/baseline_run.py` (`run` and a CLI). It loads the train, val-A and val-B MFCC caches
+(F2 binding, F3 fingerprint and profile config hash checked), calls `fit_baseline` (selection on
+val-A, D29 threshold on val-B; D9, D37), saves the non-pickle artifact, and writes the selection,
+threshold, run (full provenance, including environment versions) and subgroup reports. The
+subgroup report (REAL vs FAKE_mp3 and REAL vs FAKE_other EER on val-A and val-B) is descriptive
+only and was pre-declared on 2026-10-24, before any real run. `notebooks/03_stage7_baseline.ipynb`
+runs every step twice from an exact clean commit and asserts byte identity; the artifact goes to
+Drive `checkpoints/` only, never to Git; existing evidence or artifact folders are never
+overwritten. Design note `docs/baseline_run.md`; 13 tests in `tests/tuning/test_baseline_run.py`.
+
+**Evidence [verified]:** `python -m pytest -q` → 445 passed; `tests/governance` → 3 passed;
+nbformat validation passed (local `.venv`, Python 3.14.7). Synthetic data only; no real data, no
+Colab run, no real fit.
+
+**AI assistance:** **Claude Code** wrote the code, tests, notebook and design note from Donia's
+specification. **Claude (claude.ai)** reviewed the diff with Donia and asked for three provenance
+improvements (full commit, no evidence overwrite, environment versions; commit `c6c3468`). Donia
+reviewed every change. Claude Code also wrote this entry and the CHANGELOG line; AI did not push,
+open or merge a PR.
+
+**Gate:** after merge, the real run uses the merge commit on `main` (Stage 7 step 2B); its results
+go in a separate PR with `docs/results/baseline.md`. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 74 — Stage 7 steps 2B–3: official baseline evidence and validation results (2026-10-24)
+
+**Numbering:** follows Entry 73; the number is fixed at merge time (Khalil's open PR #33 may also
+need a number).
+
+**Run:** Donia ran `notebooks/03_stage7_baseline.ipynb` on Colab on 2026-10-24 from merge commit
+`297c352c91bfc9daafa2943ba04154194aa33248` (PR #41); Python 3.13.16, NumPy 2.5.3, SciPy 1.16.3,
+scikit-learn 1.9.1, librosa 1.0.0, soxr 1.1.0, soundfile 0.14.0. Notebook (view-only):
+<https://colab.research.google.com/drive/1AFQ4twXQmbW4SXN9iuqU37PZXakaEiGx>. Caches and fit were
+each run twice with byte-identical outputs (`determinism.json`). Artifact `baseline-v1`,
+`artifact_sha256` `42cc4d53a7cd881f56e4fa54fcf4797de8885b404d0a2b31c293555c868df10a`, stored in
+Drive `checkpoints/baseline/baseline-v1/`, not in Git.
+
+**What:** on `docs/stage7-baseline-results`, committed the eight evidence files (three cache JSON
+files, four reports, `determinism.json`) to `docs/audit_evidence/stage7_baseline/` and wrote
+`docs/results/baseline.md`. No code change; no `.npz` cache or artifact committed. Added the
+Stage 7 brief docs/stages/stage07-baseline.md (D32); teach-back by Khalil and Iheb pending.
+
+**Headline numbers [verified against the evidence files] (validation only, not test):** selected
+C 10, γ 0.1 (exact val-A EER tie with C 100, γ 0.1; D37 tie rule → smaller C); val-A EER 0.149%
+(`selection_report.json`); D29 threshold 0.13285804202427817 with val-B EER 0.0 on 660 bonafide /
+669 spoof (`threshold_report.json`). Descriptive subgroups: val-B REAL vs FAKE_mp3 and vs
+FAKE_other both 0.0; val-A 0.0 and 0.30% (`subgroup_report.json`).
+
+**Hash verification [verified]:** SHA-256 of each committed cache JSON = `determinism.json`
+`cache_sha256` (3/3); SHA-256 of each committed report = `run_sha256` (4/4); `run_report.json`
+`npz_sha256` = `determinism.json` `cache_sha256` for train/val-A/val-B (3/3); `code_commit` equal
+in both files. All passed. F2 hash = D28, profile config hash and fingerprint = D39,
+`configs/baseline.yaml` hash = `baseline_config_sha256`, row counts = Stage 4 sizes
+12,404 / 1,330 / 1,329.
+
+**Interpretation [hypothesis]:** the near-perfect separation is too good to read as a solved task.
+Likely contributors are an in-domain upper bound (shared TTS generators and probably speakers, no
+speaker metadata, 0.95 grouping removes only near-duplicates), a bandwidth shortcut (FAKE median
+99%-energy bandwidth about 3.3 kHz vs REAL about 5.1 kHz; FAKE_other separates too, so MP3 history
+alone does not explain it; H6) and loudness/silence cues (D39: RMS AUC 0.699, FAKE_other silence
+AUC about 0.75; H7). H1 may hit a ceiling but stays unchanged and will be reported as
+pre-registered; the D36 external comparison becomes the main test of RQ2. No feature, grid or
+threshold change after seeing the results (Protocol §12). Details and limitations:
+`docs/results/baseline.md`.
+
+**AI assistance:** **Claude Code** committed the evidence, ran the hash verification and drafted
+the results document from the committed files. **Claude (claude.ai)** checked the reports'
+consistency with Donia and drafted the interpretation. Donia ran the notebook and reviewed
+everything. AI did not push, open or merge a PR.
+
+**Gate:** team review of the results PR, including the Stage 7 brief and its D32 teach-back
+(Khalil, Iheb). **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 75 — Stage 7 closed (D32) (2026-10-24)
+
+**Numbering:** follows Entry 74; the number is fixed at merge time (Malak's D41 and Khalil's PR #33
+also need numbers).
+
+**What:** the Stage 7 brief docs/stages/stage07-baseline.md was merged with PR #42. Khalil and Iheb
+completed its D32 teach-back face to face, reported by Donia on 2026-10-24; their written
+confirmation will be their approval of this closeout PR. On `docs/stage7-closeout`, the brief
+status is set to accepted, the stage-briefs index and the `AGENTS.md` roadmap are updated, and the
+brief's §8 test sentence now says the four test folders gave 295 passed on main after PR #42.
+
+**Checks:** the four-folder test command (tests/evaluation, tests/models, tests/tuning,
+tests/features) on main gave 295 passed.
+
+**Status:** Stage 7 is done; Stages 8–9 are current.
+
+**AI assistance:** **Claude Code** applied the edits from Donia's specification. AI did not push,
+open or merge a PR.
+
+**Gate:** approval of this PR by Khalil and Iheb is the written confirmation of the teach-back; AI
+does not approve or merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 76 — Stage 8 preparation: D42 proposed, W&B set up (2026-10-24)
+
+**Numbering:** follows Entry 75; D42 is Entry 76. D41 and the log-Mel PR may both provisionally
+hold Entry 77; whichever merges second takes the next free number. Khalil's PR #33 still needs a
+log number.
+
+**What:** D42 is proposed in `docs/decisions/README.md`, with a Protocol §14 change-log row. It fixes
+the CNN on the F3 log-Mel (1, 64, 197): per-Mel-bin standardization from the FoR train cache only
+(stored in the checkpoint; no per-clip normalization); Conv3×3 → BatchNorm → ReLU → MaxPool blocks
+with 16/32/64(/128) channels, as benchmarked for batch 256 in Stage 6; global average pooling,
+dropout 0.3 and one logit as the raw score; BCEWithLogitsLoss without class weights; Adam with
+constant learning rate, no weight decay, float32; early stopping on strictly lower val-A EER with
+the earliest best epoch restored; val-B not scored before Stage 10; a log-Mel cache built like the
+MFCC cache; safetensors checkpoint with strict JSON metadata; seeded, cudnn-deterministic training
+with reproducibility reported as observed; per-epoch W&B metrics only. It is fixed before any CNN
+code or result exists, so that no model choice can be tuned against results (as D37 did for the
+baseline). Dependency pinning (torch, safetensors, wandb) is left to the Stage 8 code PR.
+
+**W&B setup (D40):** done by Donia on 2026-10-24: Academic plan, organization
+`voice-spoofing-detection-must-org`, team `voice-spoofing-detection-must`, private project
+`voice-spoofing-detection`. Khalil, Iheb and Malak were invited (acceptance pending). The API key is
+stored only in Donia's local `.env`, verified git-ignored (`git check-ignore` → `.gitignore:7`;
+`git status` clean). Colab Secrets will be set with the first Stage 8 notebook. `.env.example` now
+holds an empty `WANDB_API_KEY=` with its handling rule, and `docs/setup.md` has a W&B section.
+
+**AI assistance:** **Claude** (claude.ai) drafted D42 and guided the W&B setup with Donia;
+**Claude Code** wrote this commit. AI did not push, open or merge a PR.
+
+**Gate:** D42 approved by Iheb, Malak and Khalil via PR #44 (2026-10-24); CNN code may start. AI does not approve or merge.
+
+---
+
+### Entry 77 — Stage 8 PR A: verified log-Mel cache (2026-10-24)
+
+**Numbering:** follows Entry 76; the number is fixed at merge time (Malak's D41 and Khalil's PR #33
+also need numbers).
+
+**What:** `src/features/logmel_cache.py` (build, load, CLI) caches the F3 log-Mel (1, 64, 197)
+float32 for train, val-A and val-B only, with the MFCC cache's guarantees: test split refused in
+code before any read, sample hashes checked before decoding, all or nothing, non-pickle
+byte-deterministic npz plus strict JSON, F2 binding by default, profile fingerprint, single read.
+The D42 train-only normalization statistics are not stored here; the training code computes them.
+Design note `docs/logmel_cache.md`; 44 tests in `tests/features/test_logmel_cache.py`.
+
+**Evidence [verified]:** `python -m pytest -q` → 489 passed; `tests/governance` → 3 passed (local
+`.venv`, Python 3.14.7). Synthetic data only; no real data, no Colab, no torch.
+
+**AI assistance:** **Claude Code** wrote the code, tests and design note from Donia's
+specification; **Claude** (claude.ai) reviewed the diff with Donia. Donia reviewed every change.
+AI did not push, open or merge a PR.
+
+**Gate:** Stage 8 PR B (CNN code, dependencies, `configs/cnn.yaml`) follows; the real cache build
+runs in the Stage 8 notebook after PR B merges.
+
+---
+
+### Entry 78 — D41 approved: Stage 14 robustness runs: registry purpose key and paired clean scores (2026-10-24)
+
+**Numbering:** follows Entry 77 and is the next free number on main at approval time. Re-check
+immediately before merging PR #46 if another project-log entry merges first.
+
+- **Owner:** Malak Ben Salem; **reviewers:** Donia, Khalil, Iheb and Malak approved via team review;
+  approval recorded in PR #46 (D24/D26).
+- **Amends D31.** The registry key is `(dataset, split, evaluation_purpose, model_set)` with a
+  closed purpose allowlist implemented in code: exactly `stage11_test` and `stage14_robustness`.
+  Any other value is refused; adding a purpose requires a new decision. Each allowed purpose/model
+  set may claim once. This distinguishes Stage 11 test scoring from Stage 14 robustness conditions
+  without opening an unbounded route to repeat test-split runs.
+- **Models and scope:** Stage 11 stores per-clip clean scores for `baseline-v1` (D36/F4 artifact
+  SHA-256 `42cc4d53a7cd881f56e4fa54fcf4797de8885b404d0a2b31c293555c868df10a`) and all three CNN
+  seeds, including the ModelBundle CNN bundle seed. Stage 14 evaluates `baseline-v1` and the frozen
+  ModelBundle CNN (bundle seed, F4), one registry claim per model set over the full Protocol §9 grid
+  in one pass. Store stable clip ID, label and D14 group ID with each Stage 11 score; baseline stores
+  raw score and D29 forced-binary prediction, with calibrated p not applicable.
+- **Pairing and criterion:** reuse the corresponding Stage 11 clean scores (no second clean pass);
+  apply each pre-declared degradation before unchanged F3. Pair clean/degraded rows by clip ID and
+  compute paired 95% percentile CIs from 2,000 D14-group bootstrap resamples with seed `2026`.
+  Baseline EER increase at 3.4 kHz is meaningful only if it is at least 5 absolute percentage points
+  and the paired CI excludes 0. Retain H6's CNN false-synthetic-rate endpoint on REAL at 3.4 kHz and
+  all existing §9 conditions. This is diagnostic evidence, not proof of a sole cause.
+- **Protocol record:** D41 adds per-clip score storage to §7's Stage 11 run and the baseline model to
+  §9; its §14 history row records PR #46.
+- **Basis:** D31's existing guard permits one run per model set, while D36 defines the baseline
+  artifact in F4. Main's `docs/results/baseline.md` and Entry 74 now contain hash-verified baseline
+  evidence; no test-split result was accessed for this proposal.
+- **AI assistance:** Codex revised the decision, ADR and records from Donia's review. No dataset,
+  audio, checkpoint or test result was accessed, and no experiment was run.
+- **Gate:** **APPROVED — IMPLEMENTATION REVIEW REQUIRED.** Do not access FoR test audio for this
+  comparison until the registry and score-storage implementation is reviewed.
+
+---
+
+### Entry 79 — Stage 8 PR B1: CNN foundations (2026-10-24)
+
+**Numbering:** follows Entry 78; the number is fixed at merge time.
+
+**What:** on `feat/stage8-cnn-foundations` (`f396698`):
+- **Dependencies and CI:** `requirements-cnn.txt` pins safetensors 0.8.0 and wandb 0.31.0. torch
+  2.11.0 is not installed from any requirements file: Colab uses its preinstalled CUDA build
+  (asserted in the notebook); CI and local development install the CPU build. CI sets
+  `REQUIRE_TORCH_TESTS=1`, so torch tests fail instead of skipping (`tests/_torch.py`).
+  `docs/setup.md` has a "CNN dependencies (Stage 8)" section.
+- **Model:** the D42 CNN, `src/models/cnn.py` (3 or 4 blocks only, one logit per clip).
+- **Normalization:** NumPy-only, train-only per-Mel-bin statistics, `src/training/normalization.py`.
+- **Determinism:** `set_seed`, `src/training/determinism.py`.
+- **Checkpoint:** non-pickle safetensors weights plus strict JSON metadata and `checkpoint_sha256`,
+  `src/models/cnn_checkpoint.py`; the loader never calls `torch.load` or pickle and accepts an
+  optional `expected_sha256`.
+- Design note `docs/cnn.md`. No training loop, no W&B, no `configs/cnn.yaml` (PR B2).
+
+**Evidence [verified]:** `python -m pytest -q` → 600 passed, 0 skipped (torch 2.11.0+cpu installed
+locally); `tests/governance` → 3 passed (local `.venv`, Python 3.14.7). Synthetic tensors only; no
+dataset, no Colab.
+
+**Correction to the D42 wording** (recorded here; D42 itself is not edited): D42 says the channels
+are "the network the Stage 6 benchmark measured". Channels, pooling and head match, but the
+benchmark network had no BatchNorm, which D42 adds. The benchmark peak was 0.90 GB of 15.6 GB, so
+batch 256 is expected to stay well within the 80% VRAM limit **[hypothesis]**; PR B2 / the Stage 8
+run records the real peak.
+
+**AI assistance:** **Claude Code** wrote the code, tests and docs from Donia's specification and
+found the BatchNorm discrepancy; **Claude** (claude.ai) reviewed the diff with Donia and drafted D42
+(including the inaccurate wording). Donia reviewed every change. AI did not push, open or merge a PR.
+
+**Gate:** Iheb reviews the dependency and CI changes, Khalil the rest. PR B2 (training loop, W&B
+wrapper, `configs/cnn.yaml`, search orchestrator) follows.
+
+---
+
+### Entry 80 — Stage 8 PR B2: CNN training loop, W&B allow-list and D30 search (2026-10-24)
+
+**Numbering:** follows Entry 79; the number is fixed at merge time.
+
+**What:** on `feat/stage8-cnn-training` (`07304a6`, `2bde299`):
+- **Config:** `configs/cnn.yaml` filled with exactly D30 + D42, read by a strict, type-exact drift
+  guard (`src/training/cnn_config.py`).
+- **Training loop:** `train_one` (`src/training/train_cnn.py`) with D42 early stopping (strictly
+  lower val-A EER, earliest tie, patience 5, max 30, best-epoch weights restored), train-only
+  statistics, and no val-B, test or external input.
+- **W&B:** an allow-list logger (`src/training/wandb_logger.py`): exact keys, scalar metrics,
+  forbidden key parts, no uploads, offline/disabled modes.
+- **Search:** the D30 orchestrator (`src/tuning/cnn_search.py`): train and val-A caches only, 4
+  search runs on seed 0, D30 tie rule, seeds 1–2 for the winner, `select_bundle_seed`, checkpoints
+  for the 3 seeds, search/selection/run reports with full provenance including CUDA/cuDNN versions
+  and peak GPU memory per run.
+- Design note `docs/cnn_training.md`.
+
+**Evidence [verified]:** `python -m pytest -q` → 699 passed, 0 skipped; `tests/governance` → 3
+passed (local `.venv`, Python 3.14.7, torch 2.11.0+cpu). Synthetic data, CPU only; W&B never
+contacted. The real `wandb.Settings` object was constructed in a test.
+
+**AI assistance:** **Claude Code** wrote the code, tests and docs from Donia's specification;
+**Claude** (claude.ai) reviewed the diff with Donia and asked for the real `wandb.Settings` test, the
+`wandb/` ignore rule and the CUDA/cuDNN versions. Donia reviewed every change. AI did not push, open
+or merge a PR.
+
+**Gate:** Khalil reviews; then PR C (Colab notebook 04: real cache build and the D30 search on GPU,
+from the merged commit).
+
+---
+
+### Entry 81 — Stage 8 PR C: Colab notebook 04 for the CNN search (2026-10-24)
+
+**Numbering:** follows Entry 80; the number is fixed at merge time.
+
+**What:** on `feat/stage8-colab-notebook` (`c8740af`):
+- `notebooks/04_stage8_cnn.ipynb` (outputs cleared), the official Stage 8 runner: Drive mount,
+  clean detached checkout of the full commit, environment checks, FoR extraction, full test suite,
+  train and val-A log-Mel caches built twice, one `src.tuning.cnn_search` run on GPU, export to Drive
+  with a hash manifest. Every hyperparameter comes from `configs/cnn.yaml`; the notebook has only
+  `REPO_URL`, `COMMIT`, `VERSION` and `DRIVE_ROOT`.
+- `tests/governance/test_notebook_04_stage8.py` (14 tests): static checks of the notebook JSON
+  (parsed with `ast`, never executed).
+
+**Choices and reasons:**
+- **FoR integrity: revision marker only (Option A).** The repo pins FoR by its HF revision (D21) and
+  stores no archive SHA-256, so the notebook checks `for_2sec_REVISION.txt` against
+  `configs/audit.yaml` as notebook 03 does. The tar's SHA-256 is computed and recorded in the export
+  manifest as `for_archive_sha256_observed`: evidence only, never asserted or compared. D21 is
+  unchanged; making it a pin would need a new decision.
+- **Full-SHA pin:** `len(COMMIT) == 40` and `HEAD == COMMIT`, so a short prefix cannot select an
+  unintended commit.
+- **Drive only:** the run is long and its outputs are large; manual upload/download adds steps
+  without adding checks.
+- **Fail-fast refusal of existing outputs:** `checkpoints/cnn/<VERSION>/` or
+  `processed/metadata/stage8/` already on Drive stops the notebook before any expensive work; the
+  check runs again before export, and the folders are created with `exist_ok=False`.
+- **Skip check from JUnit XML:** pytest runs with `REQUIRE_TORCH_TESTS=1` and writes
+  `/content/pytest_stage8.xml`; the notebook requires tests > 0 and failures = errors = skipped = 0
+  from the XML, not from terminal text.
+- **W&B key loaded last:** the Colab secret is read just before the search, so pytest and the cache
+  builds never see it. It is never printed and `wandb.login` is not called; W&B folders are under
+  `/content/wandb_runtime`, outside the clone.
+- **Caches built twice and compared:** the cache writer is deterministic (fixed zip entry metadata,
+  sorted JSON without time fields), covered by `test_two_builds_are_byte_identical`. Both builds must
+  have the same files and SHA-256s, and every cache must record the F3 config SHA-256 and fingerprint
+  read from the Stage 6 evidence (D39). val-B is not built (D42); test is never requested.
+- **One search run, no reaction to EER:** one call, no retry, no logic on EER values; selection and
+  ties are pre-declared (D30, D42).
+- **Clean worktree around every CLI call:** caches, pytest XML, W&B files and the search output are
+  all outside the clone; the check also refuses ignored files other than `__pycache__`, because
+  `.gitignore` hides `wandb/` from `git status`.
+- **Two Drive hash checks:** the first, right after copying, checks the copy; after
+  `drive.flush_and_unmount()` and a forced remount, every file is hashed again against the manifest,
+  which checks what Drive actually stored and fails on a missing or extra file.
+- **Export manifest** `processed/metadata/stage8/stage8_export_manifest.json`: per-file path, size and
+  SHA-256; commit, version; Python, torch, CUDA, cuDNN and GPU name; UTC time; FoR revision and
+  observed archive SHA-256; pytest counts; cache SHA-256s; F3 config SHA-256 and fingerprint.
+  Exactly `seed_0`, `seed_1` and `seed_2` must be exported.
+
+**Differences from notebook 03:** full-SHA pin instead of a prefix match; Drive only (no manual
+mode); existing outputs refused at the start as well as before export; FoR revision read from
+`configs/audit.yaml` instead of a literal; JUnit skip check (03 has none); Python 3.13 (D15) and
+torch 2.11.0 asserted, with a fresh-process re-check after the install; long commands streamed line
+by line; pytest without its cache provider; re-hash after flush and remount; a static test (03 has
+none).
+
+**Evidence [verified]:** `REQUIRE_TORCH_TESTS=1 python -m pytest -q` → 713 passed;
+`tests/governance` → 17 passed (local `.venv`, Python 3.14.7, torch 2.11.0+cpu). 17 deliberately
+broken copies of the notebook (outside the repo) were each caught by the static tests.
+**The notebook has not yet been run in Colab; the official run uses this PR's merge commit as
+`COMMIT`.**
+
+**Decisions:** no new decision (next D-ID stays D43).
+
+**AI assistance:** **Claude Code** wrote the notebook, the static test and this entry;
+**Claude** (claude.ai), acting as reviewer, wrote the Claude Code prompts and reviewed every diff,
+including Option A, the W&B key order, the Python 3.13 assert, the seed check, the manifest fields
+and the Drive re-hash. Donia ran every command, checked the real outputs and approved each change.
+AI did not push, open or merge a PR.
+
+**Gate:** review of PR C; then the official Colab run from the merge commit, then PR D (evidence).
+
+---
+
+### Entry 83 — Synthetic clustered discrimination checks (2026-10-18)
+
+**Numbering:** renumbered from provisional Entry 57 after updating this branch against current
+main. At this update, main contains Entries 1–81 and open PR #50 reserves Entry 82, so
+this entry uses the next free number.
 
 **Owner:** Khalil Dridi. **AI assistance:** Codex prepared synthetic tests and documentation.
 **Scope [doc]:** Existing D4/D11 pooled EER and ROC-AUC; no D33–D35 acceptance or access change.
 **Work:** Two cases use eight invented unequal-size, single-class speaker groups and tied
-scores. Independent two-score ROC/count oracles verify point estimates, percentile bounds
-and exact invalid-resample counts, with 2,000 whole-speaker draws and seed 2026.
-**Evidence [verified]:** Candidate tests: `2 passed in 3.91s`. Existing full suite plus
-candidate tests: `368 passed in 13.71s`; no dataset/audio/model access.
-**Integration:** PR #32 merged as `638339b`; local main includes it. Candidate prepared in
-Codex workspace because repository writes require filesystem permission. Git status in
-the agent shell fails with “must be run in a work tree”; Khalil must verify the working tree
-and create the feature branch before committing. No commit or push performed by Codex.
+scores. Independent two-score ROC/count oracles verify point estimates, percentile bounds and
+exact invalid-resample counts, with 2,000 whole-speaker draws and seed 2026.
+**Evidence [verified]:** Candidate tests: 2 passed in 3.91s. Existing full suite plus
+candidate tests: 368 passed in 13.71s; no dataset/audio/model access.
+**Integration:** Updated with current main before merge preparation. Open PRs were checked for
+entry-number collisions; PR #50 currently reserves Entry 82. No real data was accessed.
 **Gate:** Human review and CI pending → WAITING FOR APPROVAL. Stage 13 remains incomplete.
 
 ---
-
 ## Open items
 
-- [ ] Review synthetic clustered discrimination tests and obtain CI (Entry 57).
+- [ ] Review synthetic clustered discrimination tests and obtain CI (Entry 83).
+**Part C: external comparison (Entry 58)**
+- [x] Approve D36 (all four) before F4. (PR #29, 2026-10-19)
+- [x] Iheb to accept or revise D33–D35 (and D36) in the review of this PR; when all four have
+  accepted, set D33–D35 to Approved (Entry 58). (PR #29, 2026-10-19)
 
 **Khalil: Stage 13 preparation**
 - [ ] Implement the D35 per-window frozen preprocessing integration test (Entry 55).
@@ -1222,12 +2025,14 @@ and create the feature branch before committing. No commit or push performed by 
 - [x] PR #21 merged into main as `65ce1d2`; PR #23 base changed to main.
 - [x] PR #23 integrated and merged as `3f2f4bb` after passing CI (Entries 42–44).
 - [x] PR #24 merged into main as `6786c12` (Entries 45–46).
-- [ ] Review proposed D33–D35 and ADR 0007; record explicit approval or requested revisions (Entry 48).
+- [x] Review proposed D33–D35 and ADR 0007; record explicit approval or requested revisions (Entry 48). (approved by all four, PR #29, 2026-10-19)
 - [ ] Complete clustered CIs, speaker completeness checks and filter/file-level reporting.
-- [ ] Before Stage 13, approve and record the speaker-average undefined-value convention alongside
-  the file-level view and governance allowlist decisions. No convention is approved by this update.
+- [x] Before Stage 13, approve and record the speaker-average undefined-value convention alongside
+  the file-level view and governance allowlist decisions. No convention is approved by this update. (D33–D35 approved, PR #29, 2026-10-19)
 
 **GitHub / repo**
+- [ ] D27: confirm whether the team approved it (PR #14 merged) and update its register status (Entry 72)
+- [x] Team review of PR `docs/stage18-frontend-stack` (D38, Entry 57): merged as PR #35. Follow-up docs PR `docs/stage18-stack-followup` (Entry 59) updates `docs/architecture.md`, ADR 0002 and the `AGENTS.md` roadmap row.
 - [x] PR `stage-0-git-workflow`: merged as PR #1 (approved and merged by Malak, 2026-10-05).
 - [x] Iheb and Malak accept the collaborator invitations (accepted; Entry 14).
 - [x] Branch protection on `main` is active: PR + 1 approval + required CI check `checks` + branch up to date; no direct pushes (confirmed, Entry 18).
@@ -1241,8 +2046,8 @@ and create the feature branch before committing. No commit or push performed by 
 - [x] Review and merge PR `docs/stage3-repo-cleanup` (Entry 18): merged as PR #7 (Entry 19).
 - [x] Delete merged branches: remote has only `main` (Entry 19).
 - [x] Review and merge PR `docs/stage3-protocol-skeleton` (Entry 19): merged as PR #8; branch deleted (Entry 20).
-- [ ] Review and merge PR `chore/stage5-ai-tooling` (Entry 27); after merge each member sets `CONTEXT7_API_KEY` locally (never committed) and approves the project MCP server in their own tool.
-- [ ] Stage 13 governance: decide (new decision, before Stage 13) how the guarded external-run code is added to the DEEP-VOICE allowlist of `tests/governance/test_deepvoice_access.py`.
+- [x] Review and merge PR `chore/stage5-ai-tooling` (Entry 27): merged as PR #14. Using Context7 is optional per member: set `CONTEXT7_API_KEY` locally (never committed) and approve the project MCP server in your own tool (ADR 0006).
+- [x] Stage 13 governance: decide (new decision, before Stage 13) how the guarded external-run code is added to the DEEP-VOICE allowlist of `tests/governance/test_deepvoice_access.py`. (decided by D35, PR #29, 2026-10-19; implementation pending)
 - [x] `LICENSE` (MIT, code only, D25) and the README statement that datasets are not redistributed: in `chore/repo-structure` instead of a separate PR B (Entry 17).
 - [x] Decide whether branch protection should require code-owner review: **no** (review of Entry 16).
 - [x] Compare `CONTRIBUTING.md`, the `.github/` templates, `docs/decisions/TEMPLATE.md` and ADR 0001 with the actual CS 488 template and align them (keep D20 checkbox, stacked PRs, D23 naming, human in the loop): done on `chore/repo-structure` (Entry 17).
@@ -1268,15 +2073,51 @@ and create the feature branch before committing. No commit or push performed by 
 - [x] Donia reviewed and approved the F2 PR; PR #15 merged as `89b37fc`, Stage 5 is done and F2 is
   effective (Entry 36).
 
+**Stage 6 gate**
+- [x] Implement preprocessing profile v1 candidate, shared transforms, tests, validation, no-training
+  compute benchmark and Colab runner (Entry 59).
+- [x] Review and commit the Stage 6 implementation candidate as `fdfa14f`; branch pushed.
+- [x] Review and commit the manual Colab transfer fallback as `34e826b`; branch pushed (Entry 60).
+- [x] Complete, approve and push the synchronization with `origin/main` at `bf8096c` as `c713111`
+  (Entry 61).
+- [x] Review, commit and push the padding-shortcut correction as `becc52b` (Entry 62).
+- [x] Complete, approve and push the synchronization with `origin/main` at `638339b` as `532877d`
+  (Entry 63); the first official candidate cited that exact merge commit.
+- [x] Diagnose the first official candidate's D18 failure and obtain Malak's approval for the 7.6 kHz
+  Nyquist-edge correction (Entry 64); local implementation and all 397 tests pass.
+- [x] Review, commit and push the 7.6 kHz correction as `6e17185` (Entry 65).
+- [x] Run the full pinned FoR manifest twice in Colab; every sample hash/check, shortcut rule and
+  D18 invariance check passed, and the four validation artifacts are byte-identical.
+- [x] Record the GPU type, VRAM, PyTorch version, preprocessing throughput and selected future batch
+  size; no optimizer, weight update, checkpoint or model metric is permitted in this benchmark.
+- [x] Upload the seven corrected evidence files to Drive `processed/metadata/stage6/` and prepare the
+  matching small repo evidence under `docs/audit_evidence/stage6_preprocessing/` (Entry 66).
+- [x] Record that the first-run diagnostic archive was not retained; Entry 64 preserves its summary
+  numbers and no unverified archive hash is claimed.
+- [x] Approve and merge the official Stage 6 evidence and review corrections (PR #34, merged at
+  `4707476`).
+- [x] Record D39/F3 as approved after Donia and Iheb approved PR #34, merged at `4707476`.
+- [x] Prepare `docs/stages/stage06-preprocessing.md` from the D32 template (Entry 69).
+- [x] Complete the D32 teach-back for the Stage 6 brief before marking Stage 6 done. (Donia, with AI
+  assistance; PR #37 merged at `7538a1d`; Stage 6 done, Entry 72)
+
 **Stage 7 harness: protocol clarifications (Entry 31; Protocol §12, next free D-ID when decided)**
 - [x] Baseline threshold: own val-B EER point, forced binary only (Donia, before Stage 7 results): D29 (Entry 32).
 - [x] Exact CNN model-selection search space in `configs/` (Donia, before Stage 8): D30 (Entry 32).
 - [x] Enforcement of "Stage 11 runs once" (run registry) (Donia, before Stage 11): D31 (Entry 32).
-- [ ] File-level decisions for DEEP-VOICE: frozen band on the file mean of p, secondary view (Khalil, before Stage 13).
-- [ ] Colab install of scikit-learn 1.9.1 [to verify] at the first Stage 7 Colab run.
-- [x] Approve D37 (team review recorded in Entry 53).
+<<- [x] File-level decisions for DEEP-VOICE: frozen band on the file mean of p, secondary view (Khalil, before Stage 13). (D34 approved, PR #29, 2026-10-19)
+- [x] Colab install of scikit-learn 1.9.1: verified in Donia's Colab environment check at `bf8096c`
+  (366 passed; Entry 72). Stage 7 notebooks mount Drive before installing `requirements.txt`.
+- [x] Approve D37 (team review) (Entry 53): approved via PR #30 (Khalil, Malak), 2026-10-18 (Entry 72).
+- [x] Approve proposed D40 (W&B from Stage 8) in the `docs/stage7-housekeeping` review (Entry 72). (PR #40, 2026-10-20)
+- [x] D38: record written confirmation (approval of the `docs/stage7-housekeeping` PR) and update
+  its register status (Entry 72). (PR #40, 2026-10-20)
 - [x] Write the baseline grid and scaling in `configs/` before Stage 7 training (D37): `configs/baseline.yaml` (Entry 54).
-- [ ] Human review of `feat/stage7-baseline-code` (B1–B2) after D37 approval (Entry 54).
+- [x] Human review of `feat/stage7-baseline-code` (B1–B2) after D37 approval (Entry 54): merged as PR #31.
+- [x] Stage 7 step 1: verified MFCC cache for train/val-A/val-B (Entry 71)
+- [x] Stage 7 step 2A: baseline run orchestrator and Colab notebook (Entry 73)
+- [x] Stage 7 steps 2B–3: real cache build and baseline fit in Colab from the merged commit, then docs/results/baseline.md (Entry 73) (Entry 74)
+- [x] Stage 7 brief docs/stages/stage07-baseline.md (D32): written; teach-back by Khalil and Iheb pending (Entry 74) (teach-back face to face, Entry 75)
 
 **Stage 10 risk policy (Entry 33)**
 - [x] Human review of `feat/stage10-risk-policy` (R1–R2); CI green on Python 3.13: merged as PR #17.
@@ -1287,6 +2128,8 @@ and create the feature branch before committing. No commit or push performed by 
 - [x] Human review of `feat/stage11-run-registry`; CI green on Python 3.13: merged as PR #18.
 - [ ] Stage 11: record the registry SHA-256 and line count right after the run (project-log entry
   and results PR).
+- [ ] Stage 11 stores per-clip path, group, raw score, calibrated p and prediction for the FoR test split (required by H7, Entry 72)
+- [ ] Report H1 as pre-registered even if both models are near 0% EER in-domain (results/baseline.md)
 
 **Stage 12 ModelBundle (Entry 35)**
 - [x] Human review of `feat/stage12-bundle-format`; CI green on Python 3.13: merged as PR #19.
@@ -1297,9 +2140,14 @@ and create the feature branch before committing. No commit or push performed by 
 
 **Stage briefs (D32, Entry 37)**
 - [x] Team review of `docs/stage6-stage-briefs` (approves D32): approved by all three, 2026-10-18.
-- [ ] Write stage briefs 00–03 (Donia). 00–01 accepted (merged as PR #25 after teach-back review);
-  02–03 merged in `3ecb979` (Entry 47); confirm teach-back completion separately.
-- [ ] Write stage briefs 04–05 (Malak).
+- [x] Write stage briefs 00–03 (Donia). 00–01 accepted (merged as PR #25 after teach-back review);
+  02–03 merged in `3ecb979` (Entry 47); confirm teach-back completion separately. (02–03 accepted, PR #40)
+- [x] Prepare stage briefs 04–06 on the docs branch (Entries 68–69).
+- [x] Open one regular review PR containing briefs 04–06 on `docs/stage4-6-briefs-malak`.
+- [x] Donia completes the D32 teach-back and accepts each brief before the stage index marks them accepted.
+  (04–06 accepted, PR #37; Entry 72)
+- [x] Briefs 02–03: written confirmation of the reported teach-backs (Khalil; Iheb, Malak, Khalil)
+  via approval of the `docs/stage7-housekeeping` PR, then mark them accepted (Entry 72). (PR #40, 2026-10-20)
 
 **Notebook (ported to the repo, `f8af88a`; pins and guards added in Entry 7)**
 - [x] Cell 1: real `REPO_URL`; clone with `-b <branch>`; print Python version and commit hash; capture and print the `pytest` output.
@@ -1350,7 +2198,9 @@ and create the feature branch before committing. No commit or push performed by 
 - [x] Stage 2: threat model §14 sign-off (Malak PR #3, Iheb PR #4). §13 open questions still open (see Stage 2 gate).
 - [x] Assign the three tracks (0.9): done via D26 (parts A–E with owners, Entry 18).
 - [ ] Confirm compute per person (0.7), set the weekly sync + channel (0.8).
-- [ ] Set up W&B (0.6) before Stage 8.
+- [x] Set up W&B (0.6) before Stage 8: project and key handling (`.env`) before the first Stage 8
+  run (D40, Entry 72). (W&B project and key handling set up, Entry 76; Colab Secrets with the first
+  Stage 8 notebook)
 - [x] Agree the PR merge order: `stage-0-git-workflow` → `stage-1-audit-run` → `stage-2-threat-model` (merged; Entry 14).
 
 **Execution Plan phases (from the Entry 12 comparison)**
@@ -1365,6 +2215,21 @@ and create the feature branch before committing. No commit or push performed by 
 - [ ] Threat model §13 Q2: access control (below).
 - [ ] Decide the access-control mechanism (SRS §7.4) before the API stage (Stage 17), at the latest. The oracle-abuse residual risk (threat model §10.1) depends on it.
 
+**Stage 8 CNN training**
+- [ ] Stage 8 brief docs/stages/stage08-cnn-training.md (D32) when the stage closes
+- [x] Approve D42 (team) before any CNN code (Entry 76) (PR #44, 2026-10-24)
+- [x] Stage 8 PR A: verified log-Mel cache for train/val-A/val-B (Entry 77)
+- [x] Stage 8 PR B1: dependencies and CI, CNN, normalization, determinism, checkpoint (Entry 79)
+- [x] Stage 8 PR B2: training loop with early stopping, W&B allow-list wrapper, configs/cnn.yaml with drift guard, search orchestrator (D30 tie rule, seeds 1–2, select_bundle_seed); record the real GPU peak memory (D42 BatchNorm correction, Entry 79) (Entry 80)
+- [ ] Stage 8 PR C: Colab notebook 04 (Drive first, clean detached checkout, torch 2.11.0 asserted, W&B key from Colab Secrets, WANDB_DIR outside the repo, log-Mel caches built twice and byte-compared, D30 search on GPU, checkpoints to Drive checkpoints/cnn/ only, real peak GPU memory recorded) — written, in review (Entry 81)
+- [ ] Stage 8 official Colab run of notebook 04 from the PR C merge commit
+- [ ] Stage 8 PR D: commit the reviewed run evidence (reports, export manifest)
+- [ ] Check that Khalil, Iheb and Malak accepted the W&B invite with the Member role
+
+**Stage 14 robustness (D41)**
+- [x] Obtain all-four approval for D41/ADR 0010 (PR #46, 2026-10-24).
+- [ ] Implement and review the closed-purpose registry and Stage 11 per-clip scores before any Stage 11 or Stage 14 FoR test access.
+
 **Later stages (reminders)**
 - [ ] `configs/robustness.yaml` → Stage 14. `docker-compose.yml` → Stage 17.
 - [ ] Stage 17: verify the ModelBundle checkpoint hash at load (threat model §10, tampering recommendation).
@@ -1374,21 +2239,61 @@ and create the feature branch before committing. No commit or push performed by 
 
 ---
 
-## Current status — updated 2026-10-18
+## Current status — updated 2026-10-24
+
+**Status:** Stage 8 PR C (Colab notebook) in review; next: official Colab run, then PR D.
 
 **What was done:**
-- Prepared synthetic clustered EER/AUC checks with invalid-resample count oracles (Entry 57); human review pending.
+<<- **Stage 8 PR C, Colab notebook 04** on `feat/stage8-colab-notebook` (Entry 81): official runner
+  for the caches and the D30 search, with a static test; not yet run in Colab.
+- **Stage 8 PR B2, CNN training loop, W&B allow-list and D30 search** on
+  `feat/stage8-cnn-training` (Entry 80): `configs/cnn.yaml` with drift guard, D42 early stopping,
+  allow-list W&B logger, search orchestrator; synthetic tests only, no real training run.
+- **Stage 8 PR B1, CNN foundations** on `feat/stage8-cnn-foundations` (Entry 79): torch dependencies
+  and CI, D42 CNN, train-only normalization, `set_seed`, safetensors checkpoint; synthetic tests only.
+- **Stage 8 PR A, verified log-Mel cache** on `feat/stage8-logmel-cache` (Entry 77): train/val-A/val-B
+  only, bound to F3 and F2; synthetic tests only, no real features built.
+- Stage 8 preparation (Entry 76): D42 (CNN design and training details) approved (PR #44); W&B project
+  and key handling set up (D40), invites pending.
+- Stage 7 closed (Entry 75): brief accepted after the D32 teach-back by Khalil and Iheb; Stages 8–9 current.
+- **Stage 7 steps 2B–3, official baseline evidence and validation results** on
+  `docs/stage7-baseline-results` (Entry 74): run from `297c352` with byte-identical reruns; C 10,
+  γ 0.1; val-A EER 0.149%, val-B EER 0.0 (validation only); interpreted as an in-domain upper bound
+  with possible shortcuts [hypothesis] in `docs/results/baseline.md`.
+- **Stage 6 is complete; Stage 7 is current** (Entry 72): PR #37 merged at `7538a1d`; briefs 04–06
+  accepted after Donia's D32 teach-back (with AI assistance). D40 (W&B from Stage 8) approved and H7
+  (silence shortcut, Stage 16) pre-registered (PR #40). Donia's Colab
+  environment check at `bf8096c`: Python 3.13.16, scikit-learn 1.9.1, 366 tests passed.
+- Prepared synthetic clustered EER/AUC checks with invalid-resample count oracles (Entry 83); human review pending.
 - Added the D35 per-window preprocessing integration-test requirement (Entry 55); implementation pending.
+- **D36 approved** (ADR 0009, Entry 58): the baseline is scored with the CNN in the single external
+  run, so RQ2 can be answered externally (PR #29, 2026-10-19).
+- **PR #27 merged** as `3dc20b7`: synthetic reporting tests (Entries 51–52).
 - **Synthetic integration tests prepared:** eight invented speakers and 14,960 windows (Entry 51); no real predictions.
 - **PR #21 merged** as `65ce1d2`; its documentation is in main.
 - **PR #23 merged** as `3f2f4bb`: per-speaker helper and tests (Entries 42–44).
 - **PR #24 merged** as `6786c12`: speaker-average helper and tests (Entries 45–46).
-- **PR #26 merged** as `72a9646`; D33–D35 remain proposed. ADR 0007 includes Donia's requested corrections (Entries 48–49); confirmation and team decisions remain pending.
+- **PR #26 merged** as `72a9646`; D33–D36 were approved by all four after PR #29 (Entry 58, 2026-10-19). ADR 0007/0009 implementation remains required before Stage 13.
 - **Lab 6 closeout in progress:** factual report sections and PR #21 CI evidence are documented (Entry 40); Donia's reported test is now recorded (Entry 41); her extension version, Iheb's answer and human verification/review remain pending.
 - **Stages 0–3 and Part A are complete.** Protocol v1.0 is frozen as F1 (PR #10).
 - **Stage 4 is complete** (Entry 28): PR #12 merged as `865faf4`.
 - **Stage 5 is complete and F2 is effective**: Donia approved PR #15, merged as `89b37fc`; D28 is
   approved (Entry 36).
+- **Stage 6 implementation `fdfa14f`, manual-transfer correction `34e826b`, current-main merges
+  `c713111`/`532877d` and padding-shortcut correction `becc52b` are pushed** (Entries 59–63).
+- **The first official FoR candidate exposed a D18 failure** despite byte-identical outputs and a
+  successful no-training benchmark (Entry 64). Malak approved the 7.6 kHz Nyquist-edge correction;
+  the diagnostic ZIP was not retained.
+- **Correction commit `6e17185` is pushed and verified against current main** (Entry 65).
+- **Official FoR evidence passed every recorded gate and was merged in PR #34** at `4707476` after
+  reviewer approval (Entries 66–67). The evidence records batch size 256 in D39 and
+  `configs/cnn.yaml`, plus the retained FAKE_other silence-AUC review flag.
+- **Stage 6 evidence and current-main documentation corrections are merged** (PR #34): D38 remains
+  the React decision and Stage 6 is D39. History entries 59–67 include the disclosed duplicate 59;
+  Entry 70 records the correction and restored Entry 38 spacing. The corrected ZIP hash is recorded,
+  and the first-run diagnostic archive is noted as not retained. Donia and Iheb approved PR #34;
+  D39/F3 and the Stage 6 D32 brief/teach-back are complete.
+- **Stage 7 is closed** after PR #43; its evidence and accepted D32 brief are recorded in Entries 74–75.
 - **Stage 7 evaluation harness, steps 1–5, is merged** as PR #13 (Entry 31).
 - **Protocol clarifications D29–D31 are merged** as PR #16 (Entry 32).
 - **Stage 10 risk policy, steps R1–R2, is merged** as PR #17 (Entry 33).
@@ -1404,6 +2309,11 @@ and create the feature branch before committing. No commit or push performed by 
 - **D37 recorded on main** (Entry 53): baseline grid, train-only scaling and score; Entry 53 records team approval.
 - **Stage 7 baseline code, steps B1–B2** on `feat/stage7-baseline-code` (Entry 54): scorer,
   non-pickle deterministic artifact, D37 fitting and `configs/baseline.yaml`; synthetic tests only.
+- **Stage 7 step 1, verified MFCC cache** on `feat/stage7-baseline-fit` (Entry 71): train/val-A/val-B
+  only, bound to F3 and F2; synthetic tests only, no real features built.
+- **Stage 7 step 2A, baseline run orchestrator and Colab notebook 03** on `feat/stage7-baseline-run`
+  (Entry 73): reports with full provenance, descriptive pre-declared subgroup report; synthetic
+  tests only, no real fit.
 
 **What we have:**
 - The approved FoR split and the F2 manifests and hash ledger (D28).
@@ -1412,8 +2322,9 @@ and create the feature branch before committing. No commit or push performed by 
   helpers for Stage 13.
 - Pre-declared rules for the baseline threshold, CNN selection and the single Stage 11 run (D29–D31),
   and baseline tuning, scaling and score (D37, Entry 53).
-- A tested MFCC/SVM baseline (`src/models/baseline.py`, `src/tuning/baseline_fit.py`), documented in
-  `docs/baseline.md`; not yet fitted on real features (waits for F3).
+- A tested MFCC/SVM baseline (`src/models/baseline.py`, `src/tuning/baseline_fit.py`); Stage 7
+  validation evidence and artifact provenance are committed in `docs/results/baseline.md` and
+  `docs/audit_evidence/stage7_baseline/`, with hash verification recorded in Entry 74.
 - A tested risk-policy fit (`src/tuning`) and core apply / save / load (`src/risk`), documented in
   `docs/risk_policy.md`; not yet fitted on real val-B scores.
 - A tested append-only run registry (`src/evaluation/run_registry.py`) that refuses a second
@@ -1421,22 +2332,24 @@ and create the feature branch before committing. No commit or push performed by 
 - A tested ModelBundle format (`src/bundle/`) whose loader verifies every part before use,
   documented in `docs/model_bundle.md`.
 - Governance rules that keep the external set metadata-only until the one guarded Stage 13 run.
-- Stage briefs (`docs/stages/`, D32): 00–01 accepted, 02–03 merged; teach-back completion tracked separately.
+- Corrected Stage 6 FoR evidence under `docs/audit_evidence/stage6_preprocessing/`: exact profile,
+  deterministic validation, shortcut/padding screens, D18 invariance and no-training T4 benchmark.
+- Stage briefs (`docs/stages/`, D32): 00–07 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), and 07 (PR #43).
 
 **Branches:**
-- Local `main`: `638339b`, including merged PR #32 and baseline B1–B2.
-- Next branch: `chore/stage13-discrimination-ci-tests`; create before committing Entry 57.
-- PRs #26, #27 and #32 are merged. D33–D35 acceptance tracking remains separate.
+<<- `origin/main`: at `fa6190a` (PR B1 merged as #47, PR B2 as #48).
+- `feat/stage8-colab-notebook`: Stage 8 PR C (Entry 81), in review.
+- PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
+  prerequisite before Stage 13.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
 
 **What's next:**
-1. Review proposed D33–D35; record explicit decisions before implementation or the external run.
-   Briefs 02–03 are now merged; track teach-back review separately. Malak writes briefs 04–05.
-2. **Stage 6 is current (waiting for F3):** Malak is on preprocessing profile v1 + tests + compute
-   benchmark, on a separate branch.
-3. Before Stage 13, record approved decisions for the file-level view, speaker-average undefined
-   values and governance allowlist. Verify the scikit-learn Colab install.
-4. Baseline B1–B2 and the D37 configuration are in main; real fitting still waits for F3.
-5. Then run the real Part C work on the frozen F3 preprocessing profile.
+1. D33–D36 are approved; ADR 0007/0009 implementation (runner, both artifacts verified before any audio read) is required before Stage 13.
+   Briefs 00–06 are accepted.
+2. Before Stage 13, implement the approved file-level view, speaker-average convention and guarded
+   runner; resolve the external-run governance allowlist.
+3. Stage 7 is closed (PR #43); Stages 8–9 are current: Stage 8 PR C (Colab notebook) in review; next: official Colab run, then PR D. Preserve the recorded validation-only scope of Entry 74.
+4. D41 and ADR 0010 are approved in PR #46. Implement and review the closed-purpose registry and Stage 11 per-clip score storage before any FoR test access for the Stage 14 comparison.
+5. Then run the real Part C work on the frozen F3 preprocessing profile; the W&B project is set up (entity `voice-spoofing-detection-must`, project `voice-spoofing-detection`, D40), and teammates' Member invites are pending (see Open items).
