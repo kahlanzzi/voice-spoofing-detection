@@ -18,6 +18,8 @@ ALLOWED = (
     "src/audit/",
     "configs/audit.yaml",
     "notebooks/01_stage1_dataset_audit.ipynb",
+    "src/evaluation/external_run.py",
+    "configs/external_run.yaml",
     "docs/",
     "tests/",
     "data/README.md",  # documents the Drive layout; no code
@@ -90,6 +92,8 @@ def test_guard_catches_planted_violation(tmp_path):
 def test_allowed_prefixes_do_not_leak():
     assert is_allowed("src/audit/common.py")
     assert is_allowed("configs/audit.yaml")
+    assert is_allowed("src/evaluation/external_run.py")
+    assert is_allowed("configs/external_run.yaml")
     assert not is_allowed("configs/audit_v2.yaml")
     assert not is_allowed("src/auditing/x.py")
     assert not is_allowed("notebooks/02_stage8_training.ipynb")

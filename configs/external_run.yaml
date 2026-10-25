@@ -1,0 +1,9 @@
+# Stage 13 guarded-run template (D35). Paths are supplied by the reviewed runner invocation;
+# this template contains no dataset or checkpoint and does not authorize an external run.
+schema_version: 1
+dataset: "DEEP-VOICE"
+registry_path: "<durable registry path>"
+results_path: "<durable stored-score path>"
+bundle_path: "<frozen ModelBundle directory>"
+manifest_path: "<pinned external manifest>"
+profile_path: "configs/preprocessing.yaml"

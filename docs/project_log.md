@@ -2009,16 +2009,33 @@ entry-number collisions; PR #50 currently reserves Entry 82. No real data was ac
 **Gate:** Human review and CI pending → WAITING FOR APPROVAL. Stage 13 remains incomplete.
 
 ---
+### Entry 84 — D35 per-window preprocessing integration test (2026-10-25)
+
+**Owner:** Khalil Dridi. **AI assistance:** Codex drafted the small window runner primitive and
+synthetic integration test; human review is still required.
+**Scope [doc]:** The approved D35 requirement that each complete 2 s window calls the shared frozen
+Stage 6 preprocessing function separately. The test uses three invented silence patterns, a fake
+scorer, and a short remainder; it does not load audio, a checkpoint or an external dataset.
+**Work:** Added `src/evaluation/external_run.py` with protocol-window splitting, per-window
+preprocessing, filter accounting and a path-driven config loader. Added `configs/external_run.yaml`
+as the reviewed runner template and an exact governance allowlist entry.
+**Evidence [verified]:** Python byte-compilation, `git diff --check`, and targeted D35/governance tests
+passed (5 passed in 0.52s) using the project's Python 3.13.16 environment. The full 592-test
+suite was not completed in this session; CI must run the complete suite before merge.
+**Gate:** Human review, CI and the remaining durable bundle/registry guards are still required before
+any external run → WAITING FOR APPROVAL.
+
+---
 ## Open items
 
-- [ ] Review synthetic clustered discrimination tests and obtain CI (Entry 83).
+- [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83); merged as PR #33.
 **Part C: external comparison (Entry 58)**
 - [x] Approve D36 (all four) before F4. (PR #29, 2026-10-19)
 - [x] Iheb to accept or revise D33–D35 (and D36) in the review of this PR; when all four have
   accepted, set D33–D35 to Approved (Entry 58). (PR #29, 2026-10-19)
 
 **Khalil: Stage 13 preparation**
-- [ ] Implement the D35 per-window frozen preprocessing integration test (Entry 55).
+- [x] Implement the D35 per-window frozen preprocessing integration test (Entry 84); full durable runner guards remain open.
 - [x] Rename synthetic-test branch to the D23-compliant `chore/stage13-synthetic-reporting`.
 - [ ] Complete PR #27 integration, retarget to main, and review updated synthetic tests (Entry 51).
 - [x] PR #26 merged as `72a9646`; explicit D33–D35 decision confirmations remain pending.
@@ -2239,7 +2256,7 @@ entry-number collisions; PR #50 currently reserves Entry 82. No real data was ac
 
 ---
 
-## Current status — updated 2026-10-24
+## Current status — updated 2026-10-25
 
 **Status:** Stage 8 PR C (Colab notebook) in review; next: official Colab run, then PR D.
 
@@ -2265,7 +2282,7 @@ entry-number collisions; PR #50 currently reserves Entry 82. No real data was ac
   (silence shortcut, Stage 16) pre-registered (PR #40). Donia's Colab
   environment check at `bf8096c`: Python 3.13.16, scikit-learn 1.9.1, 366 tests passed.
 - Prepared synthetic clustered EER/AUC checks with invalid-resample count oracles (Entry 83); human review pending.
-- Added the D35 per-window preprocessing integration-test requirement (Entry 55); implementation pending.
+- Added the D35 per-window preprocessing integration test (Entry 84); the durable bundle/registry runner guards remain pending.
 - **D36 approved** (ADR 0009, Entry 58): the baseline is scored with the CNN in the single external
   run, so RQ2 can be answered externally (PR #29, 2026-10-19).
 - **PR #27 merged** as `3dc20b7`: synthetic reporting tests (Entries 51–52).
@@ -2339,6 +2356,7 @@ entry-number collisions; PR #50 currently reserves Entry 82. No real data was ac
 **Branches:**
 <<- `origin/main`: at `fa6190a` (PR B1 merged as #47, PR B2 as #48).
 - `feat/stage8-colab-notebook`: Stage 8 PR C (Entry 81), in review.
+- `feat/stage13-window-runner`: D35 synthetic integration test (Entry 84), in review.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 

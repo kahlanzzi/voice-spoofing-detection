@@ -95,7 +95,7 @@ violate the external-test rule.
 
 Propose only these two new exact entries in the governance test's `ALLOWED` tuple:
 
-| Proposed file (not implemented by this PR) | Purpose |
+| Implementation file | Purpose |
 |---|---|
 | `src/evaluation/external_run.py` | Sole Stage 13 orchestration entry point for manifest-driven, guarded scoring and saved output |
 | `configs/external_run.yaml` | Configuration consumed by that entry point; paths supplied through config/CLI, no secrets |
@@ -105,9 +105,9 @@ Keep existing allowed entries. Do not add directory prefixes such as `src/evalua
 exception is proposed. If implementation needs a different or additional path, return for
 an explicit decision amendment before changing the allowlist.
 
-Approval of names is not authorization to execute. A later reviewed implementation PR must
-add the exact entries and synthetic tests proving lookalike paths and unrelated loaders
-are rejected. It must also demonstrate, using dummy files and a fake scorer:
+Approval of names is not authorization to execute. This implementation adds the exact entries and
+synthetic tests proving lookalike paths and unrelated loaders are rejected. The complete reviewed
+runner must also demonstrate, using dummy files and a fake scorer:
 
 1. Verify the approved frozen bundle, profile/policy versions and pinned manifest/hash ledger
    before any audio decoder or model call. Refuse mismatches and incomplete prerequisites.
@@ -133,7 +133,8 @@ are rejected. It must also demonstrate, using dummy files and a fake scorer:
    each scorer input with a direct call on that individual window. Choose fixtures that
    fail if trimming/padding is done before splitting, and check the frozen padding convention
    and protocol's short-remainder rule. Use the final F3 API; do not duplicate preprocessing
-   logic or access external audio. This test is required implementation work, not yet built.
+   logic or access external audio. This per-window test is implemented here; the durable runner
+   guards and actual external execution remain separate reviewed work.
 
 Reusing the Stage 11 registry requires inspection and tests: its model-set key must not
 be used for the external guard, whose uniqueness scope is the dataset across all model sets. The current governance
