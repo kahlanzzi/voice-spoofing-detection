@@ -2047,6 +2047,10 @@ basename; test-file basenames must stay unique across `tests/` (none are duplica
 uninstalling packages) would make the official run differ from the reviewed commit; the official run
 must equal the reviewed commit.
 
+**Integration:** updated against main after PR #33 (Entry 83) merged; resolved conflicts in the living
+sections only, removed stray `<<` prefixes from two living lines that came with #33, and updated its
+stale status lines. Entry 83 is unchanged.
+
 **Decisions:** no new decision (next D-ID stays D43). The official re-run uses this PR's merge commit
 as `COMMIT`.
 
@@ -2064,8 +2068,27 @@ and the Colab run. Entry 81 is unchanged because it is merged.
 
 ---
 
+### Entry 83 — Synthetic clustered discrimination checks (2026-10-18)
+
+**Numbering:** renumbered from provisional Entry 57 after updating this branch against current
+main. At this update, main contains Entries 1–81 and open PR #50 reserves Entry 82, so
+this entry uses the next free number.
+
+**Owner:** Khalil Dridi. **AI assistance:** Codex prepared synthetic tests and documentation.
+**Scope [doc]:** Existing D4/D11 pooled EER and ROC-AUC; no D33–D35 acceptance or access change.
+**Work:** Two cases use eight invented unequal-size, single-class speaker groups and tied
+scores. Independent two-score ROC/count oracles verify point estimates, percentile bounds and
+exact invalid-resample counts, with 2,000 whole-speaker draws and seed 2026.
+**Evidence [verified]:** Candidate tests: 2 passed in 3.91s. Existing full suite plus
+candidate tests: 368 passed in 13.71s; no dataset/audio/model access.
+**Integration:** Updated with current main before merge preparation. Open PRs were checked for
+entry-number collisions; PR #50 currently reserves Entry 82. No real data was accessed.
+**Gate:** Human review and CI pending → WAITING FOR APPROVAL. Stage 13 remains incomplete.
+
+---
 ## Open items
 
+- [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
 **Part C: external comparison (Entry 58)**
 - [x] Approve D36 (all four) before F4. (PR #29, 2026-10-19)
 - [x] Iheb to accept or revise D33–D35 (and D36) in the review of this PR; when all four have
@@ -2321,6 +2344,7 @@ and the Colab run. Entry 81 is unchanged because it is merged.
   accepted after Donia's D32 teach-back (with AI assistance). D40 (W&B from Stage 8) approved and H7
   (silence shortcut, Stage 16) pre-registered (PR #40). Donia's Colab
   environment check at `bf8096c`: Python 3.13.16, scikit-learn 1.9.1, 366 tests passed.
+- Prepared synthetic clustered EER/AUC checks with invalid-resample count oracles (Entry 83); merged as PR #33 (`6d84d8b`).
 - Added the D35 per-window preprocessing integration-test requirement (Entry 55); implementation pending.
 - **D36 approved** (ADR 0009, Entry 58): the baseline is scored with the CNN in the single external
   run, so RQ2 can be answered externally (PR #29, 2026-10-19).
@@ -2393,7 +2417,7 @@ and the Colab run. Entry 81 is unchanged because it is merged.
 - Stage briefs (`docs/stages/`, D32): 00–07 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), and 07 (PR #43).
 
 **Branches:**
-- `origin/main`: at `0d88844` (PR B1 merged as #47, PR B2 as #48, PR C as #49).
+- `origin/main`: at `6d84d8b` (PR B1 merged as #47, PR B2 as #48, PR C as #49, PR #33 as `6d84d8b`).
 - `fix/stage8-tests-shadowing`: tests shadowing fix (Entry 82), in review.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.

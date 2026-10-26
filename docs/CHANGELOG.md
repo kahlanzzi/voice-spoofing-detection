@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Synthetic clustered EER/ROC-AUC integration tests with count-based oracles and exact invalid-resample accounting (D4/D11).
 - Stage 8 PR C: Colab notebook 04 for the official CNN run (Drive only, full-SHA clean checkout, torch 2.11.0 and Python 3.13 asserted, JUnit skip check, train/val-A log-Mel caches built twice and compared, one D30 search, W&B key loaded last, hashed Drive export re-verified after remount) and its static test `tests/governance/test_notebook_04_stage8.py`.
 - Stage 8 PR B2: `configs/cnn.yaml` (exactly D30 + D42) with a strict drift guard, `train_one` with D42 early stopping on val-A, an allow-list W&B logger, and the D30 search orchestrator (4 runs, tie rule, seeds 1–2, bundle seed, checkpoints and provenance reports); design note `docs/cnn_training.md`.
 - Stage 8 PR B1: torch dependencies and CI (`requirements-cnn.txt`, CPU torch in CI, torch tests fail instead of skipping), D42 CNN, train-only per-Mel-bin normalization, `set_seed`, and a non-pickle safetensors checkpoint with strict JSON and `checkpoint_sha256`; design note `docs/cnn.md`.
