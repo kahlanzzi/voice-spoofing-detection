@@ -2009,6 +2009,25 @@ entry-number collisions; PR #50 currently reserves Entry 82. No real data was ac
 **Gate:** Human review and CI pending → WAITING FOR APPROVAL. Stage 13 remains incomplete.
 
 ---
+
+### Entry 84 — Analyst console prototype added as design reference (2026-10-26)
+
+**What:** on `docs/stage18-ui-prototype` (Iheb), `docs/design/analyst-console-prototype.html` and its
+README: the clickable prototype of the D38 interface (sign-in, Analyze, History, Analysis details,
+Overview, System status; all three outcomes; loading, empty, validation and service-error states).
+Mock data only; not production code. Open decisions are shown as placeholders. API needs beyond §11
+(limits, stats, status, paginated history, notes) are listed for Stage 17 design review.
+
+**Evidence [verified]:** 31 automated browser checks (Playwright, Chromium) passed on this exact
+file, no console errors; SHA-256 `c0bb033e78731cc564721a7fb8e0fce1bc601a773c9f7ad0bc02a4f1c895b351`.
+`python -m pytest -q` passes on the branch.
+
+**AI assistance:** **Claude** (claude.ai chat) built the prototype and ran the browser checks; Iheb
+reviewed it.
+
+**Gate:** review of this PR. AI agents do not merge.
+
+---
 ## Open items
 
 - [ ] Review synthetic clustered discrimination tests and obtain CI (Entry 83).

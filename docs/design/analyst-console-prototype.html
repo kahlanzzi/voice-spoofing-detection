@@ -1,0 +1,1072 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Voice Check analyst console</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: operations console. Navy side rail with the primary "New analysis" action,
+   one work column (max 1120px). Analyze first, History second, Overview and Status after. */
+:root {
+  --bg: #F2F4F8; --surface: #FFFFFF; --surface-2: #F7F9FC; --line: #DAE0E8; --line-strong: #B4BFCC;
+  --ink: #132033; --ink-2: #364457; --muted: #576476;
+  --nav: #13233A; --nav-2: #1C3050; --nav-ink: #E2E9F2; --nav-muted: #A3B2C6; --nav-line: #2A3F5F;
+  --accent: #1F49B6; --accent-hover: #193C97; --accent-ink: #FFFFFF; --accent-soft: #E7EDFB; --link: #1F49B6;
+  --danger: #A8231A; --danger-soft: #FBEAE8;
+  --syn-bg: #FBE9E4; --syn-fg: #872A13; --syn-mark: #B23A1C;
+  --unc-bg: #FCF1D7; --unc-fg: #694200; --unc-mark: #D08A0C;
+  --auth-bg: #E1F0F5; --auth-fg: #0A4C62; --auth-mark: #0A7FA3;
+  --ok-bg: #E3F2E8; --ok-fg: #1D6A3D; --warn-bg: #FCF1D7; --warn-fg: #694200; --err-bg: #FBE8E8; --err-fg: #9A1C1C;
+  --demo-bg: #FFE6A6; --demo-fg: #3A2900;
+  --shadow: 0 1px 2px rgba(19,32,51,.05), 0 6px 20px rgba(19,32,51,.07);
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r-sm: 6px; --r-md: 10px; --r-lg: 14px;
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0D1522; --surface: #142033; --surface-2: #19283E; --line: #283A54; --line-strong: #3A5070;
+  --ink: #E5ECF5; --ink-2: #C3CEDC; --muted: #9AA9BC;
+  --nav: #0A111C; --nav-2: #162741; --nav-ink: #E2E9F2; --nav-muted: #94A5BB; --nav-line: #22344F;
+  --accent: #3460D6; --accent-hover: #4570E3; --accent-ink: #FFFFFF; --accent-soft: #1A2B4D; --link: #9DB6FF;
+  --danger: #F2958B; --danger-soft: #3A1714;
+  --syn-bg: #3A1A12; --syn-fg: #F5BBA8; --syn-mark: #E0674A;
+  --unc-bg: #382A0D; --unc-fg: #F3D08A; --unc-mark: #E3A32C;
+  --auth-bg: #0F2D39; --auth-fg: #98D5EA; --auth-mark: #3BAFD3;
+  --ok-bg: #11301E; --ok-fg: #94D8AC; --warn-bg: #382A0D; --warn-fg: #F3D08A; --err-bg: #3A1616; --err-fg: #F5A9A9;
+  --demo-bg: #4A3A0B; --demo-fg: #FFE7A8;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0D1522; --surface: #142033; --surface-2: #19283E; --line: #283A54; --line-strong: #3A5070;
+  --ink: #E5ECF5; --ink-2: #C3CEDC; --muted: #9AA9BC;
+  --nav: #0A111C; --nav-2: #162741; --nav-ink: #E2E9F2; --nav-muted: #94A5BB; --nav-line: #22344F;
+  --accent: #3460D6; --accent-hover: #4570E3; --accent-ink: #FFFFFF; --accent-soft: #1A2B4D; --link: #9DB6FF;
+  --danger: #F2958B; --danger-soft: #3A1714;
+  --syn-bg: #3A1A12; --syn-fg: #F5BBA8; --syn-mark: #E0674A;
+  --unc-bg: #382A0D; --unc-fg: #F3D08A; --unc-mark: #E3A32C;
+  --auth-bg: #0F2D39; --auth-fg: #98D5EA; --auth-mark: #3BAFD3;
+  --ok-bg: #11301E; --ok-fg: #94D8AC; --warn-bg: #382A0D; --warn-fg: #F3D08A; --err-bg: #3A1616; --err-fg: #F5A9A9;
+  --demo-bg: #4A3A0B; --demo-fg: #FFE7A8;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-sans); font-size: 15px; line-height: 1.5; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--demo-bg); }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+p { margin: 0; }
+a { color: var(--link); }
+button, input, textarea, select { font: inherit; color: inherit; }
+::selection { background: var(--accent-soft); color: var(--ink); }
+:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+.mono { font-family: var(--font-mono); }
+.num { font-variant-numeric: tabular-nums; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+
+/* Demo banner */
+.demo { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--demo-bg); color: var(--demo-fg);
+  padding-block: 6px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; align-items: center; justify-content: center; gap: 8px 16px; flex-wrap: wrap; font-size: 13px; font-weight: 600; }
+.demo button { min-height: 32px; padding: 0 12px; border-radius: var(--r-sm); border: 1px solid currentColor; background: transparent; cursor: pointer; font-weight: 600; font-size: 13px; }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 18px; border-radius: var(--r-sm);
+  border: 1px solid transparent; font-weight: 600; font-size: 15px; cursor: pointer; text-decoration: none; white-space: nowrap;
+  transition: background-color 150ms ease-out, border-color 150ms ease-out; }
+.btn svg { flex: none; }
+.btn-primary { background: var(--accent); color: var(--accent-ink); }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-secondary { background: var(--surface); color: var(--link); border-color: var(--link); }
+.btn-secondary:hover { background: var(--accent-soft); }
+.btn-quiet { background: transparent; color: var(--ink); border-color: var(--line-strong); }
+.btn-quiet:hover { background: var(--surface-2); }
+.btn-danger { background: transparent; color: var(--danger); border-color: var(--danger); }
+.btn-danger:hover { background: var(--danger-soft); }
+.btn-sm { min-height: 36px; padding: 0 12px; font-size: 14px; }
+.btn[disabled], .btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
+.btn-link { background: none; border: none; color: var(--link); padding: 0; min-height: 32px; cursor: pointer; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
+/* Shell */
+.shell { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: calc(100vh - 44px); }
+.rail { background: var(--nav); color: var(--nav-ink); padding: 20px 14px; display: flex; flex-direction: column; gap: 20px; }
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 6px; }
+.brand-mark { width: 34px; height: 34px; border-radius: 9px; background: var(--nav-ink); color: var(--nav); display: grid; place-items: center; flex: none; }
+.brand-name { font-weight: 700; font-size: 16px; color: #FFFFFF; }
+.brand-sub { font-size: 12px; color: var(--nav-muted); }
+.rail .btn-primary { width: 100%; }
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.nav-label { font-size: 12px; color: var(--nav-muted); padding: 0 10px 6px; letter-spacing: .04em; text-transform: uppercase; font-weight: 600; }
+.nav a { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 0 10px; border-radius: var(--r-sm); color: var(--nav-ink); text-decoration: none; font-size: 15px; }
+.nav a:hover { background: var(--nav-2); }
+.nav a[aria-current="page"] { background: var(--nav-2); color: #FFFFFF; font-weight: 600; box-shadow: inset 3px 0 0 #8FB0FF; }
+.rail-foot { margin-top: auto; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid var(--nav-line); padding-top: 14px; }
+.svc { display: flex; flex-direction: column; gap: 6px; font-size: 13px; padding: 0 6px; }
+.svc-row { display: flex; align-items: center; gap: 8px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.dot-ok { background: #3DBB6F; } .dot-warn { background: #E3A32C; } .dot-err { background: #E5574A; }
+.who { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 6px; }
+.who-name { font-size: 14px; font-weight: 600; color: #FFFFFF; }
+.who-role { font-size: 12px; color: var(--nav-muted); }
+.rail .btn-out { min-height: 36px; padding: 0 10px; background: transparent; color: var(--nav-ink); border: 1px solid var(--nav-line); border-radius: var(--r-sm); cursor: pointer; font-size: 13px; }
+.rail .btn-out:hover { background: var(--nav-2); }
+.topbar { display: none; }
+
+.main { min-width: 0; padding-block: 28px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 16px; display: flex; flex-direction: column; gap: 20px; }
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; }
+.page-head h1 { font-size: 26px; line-height: 1.2; font-weight: 700; letter-spacing: -.01em; }
+.page-head h1:focus { outline: none; }
+.page-sub { color: var(--muted); font-size: 14px; margin-top: 2px; }
+.crumb { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+.notice { display: flex; gap: 10px; align-items: flex-start; background: var(--accent-soft); color: var(--ink); border-radius: var(--r-md); padding: 10px 14px; font-size: 14px; }
+.notice svg { flex: none; margin-top: 2px; color: var(--link); }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); }
+.panel-pad { padding: 20px 24px; }
+.panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.panel h2 { font-size: 17px; font-weight: 600; }
+.panel h3 { font-size: 15px; font-weight: 600; }
+.tag { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); white-space: nowrap; }
+.tag-demo { background: var(--demo-bg); color: var(--demo-fg); border-color: transparent; }
+.grid-2 { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+
+/* Upload */
+.drop { border: 2px dashed var(--line-strong); border-radius: var(--r-lg); background: var(--surface); padding: 36px 24px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; transition: border-color 150ms ease-out, background-color 150ms ease-out; }
+.drop.over { border-color: var(--link); background: var(--accent-soft); }
+.drop-icon { width: 54px; height: 54px; border-radius: 50%; background: var(--accent-soft); color: var(--link); display: grid; place-items: center; }
+.drop h2 { font-size: 20px; }
+.limits { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; font-size: 13px; }
+.limits span { background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
+.privacy { font-size: 13px; color: var(--muted); max-width: 62ch; }
+.scenarios { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; }
+.scenario { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 10px 12px; min-height: 56px; border-radius: var(--r-md); border: 1px solid var(--line); background: var(--surface-2); cursor: pointer; }
+.scenario:hover { border-color: var(--line-strong); background: var(--surface); }
+.scenario b { font-size: 14px; font-weight: 600; }
+.scenario span { font-size: 12px; color: var(--muted); }
+
+.file { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; justify-content: space-between; }
+.file-name { font-family: var(--font-mono); font-size: 15px; font-weight: 500; overflow-wrap: anywhere; }
+.checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.checks li { display: flex; gap: 8px; align-items: flex-start; }
+.ck-ok { color: var(--ok-fg); } .ck-bad { color: var(--err-fg); } .ck-wait { color: var(--muted); }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.stages { list-style: none; margin: 0; padding: 0; display: flex; gap: 8px; flex-wrap: wrap; }
+.stage { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; font-size: 14px; border: 1px solid var(--line); background: var(--surface-2); color: var(--muted); }
+.stage.done { color: var(--ok-fg); background: var(--ok-bg); border-color: transparent; }
+.stage.now { color: var(--link); background: var(--accent-soft); border-color: var(--link); font-weight: 600; }
+.spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: spin .9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Result */
+.result { border-radius: var(--r-lg); border: 1px solid var(--line); background: var(--surface); overflow: hidden; }
+.result-top { padding: 22px 24px; display: flex; flex-direction: column; gap: 12px; border-top: 6px solid var(--mark); background: var(--tint); color: var(--tint-ink); }
+.result-top h2 { font-size: 28px; line-height: 1.2; font-weight: 700; letter-spacing: -.01em; color: var(--tint-ink); }
+.result-top h2:focus { outline: none; }
+.r-syn { --mark: var(--syn-mark); --tint: var(--syn-bg); --tint-ink: var(--syn-fg); }
+.r-unc { --mark: var(--unc-mark); --tint: var(--unc-bg); --tint-ink: var(--unc-fg); }
+.r-auth { --mark: var(--auth-mark); --tint: var(--auth-bg); --tint-ink: var(--auth-fg); }
+.meta-row { display: flex; gap: 8px 18px; flex-wrap: wrap; align-items: center; font-size: 15px; }
+.risk { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; background: var(--tint-ink); color: var(--tint); font-size: 13px; font-weight: 700; letter-spacing: .03em; }
+.result-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+.steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.explain { font-size: 14px; color: var(--ink-2); max-width: 70ch; }
+.kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 16px; font-size: 14px; margin: 0; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; overflow-wrap: anywhere; }
+.copy-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+details.more { border-top: 1px solid var(--line); padding: 14px 24px; }
+details.more summary { cursor: pointer; font-weight: 600; min-height: 28px; }
+.api-notice { padding: 12px 24px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-2); background: var(--surface-2); }
+
+/* Notes */
+.note textarea { width: 100%; min-height: 96px; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--line-strong); background: var(--surface); resize: vertical; }
+.note textarea:focus { border-color: var(--link); }
+.save-state { font-size: 13px; }
+.st-ok { color: var(--ok-fg); } .st-err { color: var(--err-fg); } .st-busy { color: var(--muted); }
+
+/* Alerts */
+.alert { border-radius: var(--r-lg); border: 1px solid var(--line); background: var(--surface); padding: 22px 24px; display: flex; flex-direction: column; gap: 12px; }
+.alert h2 { font-size: 20px; }
+.alert h2:focus { outline: none; }
+.alert-kind { font-size: 13px; font-weight: 600; display: inline-flex; gap: 6px; align-items: center; padding: 3px 10px; border-radius: 999px; align-self: flex-start; }
+.kind-input { background: var(--warn-bg); color: var(--warn-fg); }
+.kind-net { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
+.kind-svc { background: var(--err-bg); color: var(--err-fg); }
+.no-pred { font-weight: 600; }
+
+/* Forms */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 13px; font-weight: 600; }
+.input { height: 44px; padding: 0 12px; border-radius: var(--r-sm); border: 1px solid var(--line-strong); background: var(--surface); width: 100%; }
+.input:focus { border-color: var(--link); }
+.field-err { font-size: 13px; color: var(--err-fg); }
+.pw { position: relative; }
+.pw .input { padding-right: 84px; }
+.pw button { position: absolute; right: 6px; top: 6px; height: 32px; padding: 0 10px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface-2); cursor: pointer; font-size: 13px; }
+
+/* Sign-in */
+.signin { min-height: calc(100vh - 44px); display: grid; place-items: center; padding-block: 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.signin-card { width: 100%; max-width: 420px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 30px 28px; display: flex; flex-direction: column; gap: 18px; box-shadow: var(--shadow); }
+.signin-brand { display: flex; align-items: center; gap: 12px; }
+.signin-brand .brand-mark { background: var(--nav); color: #FFFFFF; }
+.or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+.or::before, .or::after { content: ""; height: 1px; background: var(--line); flex: 1; }
+.banner-err { background: var(--err-bg); color: var(--err-fg); border-radius: var(--r-sm); padding: 10px 12px; font-size: 14px; }
+
+/* History */
+.toolbar { display: flex; gap: 12px 16px; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { min-height: 38px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface); cursor: pointer; font-size: 14px; display: inline-flex; gap: 6px; align-items: center; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 600; }
+.chip .count { font-variant-numeric: tabular-nums; opacity: .8; }
+.search { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+.search .field { min-width: 230px; }
+.table-wrap { overflow-x: auto; }
+table.data { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.data th { text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--surface-2); white-space: nowrap; }
+table.data td { padding: 11px 16px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+table.data tr:last-child td { border-bottom: none; }
+table.data .r { text-align: right; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: .02em; white-space: nowrap; }
+.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.p-syn { background: var(--syn-bg); color: var(--syn-fg); } .p-unc { background: var(--unc-bg); color: var(--unc-fg); } .p-auth { background: var(--auth-bg); color: var(--auth-fg); }
+.req { font-family: var(--font-mono); font-size: 13px; overflow-wrap: anywhere; }
+.pager { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 16px; border-top: 1px solid var(--line); font-size: 14px; }
+.skel { height: 14px; border-radius: 4px; background: linear-gradient(90deg, var(--surface-2), var(--line), var(--surface-2)); background-size: 200% 100%; animation: shimmer 1.2s linear infinite; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+.state { padding: 36px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.state h2 { font-size: 17px; }
+
+/* Overview */
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.kpi { padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+.kpi .period { font-size: 12px; color: var(--muted); }
+.kpi .label { font-size: 14px; font-weight: 600; color: var(--ink-2); }
+.kpi .value { font-size: 28px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.kpi .ctx { font-size: 13px; color: var(--muted); }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 11px; height: 11px; border-radius: 2px; }
+.chart { display: flex; flex-direction: column; gap: 6px; }
+.plot { position: relative; display: flex; align-items: flex-end; gap: 14px; border-bottom: 1px solid var(--line-strong); padding-top: 22px; }
+.col { flex: 1 1 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; position: relative; border-radius: var(--r-sm); }
+.col:focus-visible { outline-offset: 4px; }
+.stack { width: 100%; max-width: 40px; display: flex; flex-direction: column; gap: 2px; }
+.stack div:first-child { border-radius: 4px 4px 0 0; }
+.tip { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); z-index: 3; background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong); border-radius: var(--r-sm); box-shadow: var(--shadow); padding: 8px 10px; font-size: 12px; white-space: nowrap; display: none; pointer-events: none; }
+.col:hover .tip, .col:focus .tip { display: block; }
+.axis { display: flex; gap: 14px; font-size: 12px; color: var(--muted); }
+.axis span { flex: 1 1 0; text-align: center; }
+.ref { position: absolute; left: 0; right: 0; border-top: 2px dashed var(--ink-2); pointer-events: none; }
+.ref-label { position: absolute; right: 0; transform: translateY(-120%); font-size: 11px; color: var(--ink-2); background: var(--surface); padding: 0 4px; }
+.above { font-size: 11px; font-weight: 700; color: var(--warn-fg); background: var(--warn-bg); border-radius: 4px; padding: 0 4px; margin-bottom: 3px; white-space: nowrap; }
+.updated { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.stale { background: var(--warn-bg); color: var(--warn-fg); border-radius: var(--r-md); padding: 10px 14px; font-size: 14px; }
+
+/* Status */
+.svc-list { display: flex; flex-direction: column; }
+.svc-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 16px; padding: 16px 24px; border-top: 1px solid var(--line); align-items: start; }
+.svc-item:first-child { border-top: none; }
+.svc-item h3 { font-size: 15px; }
+.state-pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.sp-ok { background: var(--ok-bg); color: var(--ok-fg); } .sp-warn { background: var(--warn-bg); color: var(--warn-fg); } .sp-err { background: var(--err-bg); color: var(--err-fg); }
+
+/* Dialog + toast */
+dialog { border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); color: var(--ink); padding: 0; width: min(520px, calc(100vw - 32px)); box-shadow: var(--shadow); }
+dialog::backdrop { background: rgba(10, 17, 28, .55); }
+.dlg { padding: 22px 24px; display: flex; flex-direction: column; gap: 14px; }
+.dlg h2 { font-size: 18px; }
+.ctl { display: flex; flex-direction: column; gap: 10px; }
+.ctl fieldset { border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; margin: 0; }
+.ctl legend { font-weight: 600; font-size: 13px; padding: 0 4px; }
+.ctl label { display: flex; gap: 10px; align-items: center; font-size: 14px; min-height: 32px; cursor: pointer; }
+.ctl input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); }
+.toast { position: fixed; z-index: 40; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: var(--r-md); font-size: 14px; box-shadow: var(--shadow); max-width: calc(100vw - 32px); display: flex; gap: 12px; align-items: center; }
+.toast button { background: none; border: 1px solid currentColor; color: inherit; border-radius: var(--r-sm); min-height: 30px; padding: 0 10px; cursor: pointer; }
+
+/* Responsive */
+@media (max-width: 1000px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid-2 { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 860px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .rail { position: fixed; z-index: 25; top: 0; bottom: 0; left: 0; width: min(280px, 86vw); transform: translateX(-105%); transition: transform 180ms ease-out; padding-top: calc(20px + env(safe-area-inset-top, 0px)); padding-left: max(14px, env(safe-area-inset-left, 0px)); overflow-y: auto; visibility: hidden; }
+  .rail.open { transform: none; visibility: visible; box-shadow: var(--shadow); }
+  .scrim { position: fixed; inset: 0; z-index: 24; background: rgba(10,17,28,.5); }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--nav); color: var(--nav-ink); padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .topbar .menu { min-height: 40px; padding: 0 12px; border-radius: var(--r-sm); background: transparent; border: 1px solid var(--nav-line); color: var(--nav-ink); cursor: pointer; display: inline-flex; gap: 8px; align-items: center; }
+  .topbar .btn { min-height: 40px; padding: 0 12px; font-size: 14px; }
+  .main { padding-block: 20px 48px; }
+  .wrap { padding-inline: 0; }
+}
+@media (max-width: 640px) {
+  .kpis { grid-template-columns: minmax(0, 1fr); }
+  .page-head h1 { font-size: 22px; }
+  .result-top h2 { font-size: 23px; }
+  .panel-pad, .result-top, .result-body, details.more, .api-notice, .alert { padding-left: 16px; padding-right: 16px; }
+  table.stack-sm thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  table.stack-sm, table.stack-sm tbody, table.stack-sm tr, table.stack-sm td { display: block; width: 100%; }
+  table.stack-sm tr { border-bottom: 1px solid var(--line); padding: 10px 14px; }
+  table.stack-sm td { border: none; padding: 3px 0; display: flex; justify-content: space-between; gap: 12px; text-align: right; }
+  table.stack-sm td::before { content: attr(data-label); color: var(--muted); font-size: 12px; text-align: left; }
+  table.stack-sm td.act { justify-content: flex-end; padding-top: 8px; }
+  table.stack-sm td.act::before { content: none; }
+  .plot, .axis { gap: 6px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="demo" role="region" aria-label="Prototype notice">
+  <span>Prototype · mock data and mock results · not a real analysis service</span>
+  <button type="button" id="open-controls">Prototype controls</button>
+</div>
+<div id="app"></div>
+<div id="live" class="sr" aria-live="polite"></div>
+
+<dialog id="dlg-leave" aria-labelledby="dlg-leave-h">
+  <div class="dlg">
+    <h2 id="dlg-leave-h">Leave without saving your note?</h2>
+    <p>Your analyst note has unsaved changes. If you leave now, those changes are discarded. The model result is not affected either way.</p>
+    <div class="actions">
+      <button type="button" class="btn btn-primary" id="leave-stay">Keep editing</button>
+      <button type="button" class="btn btn-danger" id="leave-go">Discard changes and leave</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="dlg-controls" aria-labelledby="dlg-controls-h">
+  <div class="dlg">
+    <h2 id="dlg-controls-h">Prototype controls</h2>
+    <p class="small muted">These switches only change the mock. They simulate states the real API can return, so each screen can be reviewed.</p>
+    <div class="ctl">
+      <fieldset><legend>Analysis</legend>
+        <label><input type="checkbox" id="c-analysisDown"> Analysis service unavailable (API still reachable)</label>
+        <label><input type="checkbox" id="c-saveFails"> Next note save fails</label>
+      </fieldset>
+      <fieldset><legend>Sign-in</legend>
+        <label><input type="checkbox" id="c-signinFails"> Next sign-in fails</label>
+      </fieldset>
+      <fieldset><legend>History</legend>
+        <label><input type="checkbox" id="c-historyError"> History cannot be retrieved</label>
+        <label><input type="checkbox" id="c-historyEmpty"> No analyses yet</label>
+      </fieldset>
+      <fieldset><legend>Overview</legend>
+        <label><input type="checkbox" id="c-overviewUnavailable"> Statistics unavailable</label>
+        <label><input type="checkbox" id="c-overviewStale"> Statistics out of date</label>
+        <label><input type="checkbox" id="c-overviewEmpty"> No analyses in the period</label>
+      </fieldset>
+    </div>
+    <details>
+      <summary class="small" style="cursor:pointer;font-weight:600">Open decisions shown as placeholders</summary>
+      <ul class="small" style="margin:8px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px">
+        <li>Access-control method (sign-in is a prototype only)</li>
+        <li>Accepted formats, maximum size and maximum duration (from the API in production)</li>
+        <li>Handling of recordings longer than 2 s</li>
+        <li>Fallback audio-retention limit</li>
+        <li>Latency target</li>
+        <li>Support contact</li>
+      </ul>
+    </details>
+    <div class="actions">
+      <button type="button" class="btn btn-primary" id="controls-close">Done</button>
+      <button type="button" class="btn btn-quiet" id="controls-reset">Reset prototype</button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- Mock data (deterministic) ---------- */
+  var DAYS = [
+    { d: '2026-10-15', a: 30, u: 3, s: 2 }, { d: '2026-10-16', a: 34, u: 4, s: 3 }, { d: '2026-10-17', a: 28, u: 5, s: 1 },
+    { d: '2026-10-18', a: 36, u: 3, s: 4 }, { d: '2026-10-19', a: 31, u: 3, s: 2 }, { d: '2026-10-20', a: 25, u: 2, s: 3 },
+    { d: '2026-10-21', a: 33, u: 4, s: 5 }
+  ];
+  var TODAY = '2026-10-21';
+  var DEFERRAL_ON_FIT = 0.094; // read from the loaded policy.json in production (mock value)
+  var VERSIONS = { model_version: 'mock-0', profile_version: 'profile-mock-0', policy_version: 'policy-mock-0', bundle: 'bundle-mock-0' };
+  var NOTICE = 'Decision support only. This result estimates whether the recording is synthetic. It does not prove fraud and does not verify identity.';
+  var LIMITS = { formats: ['wav', 'flac', 'mp3'], maxMB: 20, maxSec: 60 }; // prototype placeholders, not decided
+
+  var seed = 20261021;
+  function rnd() { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; }
+  function hex(n) { var s = ''; for (var i = 0; i < n; i++) s += '0123456789abcdef'[Math.floor(rnd() * 16)]; return s; }
+  var NOTE_TEXTS = ['Called back on the registered number; customer confirmed the request.', 'Escalated to a second approver.', 'Callback on file number: customer denied making the request.', 'Request paused until the customer visits a branch.'];
+
+  function buildRecords() {
+    var out = [];
+    DAYS.forEach(function (day) {
+      var kinds = [];
+      for (var i = 0; i < day.a; i++) kinds.push('authentic');
+      for (i = 0; i < day.u; i++) kinds.push('uncertain');
+      for (i = 0; i < day.s; i++) kinds.push('synthetic');
+      kinds.sort(function () { return rnd() - 0.5; });
+      kinds.forEach(function (k, idx) {
+        var span = day.d === TODAY ? (10 * 60 + 30 - 6 * 60) : (10 * 60);
+        var minutes = 6 * 60 + Math.floor((idx + rnd()) * span / kinds.length);
+        var t = new Date(day.d + 'T00:00:00Z'); t.setUTCMinutes(minutes);
+        var conf = k === 'uncertain' ? 0.51 + rnd() * 0.12 : 0.72 + rnd() * 0.27;
+        var note = null;
+        if (k !== 'authentic' && rnd() < 0.45) note = NOTE_TEXTS[Math.floor(rnd() * NOTE_TEXTS.length)];
+        out.push({ id: 'req_' + hex(8), time: t.toISOString(), prediction: k, confidence: Math.round(conf * 100) / 100, latency: Math.round((0.36 + rnd() * 0.14) * 100) / 100, note: note, noteAt: note ? t.toISOString() : null, mock: true });
+      });
+    });
+    out.sort(function (x, y) { return x.time < y.time ? 1 : -1; });
+    return out;
+  }
+
+  var RISK = { authentic: 'LOW', uncertain: 'MEDIUM', synthetic: 'HIGH' };
+  var LABEL = { authentic: 'Authentic', uncertain: 'Uncertain', synthetic: 'Synthetic' };
+  var CLS = { authentic: 'auth', uncertain: 'unc', synthetic: 'syn' };
+  var STEPS = {
+    synthetic: ['Do not act on the request yet.', 'Call the customer back on a number already on file.', 'Ask a second approver before the request is executed.'],
+    uncertain: ['Route the request to manual verification.', 'Verify through a separate channel before acting.', 'Do not treat the recording as authentic.'],
+    authentic: ['Continue the normal verification checks for this request type.', 'Escalate if anything else about the request seems unusual.']
+  };
+  var EXPLAIN = {
+    synthetic: 'The calibrated score is above the policy threshold and outside the uncertainty band.',
+    uncertain: 'The calibrated score falls within the policy’s uncertainty band, so the model does not choose a side. Manual verification is required.',
+    authentic: 'The calibrated score is below the policy threshold and outside the uncertainty band. This does not prove the request is legitimate.'
+  };
+
+  var SCENARIOS = [
+    { key: 'syn', label: 'Synthetic outcome', hint: 'Valid 2 s recording', file: { name: 'call_segment_0412.wav', size: 64044, dur: 2.0 }, outcome: { prediction: 'synthetic', confidence: 0.93 } },
+    { key: 'unc', label: 'Uncertain outcome', hint: 'Valid 2 s recording', file: { name: 'call_segment_0413.wav', size: 64044, dur: 2.0 }, outcome: { prediction: 'uncertain', confidence: 0.61 } },
+    { key: 'auth', label: 'Authentic outcome', hint: 'Valid 2 s recording', file: { name: 'call_segment_0414.wav', size: 64044, dur: 2.0 }, outcome: { prediction: 'authentic', confidence: 0.88 } },
+    { key: 'fmt', label: 'Wrong format', hint: 'Input error, caught before upload', file: { name: 'transfer_form.pdf', size: 86016, dur: null } },
+    { key: 'big', label: 'File too large', hint: 'Input error, caught before upload', file: { name: 'board_meeting.wav', size: 48 * 1024 * 1024, dur: 291 } },
+    { key: 'long', label: 'Recording too long', hint: 'Input error, caught before upload', file: { name: 'long_call.wav', size: 9 * 1024 * 1024, dur: 581 } },
+    { key: 'net', label: 'Network problem', hint: 'The API cannot be reached once', file: { name: 'call_segment_0416.wav', size: 64044, dur: 2.0 }, fail: 'network', outcome: { prediction: 'synthetic', confidence: 0.9 } },
+    { key: 'svc', label: 'Analysis service unavailable', hint: 'API reachable, analysis down', file: { name: 'call_segment_0415.wav', size: 64044, dur: 2.0 }, fail: 'service', outcome: { prediction: 'authentic', confidence: 0.86 } }
+  ];
+
+  /* ---------- State ---------- */
+  var state;
+  function freshState() {
+    seed = 20261021;
+    return {
+      signedIn: false, route: { name: 'signin' }, afterSignIn: { name: 'analyze' }, signin: { busy: false, error: null, show: false, fieldErr: {} },
+      controls: { analysisDown: false, saveFails: false, signinFails: false, historyError: false, historyEmpty: false, overviewUnavailable: false, overviewStale: false, overviewEmpty: false },
+      api: { reachable: true }, checkedAt: new Date('2026-10-21T10:40:00Z'),
+      records: buildRecords(), cur: null, drafts: {}, noteState: {}, navOpen: false,
+      historyLoaded: false, historyLoading: false, overviewLoaded: false, overviewLoading: false, chartTable: false
+    };
+  }
+  state = freshState();
+
+  /* ---------- Helpers ---------- */
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  var tzFmt = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'shortOffset' });
+  var dayFmt = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+  var timeOnly = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZoneName: 'shortOffset' });
+  function fmtTime(iso) { try { return tzFmt.format(new Date(iso)); } catch (e) { return iso; } }
+  function fmtDay(d) { return dayFmt.format(new Date(d + 'T12:00:00Z')); }
+  function fmtSize(b) { return b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB'; }
+  function fmtDur(s) { if (s == null) return 'unknown'; var m = Math.floor(s / 60), r = Math.round(s % 60); return m ? m + ' min ' + r + ' s' : (Math.round(s * 10) / 10) + ' s'; }
+  function announce(msg) { var l = $('#live'); l.textContent = ''; setTimeout(function () { l.textContent = msg; }, 30); }
+  function icon(name, size) {
+    size = size || 18;
+    var p = {
+      upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>',
+      plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
+      history: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/>',
+      grid: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+      server: '<rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01"/><path d="M7 16.5h.01"/>',
+      wave: '<path d="M2 12h2"/><path d="M6 8v8"/><path d="M10 4v16"/><path d="M14 7v10"/><path d="M18 10v4"/><path d="M22 12h-2"/>',
+      info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+      check: '<path d="M20 6 9 17l-5-5"/>', x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+      copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+      back: '<path d="m15 18-6-6 6-6"/>', menu: '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>',
+      alert: '<path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
+      refresh: '<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>', wifi: '<path d="M5 12.5a10 10 0 0 1 14 0"/><path d="M8.5 16a5 5 0 0 1 7 0"/><path d="M12 19.5h.01"/><path d="M2 2l20 20"/>'
+    }[name];
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>';
+  }
+  function recordById(id) { for (var i = 0; i < state.records.length; i++) if (state.records[i].id === id) return state.records[i]; return null; }
+  function analysisReady() { return state.api.reachable && !state.controls.analysisDown; }
+
+  /* ---------- Routing ---------- */
+  function token(r) { return r.name === 'details' ? 'details-' + r.id : r.name; }
+  function parseHash() {
+    var h = (location.hash || '').replace('#', '');
+    if (h.indexOf('details-') === 0) return { name: 'details', id: h.slice(8), from: 'history' };
+    if (['analyze', 'history', 'overview', 'status', 'signin'].indexOf(h) >= 0) return { name: h };
+    return null;
+  }
+  function currentNoteId() {
+    var r = state.route;
+    if (r.name === 'details') return r.id;
+    if (r.name === 'analyze' && state.cur && state.cur.phase === 'result') return state.cur.result.id;
+    return null;
+  }
+  function noteDirty(id) {
+    if (!id || state.drafts[id] === undefined) return false;
+    var rec = recordById(id); var saved = rec && rec.note ? rec.note : '';
+    return state.drafts[id] !== saved;
+  }
+  var pendingNav = null;
+  function navigate(next, opts) {
+    opts = opts || {};
+    var leavingId = currentNoteId();
+    var same = token(next) === token(state.route);
+    var keepsNote = (next.name === 'details' && next.id === leavingId) || (same && next.name === 'analyze' && !opts.after);
+    if (!opts.force && noteDirty(leavingId) && !keepsNote) {
+      pendingNav = { next: next, opts: opts };
+      $('#dlg-leave').showModal(); $('#leave-stay').focus();
+      return;
+    }
+    if (state.route.name === 'history') {
+      var keep = Object.assign({}, state.route, { scroll: window.scrollY });
+      state.lastHistory = { filter: keep.filter, q: keep.q, page: keep.page, scroll: keep.scroll };
+      try { history.replaceState(keep, '', '#history'); } catch (e) {}
+    }
+    if (opts.after) opts.after();
+    state.route = next; state.navOpen = false;
+    try { if (opts.replace || same) history.replaceState(next, '', '#' + token(next)); else history.pushState(next, '', '#' + token(next)); } catch (e) {}
+    render({ focus: 'h1', scroll: next.scroll || 0 });
+  }
+  function newAnalysis() {
+    navigate({ name: 'analyze' }, { after: function () { if (!state.cur || state.cur.phase !== 'submitting') state.cur = { phase: 'idle' }; } });
+  }
+  function historyRoute() { return Object.assign({ name: 'history' }, state.lastHistory || {}); }
+  window.addEventListener('popstate', function (e) {
+    var leavingId = currentNoteId();
+    var next = e.state || parseHash() || { name: state.signedIn ? 'analyze' : 'signin' };
+    if (!state.signedIn && next.name !== 'signin') { state.afterSignIn = next; next = { name: 'signin' }; }
+    if (noteDirty(leavingId) && !(next.name === 'details' && next.id === leavingId)) {
+      toast('Your unsaved note on ' + leavingId + ' is kept as a draft until you leave this session.', leavingId);
+    }
+    state.route = next; state.navOpen = false;
+    render({ focus: 'h1', scroll: next.scroll || 0 });
+  });
+
+  /* ---------- Rendering ---------- */
+  function render(opt) {
+    opt = opt || {};
+    var app = $('#app');
+    if (!state.signedIn || state.route.name === 'signin') { app.innerHTML = viewSignIn(); document.title = 'Sign in · Voice Check analyst console'; }
+    else {
+      app.innerHTML = shell(viewMain());
+      if (state.route.name === 'history') ensureHistoryLoad();
+      if (state.route.name === 'overview') ensureOverviewLoad();
+    }
+    if (opt.scroll !== undefined) window.scrollTo(0, opt.scroll);
+    if (opt.focus === 'h1') { var h = $('#app h1'); if (h) h.focus({ preventScroll: opt.scroll > 0 }); }
+    else if (opt.focus) { var f = $(opt.focus); if (f) f.focus(); }
+  }
+
+  function shell(content) {
+    var r = state.route.name;
+    function link(name, label, ic) {
+      return '<a href="#' + name + '" data-nav="' + name + '"' + (r === name || (name === 'history' && r === 'details' && state.route.from !== 'overview') || (name === 'overview' && r === 'details' && state.route.from === 'overview') ? ' aria-current="page"' : '') + '>' + icon(ic) + '<span>' + label + '</span></a>';
+    }
+    var svc = '<div class="svc" aria-label="Service status">' +
+      '<div class="svc-row"><span class="dot ' + (state.api.reachable ? 'dot-ok' : 'dot-err') + '"></span>' + (state.api.reachable ? 'API connected' : 'API unreachable') + '</div>' +
+      '<div class="svc-row"><span class="dot ' + (analysisReady() ? 'dot-ok' : 'dot-warn') + '"></span>' + (analysisReady() ? 'Analysis ready' : 'Analysis unavailable') + '</div>' +
+      '<div class="svc-row" style="color:var(--nav-muted)">Mock status</div></div>';
+    return '<div class="topbar"><button type="button" class="menu" data-act="menu" aria-expanded="' + state.navOpen + '" aria-controls="rail">' + icon('menu') + 'Menu</button>' +
+      '<button type="button" class="btn btn-primary" data-act="new">' + icon('plus', 16) + 'New analysis</button></div>' +
+      (state.navOpen ? '<div class="scrim" data-act="close-nav"></div>' : '') +
+      '<div class="shell"><aside class="rail' + (state.navOpen ? ' open' : '') + '" id="rail" aria-label="Main navigation">' +
+      '<div class="brand"><div class="brand-mark">' + icon('wave', 20) + '</div><div><div class="brand-name">Voice Check</div><div class="brand-sub">Analyst console</div></div></div>' +
+      '<button type="button" class="btn btn-primary" data-act="new">' + icon('plus', 16) + 'New analysis</button>' +
+      '<nav class="nav" aria-label="Pages"><div class="nav-label">Work</div>' + link('analyze', 'Analyze', 'upload') + link('history', 'History', 'history') +
+      '<div class="nav-label" style="margin-top:12px">Monitoring</div>' + link('overview', 'Overview', 'grid') + link('status', 'System status', 'server') + '</nav>' +
+      '<div class="rail-foot">' + svc + '<div class="who"><div><div class="who-name">Demo analyst</div><div class="who-role">Fraud prevention</div></div>' +
+      '<button type="button" class="btn-out" data-act="signout">Sign out</button></div></div></aside>' +
+      '<main class="main" id="main"><div class="wrap">' + content + '</div></main></div>';
+  }
+
+  function head(title, sub, right) {
+    return '<div class="page-head"><div><h1 tabindex="-1">' + title + '</h1>' + (sub ? '<p class="page-sub">' + sub + '</p>' : '') + '</div>' + (right || '') + '</div>';
+  }
+  function noticeBar() {
+    return '<div class="notice">' + icon('info') + '<span><strong>Decision support only.</strong> Results estimate whether a recording is synthetic. They do not prove fraud or verify identity.</span></div>';
+  }
+
+  function viewMain() {
+    var r = state.route.name;
+    if (r === 'analyze') return viewAnalyze();
+    if (r === 'history') return viewHistory();
+    if (r === 'details') return viewDetails();
+    if (r === 'overview') return viewOverview();
+    if (r === 'status') return viewStatus();
+    return viewAnalyze();
+  }
+
+  /* ---------- Sign-in ---------- */
+  function viewSignIn() {
+    var s = state.signin;
+    return '<div class="signin"><form class="signin-card" id="signin-form" novalidate>' +
+      '<div class="signin-brand"><div class="brand-mark">' + icon('wave', 20) + '</div><div><div style="font-weight:700;font-size:18px">Voice Check</div><div class="small muted">Analyst console · prototype</div></div></div>' +
+      '<h1 tabindex="-1" style="font-size:22px">Sign in to the analyst console</h1>' +
+      '<p class="small muted">Prototype only: the access-control method is not decided yet. Nothing you type is checked or stored.</p>' +
+      (s.error ? '<div class="banner-err" role="alert">' + esc(s.error) + '</div>' : '') +
+      '<div class="field"><label for="si-user">Analyst ID</label><input class="input" id="si-user" name="user" autocomplete="username" aria-invalid="' + !!s.fieldErr.user + '"' + (s.fieldErr.user ? ' aria-describedby="si-user-err"' : '') + '>' + (s.fieldErr.user ? '<span class="field-err" id="si-user-err">Enter your analyst ID.</span>' : '') + '</div>' +
+      '<div class="field"><label for="si-pass">Password</label><div class="pw"><input class="input" id="si-pass" name="pass" type="' + (s.show ? 'text' : 'password') + '" autocomplete="current-password" aria-invalid="' + !!s.fieldErr.pass + '"' + (s.fieldErr.pass ? ' aria-describedby="si-pass-err"' : '') + '>' +
+      '<button type="button" data-act="toggle-pw" aria-pressed="' + s.show + '" aria-controls="si-pass">' + (s.show ? 'Hide' : 'Show') + '</button></div>' + (s.fieldErr.pass ? '<span class="field-err" id="si-pass-err">Enter your password.</span>' : '') + '</div>' +
+      '<button type="submit" class="btn btn-primary"' + (s.busy ? ' disabled aria-busy="true"' : '') + '>' + (s.busy ? '<span class="spin" aria-hidden="true"></span>Signing in…' : 'Sign in') + '</button>' +
+      '<div class="or">or</div>' +
+      '<button type="button" class="btn btn-secondary" data-act="demo-enter"' + (s.busy ? ' disabled' : '') + '>Enter demo without credentials</button>' +
+      '</form></div>';
+  }
+
+  /* ---------- Analyze ---------- */
+  function viewAnalyze() {
+    var c = state.cur;
+    if (c && c.phase === 'result') {
+      return head('Analysis result', 'New analysis · ' + esc(fmtTime(c.result.time)),
+        '<div class="actions"><button type="button" class="btn btn-primary" data-act="new">' + icon('plus', 16) + 'New analysis</button></div>') +
+        resultView(c.result, { fresh: true });
+    }
+    var body = '';
+    if (!c || c.phase === 'idle') body = uploadZone() + scenarioPanel();
+    else if (c.phase === 'selected' || c.phase === 'submitting') body = fileCard(c);
+    else if (c.phase === 'error') body = errorView(c);
+    return head('Analyze a recording', 'Upload the recorded segment of a high-risk request before acting on it.') + noticeBar() + body;
+  }
+  function limitsText() {
+    return '<div class="limits" aria-label="Upload limits"><span>Formats: ' + LIMITS.formats.map(function (f) { return f.toUpperCase(); }).join(', ') + '</span><span>Max size: ' + LIMITS.maxMB + ' MB</span><span>Max duration: ' + LIMITS.maxSec + ' s</span><span class="tag tag-demo">Prototype placeholders · real limits come from the API</span></div>';
+  }
+  function privacyText() {
+    return '<p class="privacy">The audio is used only for this analysis. The service deletes it when processing finishes; if that step fails, a fallback limit removes it later. The file name is shown only on this screen and is never stored.</p>';
+  }
+  function uploadZone() {
+    return '<section class="drop" id="drop" aria-labelledby="drop-h"><div class="drop-icon">' + icon('upload', 26) + '</div>' +
+      '<h2 id="drop-h">Drop the recorded segment here</h2><p class="muted small">or choose it from your computer</p>' +
+      '<input type="file" id="file-input" class="sr" accept=".wav,.flac,.mp3,audio/*" tabindex="-1">' +
+      '<button type="button" class="btn btn-primary" data-act="pick">' + icon('upload', 16) + 'Choose recording</button>' +
+      limitsText() + privacyText() + '</section>';
+  }
+  function scenarioPanel() {
+    return '<section class="panel panel-pad" aria-labelledby="sc-h" style="display:flex;flex-direction:column;gap:12px">' +
+      '<div class="panel-head"><div><h2 id="sc-h">Demo scenarios</h2><p class="small muted">Load a mock file to walk through each outcome and error. These are not real recordings.</p></div><span class="tag tag-demo">Mock data</span></div>' +
+      '<div class="scenarios">' + SCENARIOS.map(function (s) { return '<button type="button" class="scenario" data-scn="' + s.key + '"><b>' + esc(s.label) + '</b><span>' + esc(s.hint) + '</span></button>'; }).join('') + '</div></section>';
+  }
+  function validate(file) {
+    var ext = (file.name.split('.').pop() || '').toLowerCase();
+    var checks = [];
+    var fmtOk = LIMITS.formats.indexOf(ext) >= 0;
+    checks.push({ ok: fmtOk, text: fmtOk ? 'Format ' + ext.toUpperCase() + ' is accepted' : 'Format .' + ext + ' is not accepted. Use ' + LIMITS.formats.map(function (f) { return f.toUpperCase(); }).join(', ') + '.' });
+    var sizeOk = file.size <= LIMITS.maxMB * 1048576;
+    checks.push({ ok: sizeOk, text: sizeOk ? 'Size ' + fmtSize(file.size) + ' is within ' + LIMITS.maxMB + ' MB' : 'Size ' + fmtSize(file.size) + ' is over the ' + LIMITS.maxMB + ' MB limit. Export only the segment with the request.' });
+    if (!fmtOk) checks.push({ ok: null, text: 'Duration not checked: the file is not audio' });
+    else if (file.dur === undefined) checks.push({ ok: null, wait: true, text: 'Reading duration…' });
+    else if (file.dur === null) checks.push({ ok: null, text: 'Duration could not be read in the browser; the API will check it' });
+    else { var dOk = file.dur <= LIMITS.maxSec; checks.push({ ok: dOk, text: dOk ? 'Duration ' + fmtDur(file.dur) + ' is within ' + LIMITS.maxSec + ' s' : 'Duration ' + fmtDur(file.dur) + ' is over the ' + LIMITS.maxSec + ' s limit. Upload only the segment with the request.' }); }
+    var valid = checks.every(function (c) { return c.ok !== false; }) && fmtOk && !checks.some(function (c) { return c.wait; });
+    return { checks: checks, valid: valid };
+  }
+  function fileCard(c) {
+    var v = validate(c.file);
+    var submitting = c.phase === 'submitting';
+    var stageNames = ['Validating', 'Uploading', 'Analyzing'];
+    var stages = '';
+    if (submitting) {
+      stages = '<div role="status" aria-live="polite" style="display:flex;flex-direction:column;gap:10px"><ol class="stages" aria-label="Progress">' + stageNames.map(function (n, i) {
+        var cls = i < c.stage ? 'done' : (i === c.stage ? 'now' : '');
+        return '<li class="stage ' + cls + '">' + (i < c.stage ? icon('check', 14) : (i === c.stage ? '<span class="spin" aria-hidden="true"></span>' : '')) + n + (i === c.stage ? '<span class="sr"> (in progress)</span>' : '') + '</li>';
+      }).join('') + '</ol><p class="small muted">Do not close this page. The request is sent once; the button stays disabled until it finishes.</p></div>';
+    }
+    return '<section class="panel panel-pad" aria-labelledby="file-h" style="display:flex;flex-direction:column;gap:16px">' +
+      '<div class="file"><div style="min-width:0"><h2 id="file-h" class="sr">Selected recording</h2><div class="file-name">' + esc(c.file.name) + '</div>' +
+      '<div class="small muted num">' + fmtSize(c.file.size) + ' · ' + (c.file.dur === undefined ? 'reading duration…' : 'duration ' + fmtDur(c.file.dur)) + (c.file.mock ? ' · <span class="tag tag-demo">Mock file</span>' : '') + '</div></div>' +
+      (submitting ? '' : '<div class="actions"><button type="button" class="btn btn-quiet btn-sm" data-act="replace">Replace file</button><button type="button" class="btn btn-danger btn-sm" data-act="remove">Remove</button></div>') + '</div>' +
+      '<input type="file" id="file-input" class="sr" accept=".wav,.flac,.mp3,audio/*" tabindex="-1">' +
+      '<ul class="checks" aria-label="Checks before upload">' + v.checks.map(function (k) {
+        var cls = k.ok === true ? 'ck-ok' : (k.ok === false ? 'ck-bad' : 'ck-wait');
+        return '<li class="' + cls + '">' + (k.ok === true ? icon('check', 16) : (k.ok === false ? icon('x', 16) : icon('info', 16))) + '<span>' + esc(k.text) + '</span></li>';
+      }).join('') + '</ul>' +
+      (v.checks.some(function (k) { return k.ok === false; }) ? '<p class="small" role="alert" style="color:var(--err-fg)"><strong>Input error:</strong> this file cannot be analyzed. Replace it with a recording that passes every check. Nothing was sent and no prediction was made.</p>' : '') +
+      stages +
+      '<div class="actions"><button type="button" class="btn btn-primary" data-act="analyze"' + (!v.valid || submitting ? ' disabled' : '') + (submitting ? ' aria-busy="true"' : '') + '>' + (submitting ? 'Analyzing…' : 'Analyze recording') + '</button>' +
+      (analysisReady() ? '' : '<span class="small" style="color:var(--warn-fg)">' + icon('alert', 16) + ' Analysis is currently unavailable. You can still try; the request may fail.</span>') + '</div>' +
+      privacyText() + '</section>';
+  }
+  function errorView(c) {
+    var e = c.error;
+    var kinds = { network: ['kind-net', 'Network problem'], service: ['kind-svc', 'Analysis service unavailable'] };
+    var k = kinds[e.kind];
+    var title = e.kind === 'network' ? 'The API could not be reached' : 'The analysis service could not process the recording';
+    var body = e.kind === 'network'
+      ? 'Your browser could not reach the API, so the recording was not analyzed. Check your connection, then retry. Your file is still selected.'
+      : 'The API received the request, but the analysis service is not ready. The recording was not analyzed. Try again in a few minutes; if it keeps failing, contact [SUPPORT CONTACT] and quote the request ID.';
+    return '<section class="alert" role="alert" aria-labelledby="err-h"><span class="alert-kind ' + k[0] + '">' + icon(e.kind === 'network' ? 'wifi' : 'alert', 14) + k[1] + '</span>' +
+      '<h2 id="err-h" tabindex="-1">' + title + '</h2><p class="no-pred">No prediction was produced.</p><p class="explain">' + body + '</p>' +
+      '<dl class="kv"><dt>Recording</dt><dd class="mono">' + esc(c.file.name) + ' <span class="muted">(this screen only)</span></dd>' +
+      (e.reqId ? '<dt>Request ID</dt><dd>' + copyId(e.reqId) + '</dd>' : '<dt>Request ID</dt><dd class="muted">None: the request did not reach the API</dd>') + '</dl>' +
+      '<div class="actions"><button type="button" class="btn btn-primary" data-act="retry">' + icon('refresh', 16) + 'Retry analysis</button><button type="button" class="btn btn-quiet" data-act="replace">Replace file</button>' +
+      (e.kind === 'service' ? '<a class="btn-link" href="#status" data-nav="status">Check system status</a>' : '') + '</div>' +
+      (e.kind === 'service' ? '<p class="small muted">Prototype: retries keep failing while “Analysis service unavailable” is on in Prototype controls.</p>' : '') +
+      '<input type="file" id="file-input" class="sr" accept=".wav,.flac,.mp3,audio/*" tabindex="-1"></section>';
+  }
+  function copyId(id) {
+    return '<span class="copy-row"><code class="mono" id="id-' + esc(id) + '">' + esc(id) + '</code><button type="button" class="btn btn-quiet btn-sm" data-copy="' + esc(id) + '" aria-label="Copy request ID ' + esc(id) + '">' + icon('copy', 14) + '<span>Copy</span></button></span>';
+  }
+
+  /* ---------- Result (shared by new analysis and details) ---------- */
+  function resultView(rec, o) {
+    var k = rec.prediction, cls = CLS[k];
+    var ns = state.noteState[rec.id] || {};
+    var draft = state.drafts[rec.id] !== undefined ? state.drafts[rec.id] : (rec.note || '');
+    var saveLabel = ns.status === 'saving' ? '<span class="st-busy">Saving…</span>' : ns.status === 'saved' ? '<span class="st-ok">' + icon('check', 14) + ' Saved ' + esc(timeOnly.format(new Date(ns.at))) + '</span>' : ns.status === 'failed' ? '<span class="st-err" role="alert">Not saved. Your text is still here. Try again.</span>' : (rec.note ? '<span class="muted">Note added ' + esc(fmtTime(rec.noteAt)) + '</span>' : '<span class="muted">No note</span>');
+    return '<div class="grid-2"><div style="display:flex;flex-direction:column;gap:20px;min-width:0">' +
+      '<article class="result r-' + cls + '" aria-labelledby="res-h"><div class="result-top">' +
+      '<h2 id="res-h" tabindex="-1">Model prediction: ' + LABEL[k] + '</h2>' +
+      '<div class="meta-row"><span class="risk">' + RISK[k] + ' RISK</span><span>Confidence <strong class="num mono">' + rec.confidence.toFixed(2) + '</strong></span>' + (rec.mock ? '<span class="tag tag-demo">Mock result</span>' : '') + '</div>' +
+      '</div><div class="result-body"><p class="explain">' + EXPLAIN[k] + '</p>' +
+      '<p class="explain"><strong>About confidence:</strong> ' + rec.confidence.toFixed(2) + ' says how strongly the calibrated model output favours “' + LABEL[k].toLowerCase() + '”, on a scale from 0.50 to 1.00. It is not the probability that fraud occurred.</p>' +
+      '<div><h3 style="font-size:15px;margin-bottom:6px">Next steps</h3><ul class="steps">' + STEPS[k].map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul></div>' +
+      '<dl class="kv"><dt>Request ID</dt><dd>' + copyId(rec.id) + '</dd><dt>Analyzed</dt><dd class="num">' + esc(fmtTime(rec.time)) + '</dd><dt>Recording</dt><dd>' + (o.fresh && state.cur && state.cur.file ? '<span class="mono">' + esc(state.cur.file.name) + '</span> <span class="muted">(shown on this screen only; not stored)</span>' : '<span class="muted">Audio and original file name are not stored</span>') + '</dd></dl></div>' +
+      '<details class="more"><summary>Technical details</summary><dl class="kv" style="margin-top:10px"><dt>Model version</dt><dd class="mono">' + VERSIONS.model_version + '</dd><dt>Preprocessing profile</dt><dd class="mono">' + VERSIONS.profile_version + '</dd><dt>Risk policy</dt><dd class="mono">' + VERSIONS.policy_version + '</dd><dt>Processing time</dt><dd class="num">' + rec.latency.toFixed(2) + ' s</dd></dl></details>' +
+      '<p class="api-notice"><strong>Notice from the service:</strong> ' + esc(NOTICE) + '</p></article></div>' +
+      '<section class="panel panel-pad note" aria-labelledby="note-h" style="display:flex;flex-direction:column;gap:10px">' +
+      '<h2 id="note-h" style="font-size:16px">Analyst note</h2><p class="small muted">Stored beside the result. A note never changes the prediction and does not mark the case as resolved. Avoid personal or sensitive details you do not need.</p>' +
+      '<label for="note-text" class="sr">Analyst note for ' + esc(rec.id) + '</label><textarea id="note-text" data-note="' + esc(rec.id) + '" placeholder="For example: called back on the registered number; customer confirmed the request.">' + esc(draft) + '</textarea>' +
+      '<div class="actions"><button type="button" class="btn btn-secondary btn-sm" data-act="save-note" data-id="' + esc(rec.id) + '"' + (ns.status === 'saving' || !noteDirty(rec.id) ? ' disabled' : '') + '>Save note</button><span class="save-state" id="save-state" aria-live="polite">' + saveLabel + '</span></div></section></div>';
+  }
+
+  function viewDetails() {
+    var rec = recordById(state.route.id);
+    var from = state.route.from === 'overview' ? 'overview' : 'history';
+    var backLabel = from === 'overview' ? 'Back to overview' : 'Back to history';
+    if (!rec) return head('Analysis details', 'This request ID was not found.') + '<div class="panel state"><h2>No analysis with ID ' + esc(state.route.id) + '</h2><button type="button" class="btn btn-secondary" data-act="back">' + backLabel + '</button></div>';
+    return '<div class="crumb"><button type="button" class="btn btn-quiet btn-sm" data-act="back">' + icon('back', 16) + backLabel + '</button></div>' +
+      head('Analysis details', 'Stored result · ' + esc(fmtTime(rec.time)), '<div class="actions"><button type="button" class="btn btn-primary" data-act="new">' + icon('plus', 16) + 'New analysis</button></div>') +
+      resultView(rec, { fresh: false });
+  }
+
+  /* ---------- History ---------- */
+  var PAGE = 10;
+  function viewHistory() {
+    var r = state.route; var f = r.filter || 'all', q = r.q || '', page = r.page || 1;
+    var all = state.controls.historyEmpty ? [] : state.records;
+    var counts = { all: all.length, synthetic: 0, uncertain: 0, authentic: 0 };
+    all.forEach(function (x) { counts[x.prediction]++; });
+    var chips = [['all', 'All'], ['synthetic', 'Synthetic'], ['uncertain', 'Uncertain'], ['authentic', 'Authentic']].map(function (c) {
+      return '<button type="button" class="chip" data-filter="' + c[0] + '" aria-pressed="' + (f === c[0]) + '">' + c[1] + ' <span class="count">' + counts[c[0]] + '</span></button>';
+    }).join('');
+    var active = f !== 'all' || q;
+    var toolbar = '<div class="toolbar"><div role="group" aria-label="Filter by model prediction" class="chips">' + chips + '</div>' +
+      '<form class="search" id="search-form" role="search"><div class="field"><label for="h-search">Search by request ID</label><input class="input mono" id="h-search" type="search" value="' + esc(q) + '" placeholder="req_…" autocomplete="off"></div>' +
+      '<button type="submit" class="btn btn-quiet">Search</button>' + (active ? '<button type="button" class="btn btn-link" data-act="reset-filters">Reset filters</button>' : '') + '</form></div>';
+    var bodyHtml;
+    if (state.historyLoading) {
+      bodyHtml = '<div class="panel" aria-busy="true"><p class="sr" role="status">Loading history…</p><div style="padding:16px;display:flex;flex-direction:column;gap:14px">' + [1, 2, 3, 4, 5, 6].map(function () { return '<div class="skel" style="width:' + (60 + Math.round(rnd() * 35)) + '%"></div>'; }).join('') + '</div></div>';
+    } else if (state.controls.historyError) {
+      bodyHtml = '<div class="panel state" role="alert"><h2 tabindex="-1" id="hist-err">History could not be loaded</h2><p class="muted small">The API did not return the analysis records. Your filters are kept. No results were changed.</p><button type="button" class="btn btn-primary" data-act="retry-history">' + icon('refresh', 16) + 'Retry</button></div>';
+    } else if (all.length === 0) {
+      bodyHtml = '<div class="panel state"><h2>No analyses yet</h2><p class="muted small">Results appear here after the first analysis. Only results are stored: no audio and no original file names.</p><button type="button" class="btn btn-primary" data-act="new">' + icon('plus', 16) + 'New analysis</button></div>';
+    } else {
+      var rows = all.filter(function (x) { return (f === 'all' || x.prediction === f) && (!q || x.id.toLowerCase().indexOf(q.toLowerCase().trim()) >= 0); });
+      if (rows.length === 0) {
+        bodyHtml = '<div class="panel state"><h2>No analyses match these filters</h2><p class="muted small">Nothing matches ' + (f !== 'all' ? '“' + LABEL[f] + '”' : 'all predictions') + (q ? ' and request ID “' + esc(q) + '”' : '') + '.</p><button type="button" class="btn btn-secondary" data-act="reset-filters">Reset filters</button></div>';
+      } else {
+        var pages = Math.max(1, Math.ceil(rows.length / PAGE)); if (page > pages) page = pages;
+        var slice = rows.slice((page - 1) * PAGE, page * PAGE);
+        var tz = (timeOnly.formatToParts(new Date()).filter(function (p) { return p.type === 'timeZoneName'; })[0] || {}).value || '';
+        bodyHtml = '<div class="panel"><div class="table-wrap"><table class="data stack-sm"><caption class="sr">Analyses, newest first</caption><thead><tr><th scope="col">Analyzed (' + esc(tz) + ')</th><th scope="col">Request ID</th><th scope="col">Model prediction · risk</th><th scope="col" class="r">Confidence</th><th scope="col">Note</th><th scope="col"><span class="sr">Action</span></th></tr></thead><tbody>' +
+          slice.map(function (x) {
+            return '<tr><td data-label="Analyzed" class="num">' + esc(fmtTime(x.time)) + '</td><td data-label="Request ID"><span class="req">' + esc(x.id) + '</span></td><td data-label="Prediction · risk"><span class="pill p-' + CLS[x.prediction] + '">' + LABEL[x.prediction] + ' · ' + RISK[x.prediction] + '</span></td><td data-label="Confidence" class="r num mono">' + x.confidence.toFixed(2) + '</td><td data-label="Note">' + (x.note ? 'Note added' : '<span class="muted">No note</span>') + '</td><td class="act r"><button type="button" class="btn btn-quiet btn-sm" data-open="' + esc(x.id) + '" aria-label="View details of ' + esc(x.id) + '">View details</button></td></tr>';
+          }).join('') + '</tbody></table></div>' +
+          '<div class="pager"><span class="num">Showing ' + ((page - 1) * PAGE + 1) + '–' + Math.min(page * PAGE, rows.length) + ' of ' + rows.length + '</span><div class="actions"><button type="button" class="btn btn-quiet btn-sm" data-page="' + (page - 1) + '"' + (page <= 1 ? ' disabled' : '') + '>Previous</button><span class="num small">Page ' + page + ' of ' + pages + '</span><button type="button" class="btn btn-quiet btn-sm" data-page="' + (page + 1) + '"' + (page >= pages ? ' disabled' : '') + '>Next</button></div></div></div>';
+      }
+    }
+    return head('History', 'Stored analysis results, newest first. Mock data.') + toolbar + bodyHtml +
+      '<p class="small muted">Only results, request IDs and analyst notes are stored. No audio playback, no original file names, no per-analyst figures.</p>';
+  }
+  function ensureHistoryLoad() {
+    if (state.historyLoaded || state.historyLoading) return;
+    state.historyLoading = true; render({});
+    setTimeout(function () { state.historyLoading = false; state.historyLoaded = true; if (state.route.name === 'history') { render({ scroll: state.route.scroll || 0 }); announce('History loaded.'); } }, 600);
+  }
+  function setHistory(patch, opts) {
+    var next = Object.assign({ name: 'history' }, state.route, patch, { scroll: 0 });
+    state.route = next;
+    state.lastHistory = { filter: next.filter, q: next.q, page: next.page, scroll: 0 };
+    try { history.replaceState(next, '', '#history'); } catch (e) {}
+    render(opts || {});
+  }
+
+  /* ---------- Overview ---------- */
+  function overviewData() {
+    var days = DAYS.map(function (d) { return { d: d.d, a: 0, u: 0, s: 0 }; });
+    var idx = {}; days.forEach(function (d, i) { idx[d.d] = i; });
+    var lat = [];
+    state.records.forEach(function (r) {
+      var key = r.time.slice(0, 10); if (idx[key] === undefined) return;
+      var d = days[idx[key]]; if (r.prediction === 'authentic') d.a++; else if (r.prediction === 'uncertain') d.u++; else d.s++;
+      lat.push(r.latency);
+    });
+    lat.sort(function (a, b) { return a - b; });
+    var med = lat.length ? lat[Math.floor(lat.length / 2)] : 0;
+    var total = 0, unc = 0; days.forEach(function (d) { total += d.a + d.u + d.s; unc += d.u; });
+    var need = state.records.filter(function (r) { return r.prediction !== 'authentic' && !r.note; });
+    return { days: days, med: med, total: total, unc: unc, need: need, today: days[days.length - 1] };
+  }
+  function viewOverview() {
+    var updated = state.controls.overviewStale ? new Date('2026-10-21T07:40:00Z') : new Date('2026-10-21T10:40:00Z');
+    var right = '<div class="updated"><span>Data updated ' + esc(fmtTime(updated.toISOString())) + '</span><button type="button" class="btn btn-quiet btn-sm" data-act="refresh-overview">' + icon('refresh', 14) + 'Refresh</button></div>';
+    var h = head('Overview', 'Team activity from stored results. Mock data. Figures are computed by the API, not in the browser.', right);
+    if (state.overviewLoading) return h + '<div class="panel state" aria-busy="true"><p role="status">Loading statistics…</p><div class="skel" style="width:60%"></div><div class="skel" style="width:40%"></div></div>';
+    if (state.controls.overviewUnavailable) return h + '<div class="panel state" role="alert"><h2>Statistics are unavailable</h2><p class="muted small">The API could not compute the overview right now. Analyze and History still work.</p><button type="button" class="btn btn-primary" data-act="refresh-overview">' + icon('refresh', 16) + 'Retry</button></div>';
+    var stale = state.controls.overviewStale ? '<div class="stale" role="status">' + icon('alert', 16) + ' These figures are more than 3 hours old. Refresh to get the latest; until then, treat them as out of date.</div>' : '';
+    if (state.controls.overviewEmpty) return h + stale + '<div class="panel state"><h2>No analyses in the last 7 days</h2><p class="muted small">Charts and counts appear once recordings have been analyzed in this period.</p><button type="button" class="btn btn-primary" data-act="new">' + icon('plus', 16) + 'New analysis</button></div>';
+    var o = overviewData();
+    var period7 = fmtDay(DAYS[0].d) + ' – ' + fmtDay(TODAY);
+    var share = o.total ? o.unc / o.total : 0;
+    var kpis = '<div class="kpis">' +
+      kpi('Analyses', 'Today · ' + fmtDay(TODAY), String(o.today.a + o.today.u + o.today.s), o.total + ' in the last 7 days') +
+      kpi('Results awaiting a note', 'Last 7 days · ' + period7, String(o.need.length), 'Synthetic or uncertain, no analyst note yet') +
+      kpi('Uncertain share', 'Last 7 days · ' + period7, (share * 100).toFixed(1) + '%', 'Validation reference ' + (DEFERRAL_ON_FIT * 100).toFixed(1) + '% (from the loaded policy)') +
+      kpi('Median processing time', 'Last 7 days · ' + period7, o.med.toFixed(2) + ' s', 'Latency target not decided yet') + '</div>';
+    var maxT = 45, H = 170;
+    var bars = '<div class="plot" style="height:' + (H + 22) + 'px">' + o.days.map(function (d) {
+      var t = d.a + d.u + d.s; function px(n) { return n ? Math.max(3, Math.round(n / maxT * H)) : 0; }
+      var lbl = fmtDay(d.d) + ': ' + t + ' analyses, ' + d.s + ' synthetic, ' + d.u + ' uncertain, ' + d.a + ' authentic';
+      return '<div class="col" tabindex="0" role="img" aria-label="' + esc(lbl) + '"><span class="num small" style="font-weight:600;margin-bottom:3px">' + t + '</span><div class="stack">' +
+        (d.s ? '<div style="height:' + px(d.s) + 'px;background:var(--syn-mark)"></div>' : '') + (d.u ? '<div style="height:' + px(d.u) + 'px;background:var(--unc-mark)"></div>' : '') + '<div style="height:' + px(d.a) + 'px;background:var(--auth-mark)"></div></div>' +
+        '<div class="tip" aria-hidden="true"><b>' + esc(fmtDay(d.d)) + '</b><br>Synthetic ' + d.s + ' · Uncertain ' + d.u + ' · Authentic ' + d.a + '</div></div>';
+    }).join('') + '</div><div class="axis" aria-hidden="true">' + o.days.map(function (d) { return '<span' + (d.d === TODAY ? ' style="color:var(--ink);font-weight:600"' : '') + '>' + (d.d === TODAY ? 'Today' : esc(fmtDay(d.d).split(' ').slice(1).join(' '))) + '</span>'; }).join('') + '</div>';
+    var table = '<div class="table-wrap"' + (state.chartTable ? '' : ' hidden') + ' id="chart-table"><table class="data num"><caption class="sr">Analyses per day by model prediction</caption><thead><tr><th scope="col">Day</th><th scope="col" class="r">Synthetic</th><th scope="col" class="r">Uncertain</th><th scope="col" class="r">Authentic</th><th scope="col" class="r">Uncertain share</th></tr></thead><tbody>' +
+      o.days.map(function (d) { var t = d.a + d.u + d.s; return '<tr><th scope="row" style="font-weight:400;background:none;color:var(--ink)">' + esc(fmtDay(d.d)) + '</th><td class="r">' + d.s + '</td><td class="r">' + d.u + '</td><td class="r">' + d.a + '</td><td class="r">' + (t ? (d.u / t * 100).toFixed(1) : '0.0') + '%</td></tr>'; }).join('') + '</tbody></table></div>';
+    var chart1 = '<section class="panel panel-pad chart" aria-labelledby="c1-h"><div class="panel-head"><div><h2 id="c1-h">Analyses per day by model prediction</h2><p class="small muted">Last 7 days · ' + esc(period7) + '. Focus or hover a bar for counts.</p></div>' +
+      '<button type="button" class="btn btn-quiet btn-sm" data-act="toggle-table" aria-expanded="' + state.chartTable + '" aria-controls="chart-table">' + (state.chartTable ? 'Hide table' : 'Show as table') + '</button></div>' +
+      '<div class="legend"><span><i class="sw" style="background:var(--syn-mark)"></i>Synthetic</span><span><i class="sw" style="background:var(--unc-mark)"></i>Uncertain</span><span><i class="sw" style="background:var(--auth-mark)"></i>Authentic</span></div>' + bars + table + '</section>';
+    var RH = 140, RMAX = 0.2, refY = Math.round(DEFERRAL_ON_FIT / RMAX * RH);
+    var rate = '<div class="legend"><span><i aria-hidden="true" style="width:18px;border-top:2px dashed var(--ink-2)"></i><span class="ref-key">Validation reference ' + (DEFERRAL_ON_FIT * 100).toFixed(1) + '%</span></span><span><i class="sw" style="background:var(--ink-2)"></i>Above reference</span></div>' +
+      '<div class="plot" style="height:' + (RH + 24) + 'px"><div class="ref" style="bottom:' + refY + 'px"></div>' + o.days.map(function (d) {
+      var t = d.a + d.u + d.s, r = t ? d.u / t : 0, hgt = Math.round(Math.min(r, RMAX) / RMAX * RH);
+      return '<div class="col" tabindex="0" role="img" aria-label="' + esc(fmtDay(d.d) + ': ' + (r * 100).toFixed(1) + '% uncertain, ' + d.u + ' of ' + t + (r > DEFERRAL_ON_FIT ? ', above the validation reference' : '')) + '">' +
+        (r > DEFERRAL_ON_FIT ? '<span class="above num">' + (r * 100).toFixed(1) + '%</span>' : '') + '<div style="width:100%;max-width:26px;height:' + hgt + 'px;border-radius:4px 4px 0 0;background:' + (r > DEFERRAL_ON_FIT ? 'var(--ink-2)' : 'var(--line-strong)') + '"></div>' +
+        '<div class="tip" aria-hidden="true">' + esc(fmtDay(d.d)) + ': ' + (r * 100).toFixed(1) + '% (' + d.u + ' of ' + t + ')</div></div>';
+    }).join('') + '</div><div class="axis" aria-hidden="true">' + o.days.map(function (d) { return '<span>' + (d.d === TODAY ? 'Today' : esc(fmtDay(d.d).split(' ')[1])) + '</span>'; }).join('') + '</div>';
+    var chart2 = '<section class="panel panel-pad chart" aria-labelledby="c2-h"><div><h2 id="c2-h">Uncertain share per day</h2><p class="small muted">Last 7 days · share of results routed to manual verification</p></div>' + rate +
+      '<p class="small" style="color:var(--ink-2)">The reference is the uncertain share the frozen policy produced on validation data (<span class="mono">deferral_on_fit</span>, read from the loaded policy). It is a comparison, not an operational target or an accuracy measure. A single day above it is not evidence that the model has degraded.</p></section>';
+    var need = o.need.slice(0, 6);
+    var list = '<section class="panel" aria-labelledby="need-h"><div class="panel-pad panel-head"><div><h2 id="need-h">Results awaiting a note</h2><p class="small muted">Recent synthetic or uncertain results that have no analyst note yet. This is not a list of unresolved cases.</p></div><a class="btn btn-quiet btn-sm" href="#history" data-nav="history">Open history</a></div>' +
+      (need.length ? '<div class="table-wrap"><table class="data stack-sm"><thead><tr><th scope="col">Analyzed</th><th scope="col">Request ID</th><th scope="col">Model prediction · risk</th><th scope="col" class="r">Confidence</th><th scope="col"><span class="sr">Action</span></th></tr></thead><tbody>' +
+        need.map(function (x) { return '<tr><td data-label="Analyzed" class="num">' + esc(fmtTime(x.time)) + '</td><td data-label="Request ID"><span class="req">' + esc(x.id) + '</span></td><td data-label="Prediction · risk"><span class="pill p-' + CLS[x.prediction] + '">' + LABEL[x.prediction] + ' · ' + RISK[x.prediction] + '</span></td><td data-label="Confidence" class="r num mono">' + x.confidence.toFixed(2) + '</td><td class="act r"><button type="button" class="btn btn-quiet btn-sm" data-open="' + esc(x.id) + '" data-from="overview" aria-label="View details of ' + esc(x.id) + '">View details</button></td></tr>'; }).join('') + '</tbody></table></div>'
+        : '<div class="state"><p class="muted">Every synthetic or uncertain result in the period has a note.</p></div>') + '</section>';
+    return h + stale + kpis + '<div class="grid-2">' + chart1 + chart2 + '</div>' + list;
+  }
+  function kpi(label, period, value, ctx) {
+    return '<section class="panel kpi"><h2 class="label" style="font-size:14px">' + esc(label) + '</h2><span class="period">' + esc(period) + '</span><span class="value">' + esc(value) + '</span><span class="ctx">' + esc(ctx) + '</span></section>';
+  }
+  function ensureOverviewLoad() {
+    if (state.overviewLoaded || state.overviewLoading) return;
+    state.overviewLoading = true; render({});
+    setTimeout(function () { state.overviewLoading = false; state.overviewLoaded = true; if (state.route.name === 'overview') { render({}); announce('Overview loaded.'); } }, 500);
+  }
+
+  /* ---------- Status ---------- */
+  function viewStatus() {
+    var api = state.api.reachable, ready = analysisReady();
+    var right = '<div class="updated"><span>Last checked ' + esc(fmtTime(state.checkedAt.toISOString())) + '</span><button type="button" class="btn btn-quiet btn-sm" data-act="refresh-status">' + icon('refresh', 14) + 'Check now</button></div>';
+    function item(title, ok, okLabel, badLabel, okText, badText, warn) {
+      return '<div class="svc-item"><div><h3>' + title + '</h3><p class="small" style="color:var(--ink-2);margin-top:4px">' + (ok ? okText : badText) + '</p></div><span class="state-pill ' + (ok ? 'sp-ok' : (warn ? 'sp-warn' : 'sp-err')) + '">' + (ok ? icon('check', 14) : icon('alert', 14)) + (ok ? okLabel : badLabel) + '</span></div>';
+    }
+    return head('System status', 'What the service is running right now. Mock status values.', right) +
+      '<section class="panel" aria-label="Service checks"><div class="svc-list">' +
+      item('API connectivity', api, 'Connected', 'Unreachable', 'This page can reach the API.', 'This page cannot reach the API. Check your network connection; no analysis can be sent.') +
+      item('Analysis readiness', ready, 'Ready', 'Unavailable', 'The analysis service can process recordings.', 'The API responds, but the analysis service cannot process recordings right now. Requests fail with no prediction. Try again later.', true) +
+      item('Model bundle verification', true, 'Verified at startup', 'Not verified', 'At startup the service checked the SHA-256 of the checkpoint, preprocessing profile and risk policy against the bundle manifest, and the three versions agree. It refuses to start otherwise.', '') +
+      '</div><details class="more"><summary>Bundle and component versions</summary><dl class="kv" style="margin-top:10px"><dt>Bundle</dt><dd class="mono">' + VERSIONS.bundle + '</dd><dt>Model</dt><dd class="mono">' + VERSIONS.model_version + '</dd><dt>Preprocessing profile</dt><dd class="mono">' + VERSIONS.profile_version + '</dd><dt>Risk policy</dt><dd class="mono">' + VERSIONS.policy_version + '</dd><dt>Validation uncertain share</dt><dd class="mono">deferral_on_fit = ' + DEFERRAL_ON_FIT.toFixed(3) + '</dd><dt>Manifest SHA-256</dt><dd class="mono">3f9a…c71e (mock)</dd></dl></details></section>' +
+      '<section class="panel panel-pad" aria-labelledby="priv-h" style="display:flex;flex-direction:column;gap:8px"><h2 id="priv-h">Audio retention and privacy</h2>' +
+      '<p class="explain">Uploaded audio is used only for its analysis. The service deletes it when processing finishes. If that step fails, a fallback limit removes it after [FALLBACK RETENTION LIMIT, decision pending].</p>' +
+      '<p class="explain">The console stores results, request IDs and analyst notes. It never stores audio or original file names.</p>' +
+      '<p class="small muted">This page shows the configured policy. It cannot confirm that a specific file has already been deleted.</p></section>';
+  }
+
+  /* ---------- Toast ---------- */
+  var toastTimer;
+  function toast(msg, openId) {
+    var t = $('#toast'); if (t) t.remove();
+    t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; t.setAttribute('role', 'status');
+    t.innerHTML = '<span>' + esc(msg) + '</span>' + (openId ? '<button type="button" data-open="' + esc(openId) + '">Return to note</button>' : '');
+    document.body.appendChild(t); clearTimeout(toastTimer); toastTimer = setTimeout(function () { if (t.parentNode) t.remove(); }, 7000);
+  }
+
+  /* ---------- Actions ---------- */
+  function startFile(file) {
+    state.cur = { phase: 'selected', file: file };
+    render({ focus: '#file-h' });
+    var v = validate(file); announce(v.valid ? 'File selected. All checks passed.' : 'File selected. Some checks did not pass.');
+  }
+  function readRealFile(f) {
+    var file = { name: f.name, size: f.size, dur: undefined, mock: false };
+    var ext = (f.name.split('.').pop() || '').toLowerCase();
+    if (LIMITS.formats.indexOf(ext) < 0) { file.dur = null; startFile(file); return; }
+    startFile(file);
+    var url = URL.createObjectURL(f), audio = new Audio(), done = false;
+    function finish(d) { if (done) return; done = true; URL.revokeObjectURL(url); if (state.cur && state.cur.file === file) { file.dur = d; render({}); } }
+    audio.preload = 'metadata';
+    audio.onloadedmetadata = function () { finish(isFinite(audio.duration) ? audio.duration : null); };
+    audio.onerror = function () { finish(null); };
+    setTimeout(function () { finish(null); }, 3000);
+    audio.src = url;
+  }
+  function submit() {
+    var c = state.cur; if (!c || c.phase !== 'selected') return;
+    if (!validate(c.file).valid) return;
+    c.phase = 'submitting'; c.stage = 0; render({}); announce('Validating the recording.');
+    var fail = c.file.fail;
+    setTimeout(function () {
+      c.stage = 1; render({}); announce('Uploading.');
+      setTimeout(function () {
+        if (fail === 'network' && !c.retried) { state.api.reachable = false; c.phase = 'error'; c.error = { kind: 'network' }; render({ focus: '#err-h' }); announce('Network problem. No prediction was produced.'); return; }
+        state.api.reachable = true;
+        c.stage = 2; render({}); announce('Analyzing.');
+        setTimeout(function () {
+          if (fail === 'service' || state.controls.analysisDown) {
+            if (fail === 'service') state.controls.analysisDown = true;
+            c.phase = 'error'; c.error = { kind: 'service', reqId: 'req_' + hex(8) }; render({ focus: '#err-h' }); announce('Analysis service unavailable. No prediction was produced.'); return;
+          }
+          var out = c.file.outcome || (function () { var ks = ['synthetic', 'uncertain', 'authentic']; var k = ks[c.file.size % 3]; return { prediction: k, confidence: k === 'uncertain' ? 0.58 : 0.86 }; })();
+          var rec = { id: 'req_' + hex(8), time: new Date().toISOString(), prediction: out.prediction, confidence: out.confidence, latency: 0.42, note: null, noteAt: null, mock: true };
+          state.records.unshift(rec); state.records.sort(function (x, y) { return x.time < y.time ? 1 : -1; }); state.overviewLoaded = false;
+          c.phase = 'result'; c.result = rec; render({ focus: '#res-h' }); announce('Result ready. Model prediction: ' + LABEL[rec.prediction] + ', ' + RISK[rec.prediction].toLowerCase() + ' risk, confidence ' + rec.confidence.toFixed(2) + '.');
+        }, 900);
+      }, 700);
+    }, 500);
+  }
+  function saveNote(id) {
+    var rec = recordById(id); if (!rec) return;
+    var text = state.drafts[id] !== undefined ? state.drafts[id] : (rec.note || '');
+    state.noteState[id] = { status: 'saving' }; refreshNoteUI(id); announce('Saving note.');
+    setTimeout(function () {
+      if (state.controls.saveFails) { state.controls.saveFails = false; syncControls(); state.noteState[id] = { status: 'failed' }; refreshNoteUI(id); announce('Note not saved. Your text is still in the box.'); return; }
+      rec.note = text.trim() ? text : null; rec.noteAt = rec.note ? new Date().toISOString() : null;
+      delete state.drafts[id]; state.noteState[id] = { status: 'saved', at: new Date().toISOString() }; state.overviewLoaded = false;
+      refreshNoteUI(id); announce('Note saved.');
+    }, 700);
+  }
+  function refreshNoteUI(id) {
+    if (currentNoteId() !== id) return;
+    var ta = $('#note-text'); var val = ta ? ta.value : null; var focused = document.activeElement === ta;
+    render({});
+    var nt = $('#note-text'); if (nt && val !== null) nt.value = val; if (focused && nt) nt.focus();
+    if (!focused) { var b = $('[data-act="save-note"]'); if (b && !b.disabled) b.focus(); else { var s = $('#save-state'); if (s) s.setAttribute('tabindex', '-1'); } }
+  }
+  function copyText(id, btn) {
+    function ok() { var sp = btn.querySelector('span'); if (sp) sp.textContent = 'Copied'; announce('Request ID copied.'); setTimeout(function () { if (sp) sp.textContent = 'Copy'; }, 2000); }
+    function fallback() { var el = document.getElementById('id-' + id); if (el) { var r = document.createRange(); r.selectNodeContents(el); var s = getSelection(); s.removeAllRanges(); s.addRange(r); } var sp = btn.querySelector('span'); if (sp) sp.textContent = 'Selected: press Ctrl+C'; announce('Request ID selected. Press Control C to copy.'); }
+    try { navigator.clipboard.writeText(id).then(ok, fallback); } catch (e) { fallback(); }
+  }
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-act],[data-nav],[data-scn],[data-open],[data-filter],[data-page],[data-copy]');
+    if (!t) return;
+    if (t.dataset.nav) { e.preventDefault(); if (t.dataset.nav === 'history') navigate(historyRoute()); else navigate({ name: t.dataset.nav }); return; }
+    if (t.dataset.scn) { var s = SCENARIOS.filter(function (x) { return x.key === t.dataset.scn; })[0]; startFile(Object.assign({ mock: true, outcome: s.outcome, fail: s.fail }, s.file)); return; }
+    if (t.dataset.open) { var tt = $('#toast'); if (tt && t.closest('#toast')) tt.remove(); navigate({ name: 'details', id: t.dataset.open, from: t.dataset.from || (state.route.name === 'overview' ? 'overview' : 'history') }); return; }
+    if (t.dataset.filter) { setHistory({ filter: t.dataset.filter, page: 1 }, { focus: '[data-filter="' + t.dataset.filter + '"]' }); return; }
+    if (t.dataset.page) { setHistory({ page: +t.dataset.page }, { focus: 'h1' }); return; }
+    if (t.dataset.copy) { copyText(t.dataset.copy, t); return; }
+    var a = t.dataset.act;
+    if (a === 'new') { newAnalysis(); return; }
+    if (a === 'menu') { state.navOpen = !state.navOpen; render({ focus: state.navOpen ? '#rail a' : '[data-act="menu"]' }); return; }
+    if (a === 'close-nav') { state.navOpen = false; render({ focus: '[data-act="menu"]' }); return; }
+    if (a === 'signout') { if (noteDirty(currentNoteId())) { pendingNav = { next: { name: 'signin' }, opts: {}, signout: true }; $('#dlg-leave').showModal(); $('#leave-stay').focus(); return; } doSignOut(); return; }
+    if (a === 'toggle-pw') { var u = $('#si-user').value, p = $('#si-pass').value; state.signin.show = !state.signin.show; render({ focus: '[data-act="toggle-pw"]' }); $('#si-user').value = u; $('#si-pass').value = p; return; }
+    if (a === 'demo-enter') { signInDone(); return; }
+    if (a === 'pick' || a === 'replace') { var fi = $('#file-input'); if (fi) fi.click(); return; }
+    if (a === 'remove') { state.cur = { phase: 'idle' }; render({ focus: '[data-act="pick"]' }); announce('File removed.'); return; }
+    if (a === 'analyze') { submit(); return; }
+    if (a === 'retry') { var c = state.cur; c.retried = true; c.phase = 'selected'; c.error = null; submit(); return; }
+    if (a === 'save-note') { saveNote(t.dataset.id); return; }
+    if (a === 'back') { navigate(state.route.from === 'overview' ? { name: 'overview' } : historyRoute()); return; }
+    if (a === 'reset-filters') { setHistory({ filter: 'all', q: '', page: 1 }, { focus: '#h-search' }); announce('Filters reset.'); return; }
+    if (a === 'retry-history') { state.controls.historyError = false; syncControls(); state.historyLoaded = false; render({}); return; }
+    if (a === 'refresh-overview') { state.controls.overviewUnavailable = false; state.controls.overviewStale = false; syncControls(); state.overviewLoaded = false; render({}); return; }
+    if (a === 'toggle-table') { state.chartTable = !state.chartTable; render({ focus: '[data-act="toggle-table"]' }); return; }
+    if (a === 'refresh-status') { state.checkedAt = new Date(); state.api.reachable = true; render({ focus: '[data-act="refresh-status"]' }); announce('Status checked.'); return; }
+  });
+  document.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (e.target.id === 'search-form') { var q = $('#h-search').value; setHistory({ q: q, page: 1 }, { focus: '#h-search' }); return; }
+    if (e.target.id === 'signin-form') {
+      var u = $('#si-user').value.trim(), p = $('#si-pass').value;
+      state.signin.fieldErr = { user: !u, pass: !p }; state.signin.error = null;
+      if (!u || !p) { render({ focus: !u ? '#si-user' : '#si-pass' }); $('#si-user').value = u; return; }
+      state.signin.busy = true; render({}); $('#si-user').value = u;
+      setTimeout(function () {
+        state.signin.busy = false;
+        if (state.controls.signinFails) { state.controls.signinFails = false; syncControls(); state.signin.error = 'Sign-in failed. Check your analyst ID and password, then try again.'; render({ focus: '#si-user' }); $('#si-user').value = u; return; }
+        signInDone();
+      }, 800);
+    }
+  });
+  document.addEventListener('input', function (e) {
+    if (e.target.id === 'note-text') {
+      var id = e.target.dataset.note; state.drafts[id] = e.target.value;
+      var ns = state.noteState[id]; if (ns && ns.status !== 'saving') state.noteState[id] = {};
+      var b = $('[data-act="save-note"]'); if (b) b.disabled = !noteDirty(id);
+      var st = $('#save-state'); if (st && noteDirty(id)) st.innerHTML = '<span class="muted">Unsaved changes</span>';
+    }
+  });
+  document.addEventListener('change', function (e) {
+    if (e.target.id === 'file-input' && e.target.files && e.target.files[0]) readRealFile(e.target.files[0]);
+    if (e.target.id && e.target.id.indexOf('c-') === 0) {
+      state.controls[e.target.id.slice(2)] = e.target.checked;
+      if (e.target.id === 'c-historyError' || e.target.id === 'c-historyEmpty') state.historyLoaded = true;
+      if (state.signedIn) render({});
+    }
+  });
+  document.addEventListener('dragover', function (e) { var d = e.target.closest && e.target.closest('#drop'); if (d) { e.preventDefault(); d.classList.add('over'); } });
+  document.addEventListener('dragleave', function (e) { var d = e.target.closest && e.target.closest('#drop'); if (d) d.classList.remove('over'); });
+  document.addEventListener('drop', function (e) { var d = e.target.closest && e.target.closest('#drop'); if (d) { e.preventDefault(); d.classList.remove('over'); if (e.dataTransfer.files && e.dataTransfer.files[0]) readRealFile(e.dataTransfer.files[0]); } });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && state.navOpen) { state.navOpen = false; render({ focus: '[data-act="menu"]' }); } });
+  window.addEventListener('beforeunload', function (e) { if (noteDirty(currentNoteId())) { e.preventDefault(); e.returnValue = ''; } });
+
+  function signInDone() {
+    state.signedIn = true; state.signin = { busy: false, error: null, show: false, fieldErr: {} };
+    var next = state.afterSignIn && state.afterSignIn.name !== 'signin' ? state.afterSignIn : { name: 'analyze' };
+    state.afterSignIn = { name: 'analyze' };
+    state.route = next; try { history.replaceState(next, '', '#' + token(next)); } catch (e) {}
+    render({ focus: 'h1' }); announce('Signed in to the demo.');
+  }
+  function doSignOut() {
+    var controls = state.controls; state = freshState(); state.controls = controls;
+    try { history.replaceState({ name: 'signin' }, '', '#signin'); } catch (e) {}
+    render({ focus: 'h1' }); announce('Signed out.');
+  }
+
+  /* leave dialog */
+  $('#leave-stay').addEventListener('click', function () { pendingNav = null; $('#dlg-leave').close(); var ta = $('#note-text'); if (ta) ta.focus(); });
+  $('#leave-go').addEventListener('click', function () {
+    var id = currentNoteId(); if (id) { delete state.drafts[id]; state.noteState[id] = {}; }
+    var p = pendingNav; pendingNav = null; $('#dlg-leave').close();
+    if (p && p.signout) { doSignOut(); return; }
+    if (p) navigate(p.next, Object.assign({}, p.opts, { force: true }));
+  });
+  $('#dlg-leave').addEventListener('cancel', function () { pendingNav = null; });
+
+  /* controls dialog */
+  function syncControls() { Object.keys(state.controls).forEach(function (k) { var el = document.getElementById('c-' + k); if (el) el.checked = !!state.controls[k]; }); }
+  $('#open-controls').addEventListener('click', function () { syncControls(); $('#dlg-controls').showModal(); });
+  $('#controls-close').addEventListener('click', function () { $('#dlg-controls').close(); });
+  $('#controls-reset').addEventListener('click', function () { $('#dlg-controls').close(); state = freshState(); try { history.replaceState({ name: 'signin' }, '', '#signin'); } catch (e) {} render({ focus: 'h1' }); announce('Prototype reset.'); });
+
+  /* boot */
+  var initial = parseHash();
+  if (initial && initial.name !== 'signin') state.afterSignIn = initial;
+  try { history.replaceState({ name: 'signin' }, '', '#signin'); } catch (e) {}
+  render({});
+})();
+</script>
+</body>
+</html>
