@@ -2105,6 +2105,76 @@ reviewed it.
 **Gate:** review of this PR. AI agents do not merge.
 
 ---
+
+### Entry 86 — Stage 8–9 official CNN run: evidence, selection results and briefs (2026-10-26)
+
+**Numbering:** provisional; the number is fixed at merge time. PR #51 took Entry 84 and
+`feat/stage13-window-runner` will take 85.
+
+**The run:** notebook 04 on Colab (Tesla T4), from `9be2f2545520432db08a0d083a06a668cd84103a`
+(merge of PR #50, the Entry 82 fix), 2026-10-26: Python 3.13.16, torch 2.11.0+cu130, CUDA 13.0;
+pytest 717 passed, 0 failures / errors / skipped; train and val-A log-Mel caches built twice,
+byte-identical; 6 training runs (4 D30 search runs at seed 0, seeds 1 and 2 of the winner), about
+10 minutes of training in total; 6 W&B runs, allow-listed keys only (D40); 9 files exported to
+Drive; those 9 plus the export manifest (10) re-verified after a remount. The first attempt
+(Entry 82) stopped at pytest; no result was seen.
+
+**Result (validation only):** selected **4 blocks, learning rate 1e-3** (unique lowest val-A EER,
+D30 tie rule not needed); seeds 0, 1, 2 best val-A EER 0.0 at epochs 10, 13, 9 (stopped at 15, 18,
+14 by patience 5); **bundle seed 0** (all three tie at the median; lower seed, D11). Peak GPU memory
+1,893,388,288–1,894,575,616 bytes. No val-B (Stage 10), no test (Stage 11), no external data.
+
+**Verification [verified]** (PR D section 0, on the Drive download outside the repo, against the
+code at `9be2f25`):
+- SHA-256 and size of the 9 exported files = the export manifest (9/9; none missing or extra).
+- `checkpoint_sha256` recomputed with the repository function and independently = `run_report.json`
+  (3/3). It is defined in `src/models/cnn_checkpoint.py:187-188` and recorded only in
+  `run_report.json`, not in `checkpoint.json`.
+- Provenance: `cnn_config_sha256` = `configs/cnn.yaml` at `9be2f25`; F2 = D28; F3 hash and
+  fingerprint = `profile_report.json`; `code_commit` = `9be2f25` everywhere.
+- Selection, early stopping and bundle seed recomputed from the per-epoch histories = the reports.
+- Executed notebook vs `notebooks/04_stage8_cnn.ipynb`: only the `COMMIT` line differs; execution
+  counts 1–11; no secret-like strings in the outputs.
+
+**Committed** (`docs/audit_evidence/stage8_cnn/`): the three reports and the export manifest
+(byte-identical, re-hashed after copying) and a README with the verification and the W&B run IDs.
+**Stayed on Drive:** the 6 checkpoint files (`checkpoints/cnn/cnn-v1/seed_{0,1,2}/`) and the
+executed notebook (`runs/stage8/04_stage8_cnn.ipynb`, SHA-256 `42c4a219…5d433d5a`, observed). Why:
+AGENTS.md rule 7 (no checkpoints in Git), and the executed notebook's outputs include a personal W&B
+account name; their hashes are committed instead. The manifest's own hash (`97544c54…6237e`) is
+observed only: the run checked it but did not print it.
+
+**Interpretation:** in `docs/results/cnn_selection.md`.
+- [verified] val-A has 660 bonafide and 670 spoof clips; one clip = 1/660 or 1/670; the four
+  configurations differ by 0–4 clips.
+- [inference] Baseline-v1's val-A EER 0.0014925 ≈ 1/670, so CNN vs baseline is one clip on val-A,
+  both selected on val-A: not a claimed improvement. H1 (Stage 11) and D36 (Stage 13) are the
+  pre-registered comparisons.
+- [hypothesis] EER 0 on all three seeds is consistent with in-domain shortcuts (bandwidth,
+  loudness, silence; Stage 7 analysis), to be tested, not explained away.
+- [hypothesis] The 3-block runs' best epochs (27, 26) are near the 30-epoch cap: possible cap
+  effect. The selection is valid under the pre-declared D30 protocol; nothing changes.
+- Reproducibility as observed (D42): caches byte-identical across two builds; training ran once
+  per configuration and seed, so re-run identity was not measured.
+
+**Gap found:** no pre-registered test targets loudness. D42 says shortcuts are tested by H5–H7 and
+D41, but H6 is bandwidth, H7 silence, H5 MP3 traces, and the Stage 14 conditions are noise, MP3
+and bandwidth (Protocol §9). To be raised as a proposed decision (D43) in a separate PR.
+
+**Also in this PR:** briefs `docs/stages/stage08-cnn-training.md` and
+`stage09-model-selection.md` (D32), draft, pending teach-back.
+
+**Decisions:** no new decision in this PR (next D-ID: D43).
+
+**AI assistance:** **Claude** (claude.ai) wrote the Claude Code prompts, designed the verification
+and reviewed each diff. **Claude Code** wrote the evidence README, the results document, the two
+briefs and this entry, and ran the local hashing, recomputation and test commands with Donia's
+approval. Donia ran the Colab run, staged the Drive files, ran the git checks, reviewed the outputs
+and approved each change. AI did not push, open or merge a PR.
+
+**Gate:** review of PR D; then the D43 proposal, the 08–09 teach-backs, then Stage 10.
+
+---
 ## Open items
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
@@ -2312,14 +2382,16 @@ reviewed it.
 - [ ] Decide the access-control mechanism (SRS §7.4) before the API stage (Stage 17), at the latest. The oracle-abuse residual risk (threat model §10.1) depends on it.
 
 **Stage 8 CNN training**
-- [ ] Stage 8 brief docs/stages/stage08-cnn-training.md (D32) when the stage closes
+- [ ] Stage 8 brief docs/stages/stage08-cnn-training.md (D32) when the stage closes (draft in PR D, Entry 86)
 - [x] Approve D42 (team) before any CNN code (Entry 76) (PR #44, 2026-10-24)
 - [x] Stage 8 PR A: verified log-Mel cache for train/val-A/val-B (Entry 77)
 - [x] Stage 8 PR B1: dependencies and CI, CNN, normalization, determinism, checkpoint (Entry 79)
 - [x] Stage 8 PR B2: training loop with early stopping, W&B allow-list wrapper, configs/cnn.yaml with drift guard, search orchestrator (D30 tie rule, seeds 1–2, select_bundle_seed); record the real GPU peak memory (D42 BatchNorm correction, Entry 79) (Entry 80)
 - [x] Stage 8 PR C: Colab notebook 04 (Drive first, clean detached checkout, torch 2.11.0 asserted, W&B key from Colab Secrets, WANDB_DIR outside the repo, log-Mel caches built twice and byte-compared, D30 search on GPU, checkpoints to Drive checkpoints/cnn/ only, real peak GPU memory recorded) (Entry 81; PR #49, merged as `0d88844`)
-- [ ] Stage 8 official Colab run of notebook 04 from the shadowing-fix merge commit (the first attempt from `0d88844` stopped at pytest; Entry 82)
-- [ ] Stage 8 PR D: commit the reviewed run evidence (reports, export manifest)
+- [x] Stage 8 official Colab run of notebook 04 from the shadowing-fix merge commit (the first attempt from `0d88844` stopped at pytest; Entry 82) (run from `9be2f25`, 2026-10-26; Entry 86)
+- [ ] Stage 8 PR D: commit the reviewed run evidence (reports, export manifest) (`docs/stage8-cnn-selection`, Entry 86; in review)
+- [ ] Propose D43: exploratory post-hoc loudness diagnostic (gap found in PR D, Entry 86)
+- [ ] Teach-backs for briefs 08–09 (D32)
 - [ ] Check that Khalil, Iheb and Malak accepted the W&B invite with the Member role
 
 **Stage 14 robustness (D41)**
@@ -2335,14 +2407,19 @@ reviewed it.
 
 ---
 
-## Current status — updated 2026-10-24
+## Current status — updated 2026-10-26
 
-**Status:** Stage 8 tests shadowing fix in review (Entry 82); the first official notebook 04 attempt stopped at pytest; next: re-run notebook 04 from the fix's merge commit, then PR D.
+**Status:** Stages 8–9 run complete (Entry 86), validation only: 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds; PR D (evidence, results, briefs 08–09) in review; next: PR D review, the D43 proposal, then Stage 10.
 
 **What was done:**
+- **Stages 8–9 official CNN run and PR D** on `docs/stage8-cnn-selection` (Entry 86): run from
+  `9be2f25` (717 tests passed, 6 runs); selected 4 blocks / lr 1e-3, bundle seed 0, val-A EER 0
+  for seeds 0–2 (validation only); evidence verified (hashes 9/9, `checkpoint_sha256` 3/3,
+  histories recomputed); results in `docs/results/cnn_selection.md`; briefs 08–09 drafted. Gap:
+  no pre-registered test targets loudness (D43 to be proposed).
 - **Stage 8 tests shadowing fix** on `fix/stage8-tests-shadowing` (Entry 82): `tests/__init__.py` and
   an exact-folder import-root guard, after Colab's site-packages `tests` stopped the first official
-  notebook 04 attempt at pytest; nothing ran after it.
+  notebook 04 attempt at pytest; nothing ran after it; merged as PR #50 (`9be2f25`).
 - **Stage 8 PR C, Colab notebook 04** on `feat/stage8-colab-notebook` (Entry 81): official runner
   for the caches and the D30 search, with a static test; merged as PR #49 (`0d88844`).
 - **Stage 8 PR B2, CNN training loop, W&B allow-list and D30 search** on
@@ -2436,8 +2513,8 @@ reviewed it.
 - Stage briefs (`docs/stages/`, D32): 00–07 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), and 07 (PR #43).
 
 **Branches:**
-- `origin/main`: at `6d84d8b` (PR B1 merged as #47, PR B2 as #48, PR C as #49, PR #33 as `6d84d8b`).
-- `fix/stage8-tests-shadowing`: tests shadowing fix (Entry 82), in review.
+- `origin/main`: at `6c29486` (PR B1 merged as #47, PR B2 as #48, PR C as #49, PR #33 as `6d84d8b`, the tests shadowing fix as #50 (`9be2f25`), the UI prototype as #51 (`6c29486`)).
+- `docs/stage8-cnn-selection`: Stage 8 PR D, run evidence, CNN selection results and briefs 08–09 (Entry 86), in review.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
@@ -2449,6 +2526,6 @@ reviewed it.
    Briefs 00–06 are accepted.
 2. Before Stage 13, implement the approved file-level view, speaker-average convention and guarded
    runner; resolve the external-run governance allowlist.
-3. Stage 7 is closed (PR #43); Stages 8–9 are current: Stage 8 PR C merged (#49); the tests shadowing fix (Entry 82) is in review; next: re-run notebook 04 from its merge commit, then PR D. Preserve the recorded validation-only scope of Entry 74.
+3. Stage 7 is closed (PR #43); Stages 8–9: the official run is complete (Entry 86), validation only; next: PR D review, the D43 proposal (exploratory post-hoc loudness diagnostic) in a separate PR, the 08–09 teach-backs (D32), then Stage 10 (risk policy and calibration on val-B with the seed-0 checkpoint). Preserve the recorded validation-only scope of Entries 74 and 86.
 4. D41 and ADR 0010 are approved in PR #46. Implement and review the closed-purpose registry and Stage 11 per-clip score storage before any FoR test access for the Stage 14 comparison.
 5. Then run the real Part C work on the frozen F3 preprocessing profile; the W&B project is set up (entity `voice-spoofing-detection-must`, project `voice-spoofing-detection`, D40), and teammates' Member invites are pending (see Open items).
