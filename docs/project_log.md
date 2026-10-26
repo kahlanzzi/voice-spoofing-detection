@@ -2213,6 +2213,37 @@ approved each change. AI did not push, open or merge a PR.
 **Gate:** D43 team approval (all four); implementation only at Stage 16, after D41's storage code.
 
 ---
+
+### Entry 88 — Stages 8–9 closed (D32) (2026-10-26)
+
+**Numbering:** follows Entry 87; the number is fixed at merge time (`feat/stage13-window-runner`
+will take 85).
+
+**What:** the briefs docs/stages/stage08-cnn-training.md and stage09-model-selection.md were merged
+with PR #52. Iheb, Malak and Khalil completed their D32 teach-back face to face on 2026-10-26,
+answering the §7 questions of both briefs without the author; Donia attended as author, correcting
+only (reported by Donia). No corrections to the briefs came up, so neither brief was revised. The
+written confirmation will be the approval of this closeout PR by Khalil and Iheb (D26). On
+`docs/stage8-9-closeout`, both brief statuses are set to accepted, and the stage-briefs index, the
+`AGENTS.md` roadmap and the CHANGELOG are updated, and an open item is added for the Stage 10 brief.
+
+**Checks:** full `pytest -q` from the project venv on this branch (local, Windows): 717 passed;
+`tests/governance/test_deepvoice_access.py` passed. This differs from Stage 7's four-folder run
+(Entry 75) and is the stronger check.
+
+**Status:** Stages 8–9 are done; Stage 10 (risk policy and calibration on val-B with the seed-0
+checkpoint) is current. The validation-only scope of Entry 86 is unchanged.
+
+**AI assistance:** **Claude** (claude.ai) wrote the Claude Code prompts and reviewed the diff.
+**Claude Code** checked the D32 rule and the PR #43 precedent read-only (and flagged that the first
+draft listed the author among the attendees without D32's 'without the author' distinction), applied
+the edits and ran the checks with Donia's approval. Donia reported the teach-back details and approved
+each change. AI did not push, open or merge a PR.
+
+**Gate:** approval of this PR by Khalil and Iheb is the written confirmation of the teach-back; AI
+does not approve or merge. **WAITING FOR HUMAN REVIEW.**
+
+---
 ## Open items
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
@@ -2324,6 +2355,7 @@ approved each change. AI did not push, open or merge a PR.
 - [x] Stage 7 brief docs/stages/stage07-baseline.md (D32): written; teach-back by Khalil and Iheb pending (Entry 74) (teach-back face to face, Entry 75)
 
 **Stage 10 risk policy (Entry 33)**
+- [ ] Stage 10 brief docs/stages/stage10-*.md (D32) when the stage closes
 - [x] Human review of `feat/stage10-risk-policy` (R1–R2); CI green on Python 3.13: merged as PR #17.
 - [ ] Watch: Platt's absolute gradient-norm stop; if the real val-B fit fails to converge, propose a
   relative criterion (no silent change).
@@ -2431,7 +2463,7 @@ approved each change. AI did not push, open or merge a PR.
 - [x] Propose D43: exploratory post-hoc loudness diagnostic (gap found in PR D, Entry 86) (Entry 87)
 - [x] D43 team approval (all four) (Entry 87) (PR #53, 2026-10-26)
 - [ ] Implement D43 at Stage 16, after the D41 storage implementation (Entry 87)
-- [ ] Teach-backs for briefs 08–09 (D32)
+- [x] Teach-backs for briefs 08–09 (D32) (2026-10-26, face to face: Iheb, Malak, Khalil; Donia attended as author; no corrections; Entry 88)
 - [ ] Check that Khalil, Iheb and Malak accepted the W&B invite with the Member role
 
 **Stage 14 robustness (D41)**
@@ -2449,9 +2481,12 @@ approved each change. AI did not push, open or merge a PR.
 
 ## Current status — updated 2026-10-26
 
-**Status:** Stages 8–9 run complete (Entry 86), validation only: 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds; PR D merged as PR #52; D43 (Stage 16 loudness diagnostic, exploratory in motivation, fully specified before test access) approved (PR #53, 2026-10-26; Entry 87), implementation only at Stage 16; next: the 08–09 teach-backs, then Stage 10.
+**Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), pending approval of `docs/stage8-9-closeout`. Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 is current.
 
 **What was done:**
+- **Stages 8–9 closed** on `docs/stage8-9-closeout` (Entry 88): D32 teach-back of briefs 08–09
+  by Iheb, Malak and Khalil, face to face, 2026-10-26 (Donia attended as author, correcting only;
+  no corrections); briefs accepted, index and roadmap updated.
 - **D43 approved** on `docs/stage16-d43-loudness-diagnostic` (Entry 87; PR #53, 2026-10-26): Stage 16
   within-class Spearman ρ(score, `rms_dbfs`) on the Stage 11 per-clip scores; no new inference or
   evaluation purpose; implementation only at Stage 16, after the D41 storage implementation.
@@ -2553,12 +2588,13 @@ approved each change. AI did not push, open or merge a PR.
 - Governance rules that keep the external set metadata-only until the one guarded Stage 13 run.
 - Corrected Stage 6 FoR evidence under `docs/audit_evidence/stage6_preprocessing/`: exact profile,
   deterministic validation, shortcut/padding screens, D18 invariance and no-training T4 benchmark.
-- Stage briefs (`docs/stages/`, D32): 00–07 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), and 07 (PR #43).
+- Stage briefs (`docs/stages/`, D32): 00–09 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), 07 (PR #43), and 08–09 (`docs/stage8-9-closeout`).
 
 **Branches:**
-- `origin/main`: at `ea26959` (PR B1 merged as #47, PR B2 as #48, PR C as #49, PR #33 as `6d84d8b`, the tests shadowing fix as #50 (`9be2f25`), the UI prototype as #51 (`6c29486`), PR D as #52 (`ea26959`)).
+- `origin/main`: at `a022e7a` (PR B1 merged as #47, PR B2 as #48, PR C as #49, PR #33 as `6d84d8b`, the tests shadowing fix as #50 (`9be2f25`), the UI prototype as #51 (`6c29486`), PR D as #52 (`ea26959`), D43 as #53 (`a022e7a`)).
 - `docs/stage8-cnn-selection`: merged as PR #52; the remote branch can be deleted.
-- `docs/stage16-d43-loudness-diagnostic`: D43 proposal and approval (Entry 87), PR #53.
+- `docs/stage16-d43-loudness-diagnostic`: D43 proposal and approval (Entry 87), merged as PR #53 (`a022e7a`).
+- `docs/stage8-9-closeout`: Stages 8–9 closeout (Entry 88), in review.
 - `feat/stage13-window-runner`: D35 per-window integration test; its log entry needs renumbering to 85.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
@@ -2571,6 +2607,6 @@ approved each change. AI did not push, open or merge a PR.
    Briefs 00–06 are accepted.
 2. Before Stage 13, implement the approved file-level view, speaker-average convention and guarded
    runner; resolve the external-run governance allowlist.
-3. Stage 7 is closed (PR #43); Stages 8–9: the official run is complete (Entry 86), validation only; PR D merged as #52; D43 approved (PR #53, Entry 87; implementation only at Stage 16, after the D41 storage implementation); next: the 08–09 teach-backs (D32), then Stage 10 (risk policy and calibration on val-B with the seed-0 checkpoint). Preserve the recorded validation-only scope of Entries 74 and 86.
+3. Stage 7 is closed (PR #43); Stages 8–9: the official run is complete (Entry 86), validation only; PR D merged as #52; D43 approved (PR #53, Entry 87; implementation only at Stage 16, after the D41 storage implementation); the 08–09 teach-backs are done (Entry 88); next: Stage 10 (risk policy and calibration on val-B with the seed-0 checkpoint). Preserve the recorded validation-only scope of Entries 74 and 86.
 4. D41 and ADR 0010 are approved in PR #46. Implement and review the closed-purpose registry and Stage 11 per-clip score storage before any FoR test access for the Stage 14 comparison.
 5. Then run the real Part C work on the frozen F3 preprocessing profile; the W&B project is set up (entity `voice-spoofing-detection-must`, project `voice-spoofing-detection`, D40), and teammates' Member invites are pending (see Open items).

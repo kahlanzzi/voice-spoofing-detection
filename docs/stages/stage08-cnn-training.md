@@ -5,7 +5,7 @@
 | **Stage** | 8 — CNN training (with Stage 9, model selection: [stage09-model-selection.md](stage09-model-selection.md)) |
 | **Owner** | Donia Mabrouk (D26, Part C) |
 | **Reviewer(s)** | Khalil Dridi and Iheb Zemzemi (D26: consumers of Part C) |
-| **Status** | Draft, pending teach-back (D32) |
+| **Status** | Accepted (closeout PR docs/stage8-9-closeout) |
 | **Date** | 2026-10-26 |
 | **Related PRs** | #44 (D42), #45 (log-Mel cache), #47 (CNN foundations), #48 (training loop, W&B, search), #49 (notebook 04), #50 (tests shadowing fix), and the results branch `docs/stage8-cnn-selection` |
 

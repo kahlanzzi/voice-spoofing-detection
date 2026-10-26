@@ -5,7 +5,7 @@
 | **Stage** | 9 — Model selection (FoR val-A) (with Stage 8, training: [stage08-cnn-training.md](stage08-cnn-training.md)) |
 | **Owner** | Donia Mabrouk (D26, Part C) |
 | **Reviewer(s)** | Khalil Dridi and Iheb Zemzemi (D26: consumers of Part C) |
-| **Status** | Draft, pending teach-back (D32) |
+| **Status** | Accepted (closeout PR docs/stage8-9-closeout) |
 | **Date** | 2026-10-26 |
 | **Related PRs** | #16 (D30), #48 (search and selection code), #49 (notebook 04), #50 (tests shadowing fix), and the results branch `docs/stage8-cnn-selection` |
 
