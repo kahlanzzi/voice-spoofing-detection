@@ -1991,6 +1991,83 @@ AI did not push, open or merge a PR.
 
 ---
 
+### Entry 82 — Stage 8: fix for the `tests` package shadowed on Colab (2026-10-24)
+
+**Numbering:** follows Entry 81; the number is fixed at merge time.
+
+**What happened:** the first official attempt of notebook 04, from the PR C merge commit
+`0d88844df501747cfb64cbac72446318b5a15275` on Colab (Python 3.13), stopped at cell 6 (pytest) with
+8 collection errors `ModuleNotFoundError: No module named 'tests._torch'` (`tests/models/test_cnn.py`,
+`test_cnn_checkpoint.py`, `tests/test_torch_guard.py`, `tests/training/{test_cnn_config,
+test_determinism,test_train_cnn,test_wandb_logger}.py`, `tests/tuning/test_cnn_search.py`). The
+notebook stops on a failed test run, so nothing ran after it: no caches, no W&B, no search, nothing
+written to Drive. No result was seen.
+
+**Cause (confirmed by a probe in that runtime):** `import tests` resolved to
+`/usr/local/lib/python3.13/dist-packages/tests/__init__.py`, a regular package installed by
+`keyrings.google-artifactregistry-auth`, `pandas-datareader` and `spanner-graph-notebook`. The repo's
+`tests/` had no `__init__.py`, so it was a namespace package, and a regular package anywhere on
+`sys.path` beats a namespace package, even one earlier on the path. `src` was checked the same way and
+was safe: `src/__init__.py` exists, `import src` resolved to the clone, and no installed package ships
+a top-level `src`. CI and local runs passed because no installed package there ships a top-level
+`tests`.
+
+**Fix** on `fix/stage8-tests-shadowing` (`abf4f46`):
+- An empty `tests/__init__.py`. This is deterministic: `pytest.ini` already sets `pythonpath = .`, which
+  pytest inserts at `sys.path[0]` under both `pytest` and `python -m pytest`, so the repo root comes
+  before `PYTHONPATH` and site-packages; with both copies now regular packages, the first on the path,
+  the repo's, wins. No `pytest.ini` change was needed.
+- A guard test, `tests/test_import_roots.py`: for `tests` and `src` it asserts `__file__` is not `None`
+  (a namespace package means `__init__.py` is missing, which is the bug) and that the package folder is
+  exactly `<repo root>/tests` or `<repo root>/src`, with a message naming the resolved location. It
+  checks the exact folder, not "inside the repo root", because the local `.venv` lives inside the repo
+  root and a venv package shipping `tests` would otherwise pass.
+- No test logic, `src/` code, config or notebook changed.
+
+**Evidence [verified]** (local `.venv`, Python 3.14.7, a fake `tests/__init__.py` and
+`src/__init__.py` in a temp folder outside the repo used as the shadow):
+- Before the fix, `PYTHONPATH=<shadow> REQUIRE_TORCH_TESTS=1 python -m pytest -q` → the same 8
+  collection errors as Colab (`8 errors in 1.62s`).
+- After the fix, with the shadow: `python -m pytest` → `715 passed in 106.14s`; `pytest` →
+  `715 passed in 89.39s`; 0 skipped.
+- Mutation checks, each restored afterwards (`git status` clean): (1) shadow on `PYTHONPATH` with
+  `tests/__init__.py` removed → the guard fails naming the shadow, and the full suite returns to
+  8 collection errors; (2) a fake `tests` under `.venv/` (inside the repo root) first on `PYTHONPATH`,
+  with `tests/__init__.py` removed so that it wins → the new guard fails naming the `.venv` location,
+  while the first version of the guard (`is_relative_to(repo root)`) passed, which is why it was
+  tightened; (3) `tests/__init__.py` removed with no shadow → the guard fails on the namespace-package
+  assertion. With `tests/__init__.py` present, pytest imports the guard as `tests.test_import_roots`,
+  which ties `tests` to the repo, so a fake cannot win in that layout.
+- Normal run, `REQUIRE_TORCH_TESTS=1 python -m pytest -q` → `715 passed` (713 + 2 guard tests).
+
+**Constraint:** the `tests/` subfolders still have no `__init__.py`, so pytest imports their files by
+basename; test-file basenames must stay unique across `tests/` (none are duplicated today).
+
+**Why fix it in the repo, not in Colab:** a notebook workaround (for example editing `sys.path` or
+uninstalling packages) would make the official run differ from the reviewed commit; the official run
+must equal the reviewed commit.
+
+**Integration:** updated against main after PR #33 (Entry 83) merged; resolved conflicts in the living
+sections only, removed stray `<<` prefixes from two living lines that came with #33, and updated its
+stale status lines. Entry 83 is unchanged.
+
+**Decisions:** no new decision (next D-ID stays D43). The official re-run uses this PR's merge commit
+as `COMMIT`.
+
+**AI assistance:** **Claude** (claude.ai) diagnosed the cause from the Colab output, wrote the probes
+and the Claude Code prompts, and reviewed each diff. **Claude Code** wrote the fix, the guard and this
+entry, and ran the local reproduction, mutation and test commands with Donia's approval. Donia ran the
+Colab run and probes and the git checks on main, reviewed the outputs and approved each change. AI did
+not push, open or merge a PR.
+
+**Correction to Entry 81:** its AI-assistance line says Donia ran every command. In PR C, Claude Code
+also ran the local test and mutation commands with Donia's approval; Donia ran the git checks on main
+and the Colab run. Entry 81 is unchanged because it is merged.
+
+**Gate:** review of this PR; then re-run notebook 04 from its merge commit, then PR D (evidence).
+
+---
+
 ### Entry 83 — Synthetic clustered discrimination checks (2026-10-18)
 
 **Numbering:** renumbered from provisional Entry 57 after updating this branch against current
@@ -2030,7 +2107,7 @@ reviewed it.
 ---
 ## Open items
 
-- [ ] Review synthetic clustered discrimination tests and obtain CI (Entry 83).
+- [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
 **Part C: external comparison (Entry 58)**
 - [x] Approve D36 (all four) before F4. (PR #29, 2026-10-19)
 - [x] Iheb to accept or revise D33–D35 (and D36) in the review of this PR; when all four have
@@ -2124,7 +2201,7 @@ reviewed it.
 - [x] Baseline threshold: own val-B EER point, forced binary only (Donia, before Stage 7 results): D29 (Entry 32).
 - [x] Exact CNN model-selection search space in `configs/` (Donia, before Stage 8): D30 (Entry 32).
 - [x] Enforcement of "Stage 11 runs once" (run registry) (Donia, before Stage 11): D31 (Entry 32).
-<<- [x] File-level decisions for DEEP-VOICE: frozen band on the file mean of p, secondary view (Khalil, before Stage 13). (D34 approved, PR #29, 2026-10-19)
+- [x] File-level decisions for DEEP-VOICE: frozen band on the file mean of p, secondary view (Khalil, before Stage 13). (D34 approved, PR #29, 2026-10-19)
 - [x] Colab install of scikit-learn 1.9.1: verified in Donia's Colab environment check at `bf8096c`
   (366 passed; Entry 72). Stage 7 notebooks mount Drive before installing `requirements.txt`.
 - [x] Approve D37 (team review) (Entry 53): approved via PR #30 (Khalil, Malak), 2026-10-18 (Entry 72).
@@ -2240,8 +2317,8 @@ reviewed it.
 - [x] Stage 8 PR A: verified log-Mel cache for train/val-A/val-B (Entry 77)
 - [x] Stage 8 PR B1: dependencies and CI, CNN, normalization, determinism, checkpoint (Entry 79)
 - [x] Stage 8 PR B2: training loop with early stopping, W&B allow-list wrapper, configs/cnn.yaml with drift guard, search orchestrator (D30 tie rule, seeds 1–2, select_bundle_seed); record the real GPU peak memory (D42 BatchNorm correction, Entry 79) (Entry 80)
-- [ ] Stage 8 PR C: Colab notebook 04 (Drive first, clean detached checkout, torch 2.11.0 asserted, W&B key from Colab Secrets, WANDB_DIR outside the repo, log-Mel caches built twice and byte-compared, D30 search on GPU, checkpoints to Drive checkpoints/cnn/ only, real peak GPU memory recorded) — written, in review (Entry 81)
-- [ ] Stage 8 official Colab run of notebook 04 from the PR C merge commit
+- [x] Stage 8 PR C: Colab notebook 04 (Drive first, clean detached checkout, torch 2.11.0 asserted, W&B key from Colab Secrets, WANDB_DIR outside the repo, log-Mel caches built twice and byte-compared, D30 search on GPU, checkpoints to Drive checkpoints/cnn/ only, real peak GPU memory recorded) (Entry 81; PR #49, merged as `0d88844`)
+- [ ] Stage 8 official Colab run of notebook 04 from the shadowing-fix merge commit (the first attempt from `0d88844` stopped at pytest; Entry 82)
 - [ ] Stage 8 PR D: commit the reviewed run evidence (reports, export manifest)
 - [ ] Check that Khalil, Iheb and Malak accepted the W&B invite with the Member role
 
@@ -2260,11 +2337,14 @@ reviewed it.
 
 ## Current status — updated 2026-10-24
 
-**Status:** Stage 8 PR C (Colab notebook) in review; next: official Colab run, then PR D.
+**Status:** Stage 8 tests shadowing fix in review (Entry 82); the first official notebook 04 attempt stopped at pytest; next: re-run notebook 04 from the fix's merge commit, then PR D.
 
 **What was done:**
-<<- **Stage 8 PR C, Colab notebook 04** on `feat/stage8-colab-notebook` (Entry 81): official runner
-  for the caches and the D30 search, with a static test; not yet run in Colab.
+- **Stage 8 tests shadowing fix** on `fix/stage8-tests-shadowing` (Entry 82): `tests/__init__.py` and
+  an exact-folder import-root guard, after Colab's site-packages `tests` stopped the first official
+  notebook 04 attempt at pytest; nothing ran after it.
+- **Stage 8 PR C, Colab notebook 04** on `feat/stage8-colab-notebook` (Entry 81): official runner
+  for the caches and the D30 search, with a static test; merged as PR #49 (`0d88844`).
 - **Stage 8 PR B2, CNN training loop, W&B allow-list and D30 search** on
   `feat/stage8-cnn-training` (Entry 80): `configs/cnn.yaml` with drift guard, D42 early stopping,
   allow-list W&B logger, search orchestrator; synthetic tests only, no real training run.
@@ -2283,7 +2363,7 @@ reviewed it.
   accepted after Donia's D32 teach-back (with AI assistance). D40 (W&B from Stage 8) approved and H7
   (silence shortcut, Stage 16) pre-registered (PR #40). Donia's Colab
   environment check at `bf8096c`: Python 3.13.16, scikit-learn 1.9.1, 366 tests passed.
-- Prepared synthetic clustered EER/AUC checks with invalid-resample count oracles (Entry 83); human review pending.
+- Prepared synthetic clustered EER/AUC checks with invalid-resample count oracles (Entry 83); merged as PR #33 (`6d84d8b`).
 - Added the D35 per-window preprocessing integration-test requirement (Entry 55); implementation pending.
 - **D36 approved** (ADR 0009, Entry 58): the baseline is scored with the CNN in the single external
   run, so RQ2 can be answered externally (PR #29, 2026-10-19).
@@ -2356,8 +2436,8 @@ reviewed it.
 - Stage briefs (`docs/stages/`, D32): 00–07 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), and 07 (PR #43).
 
 **Branches:**
-<<- `origin/main`: at `fa6190a` (PR B1 merged as #47, PR B2 as #48).
-- `feat/stage8-colab-notebook`: Stage 8 PR C (Entry 81), in review.
+- `origin/main`: at `6d84d8b` (PR B1 merged as #47, PR B2 as #48, PR C as #49, PR #33 as `6d84d8b`).
+- `fix/stage8-tests-shadowing`: tests shadowing fix (Entry 82), in review.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
@@ -2369,6 +2449,6 @@ reviewed it.
    Briefs 00–06 are accepted.
 2. Before Stage 13, implement the approved file-level view, speaker-average convention and guarded
    runner; resolve the external-run governance allowlist.
-3. Stage 7 is closed (PR #43); Stages 8–9 are current: Stage 8 PR C (Colab notebook) in review; next: official Colab run, then PR D. Preserve the recorded validation-only scope of Entry 74.
+3. Stage 7 is closed (PR #43); Stages 8–9 are current: Stage 8 PR C merged (#49); the tests shadowing fix (Entry 82) is in review; next: re-run notebook 04 from its merge commit, then PR D. Preserve the recorded validation-only scope of Entry 74.
 4. D41 and ADR 0010 are approved in PR #46. Implement and review the closed-purpose registry and Stage 11 per-clip score storage before any FoR test access for the Stage 14 comparison.
 5. Then run the real Part C work on the frozen F3 preprocessing profile; the W&B project is set up (entity `voice-spoofing-detection-must`, project `voice-spoofing-detection`, D40), and teammates' Member invites are pending (see Open items).
