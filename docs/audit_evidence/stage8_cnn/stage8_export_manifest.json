@@ -1,0 +1,75 @@
+{
+  "cache_sha256": {
+    "train/train.json": "243a81f1bd2933affb0bcecb51c4adab65a3cc9c72778f09090906d2c1853f1b",
+    "train/train.npz": "37b8915f6632bf8789eba922b02929170a0d8c2da5360feb6328aa95ae2ddda8",
+    "val-A/val-A.json": "10dbba2533b652ceccbeae2927161cafb4b7676798c79e5b37bb528d809dc9fc",
+    "val-A/val-A.npz": "4502eea2f77cfd83d7e2b1d777e392fa460a13e805a936faa2788df8e7862c81"
+  },
+  "commit": "9be2f2545520432db08a0d083a06a668cd84103a",
+  "created_utc": "2026-10-26T11:07:57+00:00",
+  "cuda_version": "13.0",
+  "cudnn_version": 92700,
+  "f3": {
+    "config_sha256": "7bd35bfdcb9270dd55ea9e73449c7bf6c6a359a80335b2551c0c89dde77c8630",
+    "fingerprint": "5b4f5849a9bb63f9016dd79969ff5bfb9e37006acbff1e26bbfee4ee2bad68f2"
+  },
+  "files": [
+    {
+      "path": "checkpoints/cnn/cnn-v1/seed_0/checkpoint.json",
+      "sha256": "dc0f8b0e9a8549583478db7d1a94e24d01668af9459bfd692895abcc83c98932",
+      "size": 1350
+    },
+    {
+      "path": "checkpoints/cnn/cnn-v1/seed_0/weights.safetensors",
+      "sha256": "6722f8587b54aaea649456a04ec3074fb30883d549bf48ea6a6ffa9111dcf835",
+      "size": 396084
+    },
+    {
+      "path": "checkpoints/cnn/cnn-v1/seed_1/checkpoint.json",
+      "sha256": "15d0ed5d0fd92acbd724a09332120d01e6ef72b6ecf18170e96d27561299e32e",
+      "size": 1350
+    },
+    {
+      "path": "checkpoints/cnn/cnn-v1/seed_1/weights.safetensors",
+      "sha256": "b687b780c537aec10ab3e239d8ebe76dd4f2750ce855df51e97fd351520a3d4d",
+      "size": 396084
+    },
+    {
+      "path": "checkpoints/cnn/cnn-v1/seed_2/checkpoint.json",
+      "sha256": "2611eeb7fe756fcd5bf16a9e377ca17653b8af4d5911cedf95b6a176ba1c6250",
+      "size": 1349
+    },
+    {
+      "path": "checkpoints/cnn/cnn-v1/seed_2/weights.safetensors",
+      "sha256": "0dd41a6e7fb5561c47cf158fe6b7bddccc536b46b85748f14443e036df568709",
+      "size": 396084
+    },
+    {
+      "path": "processed/metadata/stage8/search_report.json",
+      "sha256": "3d72956bbe5757943d2572e40aff4a7cf8f80778c3e5d27e25e3fac6eea9916f",
+      "size": 22220
+    },
+    {
+      "path": "processed/metadata/stage8/selection_report.json",
+      "sha256": "5c55f2da6c0c12ef9bf344ab5684e547f5e9776110bda5ebc52dbcaf50ba4c4a",
+      "size": 11006
+    },
+    {
+      "path": "processed/metadata/stage8/run_report.json",
+      "sha256": "c0e1be359949cceffde74444c026b2f55607134d3ada3bc88fd96f298db89b23",
+      "size": 2082
+    }
+  ],
+  "for_archive_sha256_observed": "9bddb83503ab442e9c7f54a1b7b9c02bc0ce32ed93f7863f28de5f59b6540b46",
+  "for_revision": "ff8c82c79e7bbefef811941bac9775c9328e9055",
+  "gpu_name": "Tesla T4",
+  "pytest_counts": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 717
+  },
+  "python": "3.13.16",
+  "torch": "2.11.0+cu130",
+  "version": "cnn-v1"
+}
