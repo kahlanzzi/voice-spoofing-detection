@@ -2429,7 +2429,7 @@ approved each change. AI did not push, open or merge a PR.
 - [x] Stage 8 official Colab run of notebook 04 from the shadowing-fix merge commit (the first attempt from `0d88844` stopped at pytest; Entry 82) (run from `9be2f25`, 2026-10-26; Entry 86)
 - [x] Stage 8 PR D: commit the reviewed run evidence (reports, export manifest) (`docs/stage8-cnn-selection`, Entry 86; merged as PR #52, `ea26959`)
 - [x] Propose D43: exploratory post-hoc loudness diagnostic (gap found in PR D, Entry 86) (Entry 87)
-- [ ] D43 team approval (all four) (Entry 87)
+- [x] D43 team approval (all four) (Entry 87) (PR #53, 2026-10-26)
 - [ ] Implement D43 at Stage 16, after the D41 storage implementation (Entry 87)
 - [ ] Teach-backs for briefs 08–09 (D32)
 - [ ] Check that Khalil, Iheb and Malak accepted the W&B invite with the Member role
@@ -2449,17 +2449,17 @@ approved each change. AI did not push, open or merge a PR.
 
 ## Current status — updated 2026-10-26
 
-**Status:** Stages 8–9 run complete (Entry 86), validation only: 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds; PR D merged as PR #52; D43 (Stage 16 loudness diagnostic, exploratory in motivation, fully specified before test access) proposed (Entry 87), awaiting team approval; next: D43 review, the 08–09 teach-backs, then Stage 10.
+**Status:** Stages 8–9 run complete (Entry 86), validation only: 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds; PR D merged as PR #52; D43 (Stage 16 loudness diagnostic, exploratory in motivation, fully specified before test access) approved (PR #53, 2026-10-26; Entry 87), implementation only at Stage 16; next: the 08–09 teach-backs, then Stage 10.
 
 **What was done:**
-- **D43 proposed** on `docs/stage16-d43-loudness-diagnostic` (Entry 87): Stage 16 within-class
-  Spearman ρ(score, `rms_dbfs`) on the Stage 11 per-clip scores; no new inference or evaluation
-  purpose; not approved for implementation.
+- **D43 approved** on `docs/stage16-d43-loudness-diagnostic` (Entry 87; PR #53, 2026-10-26): Stage 16
+  within-class Spearman ρ(score, `rms_dbfs`) on the Stage 11 per-clip scores; no new inference or
+  evaluation purpose; implementation only at Stage 16, after the D41 storage implementation.
 - **Stages 8–9 official CNN run and PR D**, merged as PR #52 (`ea26959`) (Entry 86): run from
   `9be2f25` (717 tests passed, 6 runs); selected 4 blocks / lr 1e-3, bundle seed 0, val-A EER 0
   for seeds 0–2 (validation only); evidence verified (hashes 9/9, `checkpoint_sha256` 3/3,
   histories recomputed); results in `docs/results/cnn_selection.md`; briefs 08–09 drafted. Gap:
-  no pre-registered test targets loudness (D43 proposed, Entry 87).
+  no pre-registered test targets loudness (D43 approved, Entry 87; PR #53).
 - **Stage 8 tests shadowing fix** on `fix/stage8-tests-shadowing` (Entry 82): `tests/__init__.py` and
   an exact-folder import-root guard, after Colab's site-packages `tests` stopped the first official
   notebook 04 attempt at pytest; nothing ran after it; merged as PR #50 (`9be2f25`).
@@ -2558,7 +2558,7 @@ approved each change. AI did not push, open or merge a PR.
 **Branches:**
 - `origin/main`: at `ea26959` (PR B1 merged as #47, PR B2 as #48, PR C as #49, PR #33 as `6d84d8b`, the tests shadowing fix as #50 (`9be2f25`), the UI prototype as #51 (`6c29486`), PR D as #52 (`ea26959`)).
 - `docs/stage8-cnn-selection`: merged as PR #52; the remote branch can be deleted.
-- `docs/stage16-d43-loudness-diagnostic`: D43 proposal (Entry 87), not pushed yet.
+- `docs/stage16-d43-loudness-diagnostic`: D43 proposal and approval (Entry 87), PR #53.
 - `feat/stage13-window-runner`: D35 per-window integration test; its log entry needs renumbering to 85.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
@@ -2571,6 +2571,6 @@ approved each change. AI did not push, open or merge a PR.
    Briefs 00–06 are accepted.
 2. Before Stage 13, implement the approved file-level view, speaker-average convention and guarded
    runner; resolve the external-run governance allowlist.
-3. Stage 7 is closed (PR #43); Stages 8–9: the official run is complete (Entry 86), validation only; PR D merged as #52; next: team review of D43 (proposed, Entry 87; implementation only at Stage 16), the 08–09 teach-backs (D32), then Stage 10 (risk policy and calibration on val-B with the seed-0 checkpoint). Preserve the recorded validation-only scope of Entries 74 and 86.
+3. Stage 7 is closed (PR #43); Stages 8–9: the official run is complete (Entry 86), validation only; PR D merged as #52; D43 approved (PR #53, Entry 87; implementation only at Stage 16, after the D41 storage implementation); next: the 08–09 teach-backs (D32), then Stage 10 (risk policy and calibration on val-B with the seed-0 checkpoint). Preserve the recorded validation-only scope of Entries 74 and 86.
 4. D41 and ADR 0010 are approved in PR #46. Implement and review the closed-purpose registry and Stage 11 per-clip score storage before any FoR test access for the Stage 14 comparison.
 5. Then run the real Part C work on the frozen F3 preprocessing profile; the W&B project is set up (entity `voice-spoofing-detection-must`, project `voice-spoofing-detection`, D40), and teammates' Member invites are pending (see Open items).
