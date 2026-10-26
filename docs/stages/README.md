@@ -76,8 +76,8 @@ flowchart LR
 | 5 Dataset freeze (F2) | Malak | `stage05-dataset-freeze.md` | accepted (PR #37; D32 teach-back by Donia with AI assistance) |
 | 6 Preprocessing profile v1 | Malak | `stage06-preprocessing.md` | accepted (PR #37; D32 teach-back by Donia with AI assistance) |
 | 7 Evaluation harness + baseline | Donia | `stage07-baseline.md` | accepted (D32 teach-back: Khalil and Iheb, face to face, reported 2026-10-24; confirmed by approval of the docs/stage7-closeout PR) |
-| 8 CNN training | Donia | `stage08-cnn-training.md` | after the stage closes |
-| 9 Model selection | Donia | `stage09-model-selection.md` | after the stage closes |
+| 8 CNN training | Donia | `stage08-cnn-training.md` | accepted (D32 teach-back: Iheb, Malak and Khalil, face to face, 2026-10-26; Donia attended as author, correcting only; no corrections to the brief; confirmed by approval of the docs/stage8-9-closeout PR) |
+| 9 Model selection | Donia | `stage09-model-selection.md` | accepted (D32 teach-back: Iheb, Malak and Khalil, face to face, 2026-10-26; Donia attended as author, correcting only; no corrections to the brief; confirmed by approval of the docs/stage8-9-closeout PR) |
 | 10 Risk policy + calibration | Donia | `stage10-risk-policy.md` | after the stage closes |
 | 11 FoR internal test | Donia | `stage11-for-test.md` | after the stage closes |
 | 12 ModelBundle freeze (F4) | Donia | `stage12-bundle-freeze.md` | after the stage closes |
