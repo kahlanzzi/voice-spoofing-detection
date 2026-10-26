@@ -1,0 +1,60 @@
+{
+  "bundle_seed": 0,
+  "caches": {
+    "train": {
+      "n_rows": 12404,
+      "npz_sha256": "37b8915f6632bf8789eba922b02929170a0d8c2da5360feb6328aa95ae2ddda8"
+    },
+    "val-A": {
+      "n_rows": 1330,
+      "npz_sha256": "4502eea2f77cfd83d7e2b1d777e392fa460a13e805a936faa2788df8e7862c81"
+    }
+  },
+  "checkpoint_sha256": {
+    "0": "c33eb82086d3bc40f3dedf1356addc6e5c1924ca2e517b0d4527b447e1958932",
+    "1": "4bee66b6ee54323d31208a2ee1f47970622691e77fa371fd424830225fca4dac",
+    "2": "476c4bee2d735de71236c202324274e2b68d0d9cd9ccdc68bac8691be36ba110"
+  },
+  "cnn_config_sha256": "d6772100d352305494b848e37f1dcba304cb4c3ee3af9bc0e359c9ad95a8d6ee",
+  "code_commit": "9be2f2545520432db08a0d083a06a668cd84103a",
+  "environment": {
+    "cuda_available": "true",
+    "cuda_version": "13.0",
+    "cudnn_version": "92700",
+    "device": "cuda",
+    "gpu_name": "Tesla T4",
+    "numpy": "2.5.3",
+    "python": "3.13.16",
+    "safetensors": "0.8.0",
+    "torch": "2.11.0+cu130",
+    "wandb": "0.31.0"
+  },
+  "f2_manifest_sha256": "badfe948fb7b833357783dd18be00f6bb36253cf8699dc4c4beb4df2b07706f8",
+  "peak_gpu_memory_bytes": {
+    "cnn-v1-b3-lr0.0003-s0": 1893388288,
+    "cnn-v1-b3-lr0.001-s0": 1893388288,
+    "cnn-v1-b4-lr0.0003-s0": 1894575616,
+    "cnn-v1-b4-lr0.001-s0": 1894575616,
+    "cnn-v1-b4-lr0.001-s1": 1894575616,
+    "cnn-v1-b4-lr0.001-s2": 1894575616
+  },
+  "profile_config_sha256": "7bd35bfdcb9270dd55ea9e73449c7bf6c6a359a80335b2551c0c89dde77c8630",
+  "profile_fingerprint": "5b4f5849a9bb63f9016dd79969ff5bfb9e37006acbff1e26bbfee4ee2bad68f2",
+  "schema_version": 1,
+  "selected": {
+    "learning_rate": 0.001,
+    "n_blocks": 4
+  },
+  "train_cache_npz_sha256": "37b8915f6632bf8789eba922b02929170a0d8c2da5360feb6328aa95ae2ddda8",
+  "val_a_cache_npz_sha256": "4502eea2f77cfd83d7e2b1d777e392fa460a13e805a936faa2788df8e7862c81",
+  "version": "cnn-v1",
+  "wandb_mode": "online",
+  "wandb_runs": [
+    "cnn-v1-b3-lr0.0003-s0",
+    "cnn-v1-b3-lr0.001-s0",
+    "cnn-v1-b4-lr0.0003-s0",
+    "cnn-v1-b4-lr0.001-s0",
+    "cnn-v1-b4-lr0.001-s1",
+    "cnn-v1-b4-lr0.001-s2"
+  ]
+}

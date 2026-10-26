@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 8 PR D: official CNN run evidence (`docs/audit_evidence/stage8_cnn/`: three reports, export manifest, verification README), validation results `docs/results/cnn_selection.md` (4 blocks, lr 1e-3, bundle seed 0) and draft briefs 08–09.
 - `docs/design/`: clickable analyst-console prototype (design reference for D38 / Stage 18, mock data only) and its README.
 - Synthetic clustered EER/ROC-AUC integration tests with count-based oracles and exact invalid-resample accounting (D4/D11).
 - Stage 8 PR C: Colab notebook 04 for the official CNN run (Drive only, full-SHA clean checkout, torch 2.11.0 and Python 3.13 asserted, JUnit skip check, train/val-A log-Mel caches built twice and compared, one D30 search, W&B key loaded last, hashed Drive export re-verified after remount) and its static test `tests/governance/test_notebook_04_stage8.py`.
