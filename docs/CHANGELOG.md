@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- D43 (approved, PR #53): Stage 16 loudness diagnostic, exploratory in motivation and fully specified before test access (within-class Spearman of score vs RMS on the Stage 11 per-clip scores); implementation only at Stage 16, after the D41 storage implementation.
 - Stage 8 PR D: official CNN run evidence (`docs/audit_evidence/stage8_cnn/`: three reports, export manifest, verification README), validation results `docs/results/cnn_selection.md` (4 blocks, lr 1e-3, bundle seed 0) and draft briefs 08–09.
 - `docs/design/`: clickable analyst-console prototype (design reference for D38 / Stage 18, mock data only) and its README.
 - Synthetic clustered EER/ROC-AUC integration tests with count-based oracles and exact invalid-resample accounting (D4/D11).
