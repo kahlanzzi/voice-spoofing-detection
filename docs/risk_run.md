@@ -38,7 +38,12 @@ step 7.
 2. Bundle seed and expected `checkpoint_sha256` are read from the committed Stage 8 evidence (no
    hash in the code). `load_checkpoint(checkpoint_dir, expected_sha256=...)` verifies the bytes it
    loads; the checkpoint metadata `seed` must equal the bundle seed (D45).
-3. Reproduction check on val-A: the cache is loaded and bound to the profile file
+3. Provenance checks against the checkpoint metadata: `profile.fingerprint()` must equal
+   `profile_fingerprint` and the SHA-256 of the F2 manifest file must equal `f2_manifest_sha256`
+   (before any cache is read); after val-A is loaded, its `npz_sha256` must equal
+   `val_a_cache_npz_sha256` (before val-B is read). Expected and actual values go to
+   `run_report.json` under `provenance_checks`.
+   Reproduction check on val-A: the cache is loaded and bound to the profile file
    (`profile_config_sha256`); every cached path must be an F2 val-A row with the same label, and
    every F2 val-A row must be in the cache. The clips are scored on CPU by the training path
    (`apply_bin_stats` with the checkpoint's mean and std → `torch.from_numpy` → `train_cnn._score`,
@@ -58,7 +63,7 @@ step 7.
 | `risk_policy.json` | `RiskPolicy.to_json()`, loadable with `RiskPolicy.from_json` |
 | `val_b_scores.npz` | `paths` (unicode, sorted), `labels` (int8), `score` (raw logit, float64), `p` (calibrated, float64); deterministic writer, loads with `allow_pickle=False` |
 | `diagnostics_report.json` | descriptive only (below) |
-| `run_report.json` | `schema_version` 1, `version`, `code_commit`, `environment` (`python`, `numpy`, `torch`), `profile_fingerprint`, `profile_config_sha256`, `f2_manifest_sha256`, `caches` (`npz_sha256`, `n_rows` for val-A and val-B), `bundle_seed`, `checkpoint_sha256`, `n_blocks`, `scoring` (`device` "cpu", `batch_size`), `val_a_eer_recomputed`, `risk_policy_sha256`, `val_b_scores_sha256`, `headline` (`a`, `b`, `threshold`, `half_width`, `deferral_on_fit`, `n_bonafide`, `n_spoof`) |
+| `run_report.json` | `schema_version` 1, `version`, `code_commit`, `environment` (`python`, `numpy`, `torch`), `profile_fingerprint`, `profile_config_sha256`, `f2_manifest_sha256`, `provenance_checks` (`expected` from the checkpoint and `actual` from the inputs, for `profile_fingerprint`, `f2_manifest_sha256` and `val_a_cache_npz_sha256`), `caches` (`npz_sha256`, `n_rows` for val-A and val-B), `bundle_seed`, `checkpoint_sha256`, `n_blocks`, `scoring` (`device` "cpu", `batch_size`), `val_a_eer_recomputed`, `risk_policy_sha256`, `val_b_scores_sha256`, `headline` (`a`, `b`, `threshold`, `half_width`, `deferral_on_fit`, `n_bonafide`, `n_spoof`) |
 
 The two reports have sorted keys and are written with `allow_nan=False`.
 
@@ -86,8 +91,12 @@ All on val-B, at the fitted policy, with `purpose` "descriptive only":
 - **(b) val-A reproduction before val-B (verification, not a decision).** The recorded val-A EER is
   re-derived from the stored weights, the stored train-only mean/std and the same scoring code.
   An exact match shows that weights, normalization and scoring path reproduce the selection result,
-  so val-B is scored by the model that was selected. Nothing is chosen or tuned on val-A here; a
-  mismatch only stops the run. The EER depends only on the score ranking, so a CPU rescore of a
+  so val-B is scored by the model that was selected. Three provenance checks come first and bind
+  the inputs to the ones the checkpoint was trained and selected with: the F3 profile fingerprint,
+  the F2 manifest SHA-256 and the val-A cache `npz_sha256`, each equal to the value recorded in the
+  checkpoint metadata. A matching EER on a different val-A cache, profile or manifest would prove
+  nothing; with the checks, the EER is compared on exactly the selection inputs. Nothing is chosen
+  or tuned on val-A here; a mismatch only stops the run. The EER depends only on the score ranking, so a CPU rescore of a
   GPU-trained model matches unless the order of clips near the crossing changes; if it fails, the
   run stops and the cause is reported, never relaxed.
 - **(c) CPU scoring, twice, identical.** CPU inference is deterministic for fixed inputs and
@@ -111,6 +120,8 @@ All on val-B, at the fitted policy, with `purpose` "descriptive only":
 - If val-B is separable, the EER threshold on `p` can sit at the spoof edge of the gap (the
   precedent is [results/baseline.md](results/baseline.md) §8, item 1). It is reported in the diagnostics
   (`separation`, `decisions`), never adjusted.
+- If the val-A reproduction check or any provenance check fails on the real run, the run stops and
+  is reported; proceeding requires a logged decision. The check is never relaxed after the fact.
 - Diagnostics are small-sample descriptive values with no confidence interval.
 - `code_commit` is the commit of this run; the caches and the checkpoint record their own build
   commits.
@@ -131,6 +142,7 @@ data, 0 for training. The F2 manifest loader and approved hash are monkeypatched
 | (a) hash anchor | `test_checkpoint_sha_mismatch_is_refused_before_any_cache_load` |
 | (f) D45 | `test_seed_mismatch_is_refused_before_any_cache_load`, `test_inconsistent_stage8_evidence_is_refused` |
 | (b) reproduction | `test_val_a_reproduction_mismatch_stops_before_val_b` |
+| (b) provenance | `test_provenance_mismatch_stops_before_val_b` (3 cases: `profile_fingerprint` and `f2_manifest_sha256`, no cache loaded; `val_a_cache_npz_sha256`, val-A only; val-B never) |
 | F2 completeness | `test_incomplete_val_b_cache_is_refused` |
 | Existing folder | `test_existing_out_dir_is_refused` |
 | All or nothing | `test_failure_after_mkdir_removes_out_dir` |
