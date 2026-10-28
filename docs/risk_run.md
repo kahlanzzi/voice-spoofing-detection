@@ -65,7 +65,15 @@ step 7.
 | `diagnostics_report.json` | descriptive only (below) |
 | `run_report.json` | `schema_version` 1, `version`, `code_commit`, `environment` (`python`, `numpy`, `torch`), `profile_fingerprint`, `profile_config_sha256`, `f2_manifest_sha256`, `provenance_checks` (`expected` from the checkpoint and `actual` from the inputs, for `profile_fingerprint`, `f2_manifest_sha256` and `val_a_cache_npz_sha256`), `caches` (`npz_sha256`, `n_rows` for val-A and val-B), `bundle_seed`, `checkpoint_sha256`, `n_blocks`, `scoring` (`device` "cpu", `batch_size`), `val_a_eer_recomputed`, `risk_policy_sha256`, `val_b_scores_sha256`, `headline` (`a`, `b`, `threshold`, `half_width`, `deferral_on_fit`, `n_bonafide`, `n_spoof`) |
 
-The two reports have sorted keys and are written with `allow_nan=False`.
+The two reports have sorted keys and are written with `allow_nan=False`. All three JSON files are
+written as UTF-8 bytes with LF line endings (`write_bytes`, no newline translation).
+
+### What is committed
+
+After the official run, `risk_policy.json`, `run_report.json` and `diagnostics_report.json` are
+committed under `docs/audit_evidence/stage10_risk/`. `val_b_scores.npz` stays on Drive only and is
+bound to the reports by `val_b_scores_sha256`. `risk_policy.json` is the policy file Stage 12
+freezes into F4 (Protocol §6).
 
 ### Diagnostics (pre-declared 2026-10-28)
 
@@ -105,6 +113,11 @@ All on val-B, at the fitted policy, with `purpose` "descriptive only":
 - **(d) Refit byte-identical.** The fit (Platt Newton + bisection) is deterministic; refitting from
   the same arrays and comparing `to_json()` checks that the frozen policy is a function of the
   scores alone.
+- **(d2) Same bytes on every OS.** The JSON files are written with `write_bytes`, not
+  `write_text`, which writes CRLF line endings on Windows. The policy's bytes, hence
+  `risk_policy_sha256` and the hash Stage 12 freezes, are then the same on Windows, Linux and
+  Colab. The end-to-end test compares bytes, because `read_text` uses universal newlines and would
+  hide a CRLF file.
 - **(e) Diagnostics pre-declared and descriptive only.** They are listed here before any real
   val-B score exists, and nothing reads them back: no change to the calibration, threshold or band
   may follow from them. Their job is to make visible what the fit did (saturation, separability,
