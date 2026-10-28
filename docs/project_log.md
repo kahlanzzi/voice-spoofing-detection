@@ -2244,6 +2244,50 @@ each change. AI did not push, open or merge a PR.
 does not approve or merge. **WAITING FOR HUMAN REVIEW.**
 
 ---
+
+### Entry 89 — D44 proposed: Platt fit stopping rule (2026-10-28)
+
+**Numbering:** provisional; the number is fixed at merge time (`feat/stage13-window-runner` also
+carries an entry).
+
+**Owner:** Donia Mabrouk.
+
+**Scope [doc]:** the Stage 10 R1 Platt fit (`src/risk/calibration.py`), before any val-B score
+exists (Entry 33 watch item on the absolute gradient-norm stop).
+
+**What we did:** on `fix/stage10-d44-platt-stop`, test-first:
+- Tests (T1–T4) committed first and red on the old code: 3 failed, 11 passed ("did not converge in
+  100 iterations" on converged fits; no `DECREMENT_TOLERANCE`). T4 was respecified after review
+  (the original single array did not stall) as a property test over the T1 grid.
+- The D44 fix: keep the gradient rule, add the Newton-decrement stop (λ²/2 ≤ 1e-12) and a stall
+  guard (ValueError "stalled" if an accepted step leaves (a, b) unchanged).
+- The review fix: a non-descent guard (ValueError if λ²/2 < −1e-12, so an uphill direction never
+  passes as converged; T5) and a wider T3 neighbour step (1e-4 instead of 1e-6, above float64
+  summation error).
+- The evidence script and its output, `docs/audit_evidence/stage10_d44/platt_stop_precheck.{py,txt}`;
+  the D44 row and `docs/risk_policy.md` cite its numbers.
+
+**Evidence:**
+- [verified] full `pytest -q` from the project venv (local, Windows, Python 3.14.7): 722 passed.
+- [verified] pre-check (Windows, Python 3.14.7, numpy 2.5.3; synthetic, seed 2026, 1,260 fits):
+  old rule 334/1,260 failed, D44 rule 0/1,260 failed, at most 11 Newton iterations, worst float64
+  floor of λ²/2 9.7e-15 (DECREMENT_TOLERANCE / floor = 103).
+- [reviewer sandbox, not in repo] Linux, Python 3.13.18, numpy 2.5.3: 335/1,260, floor 9.8e-15.
+  The old-rule count varies by about one fit across platforms because it depends on float64
+  rounding.
+
+**Not done:** no val-B, test, external data, checkpoint or cache accessed; no fit on real scores.
+
+**Decisions:** D44 proposed (next D-ID: D45).
+
+**AI assistance:** **Claude** (claude.ai) reviewed, wrote the Claude Code prompts and ran a
+synthetic pre-check outside the repo. **Claude Code** implemented the tests, the fix, the review
+fix and the docs, ran the pre-check script and the tests. Human review is still required. AI did
+not push, open or merge a PR.
+
+**Gate:** D44 approval (all four) before any val-B scoring. **WAITING FOR APPROVAL.**
+
+---
 ## Open items
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
@@ -2357,8 +2401,7 @@ does not approve or merge. **WAITING FOR HUMAN REVIEW.**
 **Stage 10 risk policy (Entry 33)**
 - [ ] Stage 10 brief docs/stages/stage10-*.md (D32) when the stage closes
 - [x] Human review of `feat/stage10-risk-policy` (R1–R2); CI green on Python 3.13: merged as PR #17.
-- [ ] Watch: Platt's absolute gradient-norm stop; if the real val-B fit fails to converge, propose a
-  relative criterion (no silent change).
+- [ ] Approve D44 (Platt stop rule; Entry 89) before any val-B scoring.
 
 **Stage 11 run registry (Entry 34)**
 - [x] Human review of `feat/stage11-run-registry`; CI green on Python 3.13: merged as PR #18.
@@ -2479,11 +2522,12 @@ does not approve or merge. **WAITING FOR HUMAN REVIEW.**
 
 ---
 
-## Current status — updated 2026-10-26
+## Current status — updated 2026-10-28
 
 **Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), pending approval of `docs/stage8-9-closeout`. Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 is current.
 
 **What was done:**
+- **D44 proposed** on `fix/stage10-d44-platt-stop` (Entry 89): Newton-decrement stop, stall and non-descent guards in the Platt fit, before any val-B score; approval (all four) needed before val-B scoring.
 - **Stages 8–9 closed** on `docs/stage8-9-closeout` (Entry 88): D32 teach-back of briefs 08–09
   by Iheb, Malak and Khalil, face to face, 2026-10-26 (Donia attended as author, correcting only;
   no corrections); briefs accepted, index and roadmap updated.
@@ -2596,6 +2640,7 @@ does not approve or merge. **WAITING FOR HUMAN REVIEW.**
 - `docs/stage16-d43-loudness-diagnostic`: D43 proposal and approval (Entry 87), merged as PR #53 (`a022e7a`).
 - `docs/stage8-9-closeout`: Stages 8–9 closeout (Entry 88), in review.
 - `feat/stage13-window-runner`: D35 per-window integration test; its log entry needs renumbering to 85.
+- `fix/stage10-d44-platt-stop`: D44 Platt stop rule (Entry 89), in review.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 

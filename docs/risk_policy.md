@@ -72,13 +72,13 @@ objects.
   Newton decrement `λ²/2` approximates `f − f*` and does not depend on the score scale (Boyd and
   Vandenberghe 2004, §9.5.1). The bound 1e-12 is about 100× above the worst float64 noise floor
   (9.7e-15) measured by the committed pre-check (`docs/audit_evidence/stage10_d44/`) on synthetic
-  val-B-shaped logits; the old rule's failure count there (334 of 1,260; 335 on a Linux run)
-  varies by about one fit across platforms because it depends on float64 rounding; a tighter value
-  such as 1e-14 has no margin. `λ²/2 = −½·gᵀd` is ≥ 0 only for a descent direction, which a
+  val-B-shaped logits; the old rule's failure count there (334 of 1,260; 335 on a Linux run) varies
+  by about one fit across platforms because it depends on float64 rounding; a tighter value such as
+  1e-14 has no margin. `λ²/2 = −½·gᵀd` is ≥ 0 only for a descent direction, which a
   positive-definite Hessian guarantees; the descent guard raises when `λ²/2 < −1e-12`, so an uphill
   direction can never pass as "converged". The stall guard turns any remaining case where steps no
-  longer move `(a, b)` into an explicit error instead of a silent run to the iteration cap. Limitation: the
-  evidence is synthetic only; the real val-B logit shape is unknown until Stage 10.
+  longer move `(a, b)` into an explicit error instead of a silent run to the iteration cap.
+  Limitation: the evidence is synthetic only; the real val-B logit shape is unknown until Stage 10.
 
 ### Tests (`tests/risk/`)
 Each case has its hand reasoning as a comment.

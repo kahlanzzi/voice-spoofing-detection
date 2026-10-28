@@ -91,7 +91,7 @@ def _fit_newton(s: np.ndarray, t: np.ndarray, b0: float) -> tuple[float, float, 
         hess = np.array([[np.dot(w, s * s), np.dot(w, s)], [np.dot(w, s), np.sum(w)]])
         hess += _HESSIAN_RIDGE * np.eye(2)
         direction = -np.linalg.solve(hess, grad)
-        slope = float(grad @ direction)  # < 0: the Hessian is positive definite
+        slope = float(grad @ direction)  # <= 0 when the Hessian is positive definite; guarded below
         half_decrement = -slope / 2  # lambda^2/2; >= 0 for a descent direction
         if half_decrement < -DECREMENT_TOLERANCE:
             raise ValueError(
