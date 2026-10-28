@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 10 brief `docs/stages/stage10-risk-policy.md` (D32), draft; teach-back by Iheb, Malak and Khalil pending.
 - Stage 10 official risk-policy run (`risk-v1`, commit `11c07fe`, FoR val-B, validation only): evidence under `docs/audit_evidence/stage10_risk/` (policy, run and diagnostics reports, export manifest, byte-preserving `.gitattributes`, verification README) and `docs/results/risk_policy_fit.md` (policy, derived band edges, descriptive diagnostics, Colab CPU-vs-T4 cache finding).
 - Stage 10a-2 part 2: Colab notebook 05 for the official risk-policy run (full-SHA clean checkout, Python 3.13 and torch 2.11.0 asserted, no GPU, JUnit skip check, val-A/val-B log-Mel caches built twice and compared, bundle-seed checkpoint copied from Drive, `src.tuning.risk_run` invoked once under the pre-declared rerun rule, no W&B, hashed Drive export re-verified after remount), its static test `tests/governance/test_notebook_05_stage10.py`, and `tests/features/test_logmel_cache_npz_bytes.py` (cache `.npz` bytes do not depend on the code commit).
 - Stage 10 risk-policy runner `src/tuning/risk_run.py`: bundle-seed checkpoint bound to the committed Stage 8 hash, provenance checks and exact val-A EER reproduction before val-B, val-B fit (CPU scores and refit checked identical, OS-independent bytes), pre-declared descriptive diagnostics; design note `docs/risk_run.md` and 15 synthetic tests; no real data.
@@ -70,6 +71,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - `docs/experimental_protocol.md` v1.0 frozen (F1): all sections decided from the team-accepted defaults.
 
 ### Changed
+- Stage 10 closed: brief accepted after the D32 teach-back (Iheb, Malak, Khalil); Stage 11 current.
 - Stages 8–9 closed: briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil; no corrections); Stage 10 current.
 - Stage 7 closed: brief accepted after the D32 teach-back (Khalil, Iheb); Stages 8–9 current.
 - Stage 6 closed: briefs 04–06 accepted (PR #37); Stage 7 current. Register statuses D29–D31 and Protocol §14 rows now cite PRs #16 and #30. CONTRIBUTING: check open PRs before claiming IDs. D37 status recorded as approved (PR #30).
