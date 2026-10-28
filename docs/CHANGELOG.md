@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- D45 (proposed): only the bundle-seed CNN gets a risk policy; seeds 1–2 store raw scores only (calibrated p and prediction not applicable); clarifies Protocol §7 / D41 before any val-B score.
 - D43 (approved, PR #53): Stage 16 loudness diagnostic, exploratory in motivation and fully specified before test access (within-class Spearman of score vs RMS on the Stage 11 per-clip scores); implementation only at Stage 16, after the D41 storage implementation.
 - Stage 8 PR D: official CNN run evidence (`docs/audit_evidence/stage8_cnn/`: three reports, export manifest, verification README), validation results `docs/results/cnn_selection.md` (4 blocks, lr 1e-3, bundle seed 0) and draft briefs 08–09.
 - `docs/design/`: clickable analyst-console prototype (design reference for D38 / Stage 18, mock data only) and its README.
