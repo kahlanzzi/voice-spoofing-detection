@@ -2524,7 +2524,7 @@ not push, open or merge a PR.
 
 ## Current status — updated 2026-10-28
 
-**Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), pending approval of `docs/stage8-9-closeout`. Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 is current.
+**Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 is current.
 
 **What was done:**
 - **D44 proposed** on `fix/stage10-d44-platt-stop` (Entry 89): Newton-decrement stop, stall and non-descent guards in the Platt fit, before any val-B score; approval (all four) needed before val-B scoring.
@@ -2632,13 +2632,12 @@ not push, open or merge a PR.
 - Governance rules that keep the external set metadata-only until the one guarded Stage 13 run.
 - Corrected Stage 6 FoR evidence under `docs/audit_evidence/stage6_preprocessing/`: exact profile,
   deterministic validation, shortcut/padding screens, D18 invariance and no-training T4 benchmark.
-- Stage briefs (`docs/stages/`, D32): 00–09 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), 07 (PR #43), and 08–09 (`docs/stage8-9-closeout`).
+- Stage briefs (`docs/stages/`, D32): 00–09 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), 07 (PR #43), and 08–09 (PR #54).
 
 **Branches:**
-- `origin/main`: at `a022e7a` (PR B1 merged as #47, PR B2 as #48, PR C as #49, PR #33 as `6d84d8b`, the tests shadowing fix as #50 (`9be2f25`), the UI prototype as #51 (`6c29486`), PR D as #52 (`ea26959`), D43 as #53 (`a022e7a`)).
-- `docs/stage8-cnn-selection`: merged as PR #52; the remote branch can be deleted.
-- `docs/stage16-d43-loudness-diagnostic`: D43 proposal and approval (Entry 87), merged as PR #53 (`a022e7a`).
-- `docs/stage8-9-closeout`: Stages 8–9 closeout (Entry 88), in review.
+- `origin/main`: at `e2374cc` (PR B1 merged as #47, PR B2 as #48, PR C as #49, PR #33 as `6d84d8b`, the tests shadowing fix as #50 (`9be2f25`), the UI prototype as #51 (`6c29486`), PR D as #52 (`ea26959`), D43 as #53 (`a022e7a`), the Stages 8–9 closeout as #54 (`e2374cc`)).
+- `docs/stage8-cnn-selection`: merged as PR #52 (remote branch deleted).
+- `docs/stage16-d43-loudness-diagnostic`: D43 proposal and approval (Entry 87), merged as PR #53 (`a022e7a`) (remote branch deleted).
 - `feat/stage13-window-runner`: D35 per-window integration test; its log entry needs renumbering to 85.
 - `fix/stage10-d44-platt-stop`: D44 Platt stop rule (Entry 89), in review.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
