@@ -2288,6 +2288,29 @@ not push, open or merge a PR.
 **Gate:** D44 approval (all four) before any val-B scoring. **WAITING FOR APPROVAL.**
 
 ---
+
+### Entry 90 — D44 approved; record aligned after merge (2026-10-28)
+
+**Numbering:** provisional; the number is fixed at merge time (Entry 85 is reserved for
+`feat/stage13-window-runner`).
+
+**Owner:** Donia Mabrouk.
+
+**Scope [doc]:** record only; no code, test, data or evidence change.
+
+**What we did:** PR #55 (D44, Entry 89) was approved by Iheb, Malak and Khalil in review on
+2026-10-28, CI green, and merged as `9da66f1`. The approval commit that sets D44 to Approved was
+not made before the merge, as the workflow requires; this PR records the approval in the register
+and the CHANGELOG. Remote branch `fix/stage10-d44-platt-stop` deleted after merge.
+
+**Process note:** approval commits go before the merge; the PR checklist is the place to catch this.
+
+**AI assistance:** **Claude** (claude.ai) reviewed and wrote the prompt; **Claude Code** edited the
+docs.
+
+**Gate:** human review. **WAITING FOR HUMAN REVIEW.**
+
+---
 ## Open items
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
@@ -2401,7 +2424,8 @@ not push, open or merge a PR.
 **Stage 10 risk policy (Entry 33)**
 - [ ] Stage 10 brief docs/stages/stage10-*.md (D32) when the stage closes
 - [x] Human review of `feat/stage10-risk-policy` (R1–R2); CI green on Python 3.13: merged as PR #17.
-- [ ] Approve D44 (Platt stop rule; Entry 89) before any val-B scoring.
+- [x] Approve D44 (Platt stop rule; Entry 89): approved via PR #55 (2026-10-28; Entry 90).
+- [ ] 10a-2: val-B scoring runner and notebook 05 (seed-0 checkpoint), reviewed before the Colab run.
 
 **Stage 11 run registry (Entry 34)**
 - [x] Human review of `feat/stage11-run-registry`; CI green on Python 3.13: merged as PR #18.
@@ -2527,7 +2551,7 @@ not push, open or merge a PR.
 **Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 is current.
 
 **What was done:**
-- **D44 proposed** on `fix/stage10-d44-platt-stop` (Entry 89): Newton-decrement stop, stall and non-descent guards in the Platt fit, before any val-B score; approval (all four) needed before val-B scoring.
+- D44 approved and merged (PR #55, `9da66f1`; Entries 89–90). Next: 10a-2, the val-B runner.
 - **Stages 8–9 closed** on `docs/stage8-9-closeout` (Entry 88): D32 teach-back of briefs 08–09
   by Iheb, Malak and Khalil, face to face, 2026-10-26 (Donia attended as author, correcting only;
   no corrections); briefs accepted, index and roadmap updated.
@@ -2635,11 +2659,12 @@ not push, open or merge a PR.
 - Stage briefs (`docs/stages/`, D32): 00–09 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), 07 (PR #43), and 08–09 (PR #54).
 
 **Branches:**
-- `origin/main`: at `e2374cc` (PR B1 merged as #47, PR B2 as #48, PR C as #49, PR #33 as `6d84d8b`, the tests shadowing fix as #50 (`9be2f25`), the UI prototype as #51 (`6c29486`), PR D as #52 (`ea26959`), D43 as #53 (`a022e7a`), the Stages 8–9 closeout as #54 (`e2374cc`)).
+- `origin/main`: at `9da66f1` (PR B1 merged as #47, PR B2 as #48, PR C as #49, PR #33 as `6d84d8b`, the tests shadowing fix as #50 (`9be2f25`), the UI prototype as #51 (`6c29486`), PR D as #52 (`ea26959`), D43 as #53 (`a022e7a`), the Stages 8–9 closeout as #54 (`e2374cc`), D44 as #55 (`9da66f1`)).
 - `docs/stage8-cnn-selection`: merged as PR #52 (remote branch deleted).
 - `docs/stage16-d43-loudness-diagnostic`: D43 proposal and approval (Entry 87), merged as PR #53 (`a022e7a`) (remote branch deleted).
 - `feat/stage13-window-runner`: D35 per-window integration test; its log entry needs renumbering to 85.
-- `fix/stage10-d44-platt-stop`: D44 Platt stop rule (Entry 89), in review.
+- `fix/stage10-d44-platt-stop`: D44 Platt stop rule (Entry 89), merged as PR #55 (remote branch deleted).
+- `docs/stage10-d44-approval`: D44 approval record (Entry 90), in review.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
