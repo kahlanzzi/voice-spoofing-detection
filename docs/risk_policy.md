@@ -43,8 +43,10 @@ objects.
    (smoothed) class prior.
 5. Each Newton step is shortened by a backtracking line search (halving, sufficient decrease
    constant 1e-4) until the loss decreases.
-6. Stop when the gradient norm is < 1e-10. After 100 iterations without that, or if the line search
-   fails, `ValueError`.
+6. Stop when the gradient norm is < 1e-10, or when the Newton decrement `λ²/2 = −½·gᵀd` is ≤ 1e-12,
+   with `d` the Newton direction (D44). If an accepted line-search step leaves `(a, b)` unchanged,
+   `ValueError` ("stalled"). After 100 iterations without a stop, or if the line search fails,
+   `ValueError`.
 7. If the fitted `a <= 0`, `ValueError`.
 
 ### Why (team reasoning)
@@ -62,6 +64,16 @@ objects.
   ranking of scores: ROC-AUC and EER are identical on `s` and on `p`, and score-level results stay
   comparable with the uncalibrated ones. A fit with `a <= 0` would mean the scores rank spoof
   below bonafide on val-B; that is an error to investigate, not something to calibrate away.
+- **(e) Stop rule (D44).** The gradient `Σ (p − t)·(s, 1)` carries the units of the score, so an
+  absolute bound on its norm means a different accuracy at every score scale; and near the optimum
+  of separable data the loss is flat at float64 resolution, steps stop changing `(a, b)` and the
+  computed gradient stalls above 1e-10, so a converged fit was reported as "did not converge". The
+  Newton decrement `λ²/2` approximates `f − f*` and does not depend on the score scale (Boyd and
+  Vandenberghe 2004, §9.5.1). The bound 1e-12 is about 100× above the worst float64 noise floor
+  (9.8e-15) measured in the reviewer pre-check on synthetic val-B-shaped logits; a tighter value
+  such as 1e-14 has no margin. The stall guard turns any remaining case where steps no longer move
+  `(a, b)` into an explicit error instead of a silent run to the iteration cap. Limitation: the
+  evidence is synthetic only; the real val-B logit shape is unknown until Stage 10.
 
 ### Tests (`tests/risk/`)
 Each case has its hand reasoning as a comment.
@@ -77,6 +89,10 @@ Each case has its hand reasoning as a comment.
 | (d) `a > 0` | `test_reversed_scores_raise` |
 | Numerical stability | `test_transform_extreme_scores_without_warnings` (scores −1e6, 0, 1e6 with warnings as errors → 0, 0.5, 1) |
 | Fail loudly | `test_invalid_input_raises` (one class, NaN score, length mismatch, empty) |
+| (e) stop rule | `test_converges_on_val_b_like_separable_logits` (3 val-B-shaped separable kinds × 5 datasets, 660 bonafide / 669 spoof, seed 2026, scales 0.01, 1, 1000: fit succeeds, finite a > 0, ≤ 15 Newton iterations) |
+| (e) scale-free | `test_fit_is_invariant_to_score_scale` (one dataset per kind: p for scales 0.01, 1, 1000 agree to 1e-9) |
+| (e) at the optimum | `test_fitted_point_is_a_minimum` (one dataset per kind: loss at fitted (a, b) ≤ loss at its 8 neighbours a·(1 ± 1e-6), b ± 1e-6·max(1, \|b\|)) |
+| (e) stall guard | `test_stall_guard_turns_spinning_into_a_loud_error` (decrement rule off, every T1 fit: at least one raises "stalled", and every "stalled" message names the Newton decrement) |
 
 ## Step R2: fit, apply and save the policy
 
@@ -162,3 +178,5 @@ Each case has its hand reasoning as a comment.
   regularized likelihood methods.
 - [doc] Lin, H.-T., Lin, C.-J. and Weng, R. C. (2007). A note on Platt's probabilistic outputs for
   support vector machines.
+- [doc] Boyd, S. and Vandenberghe, L. (2004). Convex Optimization. Cambridge University Press,
+  §9.5.1 (the Newton decrement).

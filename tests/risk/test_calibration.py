@@ -184,11 +184,19 @@ def test_fitted_point_is_a_minimum():
                     assert f0 <= loss(cal.a + i * da, cal.b + j * db), (kind, i, j)
 
 
-def test_stalled_iteration_fails_loudly(monkeypatch):
-    # With the decrement rule disabled only the absolute gradient rule remains, and on this data
-    # the gradient stalls above 1e-10 while accepted steps no longer change (a, b). The guard must
-    # raise "stalled" instead of spinning to MAX_ITERATIONS.
+def test_stall_guard_turns_spinning_into_a_loud_error(monkeypatch):
+    # With the decrement rule off only the absolute gradient rule remains, which float64 cannot
+    # always meet (T1's red run on the old code). The guard must turn those cases into an explicit
+    # "stalled" error instead of silently spinning to the 100-iteration cap. Nothing is asserted
+    # about the fits that converge.
     monkeypatch.setattr(calibration, "DECREMENT_TOLERANCE", 0.0)
-    _, s, y = _first_per_kind()[0]
-    with pytest.raises(ValueError, match="stalled"):
-        fit_platt(y, s)
+    stalled = []
+    for kind, s, y in _val_b_datasets():
+        for c in _SCALES:
+            try:
+                fit_platt(y, c * s)
+            except ValueError as error:
+                if "stalled" in str(error):
+                    stalled.append(str(error))
+    assert stalled
+    assert all("Newton decrement" in message for message in stalled)
