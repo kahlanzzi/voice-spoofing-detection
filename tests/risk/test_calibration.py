@@ -5,11 +5,20 @@ p = 1 / (1 + exp(-(a*s + b))) = calibrated P(spoof).
 """
 from __future__ import annotations
 
+import math
+
 import numpy as np
 import pytest
 
 from src.evaluation.metrics import eer, roc_auc
-from src.risk.calibration import PlattCalibration, _platt_targets, _sigmoid, fit_platt
+from src.risk import calibration
+from src.risk.calibration import (
+    PlattCalibration,
+    _fit_newton,
+    _platt_targets,
+    _sigmoid,
+    fit_platt,
+)
 
 
 def test_smoothed_targets():
@@ -89,3 +98,119 @@ def test_transform_extreme_scores_without_warnings():
 def test_invalid_input_raises(labels, scores):
     with pytest.raises(ValueError):
         fit_platt(labels, scores)
+
+
+# --- Stop rule (D44): synthetic val-B-shaped logits, numpy only -------------------------------
+
+_KINDS = ("gamma_sep", "narrow_gap", "one_overlap")
+_SCALES = (0.01, 1.0, 1000.0)
+
+
+def _val_b_like(rng, kind):
+    n0, n1 = 660, 669            # val-B class counts (Stage 4 split report)
+    if kind == "gamma_sep":      # separable, heavy-tailed logits
+        b = -rng.gamma(2.0, 4.0, n0) - 0.5
+        s = rng.gamma(2.0, 4.0, n1) + 0.5
+    elif kind == "narrow_gap":   # separable, tiny margin
+        b = -np.abs(rng.normal(6, 2, n0)) - 1e-3
+        s = np.abs(rng.normal(6, 2, n1)) + 1e-3
+    elif kind == "one_overlap":  # one spoof below every bonafide (EER of about 1/669)
+        b = -np.abs(rng.normal(6, 2, n0)) - 0.5
+        s = np.abs(rng.normal(6, 2, n1)) + 0.5
+        s[0] = -3.0
+    return np.r_[b, s], np.r_[np.zeros(n0, int), np.ones(n1, int)]
+
+
+def _val_b_datasets():
+    # 5 datasets per kind, drawn in sequence (kinds in _KINDS order) from one rng(2026).
+    rng = np.random.default_rng(2026)
+    return [(kind, *_val_b_like(rng, kind)) for kind in _KINDS for _ in range(5)]
+
+
+def _first_per_kind():
+    # The first dataset of each kind in the _val_b_datasets() sequence.
+    data = _val_b_datasets()
+    return [data[5 * k] for k in range(len(_KINDS))]
+
+
+def _targets_and_start(y):
+    # The same smoothed targets and start point that fit_platt uses.
+    n_spoof = int(y.sum())
+    n_bonafide = int(len(y) - n_spoof)
+    t_spoof, t_bonafide = _platt_targets(n_spoof, n_bonafide)
+    t = np.where(y == 1, t_spoof, t_bonafide)
+    return t, -math.log((n_bonafide + 1) / (n_spoof + 1))
+
+
+def test_converges_on_val_b_like_separable_logits():
+    # Newton converges quadratically near the optimum, so a converged fit needs few iterations;
+    # the reviewer pre-check needed at most 11 on such data. 15 leaves margin, and any scale must
+    # work, because the stop rule must not depend on the units of the score.
+    for kind, s, y in _val_b_datasets():
+        t, b0 = _targets_and_start(y)
+        for c in _SCALES:
+            cal = fit_platt(y, c * s)
+            assert np.isfinite(cal.a) and cal.a > 0, (kind, c)
+            assert np.isfinite(cal.b), (kind, c)
+            _, _, iterations = _fit_newton(c * s, t, b0)
+            assert iterations <= 15, (kind, c, iterations)
+
+
+def test_fit_is_invariant_to_score_scale():
+    # sigmoid(a * (c*s) + b) with a -> a/c is the same function of s, so the optimum in p does not
+    # depend on c; a stop rule that does not depend on c gives the same p to float64 precision.
+    for kind, s, y in _first_per_kind():
+        p = [fit_platt(y, c * s).transform(c * s) for c in _SCALES]
+        for other in p[1:]:
+            assert np.max(np.abs(other - p[0])) <= 1e-9, kind
+
+
+def test_fitted_point_is_a_minimum():
+    # The convergence test must stop at the optimum, not merely stop: the loss at the fitted
+    # (a, b) is no larger than at its 8 neighbours a*(1 +/- 1e-4), b +/- 1e-4 * max(1, |b|).
+    # At 1e-6 the loss increase (~1e-12) is the size of float64 summation error on f, so the test
+    # could flip by rounding; at 1e-4 it is ~5,000x larger and still catches a stop far from the
+    # optimum.
+    for kind, s, y in _first_per_kind():
+        t, _ = _targets_and_start(y)
+        cal = fit_platt(y, s)
+
+        def loss(a, b):
+            z = a * s + b
+            return float(np.sum(np.logaddexp(0.0, z) - t * z))
+
+        da, db = 1e-4 * cal.a, 1e-4 * max(1.0, abs(cal.b))
+        f0 = loss(cal.a, cal.b)
+        for i in (-1, 0, 1):
+            for j in (-1, 0, 1):
+                if i or j:
+                    assert f0 <= loss(cal.a + i * da, cal.b + j * db), (kind, i, j)
+
+
+def test_stall_guard_turns_spinning_into_a_loud_error(monkeypatch):
+    # With the decrement rule off only the absolute gradient rule remains, which float64 cannot
+    # always meet (T1's red run on the old code). The guard must turn those cases into an explicit
+    # "stalled" error instead of silently spinning to the 100-iteration cap. Nothing is asserted
+    # about the fits that converge.
+    monkeypatch.setattr(calibration, "DECREMENT_TOLERANCE", 0.0)
+    stalled = []
+    for kind, s, y in _val_b_datasets():
+        for c in _SCALES:
+            try:
+                fit_platt(y, c * s)
+            except ValueError as error:
+                if "stalled" in str(error):
+                    stalled.append(str(error))
+    assert stalled
+    assert all("Newton decrement" in message for message in stalled)
+
+
+def test_non_descent_direction_fails_loudly(monkeypatch):
+    # A ridge of -1e9 makes the Hessian negative definite, so d = -H^-1 g points uphill and
+    # slope = g'd > 0. Without the guard, the new decrement stop would return this point as
+    # converged; with a positive-definite Hessian (the normal case) slope = -g'H^-1 g <= 0 and the
+    # guard never fires.
+    monkeypatch.setattr(calibration, "_HESSIAN_RIDGE", -1e9)
+    _, s, y = _first_per_kind()[0]
+    with pytest.raises(ValueError, match="not a descent direction"):
+        fit_platt(y, s)
