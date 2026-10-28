@@ -159,9 +159,10 @@ on FoR only; nothing here touches DEEP-VOICE before Stage 13 (AGENTS.md hard rul
   - Run once: the baseline and all 3 CNN seeds on the same FoR test split; this is the single Stage 11
     run (FR-12; D11) (team choice, 2026-10-14).
   - Registry and stored clean scores (D41): use the code-closed purpose `stage11_test`, with one claim
-    per frozen model set. Store stable clip ID, label, D14 group ID and raw score for `baseline-v1`
-    and all three CNN seeds; also store calibrated p and prediction for CNNs, and the D29 forced-binary
-    prediction with calibrated p marked not applicable for the baseline.
+    per frozen model set. Store stable clip ID, label, D14 group ID and raw score for `baseline-v1` and
+    all three CNN seeds; also store calibrated p and prediction for the bundle-seed CNN (not applicable
+    for seeds 1–2; D45), and the D29 forced-binary prediction with calibrated p marked not applicable
+    for the baseline.
   - Reporting: all D4 metrics with class counts, per subgroup (D4; FR-14).
   - H5 "clearly lower": FAKE_other recall ≥ 5 points below FAKE_mp3 recall, and the 95% CI of the
     difference excludes 0 (H5) (team choice, 2026-10-14).
@@ -292,3 +293,4 @@ on FoR only; nothing here touches DEEP-VOICE before Stage 13 (AGENTS.md hard rul
 | 1.0 | 2026-10-24 | D41: per-clip clean-score storage in §7 and `baseline-v1` beside the bundle CNN in §9; implementation review remains required before FoR test access | #46 |
 | 1.0 | 2026-10-24 | D42: CNN design and training details fixed (completes §4 'size: team choice'); no existing rule changed | #44 |
 | 1.0 | 2026-10-26 | D43: Stage 16 loudness diagnostic, within-class Spearman of score vs RMS on the stored Stage 11 per-clip scores (addresses the loudness gap in D42's shortcut coverage, association only); no existing rule changed | #53 |
+| 1.0 | 2026-10-28 | D45: §7 stores calibrated p and prediction for the bundle-seed CNN only (seeds 1–2 not applicable); clarification, no rule changed | #57 |
