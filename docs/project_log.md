@@ -2456,8 +2456,8 @@ was accessed.
   This closes the hypothesis that the Stage 10 val-A rebuild might not reproduce the recorded
   `val_a_cache_npz_sha256` because of the commit: the cache code, profile and pinned requirements
   are unchanged since Stage 8.
-- [verified] full `pytest -q` from the project venv (local, Windows, Python 3.14.7): see the PR
-  report; static test 22 passed.
+- [verified] full `pytest -q` from the project venv (local, Windows, Python 3.14.7): 760 passed;
+  static test 22 passed; governance test 3 passed.
 
 **Not done:** the notebook was not executed; no val-B, test, external data, real checkpoint or real
 cache accessed.
