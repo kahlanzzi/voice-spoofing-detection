@@ -71,7 +71,9 @@ objects.
   computed gradient stalls above 1e-10, so a converged fit was reported as "did not converge". The
   Newton decrement `λ²/2` approximates `f − f*` and does not depend on the score scale (Boyd and
   Vandenberghe 2004, §9.5.1). The bound 1e-12 is about 100× above the worst float64 noise floor
-  (9.8e-15) measured in the reviewer pre-check on synthetic val-B-shaped logits; a tighter value
+  (9.7e-15) measured by the committed pre-check (`docs/audit_evidence/stage10_d44/`) on synthetic
+  val-B-shaped logits; the old rule's failure count there (334 of 1,260; 335 on a Linux run)
+  varies by about one fit across platforms because it depends on float64 rounding; a tighter value
   such as 1e-14 has no margin. `λ²/2 = −½·gᵀd` is ≥ 0 only for a descent direction, which a
   positive-definite Hessian guarantees; the descent guard raises when `λ²/2 < −1e-12`, so an uphill
   direction can never pass as "converged". The stall guard turns any remaining case where steps no

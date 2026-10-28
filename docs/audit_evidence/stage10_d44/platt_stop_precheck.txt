@@ -1,0 +1,20 @@
+D44 pre-check: Platt stop rule on synthetic val-B-shaped logits
+python 3.14.7, numpy 2.5.3, seed 2026, 660 bonafide / 669 spoof, 30 datasets per kind
+D44 constants in src/risk/calibration.py: GRADIENT_TOLERANCE 1e-10, DECREMENT_TOLERANCE 1e-12
+
+e2374cc rule (gradient norm < 1e-10 only): failed fits per kind and score scale
+kind             x0.01    x0.1      x1     x10    x100   x1000   total
+normal_sep           0       0       5      18      18      18      59
+gamma_sep           11      13      12      13      13      12      74
+gamma_wide           1       2      11      11      11      11      47
+narrow_gap           0       1      14      15      15      15      60
+one_overlap          0       0       0       0      11      18      29
+asym                 0       0       0       2       9      13      24
+overlap_5pct         1       2       7       7      10      14      41
+all                 13      18      49      66      87     101     334
+e2374cc rule: 334 of 1260 fits failed
+
+D44 rule (repository code): 0 of 1260 fits failed; at most 11 Newton iterations
+
+Noise floor of lambda^2/2 after convergence (max over iterations 15-29, no stop rule): median 2.5e-30, worst 9.7e-15
+DECREMENT_TOLERANCE / worst floor = 103
