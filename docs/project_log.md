@@ -2401,6 +2401,81 @@ the tests. Human review is still required. AI did not push, open or merge a PR.
 **Gate:** human review of `feat/stage10-risk-run`. **WAITING FOR HUMAN REVIEW.**
 
 ---
+### Entry 93 — Stage 10a-2 part 2: notebook 05 for the risk-policy run (2026-10-28)
+
+**Numbering:** provisional; the number is fixed at merge time (Entry 85 is reserved for
+`feat/stage13-window-runner`).
+
+**Owner:** Donia Mabrouk.
+
+**Scope [doc]:** Protocol §6, D2, D9, D40, D45; runner merged as PR #58 (`7556ac9`, Entry 92).
+Notebook and tests only: the notebook was not executed, and no data, Drive, checkpoint or network
+was accessed.
+
+**What we did:** on `feat/stage10-notebook-05`, from `main` at `7556ac9`:
+- `notebooks/05_stage10_risk_policy.ipynb`, mirroring notebook 04 (cells reused, adapted or dropped):
+
+  | Notebook 04 cell | Notebook 05 |
+  |---|---|
+  | title, params | adapted: Stage 10 text; `VERSION='risk-v1'`, `CNN_VERSION='cnn-v1'`, no other knobs |
+  | drive (`refuse_existing_outputs`, `sha256`) | adapted: `checkpoints/risk/<VERSION>/`, `processed/metadata/stage10/` |
+  | clone (`git`, `assert_clean`) | unchanged |
+  | env | adapted: no GPU check (CPU scoring by design); probe records python, numpy, torch |
+  | for (pinned archive), tests (`stream`, JUnit) | unchanged (JUnit file renamed) |
+  | caches | adapted: val-A and val-B only, built twice and compared; same F3 checks |
+  | wandb | dropped (no W&B, D40) |
+  | search | replaced: checkpoint copy (seed_0, not loaded here) and one `src.tuning.risk_run` call under the pre-declared rerun rule (2026-10-28) |
+  | post | adapted: adds `bundle_seed == 0`; diagnostics printed for review only |
+  | export | split: step 11 copy/hash/manifest, step 12 remount and re-verify |
+  | — | new: step 13, files to commit under `docs/audit_evidence/stage10_risk/`; `val_b_scores.npz` stays on Drive |
+
+  The export manifest adds `cnn_version` and `numpy`, and keeps both cache builds' hashes
+  (`cache_sha256.cache_a`, `cache_sha256.cache_b`); the notebook metadata requests no accelerator.
+- `tests/governance/test_notebook_05_stage10.py` (22 tests): placeholder COMMIT length-asserted,
+  one `risk_run` call outside any loop, try or function, exact runner arguments, rerun rule word for
+  word in the markdown right before the run, `assert_clean` right before and after it, refusal of
+  existing outputs before the run and before export, `exist_ok=False`, no W&B or secret, no GPU
+  check, val-A/val-B caches only, no fitted value read, outputs cleared, steps in order.
+- `tests/features/test_logmel_cache_npz_bytes.py` (1 test): the same synthetic val-A split built
+  with two `code_commit` values gives byte-identical `.npz` files, and the `.json` files differ
+  only in `code_commit`.
+
+**Evidence:**
+- [verified] Planted-violation check (scratchpad copies of the notebook, not committed): each of
+  11 planted violations (loop around the run, test split cached, GPU assert, W&B variable,
+  `exist_ok=True`, missing refuse before export, edited rerun rule, reading the threshold, missing
+  `assert_clean` after the run, real commit in params, try around the run) failed at least one
+  test of the static suite.
+- [verified] A. `build_logmel_cache` writes only `features`, `labels`, `paths` into the `.npz`,
+  through `_write_npz` (fixed zip date, system and permission fields); `code_commit` and the other
+  provenance values go into the `.json` only.
+- [verified] B. `test_logmel_cache_npz_bytes.py`: 1 passed.
+- [verified] C. `code_commit` in `docs/audit_evidence/stage8_cnn/run_report.json` is `9be2f25`
+  (full SHA `9be2f2545520432db08a0d083a06a668cd84103a`); `git diff --stat 9be2f25 HEAD -- src/features
+  src/preprocessing configs/preprocessing.yaml requirements.txt requirements-cnn.txt` is empty.
+  This closes the hypothesis that the Stage 10 val-A rebuild might not reproduce the recorded
+  `val_a_cache_npz_sha256` because of the commit: the cache code, profile and pinned requirements
+  are unchanged since Stage 8.
+- [verified] full `pytest -q` from the project venv (local, Windows, Python 3.14.7): 760 passed;
+  static test 22 passed; governance test 3 passed.
+
+**Not done:** the notebook was not executed; no val-B, test, external data, real checkpoint or real
+cache accessed.
+
+**Open [hypothesis]:** a Colab CPU runtime ships torch 2.11.0; if not, the env cell stops before any
+work (an infrastructure failure under the rerun rule). `requirements-cnn.txt` pins `wandb`, so the
+package is installed as in notebook 04 (the suite needs it); the notebook never uses it.
+
+**Decisions:** none (next D-ID: D46).
+
+**AI assistance:** **Claude** (claude.ai) wrote the prompts. **Claude Code** read notebook 04 and
+its test, wrote notebook 05 (through a generator script outside the repo), both tests, the
+planted-violation check and this entry, and ran the tests. Human review is still required. AI did
+not push, open or merge a PR.
+
+**Gate:** human review; the Colab run follows the merge. **WAITING FOR HUMAN REVIEW.**
+
+---
 ## Open items
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
@@ -2515,8 +2590,10 @@ the tests. Human review is still required. AI did not push, open or merge a PR.
 - [ ] Stage 10 brief docs/stages/stage10-*.md (D32) when the stage closes
 - [x] Human review of `feat/stage10-risk-policy` (R1–R2); CI green on Python 3.13: merged as PR #17.
 - [x] Approve D44 (Platt stop rule; Entry 89): approved via PR #55 (2026-10-28; Entry 90).
-- [ ] 10a-2 part 1: runner (Entry 92), in review
-- [ ] 10a-2 part 2: notebook 05 (Colab), after part 1 is merged
+- [x] 10a-2 part 1: runner (Entry 92): merged as PR #58 (`7556ac9`).
+- [ ] 10a-2 part 2: notebook 05 and its tests (Entry 93), in review
+- [ ] 10a-2 part 2: official Colab run of notebook 05 from the merged commit, then commit the four
+  files under `docs/audit_evidence/stage10_risk/` (after review)
 - [x] Approve D45 (bundle-seed-only policy): approved via PR #57 (2026-10-28; Entry 91).
 
 **Stage 11 run registry (Entry 34)**
@@ -2643,10 +2720,13 @@ the tests. Human review is still required. AI did not push, open or merge a PR.
 **Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 is current.
 
 **What was done:**
-- **Stage 10a-2 part 1, risk-policy runner** on `feat/stage10-risk-run` (Entry 92): bundle-seed
-  checkpoint bound to the Stage 8 hash, provenance and val-A reproduction checks before val-B,
-  val-B fit, pre-declared diagnostics; synthetic tests only, no real data; in review. Next: notebook
-  05 and the Colab run (part 2), after merge.
+- **Stage 10a-2 part 2, notebook 05** on `feat/stage10-notebook-05` (Entry 93): Colab notebook for
+  the one official risk-policy run, its static test, and a test that log-Mel `.npz` bytes do not
+  depend on the code commit; cache code, profile and requirements unchanged since Stage 8
+  (`9be2f25`); not executed; in review. Next: the Colab run after merge.
+- **Stage 10a-2 part 1, risk-policy runner** (Entry 92): bundle-seed checkpoint bound to the
+  Stage 8 hash, provenance and val-A reproduction checks before val-B, val-B fit, pre-declared
+  diagnostics; synthetic tests only; merged as PR #58 (`7556ac9`).
 - D45 approved (PR #57, merged as `13a7d38`; Entry 91).
 - D44 approved and merged (PR #55, `9da66f1`; Entries 89–90), approval recorded as PR #56 (`4720bc2`). Next: 10a-2, the val-B runner.
 - **Stages 8–9 closed** on `docs/stage8-9-closeout` (Entry 88): D32 teach-back of briefs 08–09
@@ -2756,14 +2836,15 @@ the tests. Human review is still required. AI did not push, open or merge a PR.
 - Stage briefs (`docs/stages/`, D32): 00–09 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), 07 (PR #43), and 08–09 (PR #54).
 
 **Branches:**
-- `origin/main`: at `13a7d38` (PR B1 merged as #47, PR B2 as #48, PR C as #49, PR #33 as `6d84d8b`, the tests shadowing fix as #50 (`9be2f25`), the UI prototype as #51 (`6c29486`), PR D as #52 (`ea26959`), D43 as #53 (`a022e7a`), the Stages 8–9 closeout as #54 (`e2374cc`), D44 as #55 (`9da66f1`), the D44 approval record as #56 (`4720bc2`), D45 as #57 (`13a7d38`)).
+- `origin/main`: at `7556ac9` (PR B1 merged as #47, PR B2 as #48, PR C as #49, PR #33 as `6d84d8b`, the tests shadowing fix as #50 (`9be2f25`), the UI prototype as #51 (`6c29486`), PR D as #52 (`ea26959`), D43 as #53 (`a022e7a`), the Stages 8–9 closeout as #54 (`e2374cc`), D44 as #55 (`9da66f1`), the D44 approval record as #56 (`4720bc2`), D45 as #57 (`13a7d38`), the risk-policy runner as #58 (`7556ac9`)).
 - `docs/stage8-cnn-selection`: merged as PR #52 (remote branch deleted).
 - `docs/stage16-d43-loudness-diagnostic`: D43 proposal and approval (Entry 87), merged as PR #53 (`a022e7a`) (remote branch deleted).
 - `feat/stage13-window-runner`: D35 per-window integration test; its log entry needs renumbering to 85.
 - `fix/stage10-d44-platt-stop`: D44 Platt stop rule (Entry 89), merged as PR #55 (remote branch deleted).
 - `docs/stage10-d44-approval`: D44 approval record (Entry 90), merged as PR #56 (`4720bc2`) (remote branch deleted).
 - `docs/stage10-d45-seed-policy-scope`: D45 proposal and approval (Entry 91), merged as PR #57 (`13a7d38`).
-- `feat/stage10-risk-run`: Stage 10a-2 part 1, risk-policy runner (Entry 92), in review.
+- `feat/stage10-risk-run`: Stage 10a-2 part 1, risk-policy runner (Entry 92), merged as PR #58 (`7556ac9`).
+- `feat/stage10-notebook-05`: Stage 10a-2 part 2, notebook 05 and tests (Entry 93), in review.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
