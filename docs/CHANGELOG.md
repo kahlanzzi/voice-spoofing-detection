@@ -93,6 +93,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - D26 completed with the v2.1 §5 hand-overs; per-folder `CODEOWNERS` (owner + consumer reviewer); project log header updated.
 
 ### Fixed
+- `docs/risk_policy.md` Why (d): the confidence bound for uncertain cases is `max(threshold + half_width, 1 − (threshold − half_width))`, not "about 0.5 + half_width" (0.997 for `risk-v1`, so an uncertain case can display 1.00); documentation only, no behaviour change.
 - D44 (approved, PR #55): Newton-decrement stop (λ²/2 ≤ 1e-12), stall and non-descent guards in the Platt fit; tests T1–T5; reproducible pre-check in `docs/audit_evidence/stage10_d44/`; no val-B accessed.
 - `tests/` is now a regular package (`tests/__init__.py`) with an import-root guard (`tests/test_import_roots.py`), so a site-packages `tests` package on Colab can no longer shadow it and break `from tests._torch import ...`.
 - Stale `CLAUDE.md` mentions → `AGENTS.md` in `configs/audit.yaml` and the Stage 1 notebook intro.

@@ -117,9 +117,10 @@ decision (`diagnostics_report.json` `purpose`; [risk_run.md](../risk_run.md) Why
 4. **Confidence of uncertain cases.** Confidence is `max(p, 1 − p)` rounded to 2 decimals
    ([risk_policy.md](../risk_policy.md) Step R2, Method 4) [doc]. An uncertain clip just below the
    upper band edge has `p` near 0.997, so its confidence can display as 1.00 [derived]. This is the
-   limitation already recorded in [risk_policy.md](../risk_policy.md) Why (d) (the dashboard must
-   show the prediction next to the confidence) [doc]; the bound there, "about 0.5 + `half_width`",
-   assumes a threshold near 0.5, while here threshold + `half_width` = 0.997 [derived].
+   limitation recorded in [risk_policy.md](../risk_policy.md) Why (d): an uncertain case can show a
+   confidence up to max(threshold + `half_width`, 1 − (threshold − `half_width`)), rounded, so the
+   dashboard must show the prediction next to the confidence [doc]. Here that bound is
+   max(0.99695, 0.73033) = 0.997 [derived].
 5. **Raw and `p` metrics are identical and nothing saturates.** EER and ROC-AUC are equal on raw
    scores and on `p`, and no clip has `p` exactly 0 or 1 [verified], as expected for a strictly
    increasing calibration with `a` > 0 and smoothed targets ([risk_policy.md](../risk_policy.md)
@@ -157,10 +158,12 @@ committed], except where marked.
   `4502eea2f77cfd83d7e2b1d777e392fa460a13e805a936faa2788df8e7862c81`
   ([stage8_cnn/run_report.json](../audit_evidence/stage8_cnn/run_report.json) [verified]).
   The runner was not started there, so no score was computed.
-- **T4 runtime.** On a T4 runtime (Intel Xeon @ 2.00 GHz, AVX-512, Python 3.13.16, torch
-  2.11.0+cu130, as in Stage 8 [verified: [cnn_selection.md](cnn_selection.md) §1]) the val-A cache
-  matched `4502eea2…` exactly [verified: `run_report.json` `provenance_checks`], so the official
-  run used the T4 runtime. Scoring still ran on CPU (`scoring.device` "cpu") [verified].
+- **T4 runtime.** The T4 session ran on an Intel Xeon @ 2.00 GHz with AVX-512 [doc: Donia's
+  account]. It had Python 3.13.16, torch 2.11.0+cu130 and a T4 GPU, as recorded for Stage 8
+  [verified: `stage8_cnn/stage8_export_manifest.json` `python`, `torch`, `gpu_name`]; the Stage 8
+  processor was not recorded. There the val-A cache matched `4502eea2…` exactly [verified:
+  `run_report.json` `provenance_checks`], so the official run used the T4 runtime. Scoring still
+  ran on CPU (`scoring.device` "cpu") [verified].
 - **Cause not separable.** The two runtimes differ in processor (instruction set) and in image
   (Python 3.13.18 vs 3.13.16, and possibly other preinstalled packages). The cause may be the
   processor [hypothesis] or the image drift [hypothesis]; this run cannot separate them. scipy,

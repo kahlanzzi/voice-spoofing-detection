@@ -2498,7 +2498,8 @@ results. Notebook 05 merged as PR #59 (`11c07fe`, Entry 93).
 - **Environment finding and switch (before the run cell; no score computed).** On a Colab CPU
   runtime (Xeon @ 2.20 GHz, no AVX-512, Python 3.13.18) the val-A cache `npz` was `9fbb1711…e98ae19f`,
   not Stage 8's `4502eea2…862c81`, so the runner's provenance check would have stopped the run.
-  On a T4 runtime (Xeon @ 2.00 GHz, AVX-512, Python 3.13.16, torch 2.11.0+cu130, as Stage 8) it
+  On a T4 runtime (Xeon @ 2.00 GHz, AVX-512, by Donia's account; Python 3.13.16, torch
+  2.11.0+cu130 and a T4 GPU, as recorded for Stage 8, whose processor was not recorded) it
   matched exactly; the official run used the T4 runtime (scoring still on CPU), under the rerun
   rule pre-declared in notebook 05 section 9. Cause (processor vs image drift) not separable
   [hypothesis both]; scipy, soxr, numba and llvmlite are unpinned and Stage 8 did not record them.
@@ -2657,8 +2658,8 @@ entry, and ran the tests. Human review is still required. AI did not push, open 
 - [x] Approve D44 (Platt stop rule; Entry 89): approved via PR #55 (2026-10-28; Entry 90).
 - [x] 10a-2 part 1: runner (Entry 92): merged as PR #58 (`7556ac9`).
 - [x] 10a-2 part 2: notebook 05 and its tests (Entry 93): merged as PR #59 (`11c07fe`).
-- [x] 10a-2 part 2: official Colab run of notebook 05 from the merged commit, then commit the four
-  files under `docs/audit_evidence/stage10_risk/` (after review) (Entry 94; in review)
+- [x] 10a-2 part 2: official Colab run of notebook 05 (2026-10-28; Entry 94)
+- [ ] Commit the Stage 10 evidence and results (Entry 94), in review
 - [ ] Stage 11: plan runtime and environment recording (T4 image family; unpinned feature libraries) before any FoR test access (Entry 94)
 - [x] Approve D45 (bundle-seed-only policy): approved via PR #57 (2026-10-28; Entry 91).
 
