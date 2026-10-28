@@ -2542,6 +2542,45 @@ entry, and ran the tests. Human review is still required. AI did not push, open 
 **Gate:** human review. **WAITING FOR HUMAN REVIEW.**
 
 ---
+
+### Entry 95 — Stage 10 brief drafted (D32) (2026-10-28)
+
+**Numbering:** provisional; the number is fixed at merge time (Entry 85 is reserved for
+`feat/stage13-window-runner`).
+
+**Owner:** Donia Mabrouk.
+
+**Scope [doc]:** D32 brief for Stage 10, docs only; Stage 10 PRs #17, #55, #56, #57, #58, #59 and
+#60 are merged (results PR #60 as `ff0a226`, Entry 94).
+
+**What we did:** on `docs/stage10-brief`, from `main` at `ff0a226`:
+- `docs/stages/stage10-risk-policy.md` from the 08–09 briefs: header, inputs/outputs with consumers
+  (Stages 11, 12, 13, 18), the work in order (R1–R2, D44, D45, runner, notebook 05 and its rerun
+  rule, the CPU-vs-T4 finding, the official run, the results), decisions D2, D9, D12, D44, D45,
+  evidence tagged as in `docs/results/risk_policy_fit.md` (no new claim), limitations and
+  handovers, 12 teach-back questions with answers, and a verification snippet.
+- Stage index row set to draft.
+
+**Evidence:**
+- [verified] The brief's verification snippet, run from the repo root with the project venv, printed
+  `True` for all 13 lines (hashes and sizes of the three committed reports against the manifest,
+  `val_b_scores_sha256` binding, policy SHA-256 `a74f1f51…`, checkpoint and bundle seed against
+  Stage 8, provenance checks, val-A cache, both cache builds, val-A EER, headline = policy, commit).
+- [verified] full `pytest -q` from the project venv and `git diff --check`: see the PR report.
+
+**Not done:** no data, Drive, network or code accessed or changed; the brief is not accepted and
+the `AGENTS.md` roadmap is unchanged (Stage 10 closes only after the teach-back).
+
+**Decisions:** none (next D-ID: D46).
+
+**AI assistance:** **Claude** (claude.ai) wrote the prompt. **Claude Code** read the Stage 10
+documents and evidence, wrote the brief, ran the verification snippet and the tests, and updated
+the index, CHANGELOG and this log. Human review of every line is still required. AI did not push,
+open or merge a PR.
+
+**Gate:** D32 teach-back by Iheb, Malak and Khalil, then a closeout PR. **WAITING FOR HUMAN REVIEW.**
+
+---
 ## Open items
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
@@ -2653,13 +2692,14 @@ entry, and ran the tests. Human review is still required. AI did not push, open 
 - [x] Stage 7 brief docs/stages/stage07-baseline.md (D32): written; teach-back by Khalil and Iheb pending (Entry 74) (teach-back face to face, Entry 75)
 
 **Stage 10 risk policy (Entry 33)**
-- [ ] Stage 10 brief docs/stages/stage10-*.md (D32) when the stage closes
+- [x] Stage 10 brief docs/stages/stage10-*.md (D32): drafted as `docs/stages/stage10-risk-policy.md` (Entry 95)
+- [ ] Stage 10 brief: D32 teach-back by Iheb, Malak and Khalil, then a closeout PR that accepts the brief and marks Stage 10 done in `AGENTS.md` (Entry 95)
 - [x] Human review of `feat/stage10-risk-policy` (R1–R2); CI green on Python 3.13: merged as PR #17.
 - [x] Approve D44 (Platt stop rule; Entry 89): approved via PR #55 (2026-10-28; Entry 90).
 - [x] 10a-2 part 1: runner (Entry 92): merged as PR #58 (`7556ac9`).
 - [x] 10a-2 part 2: notebook 05 and its tests (Entry 93): merged as PR #59 (`11c07fe`).
 - [x] 10a-2 part 2: official Colab run of notebook 05 (2026-10-28; Entry 94)
-- [ ] Commit the Stage 10 evidence and results (Entry 94), in review
+- [x] Commit the Stage 10 evidence and results (Entry 94): merged as PR #60 (`ff0a226`)
 - [ ] Stage 11: plan runtime and environment recording (T4 image family; unpinned feature libraries) before any FoR test access (Entry 94)
 - [x] Approve D45 (bundle-seed-only policy): approved via PR #57 (2026-10-28; Entry 91).
 
@@ -2784,15 +2824,16 @@ entry, and ran the tests. Human review is still required. AI did not push, open 
 
 ## Current status — updated 2026-10-28
 
-**Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 is current.
+**Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 is current: run and results merged (PR #60; Entry 94), brief drafted (Entry 95), teach-back pending.
 
 **What was done:**
+- **Stage 10 brief drafted** on `docs/stage10-brief` (Entry 95): `docs/stages/stage10-risk-policy.md`,
+  status draft. Next: D32 teach-back by Iheb, Malak and Khalil, then a closeout PR; then Stage 11.
 - **Stage 10 official risk-policy run** on `docs/stage10-risk-results` (Entry 94): notebook 05 run
   on Colab (T4 runtime, CPU scoring) from `11c07fe`; all checks passed; policy `risk-v1` fitted on
   val-B (deferral 132 / 1,329); evidence under `docs/audit_evidence/stage10_risk/` and validation
   results `docs/results/risk_policy_fit.md`; a CPU runtime gave a different val-A cache hash, so
-  the run used the T4 runtime (Stage 11 must plan its runtime). In review. Next: Stage 10 brief
-  (D32), then Stage 11.
+  the run used the T4 runtime (Stage 11 must plan its runtime). Merged as PR #60 (`ff0a226`).
 - **Stage 10a-2 part 2, notebook 05** (Entry 93): Colab notebook for the one official risk-policy
   run, its static test, and a test that log-Mel `.npz` bytes do not depend on the code commit;
   merged as PR #59 (`11c07fe`).
@@ -2908,7 +2949,7 @@ entry, and ran the tests. Human review is still required. AI did not push, open 
 - Stage briefs (`docs/stages/`, D32): 00–09 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), 07 (PR #43), and 08–09 (PR #54).
 
 **Branches:**
-- `origin/main`: at `11c07fe` (PR B1 merged as #47, PR B2 as #48, PR C as #49, PR #33 as `6d84d8b`, the tests shadowing fix as #50 (`9be2f25`), the UI prototype as #51 (`6c29486`), PR D as #52 (`ea26959`), D43 as #53 (`a022e7a`), the Stages 8–9 closeout as #54 (`e2374cc`), D44 as #55 (`9da66f1`), the D44 approval record as #56 (`4720bc2`), D45 as #57 (`13a7d38`), the risk-policy runner as #58 (`7556ac9`), notebook 05 as #59 (`11c07fe`)).
+- `origin/main`: at `ff0a226` (PR B1 merged as #47, PR B2 as #48, PR C as #49, PR #33 as `6d84d8b`, the tests shadowing fix as #50 (`9be2f25`), the UI prototype as #51 (`6c29486`), PR D as #52 (`ea26959`), D43 as #53 (`a022e7a`), the Stages 8–9 closeout as #54 (`e2374cc`), D44 as #55 (`9da66f1`), the D44 approval record as #56 (`4720bc2`), D45 as #57 (`13a7d38`), the risk-policy runner as #58 (`7556ac9`), notebook 05 as #59 (`11c07fe`), the Stage 10 results as #60 (`ff0a226`)).
 - `docs/stage8-cnn-selection`: merged as PR #52 (remote branch deleted).
 - `docs/stage16-d43-loudness-diagnostic`: D43 proposal and approval (Entry 87), merged as PR #53 (`a022e7a`) (remote branch deleted).
 - `feat/stage13-window-runner`: D35 per-window integration test; its log entry needs renumbering to 85.
@@ -2917,7 +2958,8 @@ entry, and ran the tests. Human review is still required. AI did not push, open 
 - `docs/stage10-d45-seed-policy-scope`: D45 proposal and approval (Entry 91), merged as PR #57 (`13a7d38`).
 - `feat/stage10-risk-run`: Stage 10a-2 part 1, risk-policy runner (Entry 92), merged as PR #58 (`7556ac9`).
 - `feat/stage10-notebook-05`: Stage 10a-2 part 2, notebook 05 and tests (Entry 93), merged as PR #59 (`11c07fe`).
-- `docs/stage10-risk-results`: Stage 10 official run evidence and validation results (Entry 94), in review.
+- `docs/stage10-risk-results`: Stage 10 official run evidence and validation results (Entry 94), merged as PR #60 (`ff0a226`).
+- `docs/stage10-brief`: Stage 10 brief, draft (Entry 95); waits for the D32 teach-back.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
