@@ -195,9 +195,22 @@ def run(cache_dir, checkpoint_dir, profile_path, config_path, manifest_path, sta
     batch_size = load_cnn_config(config_path).batch_size
     manifest = load_f2_manifest(manifest_path)
     profile_config_sha256 = sha256_file(profile_path)
+    f2_manifest_sha256 = sha256_file(manifest_path)
+
+    # Provenance checks: the inputs must be the ones the checkpoint was trained and selected with.
+    provenance_checks = {}
+
+    def check(key: str, actual: str) -> None:
+        provenance_checks[key] = {"expected": ckpt[key], "actual": actual}
+        if actual != ckpt[key]:
+            raise ValueError(f"provenance check failed: {key} is {actual}, checkpoint records {ckpt[key]}")
+
+    check("profile_fingerprint", profile.fingerprint())
+    check("f2_manifest_sha256", f2_manifest_sha256)
 
     # Reproduction check: weights, normalization and scoring path must give the recorded val-A EER.
     val_a = _load_split(cache_dir, CHECK_SPLIT, profile, profile_config_sha256, manifest)
+    check("val_a_cache_npz_sha256", val_a[4]["npz_sha256"])
     val_a_eer = eer(val_a[1], score_clips(model, mean, std, val_a[0], batch_size))[0]
     if val_a_eer != ckpt["val_a_eer"]:
         raise ValueError(f"val-A reproduction failed: recomputed EER {val_a_eer!r}, "
@@ -230,7 +243,8 @@ def run(cache_dir, checkpoint_dir, profile_path, config_path, manifest_path, sta
             "environment": environment(),
             "profile_fingerprint": profile.fingerprint(),
             "profile_config_sha256": profile_config_sha256,
-            "f2_manifest_sha256": sha256_file(manifest_path),
+            "f2_manifest_sha256": f2_manifest_sha256,
+            "provenance_checks": provenance_checks,
             "caches": {
                 split: {"npz_sha256": meta["npz_sha256"], "n_rows": meta["n_rows"]}
                 for split, meta in ((CHECK_SPLIT, val_a[4]), (FIT_SPLIT, val_b_meta))

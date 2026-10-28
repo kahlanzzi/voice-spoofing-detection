@@ -108,7 +108,8 @@ def inputs(tmp_path_factory, profile):
             "best_epoch": result.best_epoch, "val_a_eer": result.best_val_a_eer,
             "code_commit": COMMIT, "environment": {"python": "3.13.15"},
             "profile_fingerprint": profile.fingerprint(), "f2_manifest_sha256": _sha(manifest_path),
-            "train_cache_npz_sha256": "d" * 64, "val_a_cache_npz_sha256": "e" * 64,
+            "train_cache_npz_sha256": _sha(cache_dir / "train" / "train.npz"),
+            "val_a_cache_npz_sha256": _sha(cache_dir / "val-A" / "val-A.npz"),
             "determinism": dict(result.determinism),
         }
         meta.update(changes)
@@ -168,7 +169,8 @@ def test_end_to_end_outputs_round_trip_and_determinism(patched, tmp_path, profil
     assert data == report and list(data) == sorted(data)
     assert set(data) == {
         "schema_version", "version", "code_commit", "environment", "profile_fingerprint",
-        "profile_config_sha256", "f2_manifest_sha256", "caches", "bundle_seed", "checkpoint_sha256",
+        "profile_config_sha256", "f2_manifest_sha256", "provenance_checks", "caches", "bundle_seed",
+        "checkpoint_sha256",
         "n_blocks", "scoring", "val_a_eer_recomputed", "risk_policy_sha256", "val_b_scores_sha256",
         "headline",
     }
@@ -183,6 +185,14 @@ def test_end_to_end_outputs_round_trip_and_determinism(patched, tmp_path, profil
     for split, entry in data["caches"].items():
         npz = patched["cache_dir"] / split / f"{split}.npz"
         assert entry == {"npz_sha256": _sha(npz), "n_rows": sum(SIZES[split])}
+    # Each provenance check records the checkpoint's value (expected) and the input's (actual).
+    val_a_npz = _sha(patched["cache_dir"] / "val-A" / "val-A.npz")
+    assert data["provenance_checks"] == {
+        "profile_fingerprint": {"expected": profile.fingerprint(), "actual": profile.fingerprint()},
+        "f2_manifest_sha256": {"expected": _sha(patched["manifest_path"]),
+                               "actual": _sha(patched["manifest_path"])},
+        "val_a_cache_npz_sha256": {"expected": val_a_npz, "actual": val_a_npz},
+    }
     assert data["risk_policy_sha256"] == _sha(out / "risk_policy.json")
     assert data["val_b_scores_sha256"] == _sha(out / "val_b_scores.npz")
 
@@ -257,6 +267,25 @@ def test_val_a_reproduction_mismatch_stops_before_val_b(patched, tmp_path):
     with pytest.raises(ValueError, match="val-A reproduction failed"):
         _run(patched, tmp_path / "out", checkpoint=folder, evidence=evidence)
     assert patched["loaded"] == ["val-A"]
+    assert not (tmp_path / "out").exists()
+
+
+@pytest.mark.parametrize("key, loaded", [
+    # Profile and F2 manifest are checked before any cache is read.
+    ("profile_fingerprint", []),
+    ("f2_manifest_sha256", []),
+    # The val-A cache hash is known only after val-A is loaded, and is checked before val-B.
+    ("val_a_cache_npz_sha256", ["val-A"]),
+])
+def test_provenance_mismatch_stops_before_val_b(patched, tmp_path, key, loaded):
+    # Same weights, but the checkpoint records another value for one provenance key ("0" * 64 is a
+    # valid hex hash that no synthetic input has), so the run stops and val-B is never loaded.
+    folder, sha = patched["checkpoint"](f"wrong_{key}", **{key: "0" * 64})
+    evidence = _evidence(tmp_path / "ev", 0, {"0": sha})
+    with pytest.raises(ValueError, match=f"provenance check failed: {key}"):
+        _run(patched, tmp_path / "out", checkpoint=folder, evidence=evidence)
+    assert patched["loaded"] == loaded
+    assert "val-B" not in patched["loaded"]
     assert not (tmp_path / "out").exists()
 
 
