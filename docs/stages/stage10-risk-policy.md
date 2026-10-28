@@ -5,7 +5,7 @@
 | **Stage** | 10 — Risk policy + calibration fit (FoR val-B) |
 | **Owner** | Donia Mabrouk (D26, Part C) |
 | **Reviewer(s)** | Khalil Dridi and Iheb Zemzemi (Protocol v1.0 §6; D26: consumers of Part C) |
-| **Status** | Draft — pending D32 teach-back |
+| **Status** | Accepted — D32 teach-back: Iheb, Malak and Khalil, face to face, 2026-10-28; Donia attended as author, correcting only; no corrections to the brief; Q9 reading agreed; confirmed by approval of PR #61 |
 | **Date** | 2026-10-28 |
 | **Related PRs** | #17 (R1–R2 code), #55 (D44), #56 (D44 approval record), #57 (D45), #58 (runner), #59 (notebook 05), #60 (evidence and results) |
 

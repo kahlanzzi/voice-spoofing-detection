@@ -2581,6 +2581,38 @@ open or merge a PR.
 **Gate:** D32 teach-back by Iheb, Malak and Khalil, then a closeout PR. **WAITING FOR HUMAN REVIEW.**
 
 ---
+
+### Entry 96 — Stage 10 closed (D32) (2026-10-28)
+
+**Numbering:** provisional; the number is fixed at merge time (Entry 85 is reserved for
+`feat/stage13-window-runner`).
+
+**What:** the brief docs/stages/stage10-risk-policy.md was drafted on `docs/stage10-brief`
+(Entry 95, PR #61). Iheb, Malak and Khalil completed their D32 teach-back face to face on
+2026-10-28, answering all 12 §7 questions without the author; Donia attended as author, correcting
+only (reported by Donia). No corrections to the brief came up, so the brief was not revised. The Q9
+reading (the switch to the T4 runtime is an infrastructure choice made before the run cell, under
+the notebook 05 rerun rule) was agreed by all three. The written confirmation will be the approval
+of PR #61 by Iheb, Malak and Khalil (D26). In this closeout commit on `docs/stage10-brief`, the
+brief status is set to accepted, and the stage-briefs index, the `AGENTS.md` roadmap and the
+CHANGELOG are updated.
+
+**Checks:** full `pytest -q` from the project venv on this branch (local, Windows): 760 passed;
+`tests/governance/test_deepvoice_access.py`: 3 passed; `git diff --check` clean.
+
+**Status:** Stage 10 is done; Stage 11 (FoR internal test, once) is current. The validation-only
+scope of Entry 94 is unchanged; the Stage 11 runtime and environment plan (Entry 94) is still open
+before any FoR test access.
+
+**AI assistance:** **Claude** (claude.ai) wrote the Claude Code prompts. **Claude Code** read the
+Stages 8–9 closeout (PR #54, Entry 88) read-only, stopped to ask for the unfilled PR number,
+corrections and Q9 outcome, applied the edits and ran the checks. Donia reported the teach-back
+details. AI did not push, open or merge a PR.
+
+**Gate:** approval of PR #61 by Iheb, Malak and Khalil is the written confirmation of the
+teach-back; AI does not approve or merge. **WAITING FOR HUMAN REVIEW.**
+
+---
 ## Open items
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
@@ -2693,7 +2725,7 @@ open or merge a PR.
 
 **Stage 10 risk policy (Entry 33)**
 - [x] Stage 10 brief docs/stages/stage10-*.md (D32): drafted as `docs/stages/stage10-risk-policy.md` (Entry 95)
-- [ ] Stage 10 brief: D32 teach-back by Iheb, Malak and Khalil, then a closeout PR that accepts the brief and marks Stage 10 done in `AGENTS.md` (Entry 95)
+- [x] Stage 10 brief: D32 teach-back by Iheb, Malak and Khalil, then a closeout PR that accepts the brief and marks Stage 10 done in `AGENTS.md` (Entry 95) (2026-10-28, face to face: Iheb, Malak, Khalil; Donia attended as author; no corrections; Q9 reading agreed; Entry 96)
 - [x] Human review of `feat/stage10-risk-policy` (R1–R2); CI green on Python 3.13: merged as PR #17.
 - [x] Approve D44 (Platt stop rule; Entry 89): approved via PR #55 (2026-10-28; Entry 90).
 - [x] 10a-2 part 1: runner (Entry 92): merged as PR #58 (`7556ac9`).
@@ -2824,11 +2856,13 @@ open or merge a PR.
 
 ## Current status — updated 2026-10-28
 
-**Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 is current: run and results merged (PR #60; Entry 94), brief drafted (Entry 95), teach-back pending.
+**Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 closed (Entry 96): run and results merged (PR #60; Entry 94), brief accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-28; Donia attended as author; no corrections; Q9 reading agreed), pending approval of PR #61. Stage 11 is current.
 
 **What was done:**
-- **Stage 10 brief drafted** on `docs/stage10-brief` (Entry 95): `docs/stages/stage10-risk-policy.md`,
-  status draft. Next: D32 teach-back by Iheb, Malak and Khalil, then a closeout PR; then Stage 11.
+- **Stage 10 closed** on `docs/stage10-brief` (Entry 96): D32 teach-back of the Stage 10 brief by
+  Iheb, Malak and Khalil, face to face, 2026-10-28 (Donia attended as author, correcting only; no
+  corrections; Q9 reading agreed); brief accepted, index and roadmap updated. Next: Stage 11.
+- **Stage 10 brief drafted** on `docs/stage10-brief` (Entry 95): `docs/stages/stage10-risk-policy.md`.
 - **Stage 10 official risk-policy run** on `docs/stage10-risk-results` (Entry 94): notebook 05 run
   on Colab (T4 runtime, CPU scoring) from `11c07fe`; all checks passed; policy `risk-v1` fitted on
   val-B (deferral 132 / 1,329); evidence under `docs/audit_evidence/stage10_risk/` and validation
@@ -2946,7 +2980,7 @@ open or merge a PR.
 - Governance rules that keep the external set metadata-only until the one guarded Stage 13 run.
 - Corrected Stage 6 FoR evidence under `docs/audit_evidence/stage6_preprocessing/`: exact profile,
   deterministic validation, shortcut/padding screens, D18 invariance and no-training T4 benchmark.
-- Stage briefs (`docs/stages/`, D32): 00–09 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), 07 (PR #43), and 08–09 (PR #54).
+- Stage briefs (`docs/stages/`, D32): 00–10 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), 07 (PR #43), 08–09 (PR #54), and 10 (PR #61).
 
 **Branches:**
 - `origin/main`: at `ff0a226` (PR B1 merged as #47, PR B2 as #48, PR C as #49, PR #33 as `6d84d8b`, the tests shadowing fix as #50 (`9be2f25`), the UI prototype as #51 (`6c29486`), PR D as #52 (`ea26959`), D43 as #53 (`a022e7a`), the Stages 8–9 closeout as #54 (`e2374cc`), D44 as #55 (`9da66f1`), the D44 approval record as #56 (`4720bc2`), D45 as #57 (`13a7d38`), the risk-policy runner as #58 (`7556ac9`), notebook 05 as #59 (`11c07fe`), the Stage 10 results as #60 (`ff0a226`)).
@@ -2959,7 +2993,7 @@ open or merge a PR.
 - `feat/stage10-risk-run`: Stage 10a-2 part 1, risk-policy runner (Entry 92), merged as PR #58 (`7556ac9`).
 - `feat/stage10-notebook-05`: Stage 10a-2 part 2, notebook 05 and tests (Entry 93), merged as PR #59 (`11c07fe`).
 - `docs/stage10-risk-results`: Stage 10 official run evidence and validation results (Entry 94), merged as PR #60 (`ff0a226`).
-- `docs/stage10-brief`: Stage 10 brief, draft (Entry 95); waits for the D32 teach-back.
+- `docs/stage10-brief`: Stage 10 brief (Entry 95) and closeout (Entry 96), PR #61, in review.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
@@ -2971,6 +3005,6 @@ open or merge a PR.
    Briefs 00–06 are accepted.
 2. Before Stage 13, implement the approved file-level view, speaker-average convention and guarded
    runner; resolve the external-run governance allowlist.
-3. Stage 7 is closed (PR #43); Stages 8–9: the official run is complete (Entry 86), validation only; PR D merged as #52; D43 approved (PR #53, Entry 87; implementation only at Stage 16, after the D41 storage implementation); the 08–09 teach-backs are done (Entry 88); next: Stage 10 (risk policy and calibration on val-B with the seed-0 checkpoint). Preserve the recorded validation-only scope of Entries 74 and 86.
+3. Stage 7 is closed (PR #43); Stages 8–9: the official run is complete (Entry 86), validation only; PR D merged as #52; D43 approved (PR #53, Entry 87; implementation only at Stage 16, after the D41 storage implementation); the 08–09 teach-backs are done (Entry 88); Stage 10 is closed (Entry 96); next: Stage 11 (FoR test, once), after its runtime and environment plan (Entry 94) and the reviewed D41 registry and storage implementation (D41, ADR 0010). Preserve the recorded validation-only scope of Entries 74 and 86.
 4. D41 and ADR 0010 are approved in PR #46. Implement and review the closed-purpose registry and Stage 11 per-clip score storage before any FoR test access for the Stage 14 comparison.
 5. Then run the real Part C work on the frozen F3 preprocessing profile; the W&B project is set up (entity `voice-spoofing-detection-must`, project `voice-spoofing-detection`, D40), and teammates' Member invites are pending (see Open items).

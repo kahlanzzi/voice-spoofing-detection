@@ -111,8 +111,8 @@ required CI check `checks`, branch up to date; no direct pushes.
 | 6 | Preprocessing profile v1 + tests + compute benchmark | B · Malak | done |
 | 7 | Evaluation harness + MFCC/SVM baseline | C · Donia | done |
 | 8–9 | CNN training + model selection (FoR val-A) | C · Donia | done |
-| 10 | Risk policy + calibration fit (FoR val-B) | C · Donia | ← CURRENT |
-| 11 | FoR internal test (once) | C · Donia | |
+| 10 | Risk policy + calibration fit (FoR val-B) | C · Donia | done |
+| 11 | FoR internal test (once) | C · Donia | ← CURRENT |
 | 12 | **ModelBundle freeze** | C · Donia | |
 | 13 | **DEEP-VOICE external run (once, guarded)**, stores per-sample scores | D · Khalil; review: all four | |
 | 14–16 | Robustness (FoR only) · calibration analysis · error analysis | D · Malak (14), Khalil (15, 16) | |
