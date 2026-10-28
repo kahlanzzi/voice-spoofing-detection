@@ -6,8 +6,10 @@ must be > 0, so the calibration is strictly increasing and never changes the ran
 
 Stop rule (D44): stop when the gradient norm is < GRADIENT_TOLERANCE or when the Newton decrement
 lambda^2/2 = -g.d/2 (about f - f*, independent of the score scale; Boyd and Vandenberghe 2004,
-§9.5.1) is <= DECREMENT_TOLERANCE. An accepted line-search step that leaves (a, b) unchanged
-raises ValueError ("stalled") instead of running on to MAX_ITERATIONS.
+§9.5.1) is <= DECREMENT_TOLERANCE. A Newton direction that is not a descent direction
+(lambda^2/2 < -DECREMENT_TOLERANCE) raises ValueError, so the decrement stop never accepts a
+non-optimal point; an accepted line-search step that leaves (a, b) unchanged raises ValueError
+("stalled") instead of running on to MAX_ITERATIONS.
 
 Conventions: labels 1 = spoof, 0 = bonafide; higher score = more likely spoof; p = P(spoof).
 Part of the shared core: must not import src.evaluation (SDD Fig. 1).
@@ -90,7 +92,13 @@ def _fit_newton(s: np.ndarray, t: np.ndarray, b0: float) -> tuple[float, float, 
         hess += _HESSIAN_RIDGE * np.eye(2)
         direction = -np.linalg.solve(hess, grad)
         slope = float(grad @ direction)  # < 0: the Hessian is positive definite
-        if -slope / 2 <= DECREMENT_TOLERANCE:  # slope = -lambda^2
+        half_decrement = -slope / 2  # lambda^2/2; >= 0 for a descent direction
+        if half_decrement < -DECREMENT_TOLERANCE:
+            raise ValueError(
+                f"Platt fit: Newton direction is not a descent direction at iteration {iteration} "
+                f"(Newton decrement^2/2 {half_decrement:.3g})"
+            )
+        if half_decrement <= DECREMENT_TOLERANCE:
             return a, b, iteration
         if iteration == MAX_ITERATIONS:
             break
@@ -110,7 +118,7 @@ def _fit_newton(s: np.ndarray, t: np.ndarray, b0: float) -> tuple[float, float, 
         if float(a_new) == a and float(b_new) == b:
             raise ValueError(
                 f"Platt fit: stalled at iteration {iteration} (gradient norm "
-                f"{np.linalg.norm(grad):.3g}, Newton decrement^2/2 {-slope / 2:.3g}); "
+                f"{np.linalg.norm(grad):.3g}, Newton decrement^2/2 {half_decrement:.3g}); "
                 "the step no longer changes a or b"
             )
         a, b, f = float(a_new), float(b_new), f_new

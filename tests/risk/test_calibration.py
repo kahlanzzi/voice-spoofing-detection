@@ -167,7 +167,10 @@ def test_fit_is_invariant_to_score_scale():
 
 def test_fitted_point_is_a_minimum():
     # The convergence test must stop at the optimum, not merely stop: the loss at the fitted
-    # (a, b) is no larger than at its 8 neighbours a*(1 +/- 1e-6), b +/- 1e-6 * max(1, |b|).
+    # (a, b) is no larger than at its 8 neighbours a*(1 +/- 1e-4), b +/- 1e-4 * max(1, |b|).
+    # At 1e-6 the loss increase (~1e-12) is the size of float64 summation error on f, so the test
+    # could flip by rounding; at 1e-4 it is ~5,000x larger and still catches a stop far from the
+    # optimum.
     for kind, s, y in _first_per_kind():
         t, _ = _targets_and_start(y)
         cal = fit_platt(y, s)
@@ -176,7 +179,7 @@ def test_fitted_point_is_a_minimum():
             z = a * s + b
             return float(np.sum(np.logaddexp(0.0, z) - t * z))
 
-        da, db = 1e-6 * cal.a, 1e-6 * max(1.0, abs(cal.b))
+        da, db = 1e-4 * cal.a, 1e-4 * max(1.0, abs(cal.b))
         f0 = loss(cal.a, cal.b)
         for i in (-1, 0, 1):
             for j in (-1, 0, 1):
@@ -200,3 +203,14 @@ def test_stall_guard_turns_spinning_into_a_loud_error(monkeypatch):
                     stalled.append(str(error))
     assert stalled
     assert all("Newton decrement" in message for message in stalled)
+
+
+def test_non_descent_direction_fails_loudly(monkeypatch):
+    # A ridge of -1e9 makes the Hessian negative definite, so d = -H^-1 g points uphill and
+    # slope = g'd > 0. Without the guard, the new decrement stop would return this point as
+    # converged; with a positive-definite Hessian (the normal case) slope = -g'H^-1 g <= 0 and the
+    # guard never fires.
+    monkeypatch.setattr(calibration, "_HESSIAN_RIDGE", -1e9)
+    _, s, y = _first_per_kind()[0]
+    with pytest.raises(ValueError, match="not a descent direction"):
+        fit_platt(y, s)
