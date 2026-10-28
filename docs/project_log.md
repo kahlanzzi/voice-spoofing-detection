@@ -2476,6 +2476,71 @@ not push, open or merge a PR.
 **Gate:** human review; the Colab run follows the merge. **WAITING FOR HUMAN REVIEW.**
 
 ---
+
+### Entry 94 — Stage 10 official risk-policy run: evidence and validation results (2026-10-28)
+
+**Numbering:** provisional; the number is fixed at merge time (Entry 85 is reserved for
+`feat/stage13-window-runner`).
+
+**Owner:** Donia Mabrouk.
+
+**Scope [doc]:** Protocol §6, D2, D9, D12, D44, D45. Validation results (FoR val-B) only, not test
+results. Notebook 05 merged as PR #59 (`11c07fe`, Entry 93).
+
+**What we did:**
+- **The run.** Donia ran notebook 05 on Colab from `11c07fedcd755dc72f16b2695f180cf094aeca04`;
+  export manifest written 2026-10-28 20:26:08 UTC. 760 tests passed (0 failures, errors, skips);
+  both val-A/val-B cache builds byte-identical; checkpoint hash = Stage 8 seed 0 (`c33eb820…`),
+  bundle seed 0; the three provenance checks equal; val-A EER recomputed 0.0; val-B scored twice
+  identically and the refit byte-identical (the runner stops otherwise); Drive re-verified after
+  remount. Policy `risk-v1`: a 1.04032, b 5.62518, threshold 0.63331, half_width 0.36364,
+  deferral 132 / 1,329 (target 10%).
+- **Environment finding and switch (before the run cell; no score computed).** On a Colab CPU
+  runtime (Xeon @ 2.20 GHz, no AVX-512, Python 3.13.18) the val-A cache `npz` was `9fbb1711…e98ae19f`,
+  not Stage 8's `4502eea2…862c81`, so the runner's provenance check would have stopped the run.
+  On a T4 runtime (Xeon @ 2.00 GHz, AVX-512, Python 3.13.16, torch 2.11.0+cu130, as Stage 8) it
+  matched exactly; the official run used the T4 runtime (scoring still on CPU), under the rerun
+  rule pre-declared in notebook 05 section 9. Cause (processor vs image drift) not separable
+  [hypothesis both]; scipy, soxr, numba and llvmlite are unpinned and Stage 8 did not record them.
+  The CPU-runtime `npz` is on Drive at `scratch/stage10_diag/` (not committed). The time of the
+  CPU-runtime attempt is not in the committed evidence.
+- **Evidence** (`6f25416`): the four exported files byte for byte under
+  `docs/audit_evidence/stage10_risk/`, with `.gitattributes` (`* -text`) and a verification README.
+  `val_b_scores.npz` (`43e5b198…5ffcd2`, 390,301 B) stays on Drive at `checkpoints/risk/risk-v1/`.
+- **Results** (`d5332e5`): `docs/results/risk_policy_fit.md`: provenance and checks, the policy with
+  band edges on `p` and on raw logits, all diagnostics, descriptive observations, interpretation
+  [inference], the environment finding, limitations.
+
+**Evidence:**
+- [verified] SHA-256 and size of the four copies = the expected values (risk_policy.json 358 B
+  `a74f1f51…`, run_report.json 2,062 B `4775fff5…`, diagnostics_report.json 1,559 B `4846a9d1…`,
+  stage10_export_manifest.json 2,222 B `a8f5844b…`), and the same for the committed blobs
+  (`git cat-file blob`).
+- [verified] `run_report.json` `risk_policy_sha256` = SHA-256 of `risk_policy.json`;
+  `val_b_scores_sha256` = the manifest's `val_b_scores.npz` hash; the manifest's hashes of the
+  three committed reports = the files.
+- [derived] band on `p` 0.269673 to 0.996948; raw-logit threshold −4.88189, band −6.36483 to
+  0.15748 (script in the scratchpad, output in the PR report).
+- [verified] full `pytest -q` from the project venv (local, Windows, Python 3.14.7): 760 passed;
+  governance test 3 passed; `git diff --check` clean.
+
+**Observations (descriptive only; no change follows, `risk_run.md` Why (e)):** val-B not
+separable by one FAKE_other spoof clip (raw −7.17 below the highest bonafide, −4.89); forced
+binary 0 FP / 1 FN; 129 of the 132 deferred clips are spoof (19.3% of spoof, 0.45% of bonafide).
+
+**Not done:** no data, Drive, checkpoint or network accessed by the AI; no code changed; the
+evidence files were not edited; no test or external data touched. Stage 10 brief (D32) and its
+teach-back not written yet.
+
+**Decisions:** none (next D-ID: D46).
+
+**AI assistance:** **Claude** (claude.ai) wrote the prompt. **Claude Code** copied and verified the
+evidence, wrote the evidence README, the results document, the derived-values script and this
+entry, and ran the tests. Human review is still required. AI did not push, open or merge a PR.
+
+**Gate:** human review. **WAITING FOR HUMAN REVIEW.**
+
+---
 ## Open items
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
@@ -2591,9 +2656,10 @@ not push, open or merge a PR.
 - [x] Human review of `feat/stage10-risk-policy` (R1–R2); CI green on Python 3.13: merged as PR #17.
 - [x] Approve D44 (Platt stop rule; Entry 89): approved via PR #55 (2026-10-28; Entry 90).
 - [x] 10a-2 part 1: runner (Entry 92): merged as PR #58 (`7556ac9`).
-- [ ] 10a-2 part 2: notebook 05 and its tests (Entry 93), in review
-- [ ] 10a-2 part 2: official Colab run of notebook 05 from the merged commit, then commit the four
-  files under `docs/audit_evidence/stage10_risk/` (after review)
+- [x] 10a-2 part 2: notebook 05 and its tests (Entry 93): merged as PR #59 (`11c07fe`).
+- [x] 10a-2 part 2: official Colab run of notebook 05 from the merged commit, then commit the four
+  files under `docs/audit_evidence/stage10_risk/` (after review) (Entry 94; in review)
+- [ ] Stage 11: plan runtime and environment recording (T4 image family; unpinned feature libraries) before any FoR test access (Entry 94)
 - [x] Approve D45 (bundle-seed-only policy): approved via PR #57 (2026-10-28; Entry 91).
 
 **Stage 11 run registry (Entry 34)**
@@ -2720,10 +2786,15 @@ not push, open or merge a PR.
 **Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 is current.
 
 **What was done:**
-- **Stage 10a-2 part 2, notebook 05** on `feat/stage10-notebook-05` (Entry 93): Colab notebook for
-  the one official risk-policy run, its static test, and a test that log-Mel `.npz` bytes do not
-  depend on the code commit; cache code, profile and requirements unchanged since Stage 8
-  (`9be2f25`); not executed; in review. Next: the Colab run after merge.
+- **Stage 10 official risk-policy run** on `docs/stage10-risk-results` (Entry 94): notebook 05 run
+  on Colab (T4 runtime, CPU scoring) from `11c07fe`; all checks passed; policy `risk-v1` fitted on
+  val-B (deferral 132 / 1,329); evidence under `docs/audit_evidence/stage10_risk/` and validation
+  results `docs/results/risk_policy_fit.md`; a CPU runtime gave a different val-A cache hash, so
+  the run used the T4 runtime (Stage 11 must plan its runtime). In review. Next: Stage 10 brief
+  (D32), then Stage 11.
+- **Stage 10a-2 part 2, notebook 05** (Entry 93): Colab notebook for the one official risk-policy
+  run, its static test, and a test that log-Mel `.npz` bytes do not depend on the code commit;
+  merged as PR #59 (`11c07fe`).
 - **Stage 10a-2 part 1, risk-policy runner** (Entry 92): bundle-seed checkpoint bound to the
   Stage 8 hash, provenance and val-A reproduction checks before val-B, val-B fit, pre-declared
   diagnostics; synthetic tests only; merged as PR #58 (`7556ac9`).
@@ -2836,7 +2907,7 @@ not push, open or merge a PR.
 - Stage briefs (`docs/stages/`, D32): 00–09 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), 07 (PR #43), and 08–09 (PR #54).
 
 **Branches:**
-- `origin/main`: at `7556ac9` (PR B1 merged as #47, PR B2 as #48, PR C as #49, PR #33 as `6d84d8b`, the tests shadowing fix as #50 (`9be2f25`), the UI prototype as #51 (`6c29486`), PR D as #52 (`ea26959`), D43 as #53 (`a022e7a`), the Stages 8–9 closeout as #54 (`e2374cc`), D44 as #55 (`9da66f1`), the D44 approval record as #56 (`4720bc2`), D45 as #57 (`13a7d38`), the risk-policy runner as #58 (`7556ac9`)).
+- `origin/main`: at `11c07fe` (PR B1 merged as #47, PR B2 as #48, PR C as #49, PR #33 as `6d84d8b`, the tests shadowing fix as #50 (`9be2f25`), the UI prototype as #51 (`6c29486`), PR D as #52 (`ea26959`), D43 as #53 (`a022e7a`), the Stages 8–9 closeout as #54 (`e2374cc`), D44 as #55 (`9da66f1`), the D44 approval record as #56 (`4720bc2`), D45 as #57 (`13a7d38`), the risk-policy runner as #58 (`7556ac9`), notebook 05 as #59 (`11c07fe`)).
 - `docs/stage8-cnn-selection`: merged as PR #52 (remote branch deleted).
 - `docs/stage16-d43-loudness-diagnostic`: D43 proposal and approval (Entry 87), merged as PR #53 (`a022e7a`) (remote branch deleted).
 - `feat/stage13-window-runner`: D35 per-window integration test; its log entry needs renumbering to 85.
@@ -2844,7 +2915,8 @@ not push, open or merge a PR.
 - `docs/stage10-d44-approval`: D44 approval record (Entry 90), merged as PR #56 (`4720bc2`) (remote branch deleted).
 - `docs/stage10-d45-seed-policy-scope`: D45 proposal and approval (Entry 91), merged as PR #57 (`13a7d38`).
 - `feat/stage10-risk-run`: Stage 10a-2 part 1, risk-policy runner (Entry 92), merged as PR #58 (`7556ac9`).
-- `feat/stage10-notebook-05`: Stage 10a-2 part 2, notebook 05 and tests (Entry 93), in review.
+- `feat/stage10-notebook-05`: Stage 10a-2 part 2, notebook 05 and tests (Entry 93), merged as PR #59 (`11c07fe`).
+- `docs/stage10-risk-results`: Stage 10 official run evidence and validation results (Entry 94), in review.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
