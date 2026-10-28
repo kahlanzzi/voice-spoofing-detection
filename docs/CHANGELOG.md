@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 10 risk-policy runner `src/tuning/risk_run.py`: bundle-seed checkpoint bound to the committed Stage 8 hash, provenance checks and exact val-A EER reproduction before val-B, val-B fit (CPU scores and refit checked identical, OS-independent bytes), pre-declared descriptive diagnostics; design note `docs/risk_run.md` and 15 synthetic tests; no real data.
 - D45 (approved, PR #57): only the bundle-seed CNN gets a risk policy; seeds 1–2 store raw scores only (calibrated p and prediction not applicable); clarifies Protocol §7 / D41 before any val-B score.
 - D43 (approved, PR #53): Stage 16 loudness diagnostic, exploratory in motivation and fully specified before test access (within-class Spearman of score vs RMS on the Stage 11 per-clip scores); implementation only at Stage 16, after the D41 storage implementation.
 - Stage 8 PR D: official CNN run evidence (`docs/audit_evidence/stage8_cnn/`: three reports, export manifest, verification README), validation results `docs/results/cnn_selection.md` (4 blocks, lr 1e-3, bundle seed 0) and draft briefs 08–09.
