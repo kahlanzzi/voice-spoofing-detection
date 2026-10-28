@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 10 official risk-policy run (`risk-v1`, commit `11c07fe`, FoR val-B, validation only): evidence under `docs/audit_evidence/stage10_risk/` (policy, run and diagnostics reports, export manifest, byte-preserving `.gitattributes`, verification README) and `docs/results/risk_policy_fit.md` (policy, derived band edges, descriptive diagnostics, Colab CPU-vs-T4 cache finding).
 - Stage 10a-2 part 2: Colab notebook 05 for the official risk-policy run (full-SHA clean checkout, Python 3.13 and torch 2.11.0 asserted, no GPU, JUnit skip check, val-A/val-B log-Mel caches built twice and compared, bundle-seed checkpoint copied from Drive, `src.tuning.risk_run` invoked once under the pre-declared rerun rule, no W&B, hashed Drive export re-verified after remount), its static test `tests/governance/test_notebook_05_stage10.py`, and `tests/features/test_logmel_cache_npz_bytes.py` (cache `.npz` bytes do not depend on the code commit).
 - Stage 10 risk-policy runner `src/tuning/risk_run.py`: bundle-seed checkpoint bound to the committed Stage 8 hash, provenance checks and exact val-A EER reproduction before val-B, val-B fit (CPU scores and refit checked identical, OS-independent bytes), pre-declared descriptive diagnostics; design note `docs/risk_run.md` and 15 synthetic tests; no real data.
 - D45 (approved, PR #57): only the bundle-seed CNN gets a risk policy; seeds 1–2 store raw scores only (calibrated p and prediction not applicable); clarifies Protocol §7 / D41 before any val-B score.
@@ -92,6 +93,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - D26 completed with the v2.1 §5 hand-overs; per-folder `CODEOWNERS` (owner + consumer reviewer); project log header updated.
 
 ### Fixed
+- `docs/risk_policy.md` Why (d): the confidence bound for uncertain cases is `max(threshold + half_width, 1 − (threshold − half_width))`, not "about 0.5 + half_width" (0.997 for `risk-v1`, so an uncertain case can display 1.00); documentation only, no behaviour change.
 - D44 (approved, PR #55): Newton-decrement stop (λ²/2 ≤ 1e-12), stall and non-descent guards in the Platt fit; tests T1–T5; reproducible pre-check in `docs/audit_evidence/stage10_d44/`; no val-B accessed.
 - `tests/` is now a regular package (`tests/__init__.py`) with an import-root guard (`tests/test_import_roots.py`), so a site-packages `tests` package on Colab can no longer shadow it and break `from tests._torch import ...`.
 - Stale `CLAUDE.md` mentions → `AGENTS.md` in `configs/audit.yaml` and the Stage 1 notebook intro.

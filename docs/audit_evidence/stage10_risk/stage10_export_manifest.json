@@ -1,0 +1,57 @@
+{
+  "cache_sha256": {
+    "cache_a": {
+      "val-A/val-A.json": "9bfb732f0584a69ba03f0317a8a1193097ea018eb36d52376fee3d19fd63bde7",
+      "val-A/val-A.npz": "4502eea2f77cfd83d7e2b1d777e392fa460a13e805a936faa2788df8e7862c81",
+      "val-B/val-B.json": "ab8722f077c870d003887842dbb137d38d8248336f2959433a631ba7b8114d19",
+      "val-B/val-B.npz": "2cff949dae029515acde26392da84e6ef8587b8d6d8d536ea3d27ef879c568d7"
+    },
+    "cache_b": {
+      "val-A/val-A.json": "9bfb732f0584a69ba03f0317a8a1193097ea018eb36d52376fee3d19fd63bde7",
+      "val-A/val-A.npz": "4502eea2f77cfd83d7e2b1d777e392fa460a13e805a936faa2788df8e7862c81",
+      "val-B/val-B.json": "ab8722f077c870d003887842dbb137d38d8248336f2959433a631ba7b8114d19",
+      "val-B/val-B.npz": "2cff949dae029515acde26392da84e6ef8587b8d6d8d536ea3d27ef879c568d7"
+    }
+  },
+  "cnn_version": "cnn-v1",
+  "commit": "11c07fedcd755dc72f16b2695f180cf094aeca04",
+  "created_utc": "2026-10-28T20:26:08+00:00",
+  "f3": {
+    "config_sha256": "7bd35bfdcb9270dd55ea9e73449c7bf6c6a359a80335b2551c0c89dde77c8630",
+    "fingerprint": "5b4f5849a9bb63f9016dd79969ff5bfb9e37006acbff1e26bbfee4ee2bad68f2"
+  },
+  "files": [
+    {
+      "path": "checkpoints/risk/risk-v1/risk_policy.json",
+      "sha256": "a74f1f512b2e7c527df5f34e56acaf5fbe2ceb58071e3d46a441cc2f3f4966c1",
+      "size": 358
+    },
+    {
+      "path": "checkpoints/risk/risk-v1/val_b_scores.npz",
+      "sha256": "43e5b198a5e0581ac0ee5c3e94d70a4b91e475bc3057b26751d7e88e795ffcd2",
+      "size": 390301
+    },
+    {
+      "path": "processed/metadata/stage10/run_report.json",
+      "sha256": "4775fff54a7e38a4392c3d3a770bef5f0d989e66cf355e8c35946cc119c266fc",
+      "size": 2062
+    },
+    {
+      "path": "processed/metadata/stage10/diagnostics_report.json",
+      "sha256": "4846a9d1d420cdfe397622d5a2e6643b232e01152749d4b76832d68d715f9df0",
+      "size": 1559
+    }
+  ],
+  "for_archive_sha256_observed": "9bddb83503ab442e9c7f54a1b7b9c02bc0ce32ed93f7863f28de5f59b6540b46",
+  "for_revision": "ff8c82c79e7bbefef811941bac9775c9328e9055",
+  "numpy": "2.5.3",
+  "pytest_counts": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 760
+  },
+  "python": "3.13.16",
+  "torch": "2.11.0+cu130",
+  "version": "risk-v1"
+}

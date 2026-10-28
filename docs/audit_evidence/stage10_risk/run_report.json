@@ -1,0 +1,56 @@
+{
+  "bundle_seed": 0,
+  "caches": {
+    "val-A": {
+      "n_rows": 1330,
+      "npz_sha256": "4502eea2f77cfd83d7e2b1d777e392fa460a13e805a936faa2788df8e7862c81"
+    },
+    "val-B": {
+      "n_rows": 1329,
+      "npz_sha256": "2cff949dae029515acde26392da84e6ef8587b8d6d8d536ea3d27ef879c568d7"
+    }
+  },
+  "checkpoint_sha256": "c33eb82086d3bc40f3dedf1356addc6e5c1924ca2e517b0d4527b447e1958932",
+  "code_commit": "11c07fedcd755dc72f16b2695f180cf094aeca04",
+  "environment": {
+    "numpy": "2.5.3",
+    "python": "3.13.16",
+    "torch": "2.11.0+cu130"
+  },
+  "f2_manifest_sha256": "badfe948fb7b833357783dd18be00f6bb36253cf8699dc4c4beb4df2b07706f8",
+  "headline": {
+    "a": 1.0403213615577922,
+    "b": 5.625181819635712,
+    "deferral_on_fit": 0.09932279909706546,
+    "half_width": 0.3636377690579665,
+    "n_bonafide": 660,
+    "n_spoof": 669,
+    "threshold": 0.6333105553100875
+  },
+  "n_blocks": 4,
+  "profile_config_sha256": "7bd35bfdcb9270dd55ea9e73449c7bf6c6a359a80335b2551c0c89dde77c8630",
+  "profile_fingerprint": "5b4f5849a9bb63f9016dd79969ff5bfb9e37006acbff1e26bbfee4ee2bad68f2",
+  "provenance_checks": {
+    "f2_manifest_sha256": {
+      "actual": "badfe948fb7b833357783dd18be00f6bb36253cf8699dc4c4beb4df2b07706f8",
+      "expected": "badfe948fb7b833357783dd18be00f6bb36253cf8699dc4c4beb4df2b07706f8"
+    },
+    "profile_fingerprint": {
+      "actual": "5b4f5849a9bb63f9016dd79969ff5bfb9e37006acbff1e26bbfee4ee2bad68f2",
+      "expected": "5b4f5849a9bb63f9016dd79969ff5bfb9e37006acbff1e26bbfee4ee2bad68f2"
+    },
+    "val_a_cache_npz_sha256": {
+      "actual": "4502eea2f77cfd83d7e2b1d777e392fa460a13e805a936faa2788df8e7862c81",
+      "expected": "4502eea2f77cfd83d7e2b1d777e392fa460a13e805a936faa2788df8e7862c81"
+    }
+  },
+  "risk_policy_sha256": "a74f1f512b2e7c527df5f34e56acaf5fbe2ceb58071e3d46a441cc2f3f4966c1",
+  "schema_version": 1,
+  "scoring": {
+    "batch_size": 256,
+    "device": "cpu"
+  },
+  "val_a_eer_recomputed": 0.0,
+  "val_b_scores_sha256": "43e5b198a5e0581ac0ee5c3e94d70a4b91e475bc3057b26751d7e88e795ffcd2",
+  "version": "risk-v1"
+}

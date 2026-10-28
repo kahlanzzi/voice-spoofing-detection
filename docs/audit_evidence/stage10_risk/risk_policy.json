@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "version": "risk-v1",
+  "calibration": {
+    "a": 1.0403213615577922,
+    "b": 5.625181819635712,
+    "n_spoof": 669,
+    "n_bonafide": 660
+  },
+  "threshold": 0.6333105553100875,
+  "half_width": 0.3636377690579665,
+  "target_deferral": 0.1,
+  "n_spoof_fit": 669,
+  "n_bonafide_fit": 660,
+  "deferral_on_fit": 0.09932279909706546
+}

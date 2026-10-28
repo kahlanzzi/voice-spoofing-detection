@@ -155,8 +155,11 @@ Step R2 is tested on synthetic scores only; no dataset is read.
   (`three_way_decisions`), not a second implementation, so the fitted deferral is exactly what the
   deployed rule does.
 - **(d) Confidence `max(p, 1 − p)`.** Simple and explainable: the calibrated probability of the more
-  likely class. **Limitation:** an uncertain case can show a confidence up to about
-  `0.5 + half_width`, so the dashboard must show the prediction next to the confidence.
+  likely class. **Limitation:** an uncertain case can show a confidence up to
+  `max(threshold + half_width, 1 − (threshold − half_width))`, rounded; with the fitted `risk-v1`
+  policy that is 0.997, so an uncertain case can display 1.00
+  ([results/risk_policy_fit.md](results/risk_policy_fit.md) §3 item 4). The dashboard must show
+  the prediction next to the confidence.
 - **(e) Strict JSON.** Exact floats, a schema version and no unknown or missing keys, so the frozen
   bundle (F4) loads exactly what was fitted (NFR-09). The file also cannot contradict itself: the
   fit counts must match the calibration counts and the achieved deferral cannot exceed the target,
