@@ -199,6 +199,14 @@ def test_end_to_end_outputs_round_trip_and_determinism(patched, tmp_path, profil
     policy_text = (out / "risk_policy.json").read_text(encoding="utf-8")
     policy = RiskPolicy.from_json(policy_text)
     assert policy.to_json() == policy_text
+    # Byte level: read_text uses universal newlines and turns CRLF back into LF, so the text checks
+    # above would pass even if the file were written with Windows CRLF line endings. Only the bytes
+    # show that risk_policy.json (and its SHA-256) is the same on every OS.
+    expected = policy.to_json().encode("utf-8")
+    assert (out / "risk_policy.json").read_bytes() == expected
+    assert data["risk_policy_sha256"] == hashlib.sha256(expected).hexdigest()
+    for name in ("risk_policy.json", "diagnostics_report.json", "run_report.json"):
+        assert b"\r\n" not in (out / name).read_bytes(), name
     headline = data["headline"]
     assert headline == {"a": policy.calibration.a, "b": policy.calibration.b,
                         "threshold": policy.threshold, "half_width": policy.half_width,

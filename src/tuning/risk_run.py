@@ -233,7 +233,9 @@ def run(cache_dir, checkpoint_dir, profile_path, config_path, manifest_path, sta
     out_dir.mkdir(parents=True)
     try:
         policy_path = out_dir / RISK_POLICY
-        policy_path.write_text(policy_text, encoding="utf-8")
+        # write_bytes, not write_text: no newline translation, so the bytes (and SHA-256) are the
+        # same on every OS (write_text writes CRLF on Windows).
+        policy_path.write_bytes(policy_text.encode("utf-8"))
         scores_path = out_dir / VAL_B_SCORES
         _write_npz(scores_path, {"paths": paths, "labels": labels, "score": scores, "p": p})
         run_report = {
@@ -266,8 +268,8 @@ def run(cache_dir, checkpoint_dir, profile_path, config_path, manifest_path, sta
                 "n_spoof": policy.n_spoof_fit,
             },
         }
-        (out_dir / DIAGNOSTICS_REPORT).write_text(_json_text(diagnostics_report), encoding="utf-8")
-        (out_dir / RUN_REPORT).write_text(_json_text(run_report), encoding="utf-8")
+        (out_dir / DIAGNOSTICS_REPORT).write_bytes(_json_text(diagnostics_report).encode("utf-8"))
+        (out_dir / RUN_REPORT).write_bytes(_json_text(run_report).encode("utf-8"))
     except BaseException:
         shutil.rmtree(out_dir, ignore_errors=True)
         raise
