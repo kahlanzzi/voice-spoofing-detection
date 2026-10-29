@@ -2613,6 +2613,31 @@ details. AI did not push, open or merge a PR.
 teach-back; AI does not approve or merge. **WAITING FOR HUMAN REVIEW.**
 
 ---
+
+### Entry 97 — Analyst console prototype v3 after the second UI/UX review (2026-10-29)
+
+**What:** on `docs/stage18-ui-prototype-v3` (Iheb), `docs/design/analyst-console-prototype.html`
+replaced by version 3 (second review round: navigation and page announcements, verdict wording
+Likely synthetic voice / Cannot decide / Likely authentic voice, Model score explained, upload
+limits read from a mock `GET /limits`, nine error states, sign-in states, History date range and
+multi-select filter, Overview ranges and time zones, System status summary, responsive 1440 to
+390 px). `docs/design/README.md` replaced: the copy committed in Entry 84 was an unrelated file.
+
+**Finding for team review [doc]:** with the fitted `risk-v1` band, `confidence = max(p, 1 − p)`
+shows 1.00 on every synthetic result and can show up to 1.00 on a Cannot decide result
+(`risk_policy.md` Why (d); `results/risk_policy_fit.md` §3 item 4). The prototype labels it
+"Model score" next to the verdict; the label and its place are a team decision. §11 is unchanged.
+
+**Evidence [verified by Iheb]:** HTML SHA-256 `1d239f69eb509a89085602ddc19a22047f025c8c685650a71303a0477c70ce9b`; 46 browser checks and an
+axe-core WCAG A/AA scan of 10 screens passed on this file (README, "How it was checked");
+`python -m pytest -q` passes on the branch.
+
+**AI assistance:** **Claude** (claude.ai) built and checked the prototype and drafted this entry;
+Iheb reviewed it in the browser and reviewed the diff.
+
+**Gate:** review of this PR. AI agents do not merge.
+
+---
 ## Open items
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
