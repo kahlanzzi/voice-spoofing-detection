@@ -45,8 +45,8 @@ config key looked up indirectly), a subscript through a variable (caches[name]),
 does not say "split" ({"which": "test"}), JSON outside configs/, code outside the three folders
 (api/, scripts, a Colab cell typed by hand and not committed), or a reviewed module called with a
 test argument from an unscanned place. An ALLOWED_LINES entry is added only after review. The
-code-level refusals (mfcc_cache / logmel_cache
-split checks, the run registry) and team review remain the real controls.
+code-level refusals (mfcc_cache / logmel_cache split checks, the run registry) and team review
+remain the real controls.
 
 This test reads repository text files only. It never touches a dataset.
 """

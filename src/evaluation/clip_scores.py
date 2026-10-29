@@ -24,9 +24,10 @@ reader refuses a non-empty cell there and an empty cell in an applicable column.
 
 Both files are written as bytes (no newline translation, same reason as src.tuning.risk_run), so
 their bytes and SHA-256 are the same on every OS. The writer never overwrites a file: each is
-created with open(path, "xb"), so the OS refuses an existing file atomically. The reader re-checks every rule, recomputes csv_sha256 and n_rows, and finally
-requires the bytes to be exactly what the writer would produce, so a hand-edited file (CRLF, other
-quoting, another float spelling, unsorted rows) is refused.
+created with open(path, "xb"), so the OS refuses an existing file atomically. The reader
+re-checks every rule, recomputes csv_sha256 and n_rows, and finally requires the bytes to be
+exactly what the writer would produce, so a hand-edited file (CRLF, other quoting, another float
+spelling, unsorted rows) is refused.
 
 The files do not prove that run_id is a registered run; the caller (the Stage 11 runner) takes it
 from RunRegistry.claim. All functions raise ValueError on invalid input (AGENTS.md: fail loudly).
