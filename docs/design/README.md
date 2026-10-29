@@ -1,137 +1,79 @@
-# Task Management API – k6 Performance Testing
-## CS 428 – Spring 2025
+# Design: analyst console prototype
 
-Everything you need to run the full test suite from scratch.
+`analyst-console-prototype.html` is the clickable prototype of the analyst interface approved in
+D38 / [ADR 0008](../decisions/0008-web-frontend-react.md). It is a **design reference for Stage 18,
+not production code**: one self-contained HTML file with mock data, no backend and no model.
 
----
+Version 3 (2026-10-29) answers the second UI/UX review (navigation, result wording, upload and
+error states, History filters, Overview labels, responsive layout, accessibility, sign-in states,
+System status). It also follows the fitted `risk-v1` policy
+([results/risk_policy_fit.md](../results/risk_policy_fit.md)).
 
-## 📁 Project Structure
+## How to open it
 
-```
-task-api/
-├── server.js                    ← Express API (4 CRUD endpoints)
-├── package.json
-├── report.md                    ← Section C: Analysis & Reporting
-└── k6-tests/
-    ├── performance-test.js      ← A1: Baseline Load Test (50 VUs, 6 min)
-    ├── spike-test.js            ← A2: Spike Test (10→500 VUs)
-    └── stress-test.js           ← A3: Stress Test (ramp to 200 VUs)
-```
+Open the file in a browser (double-click it, or `xdg-open docs/design/analyst-console-prototype.html`).
+Click **Enter demo without credentials**. **Demo scenarios** on the Analyze page load each outcome
+and error. The yellow banner's **Prototype controls** switch on other states: service or API down,
+upload limits unavailable, expired session, each sign-in failure, note save failure, History and
+Overview errors.
 
----
+## What it covers
 
-## Step 1 – Install Prerequisites
+- The four areas of D38: Analyze (default after sign-in), History, Overview, System status, plus
+  sign-in and a separate Analysis details view with **Back to History** (filters, page and scroll
+  are kept; browser Back and Forward work the same way).
+- Three verdicts in words, colour and icon: **Likely synthetic voice** (HIGH), **Cannot decide**
+  (MEDIUM), **Likely authentic voice** (LOW), with explanation, next steps, request ID, processing
+  details and an optional analyst note that never changes the result.
+- Upload: accepted formats, maximum size, maximum duration and the deletion rule are read from a
+  mock `GET /limits` response, never hard-coded. If they cannot be loaded, analysis stays off.
+- Errors, none of which shows a verdict or score: unsupported format, file too large, recording too
+  long, unreadable audio, service unavailable, request timeout, network interruption, expired
+  session, unexpected server error. Each has its own action (Retry, Choose another file, Sign in
+  again).
+- History: multi-select verdict filter, date range, request-ID search, result count, Clear filters,
+  pagination, loading, no-results and failed-to-load states. No audio file names.
+- Overview (new scope, D38 item 8): operational figures only, each with date range, time zone and
+  last-updated time, a table view for each chart, and loading, unavailable, stale and empty states.
+  No accuracy, EER, per-analyst figures or DEEP-VOICE data.
+- System status: a summary first (Ready for analysis / Degraded / Unavailable), technical details
+  (bundle verification, versions) folded away.
+- Uses only the frozen §11 response fields. §11 is unchanged.
 
-### Node.js API
-```bash
-# In the task-api/ folder
-npm install
-```
+## Findings for team review
 
-### k6 (performance testing tool)
-```bash
-# macOS (Homebrew)
-brew install k6
+1. **The `confidence` field with `risk-v1`.** `confidence = max(p, 1 − p)` is the calibrated
+   probability of the more likely class, not of the verdict. With the fitted band
+   (`p` 0.270–0.997), every synthetic result shows **1.00**, and a Cannot decide result can show any
+   value from 0.50 up to 1.00 ([risk_policy.md](../risk_policy.md) Why (d); fit §3 item 4). The
+   prototype shows it as **Model score**, always next to the verdict, with that explanation. The
+   label, and whether the score belongs on the main result at all, is for the team to decide.
+   The API field keeps its name.
+2. **Wrong README on `main`.** The README committed with the first version (PR for Entry 84) was an
+   unrelated file. This README replaces it.
 
-# Windows (Chocolatey)
-choco install k6
+## Open decisions shown as placeholders
 
-# Linux (Debian/Ubuntu)
-sudo gpg -k
-sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
-    --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
-echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" \
-    | sudo tee /etc/apt/sources.list.d/k6.list
-sudo apt-get update && sudo apt-get install k6
-```
+Access-control method (SRS §7.4; the sign-in screen shows the analyst-login option only, without
+password recovery or a sign-out confirmation); the real upload limits; handling of recordings longer
+than 2 s; the fallback audio-retention limit and the latency target (removed from the screens until
+decided); the time zone used to count days in statistics (shown as UTC); what counts as Degraded.
 
----
+## API needs beyond §11 (for Stage 17 design, team review)
 
-## Step 2 – Start the API Server
+Upload limits (`GET /limits`), statistics (`GET /stats`), service status, paginated and filtered
+history (verdict, date range, request ID), analyst notes, and distinct error codes for unreadable
+audio, timeout, expired session and server error. §11 itself is unchanged.
 
-Open **Terminal 1** and run:
-```bash
-cd task-api
-node server.js
-# ✅  Task API running on http://localhost:3000
-```
+## How it was checked
 
-**Verify it works:**
-```bash
-curl http://localhost:3000/health
-curl http://localhost:3000/api/tasks
-```
+46 automated browser checks (Playwright, Chromium, time zone Africa/Tunis) passed on this exact
+file, with no console errors. They cover every sign-in state, upload limits and their failure,
+all input and service errors, the three verdicts, a single request under repeated clicks and
+navigation, notes, History filters and return, Overview and Status states, page-change focus,
+scroll and announcement, reduced motion, dark mode, and widths 1440, 1024, 768 and 390 px (no
+sideways scrolling, 44 px touch targets at 390 px, History as cards). An axe-core 4.10 scan
+(WCAG 2.0/2.1/2.2 A and AA rules) found no violations on 10 screens, including dark mode and
+390 px. Not checked: real mouse drag-and-drop and real screen readers.
 
----
-
-## Step 3 – Run the k6 Tests
-
-Open **Terminal 2** (keep the server running in Terminal 1).
-
-### 🔵 A1 – Baseline Load Test (50 VUs, 6 min)
-```bash
-k6 run k6-tests/performance-test.js
-```
-
-### 🔴 A2 – Spike Test (10 → 500 VUs)
-```bash
-k6 run k6-tests/spike-test.js
-```
-
-### 🟠 A3 – Stress Test (gradual ramp to 200 VUs)
-```bash
-k6 run k6-tests/stress-test.js
-```
-
----
-
-## Step 4 – Save Results to JSON (Optional but recommended)
-
-```bash
-# Baseline
-k6 run --out json=results/baseline-results.json k6-tests/performance-test.js
-
-# Spike
-k6 run --out json=results/spike-results.json k6-tests/spike-test.js
-
-# Stress
-k6 run --out json=results/stress-results.json k6-tests/stress-test.js
-```
-
----
-
-## Step 5 – Verbose Output with Summary
-
-```bash
-# Run all three back-to-back with a shell script:
-#!/bin/bash
-echo "=== BASELINE ===" && k6 run k6-tests/performance-test.js
-echo "=== SPIKE ==="    && k6 run k6-tests/spike-test.js
-echo "=== STRESS ==="   && k6 run k6-tests/stress-test.js
-```
-
----
-
-## Key Metrics to Watch in Output
-
-| Metric                  | What it measures                              | Target (Baseline) |
-|-------------------------|-----------------------------------------------|-------------------|
-| `http_req_duration p95` | 95th percentile response time                 | < 500 ms          |
-| `http_req_failed`       | % of requests with HTTP errors                | < 1%              |
-| `errors`                | Custom error rate (check failures)            | < 1%              |
-| `http_req_blocked`      | Time waiting for a free TCP connection        | < 50 ms           |
-| `http_req_waiting`      | TTFB – server processing time                 | < 200 ms          |
-| `vus_max`               | Maximum VUs active during the test            | per scenario      |
-| `iterations`            | Total number of script executions             | –                 |
-
----
-
-## Quick API Reference
-
-| Method | Endpoint            | Body                                   | Expected |
-|--------|---------------------|----------------------------------------|----------|
-| GET    | /api/tasks          | –                                      | 200      |
-| POST   | /api/tasks          | `{"title":"x","completed":false}`      | 201      |
-| PUT    | /api/tasks/:id      | `{"completed":true}`                   | 200      |
-| DELETE | /api/tasks/:id      | –                                      | 200      |
-| GET    | /health             | –                                      | 200      |
+AI assistance: built and checked with Claude (claude.ai); reviewed by Iheb Zemzemi.
