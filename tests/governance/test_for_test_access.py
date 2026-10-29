@@ -4,37 +4,49 @@ The FoR test split is evaluated once (Stage 11, D31) and again only under the D4
 stage14_robustness, through code reviewed for that purpose. This test scans src/, notebooks/ and
 configs/ for code that asks for the test split, so a stray loader, cache build or notebook cell is
 caught in CI. ALLOWED is empty: the Stage 11 runner adds itself in its own reviewed PR.
+ALLOWED_LINES exempts one rule on one line that is not data access; an entry names the file, the
+exact stripped line text, the rule and the reason. Any other rule on that line is still reported,
+and any edit to the line text ends the exemption.
 
 What counts as access (Python files and notebook code cells are parsed with ast, so comments,
 docstrings and plain mentions in text never count, except for the cli rule, a line-by-line text
-match that also fires in a comment, fail-closed; YAML is parsed with yaml.safe_load; a file that
-does not parse is reported, never skipped):
+match that also fires in a comment, fail-closed; YAML is parsed with yaml.safe_load and JSON files
+under configs/ with json.loads; a file that does not parse is reported, never skipped):
 - keyword:    a keyword argument whose value is the string "test"     f(split="test")
 - argument:   a call argument that is the string "test"               load(cache_dir, "test")
 - compare:    == "test", or `in` / .isin() with a literal holding "test"  df[df.split == "test"]
 - assign:     the string "test" assigned to a name or attribute        EVAL_SPLIT = "test"
-- path:       "test" joined as a path part, or a test.npz / .json / .csv file name   cache / "test"
+- subscript:  a subscript index equal to "test"                        caches["test"]
+- path:       "test" joined with /, or a string constant (not a docstring) with a path segment,
+              split on / or \\, equal to "test" or "test.<ext>"   "cache/test.npz", "data/test"
+- dict:       a dict literal entry whose key contains "split" (any case) and whose value is
+              "test"                                                  {"eval_split": "test"}
 - query:      a string argument containing split == 'test'            df.query("split == 'test'")
 - cli:        --split test / --split=test in any line (incl. notebook ! lines), or "--split",
               "test" next to each other in a list or tuple literal
-- yaml:       a YAML value (not a key) equal to "test"                split: test
+- yaml, json: a YAML or configs/ JSON value (not a key) equal to "test"   split: test
 The string match ignores case and surrounding spaces.
 
 What does not count, so existing refusal code passes:
 - != "test" and `not in` (exclusion), and any comparison inside the condition of an `if` whose
   body only raises (refusal: `if split == "test": raise ValueError(...)`).
 - "test" inside a set, tuple, list or dict literal that is not compared or passed (the valid-split
-  sets of src/preprocessing/validation.py and src/splitting/for2sec.py, the audit's folder-name map
-  in src/audit/common.py) and a subscript read such as ratios["test"] (the Stage 4 split ratio).
-  An allow-list of splits that leaves "test" out (CACHE_SPLITS) contains no "test" at all.
-- Words that only contain "test" (pytest, tests, testsuite, testing).
+  sets of src/preprocessing/validation.py and src/splitting/for2sec.py, and the audit's folder-name
+  map in src/audit/common.py, whose keys do not contain "split"). An allow-list of splits that
+  leaves "test" out (CACHE_SPLITS) contains no "test" at all.
+- The rule named by an ALLOWED_LINES entry, on its exact line (today only the subscript rule for
+  the Stage 4 split-ratio read ratios["test"]).
+- Words and path segments that only contain "test" (pytest, tests, testsuite, testing,
+  "tests/x.py", "pytest.ini", "data/testing/x"), and docstrings.
 
 Limits (it is a guard, not a sandbox; ADR 0007): it reads text, it does not run code. It cannot see
-a split name built at run time ("te" + "st", a variable read from a file or CLI, a config key
-looked up indirectly), a subscript read such as caches["test"], code outside the three folders
+a split name built at run time ("te" + "st", f"{name}", a variable read from a file or CLI, a
+config key looked up indirectly), a subscript through a variable (caches[name]), a dict whose key
+does not say "split" ({"which": "test"}), JSON outside configs/, code outside the three folders
 (api/, scripts, a Colab cell typed by hand and not committed), or a reviewed module called with a
-test argument from an unscanned place. The code-level refusals (mfcc_cache / logmel_cache split
-checks, the run registry) and team review remain the real controls.
+test argument from an unscanned place. An ALLOWED_LINES entry is added only after review. The
+code-level refusals (mfcc_cache / logmel_cache
+split checks, the run registry) and team review remain the real controls.
 
 This test reads repository text files only. It never touches a dataset.
 """
@@ -42,6 +54,7 @@ import ast
 import json
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 import yaml
@@ -51,10 +64,21 @@ SCANNED = ("src/", "notebooks/", "configs/")
 # Prefixes (directories end with "/") and exact files allowed to request the FoR test split.
 # Empty until the Stage 11 runner adds itself in its own reviewed PR (D41).
 ALLOWED: tuple[str, ...] = ()
+# (file, exact stripped line text, rule, reason): one rule on one line that is not data access;
+# any other rule on that line is still reported.
+ALLOWED_LINES: tuple[tuple[str, str, str, str], ...] = (
+    (
+        "src/splitting/for2sec.py",
+        'if not np.isclose(ratios["train"], 0.70) or not np.isclose(ratios["test"], 0.15):',
+        "subscript",
+        "Stage 4 config check: reads the protocol's test-split ratio from configs/split.yaml, no clip",
+    ),
+)
 
 _CLI = re.compile(r"--split(?:\s+|\s*=\s*)[\"']?test\b(?![-\w])", re.IGNORECASE)
 _QUERY = re.compile(r"\bsplit\s*==\s*[\"']test[\"']", re.IGNORECASE)
-_TEST_FILE = re.compile(r"test\.(?:npz|json|csv)", re.IGNORECASE)
+_TEST_FILE = re.compile(r"test\.[A-Za-z0-9]+", re.IGNORECASE)  # test.npz, test.csv, ...
+_SEPARATORS = re.compile(r"[/\\]")
 
 
 def _is_test(node) -> bool:
@@ -63,6 +87,14 @@ def _is_test(node) -> bool:
 
 def _literal_has_test(node) -> bool:
     return isinstance(node, (ast.List, ast.Tuple, ast.Set)) and any(_is_test(e) for e in node.elts)
+
+
+def _is_test_path(value: str) -> bool:
+    """A path segment (split on / or \\) equal to "test" or "test.<ext>"; a bare "test" is not a path."""
+    segments = [part.strip().lower() for part in _SEPARATORS.split(value)]
+    if len(segments) > 1 and "test" in segments:
+        return True
+    return any(_TEST_FILE.fullmatch(part) for part in segments)
 
 
 def is_allowed(rel_path: str) -> bool:
@@ -77,6 +109,7 @@ class _Finder(ast.NodeVisitor):
     def __init__(self):
         self.hits: list[tuple[int, str]] = []
         self._refusal: set[int] = set()  # ids of Compare nodes in a raise-only `if` condition
+        self._docstrings: set[int] = set()  # ids of constants that are bare expression statements
 
     def _hit(self, node, rule):
         self.hits.append((node.lineno, rule))
@@ -126,9 +159,26 @@ class _Finder(ast.NodeVisitor):
             self._hit(node, "path")
         self.generic_visit(node)
 
+    def visit_Expr(self, node):
+        if isinstance(node.value, ast.Constant):
+            self._docstrings.add(id(node.value))
+        self.generic_visit(node)
+
     def visit_Constant(self, node):
-        if isinstance(node.value, str) and _TEST_FILE.fullmatch(node.value.strip()):
+        if isinstance(node.value, str) and id(node) not in self._docstrings and _is_test_path(node.value):
             self._hit(node, "path")
+
+    def visit_Subscript(self, node):
+        if _is_test(node.slice):
+            self._hit(node, "subscript")
+        self.generic_visit(node)
+
+    def visit_Dict(self, node):
+        for key, value in zip(node.keys, node.values):
+            if (isinstance(key, ast.Constant) and isinstance(key.value, str)
+                    and "split" in key.value.lower() and _is_test(value)):
+                self._hit(key, "dict")
+        self.generic_visit(node)
 
     def _sequence(self, node):
         elts = node.elts
@@ -163,13 +213,13 @@ def _notebook_code(text: str) -> list[tuple[int, str]]:
     return cells
 
 
-def _yaml_values(node):
+def _config_values(node):
     if isinstance(node, dict):
         for value in node.values():  # keys (e.g. expected split counts "test: 2658") are not access
-            yield from _yaml_values(value)
+            yield from _config_values(value)
     elif isinstance(node, list):
         for value in node:
-            yield from _yaml_values(value)
+            yield from _config_values(value)
     else:
         yield node
 
@@ -185,16 +235,21 @@ def file_hits(rel: str, text: str) -> list[str]:
         elif suffix == ".ipynb":
             for number, cell in _notebook_code(text):
                 hits += [(0, f"{rule} (cell {number}, line {line})") for line, rule in python_hits(cell)]
-        elif suffix in (".yaml", ".yml"):
-            hits += [(0, "yaml") for v in _yaml_values(yaml.safe_load(text))
+        elif suffix in (".yaml", ".yml") or (suffix == ".json" and rel.startswith("configs/")):
+            rule = "json" if suffix == ".json" else "yaml"
+            data = json.loads(text) if suffix == ".json" else yaml.safe_load(text)
+            hits += [(0, rule) for v in _config_values(data)
                      if isinstance(v, str) and v.strip().lower() == "test"]
     except (SyntaxError, ValueError, yaml.YAMLError) as error:
         # Fail closed: a file the guard cannot read is reported, never skipped.
         hits.append((0, f"cannot parse ({type(error).__name__}: {error})"))
+    exempt = {(line, rule) for path, line, rule, _reason in ALLOWED_LINES if path == rel}
     out = []
     for n, rule in sorted(set(hits), key=lambda h: (h[0], h[1])):
-        shown = lines[n - 1].strip()[:120] if 0 < n <= len(lines) else ""
-        out.append(f"{rel}:{n}: {rule}: {shown}")
+        shown = lines[n - 1].strip() if 0 < n <= len(lines) else ""
+        if n > 0 and (shown, rule) in exempt:  # same file, exact line text and that rule only
+            continue
+        out.append(f"{rel}:{n}: {rule}: {shown[:120]}")
     return out
 
 
@@ -245,6 +300,16 @@ PLANTED = {
     "src/l_assert.py": 'assert split == "test"\n',
     "src/m_ann.py": 'SPLIT: str = "test"\n',
     "src/n_broken.py": "def broken(:\n",
+    "src/o_subscript.py": 'features = caches["test"]\n',
+    "src/p_path_file.py": 'NPZ = load_npz("cache/test.npz")\n',
+    "src/q_path_dir.py": 'root = Path("data/test")\n',
+    "src/r_path_clip.py": 'clips = sorted(glob("splits/test/x.wav"))\n',
+    "src/s_join.py": 'folder = os.path.join(root, "test")\n',
+    "src/t_dict.py": 'run(**{"split": "test"})\n',
+    "src/u_dict_key.py": 'CONFIG = {"eval_split": "test", "seed": 0}\n',
+    "src/w_dict_case.py": 'CONFIG = {"Eval_Split": " Test "}\n',
+    "configs/stage11.json": '{"evaluation": {"split": "test"}}\n',
+    "configs/broken.json": '{"split": \n',
     "notebooks/x.ipynb": json.dumps({"cells": [
         {"cell_type": "markdown", "source": ['run(split="test")']},  # markdown: not code
         {"cell_type": "code", "source": ["!python -m src.features.logmel_cache --split=test --out o\n"]},
@@ -270,7 +335,7 @@ LOOKALIKES = {
         '    assert split != "test"\n'
         '    if split not in ("test",):\n'
         "        return split\n"
-        '    ok = ratios["test"] == 0.15\n'
+        '    ok = ratios.get(name) == 0.15\n'
         '    print("tests", "pytest", "testsuite", "testing", "test split")\n'
         "    return ok\n"
     ),
@@ -284,6 +349,13 @@ LOOKALIKES = {
         ]},
     ]}),
     "configs/counts.yaml": "expected_splits:\n  train: 12404\n  test: 2658\nratios: {test: 0.15}\n",
+    "configs/counts.json": '{"expected_splits": {"test": 2658, "train": 12404}}\n',
+    "src/v_paths.py": (
+        'def f():\n'
+        '    """Splits are train/val-A/val-B/test."""\n'
+        '    return ["tests/x.py", "pytest.ini", "data/testing/x", "test", "a/test_b.py", "test split"]\n'
+    ),
+    "notebooks/z.json": '{"split": "test"}\n',  # JSON is parsed only under configs/
     "tests/t.py": 'load(split="test")\n',  # tests/ and docs/ are not scanned
     "docs/n.md": "--split test\n",
 }
@@ -300,7 +372,8 @@ def test_guard_catches_planted_access(tmp_path):
     violations = find_violations(tmp_path, list(PLANTED))
     assert sorted({v.split(":", 1)[0] for v in violations}) == sorted(PLANTED)
     rules = "\n".join(violations)
-    for rule in ("keyword", "argument", "compare", "assign", "path", "query", "cli", "yaml", "cannot parse"):
+    for rule in ("keyword", "argument", "compare", "assign", "path", "query", "cli", "yaml",
+                 "subscript", "dict", "json", "cannot parse"):
         assert f": {rule}" in rules, rule
     notebook = [v for v in violations if v.startswith("notebooks/")]
     assert len(notebook) == 2  # the ! line (cli) and the cell under %time (keyword); not markdown
@@ -311,6 +384,66 @@ def test_guard_ignores_refusal_and_lookalikes(tmp_path):
     # reads, YAML keys and files outside src/, notebooks/ and configs/ are not access.
     _plant(tmp_path, LOOKALIKES)
     assert find_violations(tmp_path, list(LOOKALIKES)) == []
+
+
+def test_allowed_lines_are_pinned():
+    # Each entry is reviewed: this test fails if one is added, removed or changed silently.
+    assert ALLOWED_LINES == (
+        (
+            "src/splitting/for2sec.py",
+            'if not np.isclose(ratios["train"], 0.70) or not np.isclose(ratios["test"], 0.15):',
+            "subscript",
+            "Stage 4 config check: reads the protocol's test-split ratio from configs/split.yaml, no clip",
+        ),
+    )
+
+
+def test_allowed_lines_still_exist():
+    # A stale entry (its line edited or moved away) would exempt nothing but hide that the line is
+    # gone; each entry must match a line of its file and still produce its rule there.
+    for rel, line, rule, _reason in ALLOWED_LINES:
+        lines = [x.strip() for x in (REPO_ROOT / rel).read_text(encoding="utf-8").splitlines()]
+        assert line in lines, (rel, line)
+        number = lines.index(line) + 1
+        assert (number, rule) in python_hits((REPO_ROOT / rel).read_text(encoding="utf-8")), (rel, rule)
+
+
+_RATIO_BODY = '    raise SplitError("ratios")\n'
+
+
+def test_allowed_line_exempts_only_its_exact_line(tmp_path):
+    # Path AND exact stripped text: the same line elsewhere, or a one-character edit in the same
+    # file, is caught again.
+    rel, line, _rule, _reason = ALLOWED_LINES[0]
+    _plant(tmp_path, {rel: f"{line}\n{_RATIO_BODY}", "src/other.py": f"{line}\n{_RATIO_BODY}"})
+    assert [v.split(":", 1)[0] for v in find_violations(tmp_path, [rel, "src/other.py"])] == ["src/other.py"]
+    _plant(tmp_path, {rel: f"{line.replace('0.15', '0.16')}\n{_RATIO_BODY}"})
+    caught = find_violations(tmp_path, [rel])
+    assert len(caught) == 1
+    assert caught[0].startswith(f"{rel}:1: subscript: ")
+
+
+def test_allowed_line_with_appended_access_is_reported(tmp_path):
+    # Appending a real request to the allowed line changes its text, so nothing is exempt: the
+    # new keyword hit and the subscript are both reported.
+    rel, line, _rule, _reason = ALLOWED_LINES[0]
+    assert line.endswith(":")
+    changed = line[:-1] + ' or load(split="test"):'
+    _plant(tmp_path, {rel: f"{changed}\n{_RATIO_BODY}"})
+    rules = sorted(v.split(": ", 2)[1] for v in find_violations(tmp_path, [rel]))
+    assert rules == ["keyword", "subscript"]
+
+
+def test_allowed_line_exempts_only_its_rule(tmp_path, monkeypatch):
+    # An entry exempts one rule on one line: another rule on the same, unchanged line is reported.
+    line = 'ratio = ratios["test"] or load(split="test")'
+    monkeypatch.setattr(
+        sys.modules[__name__], "ALLOWED_LINES", (("src/x.py", line, "subscript", "synthetic"),)
+    )
+    _plant(tmp_path, {"src/x.py": f"{line}\n"})
+    caught = find_violations(tmp_path, ["src/x.py"])
+    assert len(caught) == 1
+    assert caught[0].startswith("src/x.py:1: keyword: ")
 
 
 def test_refusal_exemption_is_narrow():

@@ -207,6 +207,18 @@ def test_never_overwrites(tmp_path):
         write_clip_scores(tmp_path / "missing", **_args("baseline"))
 
 
+def test_sidecar_created_after_validation_is_refused(tmp_path):
+    # Exclusive creation ("xb"): a sidecar that appears before the writer creates it (here
+    # pre-created, as if by a concurrent writer) is refused with the same error, its content is
+    # untouched, and the CSV this call created is removed.
+    sidecar = tmp_path / "baseline-m.json"
+    sidecar.write_bytes(b"other writer")
+    with pytest.raises(ValueError, match="never overwritten"):
+        _write(tmp_path, "baseline")
+    assert sidecar.read_bytes() == b"other writer"
+    assert not (tmp_path / "baseline-m.csv").exists()
+
+
 # --- reader: tampered files ------------------------------------------------------------------------
 
 

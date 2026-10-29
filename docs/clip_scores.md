@@ -32,7 +32,7 @@ read_clip_scores(out_dir, model_id) -> ClipScores
 | `clip_id` | the F2 manifest `path`: canonical relative POSIX path (the rule of `src.freezing.manifests.safe_relative_path`, reused), unique |
 | `label` | the F2 manifest label, `FAKE` or `REAL` (positive class = spoof) |
 | `group_id` | the D14 near-duplicate group, F2 manifest column `group` (Stage 4 built it from `neardup_group_095`) |
-| `raw_score` | the model's continuous score, higher = more likely spoof (CNN logit; baseline decision function) |
+| `raw_score` | the model's continuous score, higher = more likely spoof. Baseline: `BaselineModel.score`, the RBF-SVM decision function `sum_i dual_coef_i * exp(-gamma * ||sv_i - z||^2) + intercept` on the train-standardized MFCC features `z`, float64, equal to scikit-learn's `decision_function` (`src/models/baseline.py:11-12`, `:133-152`); its D29 threshold is on this scale. CNN: the single logit (D42; `src/models/cnn.py:1-6`), as scored by `train_cnn._score`, float64 (`src/training/train_cnn.py:81-88`) |
 | `p` | calibrated P(spoof) from the frozen F4 risk policy, in [0, 1] |
 | `prediction` | `authentic` / `synthetic` / `uncertain` (`src.risk.decisions`) |
 
@@ -60,7 +60,10 @@ Writer, before anything is written: purpose in `EVALUATION_PURPOSES` (D41), `run
 `model_artifact_sha256` and `manifest_sha256` 64 lowercase hex, `model_id` a plain file name,
 known role; at least one clip; equal column lengths; `clip_id` canonical, safe and unique;
 `label` in {FAKE, REAL}; `group_id` a non-empty trimmed string; `p` in [0, 1]; `prediction` in
-the role's set; no line breaks in any cell. Existing files are never overwritten.
+the role's set; no line breaks in any cell. Existing files are never overwritten: each file is
+created with `open(path, "xb")` (exclusive creation), so the OS refuses an existing file
+atomically, even one created between validation and writing; if the sidecar cannot be created, the
+CSV just written is removed.
 
 Reader: strict sidecar (exact key set, NaN refused, valid values, exact writer format); CSV
 SHA-256 and row count equal to the sidecar's; no CR anywhere; header; the same row rules as the
@@ -89,8 +92,8 @@ caller compares it with the committed values and with the registry record of `ru
 - **(d) Applicability in code.** D41 and D45 decide which outputs exist per model; storing them in
   code (not in the file) means a file cannot declare its own rules, and an empty cell always means
   "not applicable", never "missing".
-- **(e) Same bytes on every OS.** Both files are written with `write_bytes` (no newline
-  translation), as in [risk_run.md](risk_run.md) (d2); the reader refuses CR, so a file re-saved
+- **(e) Same bytes on every OS.** Both files are written in binary mode (`open(path, "xb")`,
+  no newline translation), as `write_bytes` is in [risk_run.md](risk_run.md) (d2); the reader refuses CR, so a file re-saved
   with CRLF is detected even if someone recomputes its hash.
 - **(f) Purpose in the sidecar.** The sidecar names the D41 purpose and `run_id`, so a score file
   is tied to one registered run; files without a valid purpose are refused, like the registry.
@@ -120,13 +123,43 @@ Synthetic rows and temporary folders only.
 ## FoR test-split access guard (`tests/governance/test_for_test_access.py`)
 
 Before the Stage 11 runner exists, no code in `src/`, `notebooks/` or `configs/` may ask for the
-FoR test split. The guard parses Python files and notebook code cells with `ast` and YAML with
-`yaml.safe_load`, and flags a `"test"` split passed as a keyword or call argument, compared with
-`==` / `in` / `.isin()`, assigned to a name, joined as a path part (or a `test.npz/.json/.csv` file
-name), a `split == 'test'` query string, a `--split test` CLI line, or a YAML value `test`. Refusal
-code does not count: `!=` and `not in`, a comparison in the condition of an `if` whose body only
-raises, valid-split sets and the audit's name map (literals that are not compared or passed),
-docstrings, comments and YAML keys. Its allow-list is empty; the Stage 11 runner adds itself in its
-own reviewed PR. It is a text guard, not a sandbox (ADR 0007): a split name built at run time, a
-subscript such as `caches["test"]`, or code outside the three folders is not seen. The test file's
-docstring lists the rules and limits in full.
+FoR test split. The guard parses Python files and notebook code cells with `ast`, YAML with
+`yaml.safe_load` and JSON files under `configs/` with `json.loads` (a file that does not parse is
+reported, never skipped). It flags `"test"` (any case, surrounding spaces ignored):
+- passed as a keyword or call argument;
+- compared with `==` / `in` / `.isin()`;
+- assigned to a name;
+- used as a subscript index (`caches["test"]`);
+- joined with `/`;
+- in a dict entry whose key contains `split` (`{"eval_split": "test"}`);
+- as a YAML or `configs/` JSON value.
+
+It also flags any string constant other than a docstring that has a path segment (split on `/` or
+`\`) equal to `test` or `test.<ext>` (`"cache/test.npz"`, `"data/test"`), a `split == 'test'`
+query string and a `--split test` CLI line.
+
+Refusal code does not count: `!=` and `not in`, a comparison in the condition of an `if` whose body
+only raises, valid-split sets and the audit's name map (literals that are not compared or passed,
+keys without `split`), docstrings, comments, YAML/JSON keys (`{"expected_splits": {"test": 2658}}`)
+and segments that only contain `test` (`tests/x.py`, `pytest.ini`, `data/testing/x`).
+
+Its file allow-list is empty; the Stage 11 runner adds itself in its own reviewed PR.
+`ALLOWED_LINES` exempts one rule on one line that reads no data. Each entry is a file, the exact
+stripped line text, the rule and a reason. A hit is exempt only if all three match, so:
+- any other rule on the same line is still reported;
+- a one-character edit to the line ends the exemption.
+
+For example, appending `or load(split="test")` to the allowed line reports both `keyword` and
+`subscript`. Today the only entry is the `subscript` rule for the Stage 4 split-ratio check
+`ratios["test"]` in `src/splitting/for2sec.py:78`, which reads `configs/split.yaml`, not clips. A
+test pins the entries. Another fails if an entry no longer matches its file or no longer produces
+its rule there.
+
+It is a text guard, not a sandbox (ADR 0007). It does not see:
+- a split name built at run time (`"te" + "st"`, an f-string, a value read from a file or CLI);
+- a subscript through a variable;
+- a dict whose key does not say `split`;
+- JSON outside `configs/`;
+- code outside the three folders.
+
+The test file's docstring lists the rules and limits in full.

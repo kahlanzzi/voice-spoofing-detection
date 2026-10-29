@@ -22,9 +22,9 @@ Applicability is fixed here by model role (D41, D45), never read from the file:
 A not-applicable column is the empty string in every row. The writer refuses a value there; the
 reader refuses a non-empty cell there and an empty cell in an applicable column.
 
-Both files are written with write_bytes (no newline translation, same reason as
-src.tuning.risk_run), so their bytes and SHA-256 are the same on every OS. The writer never
-overwrites a file. The reader re-checks every rule, recomputes csv_sha256 and n_rows, and finally
+Both files are written as bytes (no newline translation, same reason as src.tuning.risk_run), so
+their bytes and SHA-256 are the same on every OS. The writer never overwrites a file: each is
+created with open(path, "xb"), so the OS refuses an existing file atomically. The reader re-checks every rule, recomputes csv_sha256 and n_rows, and finally
 requires the bytes to be exactly what the writer would produce, so a hand-edited file (CRLF, other
 quoting, another float spelling, unsorted rows) is refused.
 
@@ -267,18 +267,24 @@ def write_clip_scores(
     if not out_dir.is_dir():
         raise ValueError(f"output folder {out_dir} does not exist")
     csv_path, json_path = out_dir / f"{model_id}.csv", out_dir / f"{model_id}.json"
-    for path in (csv_path, json_path):
-        if path.exists():
-            raise ValueError(f"{path} exists; score files are never overwritten")
-    # write_bytes, not write_text: no newline translation, so the bytes (and SHA-256) are the same
-    # on every OS (write_text writes CRLF on Windows).
-    csv_path.write_bytes(csv_bytes)
+    _create(csv_path, csv_bytes)
     try:
-        json_path.write_bytes(sidecar)
+        _create(json_path, sidecar)
     except BaseException:
-        csv_path.unlink(missing_ok=True)
+        csv_path.unlink(missing_ok=True)  # ours: _create just made it
         raise
     return csv_path, json_path
+
+
+def _create(path: Path, data: bytes) -> None:
+    # "xb": the OS creates the file only if it does not exist, so "never overwrite" holds even if
+    # another writer creates it after validation. Binary mode: no newline translation, so the bytes
+    # (and SHA-256) are the same on every OS (write_text writes CRLF on Windows).
+    try:
+        with open(path, "xb") as handle:
+            handle.write(data)
+    except FileExistsError:
+        raise ValueError(f"{path} exists; score files are never overwritten") from None
 
 
 def _reject_constant(token: str):
