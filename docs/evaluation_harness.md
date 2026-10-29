@@ -291,22 +291,27 @@ Each case has its hand calculation as a comment.
 | (d) odd count | `test_select_bundle_seed_even_count_raises` (2 and 4 seeds) |
 | Fail loudly | `test_seed_summary_one_seed_raises`, `test_invalid_input_raises` (empty, NaN, ±∞, string and bool values, bool and float seeds, a list instead of a mapping; both functions) |
 
-## Run registry (D31)
+## Run registry (D31, key amended by D41)
 
 ### Conventions
 - Stage 11 runs once (D31): every FoR test-split evaluation is recorded in an append-only run
-  registry, and the code refuses a second run for the same model set.
-- A run is identified by `(dataset, split, model_set)`; `model_set` is stored sorted.
+  registry, and the code refuses a second run for the same model set and purpose.
+- A run is identified by `(dataset, split, evaluation_purpose, model_set)` (D41); `model_set` is
+  stored sorted.
+- `evaluation_purpose` is closed in code: `EVALUATION_PURPOSES = {"stage11_test",
+  "stage14_robustness"}` (D41, ADR 0010). Any other value, including `""`, another spelling or
+  another case, is refused at `claim` and in a loaded line; adding a purpose needs a new decision.
 - The real registry file for Stage 11 is `docs/audit_evidence/run_registry.jsonl`. It is committed
   by PR right after the run. The path is passed by the caller; the code hard-codes none.
 - Right after Stage 11, the registry's SHA-256 and line count are recorded in the project-log entry
   and the results PR (mitigation for truncation, see (e)).
 
 `RunRegistry(path)` lives in `src/evaluation/run_registry.py` (research tier; the core `src/risk`
-does not import it). `claim(dataset, split, model_set, code_commit) -> run_id`,
-`complete(run_id, results_ref)` and `records() -> tuple[RunRecord, ...]`. `RunRecord` is a frozen
+does not import it). `claim(dataset, split, model_set, code_commit, *, evaluation_purpose) ->
+run_id`, `complete(run_id, results_ref)` and `records() -> tuple[RunRecord, ...]`.
+`evaluation_purpose` is required and keyword-only. `RunRecord` is a frozen
 dataclass: `run_id` (uuid4 hex), `status` (`"started"` | `"completed"`), `dataset`, `split`,
-`model_set` (sorted tuple), `code_commit` (40 lowercase hex), `timestamp` (ISO 8601 UTC),
+`evaluation_purpose` (one of `EVALUATION_PURPOSES`), `model_set` (sorted tuple), `code_commit` (40 lowercase hex), `timestamp` (ISO 8601 UTC),
 `results_ref` (`""` while started), `prev_sha256` (64 hex; `"0" * 64` for the first line).
 
 ### Method
@@ -317,12 +322,14 @@ dataclass: `run_id` (uuid4 hex), `status` (`"started"` | `"completed"`), `datase
    `prev_sha256` must equal the SHA-256 of the previous line's exact bytes, including its `"\n"`.
    A mismatch raises `ValueError` ("registry was edited"). It also replays the rules below, so a
    file the code would never write (a second claim, a completed record without its start) is
-   rejected.
-3. `claim`: if any record, started or completed, has the same dataset, split and sorted model set,
-   `ValueError` ("already run: a second run needs a new decision"). Otherwise one `"started"`
-   record is appended and its `run_id` returned.
-4. `complete`: appends one `"completed"` record (same dataset, split, model set and commit as the
-   start) for a run that is started and not yet completed; otherwise `ValueError`.
+   rejected. A line without `evaluation_purpose` (the D31 schema before D41) is a missing key and
+   is rejected; no such line exists, since no real registry was written before D41.
+3. `claim`: if any record, started or completed, has the same dataset, split, purpose and sorted
+   model set, `ValueError` ("already run: a second run needs a new decision"). Otherwise one
+   `"started"` record is appended and its `run_id` returned.
+4. `complete`: appends one `"completed"` record (same dataset, split, purpose, model set and commit
+   as the start, the purpose copied from it) for a run that is started and not yet completed;
+   otherwise `ValueError`.
 5. Writing opens the file in `"a"` mode (UTF-8, no newline translation) and adds one line; the file
    is never rewritten.
 
@@ -342,6 +349,13 @@ dataclass: `run_id` (uuid4 hex), `status` (`"started"` | `"completed"`), `datase
   The hash chain also cannot detect removal of the last line(s): a truncated file is still a valid
   chain. Mitigation (procedure): right after Stage 11, the registry's SHA-256 and line count are
   recorded in the project-log entry and the results PR, so a shortened file no longer matches.
+- **(f) Closed purpose in the key (D41).** Stage 14 must score the test split again for the same
+  frozen models, so the purpose is part of the key. A free-form purpose would let a caller invent
+  a new name and get a new key, bypassing the one-run guard (ADR 0010), so the set is fixed in code
+  and unknown values fail closed, at claim and at load.
+- **(g) Keyword-only purpose.** `claim` already takes four positional arguments; a required
+  keyword-only `evaluation_purpose` cannot be swapped with one of them or forgotten (both are a
+  `TypeError` before anything is written), and every call site names the purpose it claims.
 
 ### Tests (`tests/evaluation/test_run_registry.py`)
 Each test has its reasoning as a comment.
@@ -351,6 +365,10 @@ Each test has its reasoning as a comment.
 | One run per model set, (c) order | `test_second_claim_same_run_raises` (same models; reversed order and another commit also refused) |
 | (a) claim before run | `test_crashed_run_still_blocks` (started, never completed → second claim refused) |
 | Key = dataset, split, model set | `test_other_model_set_or_split_can_be_claimed` |
+| (f) purpose set | `test_purposes_are_exactly_the_d41_set`; `test_unknown_purpose_refused_at_claim` (empty, blank, other name, case variants, padded, non-string; nothing written); `test_malformed_record_raises` (unknown, empty, case-variant, non-string purpose and an old-schema line without it, on load) |
+| (f) purpose in the key | `test_same_model_set_under_both_purposes` (two allowed claims); `test_second_claim_same_purpose_refused` (each purpose, first run started or completed); `test_second_claim_same_key_rejected_on_load`; `test_completed_with_other_purpose_rejected_on_load` |
+| (g) keyword-only | `test_purpose_is_keyword_only_and_required` (positional or missing → `TypeError`, nothing written) |
+| (b) hash chain, purpose | `test_chain_detects_purpose_edit` (an earlier line's purpose changed → "edited") |
 | Complete once | `test_complete_once` (second complete, unknown run_id refused; a completed run blocks a claim) |
 | Append-only | `test_append_only` (earlier bytes are a prefix after each write; genesis and chain hashes) |
 | (b) hash chain | `test_tampering_detected` (edit, delete, reorder an earlier line → "edited") |
