@@ -71,6 +71,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - `docs/experimental_protocol.md` v1.0 frozen (F1): all sections decided from the team-accepted defaults.
 
 ### Changed
+- `docs/design/`: analyst-console prototype v4 (proposed final design reference; model output moved to Technical details) and `HANDOFF.md` (developer handoff and verification report).
 - `docs/design/`: analyst-console prototype v3 (second UI/UX review, aligned with `risk-v1`); README replaced (the Entry 84 copy was an unrelated file).
 - Stage 10 closed: brief accepted after the D32 teach-back (Iheb, Malak, Khalil); Stage 11 current.
 - Stages 8–9 closed: briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil; no corrections); Stage 10 current.
