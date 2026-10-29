@@ -2638,6 +2638,30 @@ Iheb reviewed it in the browser and reviewed the diff.
 **Gate:** review of this PR. AI agents do not merge.
 
 ---
+
+### Entry 98 — Analyst console prototype v4 and design handoff (2026-10-29)
+
+**What:** on `docs/stage18-ui-prototype-v4` (Iheb), `docs/design/analyst-console-prototype.html`
+replaced by version 4, proposed as the final design reference for Stage 18 (D38), and
+`docs/design/HANDOFF.md` added (screen inventory, flows, responsive rules, design tokens,
+components, accessibility notes, preserved and new behaviour, open decisions, developer notes,
+verification report). Main changes: the calibrated model output (`confidence`, §11) moves from
+the main result into Technical details; fixed result order (verdict, risk, required action,
+explanation, request details, technical details); Cancel analysis and extra API endpoints marked
+as proposals; design tokens and a Design system page. `docs/design/README.md` updated.
+
+**Open decisions [doc]:** listed in HANDOFF.md §11; none is decided by this entry. §11 is unchanged.
+
+**Evidence [verified by Iheb]:** HTML SHA-256 `e9e4a20bd355ed3feeef712a4bb9575e9b6a6dcc82d790a83226232bd849a93a`; 49 browser checks and an
+axe-core WCAG A/AA scan of 12 screens passed on this file (HANDOFF.md §13); `python -m pytest -q`
+passes on the branch. Manual keyboard and real screen-reader reviews are not done yet.
+
+**AI assistance:** **Claude** (claude.ai) built and checked the prototype and drafted the handoff
+and this entry; Iheb reviewed them in the browser and reviewed the diff.
+
+**Gate:** review of this PR. AI agents do not merge.
+
+---
 ## Open items
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
