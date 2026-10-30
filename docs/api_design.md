@@ -127,20 +127,24 @@ Response `201`, header `Location: /api/analyses/{request_id}`, body = **exactly 
 | Step | Check | On failure |
 |---|---|---|
 | 1 | Extension (lower case) is in `formats` | `415 unsupported_format` |
-| 2 | Stream the body to a temp file in chunks; stop as soon as it passes `max_size_bytes` | `413 file_too_large` |
+| 2 | Size cap (see the first note below); stream the file to a temp file in chunks and stop as soon as it passes `max_size_bytes` | `413 file_too_large` |
 | 3 | File is not empty (more than 0 bytes) | `422 empty_file` |
 | 4 | Decodes with `soundfile`; a file that decodes to 0 frames counts as empty | `422 corrupt_audio`; `422 empty_file` for 0 frames |
 | 5 | Duration (frames ÷ sample rate) ≤ `max_duration_s` | `422 recording_too_long` |
 | 6 | `analyzer.analyze(path)` within `analysis_timeout_s` | `503 analysis_unavailable`, `504 analysis_timeout`, `500 internal_error` |
 | 7 | Store the analysis record (section 7) | `500 internal_error` |
 
+- **Size protection (step 2):** Starlette reads the whole multipart body before the handler runs,
+  so the handler's streamed check cannot stop a large upload on its own. The real protection is
+  nginx's body-size limit plus a `Content-Length` check before the body is parsed. The streamed
+  check in the handler is the second line of defence.
 - The temp file has a random name in the configured temp folder. It is deleted when the request
   ends, on success and on every error (NFR-03). **Open decision 4:** what happens if deletion fails.
 - No record is stored when any step fails. A verdict is returned only after the record is stored,
   so every shown result can be found again in History.
-- On `504` the API stops waiting and stores nothing, even if the analyzer finishes later. (The
-  prototype's "result appears later in History" text is for a timeout or cancel in the browser
-  after the request was accepted; see open decision 9.)
+- On `504` the API stops waiting and stores nothing, even if the analyzer finishes later.
+- Stage 18: the prototype's timeout screen must not say a late result will appear in History;
+  with this contract a server timeout stores nothing.
 - **Open decision 3:** how recordings longer than 2 s are handled (the model works on 2 s clips).
   That rule lives inside the analyzer, not in this endpoint.
 
@@ -247,7 +251,8 @@ model §10.1). This note does not choose one. The decision must settle:
 - the sign-in and sign-out endpoints and their request and response;
 - which of the endpoints above need a signed-in session (possibly not `GET /status`);
 - session lifetime, lockout ("temporarily locked" on S1) and password recovery;
-- the error codes for S1's invalid-credentials, locked and sign-in-unavailable states.
+- the error codes for S1's invalid-credentials, locked and sign-in-unavailable states;
+- rate limits (threat model §10.1) are part of open decision 1.
 
 Reserved now: `401 session_expired` (no valid session) and `403 access_denied` (signed in, not
 allowed). Both use the error shape in section 6, with `request_id: null`.
