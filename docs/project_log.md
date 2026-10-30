@@ -2743,6 +2743,40 @@ this format). The Stage 11 runtime and environment plan (to be proposed as D46) 
 AI does not approve or merge.
 
 ---
+
+### Entry 100 — Stage 17 API design note (2026-10-30)
+
+**What:** on `docs/stage17-api-design` (Iheb, Part E), `docs/api_design.md` added: the proposed
+contract between the FastAPI backend (`api/`) and the React web app (`web/`, D38). All endpoints
+under `/api`, same-origin through nginx: `GET /status`, `GET /limits`, `POST /analyses`
+(multipart; response = exactly the 8 §11 fields), `GET /analyses` (verdict, date, request-ID
+filters; pages of 10; counts per verdict), `GET /analyses/{request_id}`,
+`PUT /analyses/{request_id}/note` (empty text removes the note), `GET /stats` (default: last 7 days
+including today), and a sign-in placeholder. One error shape with fixed codes; no error carries a
+prediction or confidence. Storage: analysis record and a separate note table; audio, original
+file name and IP address never stored. Upload validation order and temp-file deletion fixed. One
+analyzer seam (`MockAnalyzer` now, the frozen bundle later). Limits, timeouts and the statistics
+time zone come from config. No code. `docs/README.md` index and `docs/CHANGELOG.md` updated.
+
+**Choices made with Iheb during drafting [doc]:** the monitoring marker (`deferral_on_fit`) is
+supplied by the analyzer (bundle value later, a labelled mock value from config now), which keeps
+ADR 0008 §8; `invalid_request` (400) is proposed beyond the agreed error list for bad queries and
+bodies. Both are marked for review in the note (§10).
+
+**Open decisions [doc]:** HANDOFF.md §11 items 1–7 and 9 are labelled in the note, not decided.
+Protocol §11, the ModelBundle and the risk policy are unchanged. No D-ID added; whether the
+approved contract needs one is an open question for the reviewers.
+
+**Evidence [verified]:** `python -m pytest -q` passes on the branch (summary line in the PR
+report). Docs-only change; no DEEP-VOICE access.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) read the sources, proposed the outline,
+drafted the note and this entry, and ran the checks; Iheb approved the outline with changes and
+reviews the diff.
+
+**Gate:** team review of the contract in this PR. AI agents do not merge.
+
+---
 ## Open items
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
@@ -2977,6 +3011,10 @@ AI does not approve or merge.
 - [ ] Stage 11 runner PR: hard-code `("for", "test", "stage11_test")`, take `run_id` from `claim()`, check each prediction against p and the frozen (bundle seed) or D29 (baseline) threshold before writing, read the manifest `group` column as strings, add the runner to the FoR test-split guard `ALLOWED` in that PR (Entry 99)
 - [ ] Stage 14 and 16 score readers: check the sidecar `run_id` against a completed `stage11_test` registry record and `manifest_sha256` against F2 (Entry 99)
 
+**Stage 17 API (Part E, Entry 100)**
+- [ ] Team review of the API contract `docs/api_design.md`, including the proposed `invalid_request` (400) code.
+- [ ] Decide whether the approved API contract needs a D-ID (HANDOFF.md §11 item 10).
+
 **Later stages (reminders)**
 - [ ] `configs/robustness.yaml` → Stage 14. `docker-compose.yml` → Stage 17.
 - [ ] Stage 17: verify the ModelBundle checkpoint hash at load (threat model §10, tampering recommendation).
@@ -2990,7 +3028,11 @@ AI does not approve or merge.
 
 **Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 closed (Entry 96): run and results merged (PR #60; Entry 94), brief accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-28; Donia attended as author; no corrections; Q9 reading agreed), merged as PR #61 (`f166001`). Stage 11 is current: the D41 registry and per-clip storage implementation is approved (PR #62, Entry 99); next: the Stage 11 runtime and environment plan (to be proposed as D46), then the Stage 11 runner in its own PR; no FoR test access before both.
 
+**Part E status:** Stage 17 API design note proposed (Entry 100), in review; no API code yet.
+
 **What was done:**
+- **Stage 17 API design note** on `docs/stage17-api-design` (Entry 100): `docs/api_design.md`,
+  the proposed `/api` contract for the web app (Iheb, Part E); no code.
 - **Stage 11 prep, D41 registry and per-clip storage** on `feat/stage11-d41-registry-storage`
   (Entry 99): purpose-keyed registry with the closed purpose set and a keyword-only purpose;
   per-clip score files (CSV + sidecar, applicability by role from D41/D45, exact floats,
@@ -3135,6 +3177,7 @@ AI does not approve or merge.
 - `docs/stage18-ui-prototype-v3`: analyst console prototype v3 (Entry 97), merged as PR #63 (`c5eebbb`).
 - `docs/stage18-ui-prototype-v4`: prototype v4 and design handoff (Entry 98), merged as PR #64 (`e2e5eb6`).
 - `feat/stage11-d41-registry-storage`: D41 registry and per-clip storage implementation (Entry 99), PR #62, approved.
+- `docs/stage17-api-design`: Stage 17 API design note (Entry 100), not pushed yet.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
