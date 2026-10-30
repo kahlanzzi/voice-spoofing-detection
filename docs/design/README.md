@@ -1,137 +1,42 @@
-# Task Management API – k6 Performance Testing
-## CS 428 – Spring 2025
+# Design: analyst console prototype
 
-Everything you need to run the full test suite from scratch.
+`analyst-console-prototype.html` is the clickable prototype of the analyst interface approved in
+D38 / [ADR 0008](../decisions/0008-web-frontend-react.md). It is a **design reference for Stage 18,
+not production code**: one self-contained HTML file with mock data, no backend and no model.
+[`HANDOFF.md`](HANDOFF.md) is the developer handoff: screens, flows, tokens, components,
+accessibility notes, open decisions and the verification report.
 
----
+Version 4 (2026-10-29) is the proposed final design reference. It builds on v3 (second review
+round) and follows the fitted `risk-v1` policy ([results/risk_policy_fit.md](../results/risk_policy_fit.md)).
 
-## 📁 Project Structure
+## How to open it
 
-```
-task-api/
-├── server.js                    ← Express API (4 CRUD endpoints)
-├── package.json
-├── report.md                    ← Section C: Analysis & Reporting
-└── k6-tests/
-    ├── performance-test.js      ← A1: Baseline Load Test (50 VUs, 6 min)
-    ├── spike-test.js            ← A2: Spike Test (10→500 VUs)
-    └── stress-test.js           ← A3: Stress Test (ramp to 200 VUs)
-```
+Open the file in a browser (double-click it, or `xdg-open docs/design/analyst-console-prototype.html`).
+Click **Enter demo without credentials**. **Demo scenarios** on the Analyze page load each outcome
+and error. In the yellow banner, **Prototype controls** switches theme and simulates other states,
+and **Design system** opens the component reference page.
 
----
+## What changed in v4 (summary; details in HANDOFF.md §10)
 
-## Step 1 – Install Prerequisites
+- The model's number is no longer on the main result. It sits in Technical details as
+  "Calibrated model output", with what it is and what it is not.
+- Every result follows one order: verdict, risk, required action, explanation, request
+  details, technical details.
+- Cancel analysis (proposal), empty-file check, skip link, focus return from dialogs, theme
+  switch, Status checking and stale states, mobile filter panel, design tokens and a Design system page.
 
-### Node.js API
-```bash
-# In the task-api/ folder
-npm install
-```
+## Open decisions
 
-### k6 (performance testing tool)
-```bash
-# macOS (Homebrew)
-brew install k6
+Listed in HANDOFF.md §11: authentication, real upload limits, recordings longer than 2 s, fallback
+retention, latency target, time zone for daily statistics, the definition of Degraded, whether the
+model output appears outside Technical details, and two proposals (Cancel analysis, extra API
+endpoints for Stage 17). §11 of the protocol is unchanged.
 
-# Windows (Chocolatey)
-choco install k6
+## How it was checked
 
-# Linux (Debian/Ubuntu)
-sudo gpg -k
-sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
-    --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
-echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" \
-    | sudo tee /etc/apt/sources.list.d/k6.list
-sudo apt-get update && sudo apt-get install k6
-```
+49 automated browser checks and an axe-core WCAG 2.0/2.1/2.2 A/AA scan of 12 screens (light and
+dark, 390 px) passed on this exact file; widths 1440, 1024, 768, 640 (200 % zoom) and 390 px.
+Not yet done: manual keyboard and real screen-reader review, interpretation test with new users
+(HANDOFF.md §13).
 
----
-
-## Step 2 – Start the API Server
-
-Open **Terminal 1** and run:
-```bash
-cd task-api
-node server.js
-# ✅  Task API running on http://localhost:3000
-```
-
-**Verify it works:**
-```bash
-curl http://localhost:3000/health
-curl http://localhost:3000/api/tasks
-```
-
----
-
-## Step 3 – Run the k6 Tests
-
-Open **Terminal 2** (keep the server running in Terminal 1).
-
-### 🔵 A1 – Baseline Load Test (50 VUs, 6 min)
-```bash
-k6 run k6-tests/performance-test.js
-```
-
-### 🔴 A2 – Spike Test (10 → 500 VUs)
-```bash
-k6 run k6-tests/spike-test.js
-```
-
-### 🟠 A3 – Stress Test (gradual ramp to 200 VUs)
-```bash
-k6 run k6-tests/stress-test.js
-```
-
----
-
-## Step 4 – Save Results to JSON (Optional but recommended)
-
-```bash
-# Baseline
-k6 run --out json=results/baseline-results.json k6-tests/performance-test.js
-
-# Spike
-k6 run --out json=results/spike-results.json k6-tests/spike-test.js
-
-# Stress
-k6 run --out json=results/stress-results.json k6-tests/stress-test.js
-```
-
----
-
-## Step 5 – Verbose Output with Summary
-
-```bash
-# Run all three back-to-back with a shell script:
-#!/bin/bash
-echo "=== BASELINE ===" && k6 run k6-tests/performance-test.js
-echo "=== SPIKE ==="    && k6 run k6-tests/spike-test.js
-echo "=== STRESS ==="   && k6 run k6-tests/stress-test.js
-```
-
----
-
-## Key Metrics to Watch in Output
-
-| Metric                  | What it measures                              | Target (Baseline) |
-|-------------------------|-----------------------------------------------|-------------------|
-| `http_req_duration p95` | 95th percentile response time                 | < 500 ms          |
-| `http_req_failed`       | % of requests with HTTP errors                | < 1%              |
-| `errors`                | Custom error rate (check failures)            | < 1%              |
-| `http_req_blocked`      | Time waiting for a free TCP connection        | < 50 ms           |
-| `http_req_waiting`      | TTFB – server processing time                 | < 200 ms          |
-| `vus_max`               | Maximum VUs active during the test            | per scenario      |
-| `iterations`            | Total number of script executions             | –                 |
-
----
-
-## Quick API Reference
-
-| Method | Endpoint            | Body                                   | Expected |
-|--------|---------------------|----------------------------------------|----------|
-| GET    | /api/tasks          | –                                      | 200      |
-| POST   | /api/tasks          | `{"title":"x","completed":false}`      | 201      |
-| PUT    | /api/tasks/:id      | `{"completed":true}`                   | 200      |
-| DELETE | /api/tasks/:id      | –                                      | 200      |
-| GET    | /health             | –                                      | 200      |
+AI assistance: built and checked with Claude (claude.ai); reviewed by Iheb Zemzemi.
