@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 17 API design note `docs/api_design.md` (proposed): `/api` endpoints for status, limits, analyses, notes and stats, one error shape, storage, analyzer seam and config; §11 unchanged.
 - Stage 10 brief `docs/stages/stage10-risk-policy.md` (D32), draft; teach-back by Iheb, Malak and Khalil pending.
 - Stage 10 official risk-policy run (`risk-v1`, commit `11c07fe`, FoR val-B, validation only): evidence under `docs/audit_evidence/stage10_risk/` (policy, run and diagnostics reports, export manifest, byte-preserving `.gitattributes`, verification README) and `docs/results/risk_policy_fit.md` (policy, derived band edges, descriptive diagnostics, Colab CPU-vs-T4 cache finding).
 - Stage 10a-2 part 2: Colab notebook 05 for the official risk-policy run (full-SHA clean checkout, Python 3.13 and torch 2.11.0 asserted, no GPU, JUnit skip check, val-A/val-B log-Mel caches built twice and compared, bundle-seed checkpoint copied from Drive, `src.tuning.risk_run` invoked once under the pre-declared rerun rule, no W&B, hashed Drive export re-verified after remount), its static test `tests/governance/test_notebook_05_stage10.py`, and `tests/features/test_logmel_cache_npz_bytes.py` (cache `.npz` bytes do not depend on the code commit).
