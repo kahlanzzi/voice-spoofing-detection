@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- D41 implementation (Stage 11 prep): run registry keyed by `(dataset, split, evaluation_purpose, model_set)` with the closed purpose set and a keyword-only purpose; per-clip score files `src/evaluation/clip_scores.py` (CSV + strict JSON sidecar, applicability by model role fixed from D41/D45, exact floats, canonical bytes, exclusive creation; design note `docs/clip_scores.md`); FoR test-split governance guard `tests/governance/test_for_test_access.py` (empty allow-list); synthetic tests only, no FoR test access.
 - Stage 17 API design note `docs/api_design.md` (proposed): `/api` endpoints for status, limits, analyses, notes and stats, one error shape, storage, analyzer seam and config; §11 unchanged.
 - Stage 10 brief `docs/stages/stage10-risk-policy.md` (D32), draft; teach-back by Iheb, Malak and Khalil pending.
 - Stage 10 official risk-policy run (`risk-v1`, commit `11c07fe`, FoR val-B, validation only): evidence under `docs/audit_evidence/stage10_risk/` (policy, run and diagnostics reports, export manifest, byte-preserving `.gitattributes`, verification README) and `docs/results/risk_policy_fit.md` (policy, derived band edges, descriptive diagnostics, Colab CPU-vs-T4 cache finding).

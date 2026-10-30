@@ -1,14 +1,19 @@
-"""Append-only run registry for test-split evaluations: "Stage 11 runs once" (D31).
+"""Append-only run registry for test-split evaluations: "Stage 11 runs once" (D31, amended by D41).
 
-Conventions (D31):
+Conventions (D31, key amended by D41):
 - One JSON Lines file, path given by the caller. Each line is one RunRecord as a JSON object with
   sorted keys, compact separators, UTF-8, terminated by "\\n".
-- A run is identified by (dataset, split, model_set); model_set is stored sorted, so the order in
-  which the caller lists the models does not matter.
+- A run is identified by (dataset, split, evaluation_purpose, model_set); model_set is stored
+  sorted, so the order in which the caller lists the models does not matter.
+- evaluation_purpose is closed in code (D41): exactly the values in EVALUATION_PURPOSES
+  ("stage11_test", "stage14_robustness"). Any other value, including "", another spelling or
+  another case, is refused when claiming and when loading; a new purpose needs a new decision.
+  claim() takes it as a required keyword-only argument, so it cannot be passed by position by
+  mistake (e.g. swapped with the model set or the commit).
 - Claim before run: claim() appends a "started" record before the evaluation runs, and complete()
-  appends a "completed" record after it. Any record for the same (dataset, split, model_set),
-  started or completed, blocks a second claim, so a crashed run still blocks a rerun: a second run
-  needs a new decision.
+  appends a "completed" record after it, copying the purpose from the started record. Any record
+  for the same key, started or completed, blocks a second claim, so a crashed run still blocks a
+  rerun: a second run needs a new decision.
 - Hash chain: each record's prev_sha256 is the SHA-256 of the previous line's exact bytes
   (including its "\\n"); the first record has "0" * 64. Loading checks the whole chain, so editing,
   deleting or reordering an earlier line is detected.
@@ -39,6 +44,8 @@ from pathlib import Path
 STARTED = "started"
 COMPLETED = "completed"
 GENESIS_SHA256 = "0" * 64
+# D41: the only evaluation purposes; adding one needs a new decision.
+EVALUATION_PURPOSES = frozenset({"stage11_test", "stage14_robustness"})
 
 _HEX40 = re.compile(r"[0-9a-f]{40}")
 _HEX64 = re.compile(r"[0-9a-f]{64}")
@@ -53,6 +60,7 @@ class RunRecord:
     status: str
     dataset: str
     split: str
+    evaluation_purpose: str
     model_set: tuple[str, ...]
     code_commit: str
     timestamp: str
@@ -66,6 +74,7 @@ class RunRecord:
             raise ValueError(f"status must be {STARTED!r} or {COMPLETED!r}, got {self.status!r}")
         _check_text("dataset", self.dataset)
         _check_text("split", self.split)
+        _check_purpose(self.evaluation_purpose)
         _check_model_set(self.model_set)
         if tuple(sorted(self.model_set)) != self.model_set:
             raise ValueError(f"model_set must be stored sorted, got {self.model_set!r}")
@@ -81,14 +90,22 @@ class RunRecord:
             raise ValueError(f"prev_sha256 must be 64 lowercase hex chars, got {self.prev_sha256!r}")
 
     @property
-    def key(self) -> tuple[str, str, tuple[str, ...]]:
-        """(dataset, split, model_set): the identity of a run; one run per key (D31)."""
-        return (self.dataset, self.split, self.model_set)
+    def key(self) -> tuple[str, str, str, tuple[str, ...]]:
+        """(dataset, split, evaluation_purpose, model_set): one run per key (D31, amended by D41)."""
+        return (self.dataset, self.split, self.evaluation_purpose, self.model_set)
 
 
 def _check_text(name: str, value: object) -> None:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{name} must be a non-empty string, got {value!r}")
+
+
+def _check_purpose(purpose: object) -> None:
+    if not isinstance(purpose, str) or purpose not in EVALUATION_PURPOSES:
+        raise ValueError(
+            f"evaluation_purpose must be one of {sorted(EVALUATION_PURPOSES)}, got {purpose!r}; "
+            "a new purpose needs a new decision (D41)"
+        )
 
 
 def _check_model_set(model_set: object) -> None:
@@ -175,7 +192,7 @@ class RunRegistry:
         expected_prev = GENESIS_SHA256
         started: dict[str, RunRecord] = {}
         completed: set[str] = set()
-        claimed_keys: set[tuple[str, str, tuple[str, ...]]] = set()
+        claimed_keys: set[tuple[str, str, str, tuple[str, ...]]] = set()
         for number, body in enumerate(raw[:-1].split(b"\n"), start=1):
             line = body + b"\n"
             record = _decode(body, number)
@@ -218,8 +235,13 @@ class RunRegistry:
         """All records in file order, after checking the file and its hash chain."""
         return self._load()[0]
 
-    def claim(self, dataset: str, split: str, model_set, code_commit: str) -> str:
-        """Append a "started" record and return its run_id; ValueError if this run already exists."""
+    def claim(
+        self, dataset: str, split: str, model_set, code_commit: str, *, evaluation_purpose: str
+    ) -> str:
+        """Append a "started" record and return its run_id; ValueError if this run already exists.
+
+        evaluation_purpose is required and keyword-only; it must be in EVALUATION_PURPOSES (D41).
+        """
         if isinstance(model_set, str):
             raise ValueError("model_set must be a collection of model names, not a single string")
         try:
@@ -232,6 +254,7 @@ class RunRegistry:
             status=STARTED,
             dataset=dataset,
             split=split,
+            evaluation_purpose=evaluation_purpose,
             model_set=models,
             code_commit=code_commit,
             timestamp=datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -261,6 +284,7 @@ class RunRegistry:
                 status=COMPLETED,
                 dataset=start.dataset,
                 split=start.split,
+                evaluation_purpose=start.evaluation_purpose,
                 model_set=start.model_set,
                 code_commit=start.code_commit,
                 timestamp=datetime.now(timezone.utc).isoformat(timespec="seconds"),

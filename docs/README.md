@@ -15,6 +15,7 @@ tools all read it. Project rules live in `../AGENTS.md`.
 | [threat_model.md](threat_model.md) | Stage 2 threat model (v1.0 reviewed) | threats or claims change |
 | [experimental_protocol.md](experimental_protocol.md) | Stage 3 Experimental Protocol (v1.0, frozen (F1)) | only by a new decision (§12 change control) |
 | [evaluation_harness.md](evaluation_harness.md) | Shared metrics module (EER, ROC-AUC, ...): conventions, methods, tests | a harness step is added |
+| [clip_scores.md](clip_scores.md) | Per-clip score files (Stage 11, D41/D45): CSV + sidecar format, applicability per model role, FoR test-split access guard | the score format or the guard changes |
 | [risk_policy.md](risk_policy.md) | Risk policy (Stage 10): band rule in the core, Platt calibration, ... | a risk-policy step is added |
 | [baseline.md](baseline.md) | MFCC/SVM baseline (Stage 7, evaluation only): scaler, NumPy scorer, non-pickle artifact | a baseline step is added |
 | [cnn.md](cnn.md) | D42 CNN (Stage 8): model, train-only normalization, seeding, safetensors checkpoint | a CNN step is added |
