@@ -2739,7 +2739,8 @@ does not approve or merge.
 **Gate:** D41 implementation review before any FoR test access: Khalil (main Part C reviewer,
 required; ADR 0007 also constrains reuse of this registry) and Malak (requested; Stage 14 reads
 this format). The Stage 11 runtime and environment plan (to be proposed as D46) is still open.
-**WAITING FOR HUMAN REVIEW.**
+**Approved** by Khalil (required) and Malak (requested) in the PR #62 review (2026-10-29);
+AI does not approve or merge.
 
 ---
 ## Open items
@@ -2972,7 +2973,7 @@ this format). The Stage 11 runtime and environment plan (to be proposed as D46) 
 
 **Stage 14 robustness (D41)**
 - [x] Obtain all-four approval for D41/ADR 0010 (PR #46, 2026-10-24).
-- [ ] Implement and review the closed-purpose registry and Stage 11 per-clip scores before any Stage 11 or Stage 14 FoR test access. (implemented on `feat/stage11-d41-registry-storage`, Entry 99; review by Khalil, required, and Malak, requested, pending)
+- [x] Implement and review the closed-purpose registry and Stage 11 per-clip scores before any Stage 11 or Stage 14 FoR test access. (Entry 99; reviewed and approved by Khalil, required, and Malak, requested, in PR #62, 2026-10-29)
 - [ ] Stage 11 runner PR: hard-code `("for", "test", "stage11_test")`, take `run_id` from `claim()`, check each prediction against p and the frozen (bundle seed) or D29 (baseline) threshold before writing, read the manifest `group` column as strings, add the runner to the FoR test-split guard `ALLOWED` in that PR (Entry 99)
 - [ ] Stage 14 and 16 score readers: check the sidecar `run_id` against a completed `stage11_test` registry record and `manifest_sha256` against F2 (Entry 99)
 
@@ -2987,14 +2988,14 @@ this format). The Stage 11 runtime and environment plan (to be proposed as D46) 
 
 ## Current status — updated 2026-10-30
 
-**Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 closed (Entry 96): run and results merged (PR #60; Entry 94), brief accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-28; Donia attended as author; no corrections; Q9 reading agreed), merged as PR #61 (`f166001`). Stage 11 is current: the D41 registry and per-clip storage implementation is on `feat/stage11-d41-registry-storage` (Entry 99), in review; no FoR test access before that review and the Stage 11 runtime and environment plan.
+**Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 closed (Entry 96): run and results merged (PR #60; Entry 94), brief accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-28; Donia attended as author; no corrections; Q9 reading agreed), merged as PR #61 (`f166001`). Stage 11 is current: the D41 registry and per-clip storage implementation is approved (PR #62, Entry 99); next: the Stage 11 runtime and environment plan (to be proposed as D46), then the Stage 11 runner in its own PR; no FoR test access before both.
 
 **What was done:**
 - **Stage 11 prep, D41 registry and per-clip storage** on `feat/stage11-d41-registry-storage`
   (Entry 99): purpose-keyed registry with the closed purpose set and a keyword-only purpose;
   per-clip score files (CSV + sidecar, applicability by role from D41/D45, exact floats,
   exclusive creation); FoR test-split governance guard (empty allow-list); synthetic tests only,
-  887 passed; in review (Khalil, Malak).
+  887 passed; approved in PR #62 (Khalil, Malak).
 - **Stage 10 closed** on `docs/stage10-brief` (Entry 96): D32 teach-back of the Stage 10 brief by
   Iheb, Malak and Khalil, face to face, 2026-10-28 (Donia attended as author, correcting only; no
   corrections; Q9 reading agreed); brief accepted, index and roadmap updated. Next: Stage 11.
@@ -3111,7 +3112,7 @@ this format). The Stage 11 runtime and environment plan (to be proposed as D46) 
   `docs/risk_policy.md`; not yet fitted on real val-B scores.
 - A tested append-only run registry (`src/evaluation/run_registry.py`) that refuses a second
   Stage 11 run for the same model set (D31); the D41 purpose key, per-clip score files and the FoR
-  test-split guard are in review (Entry 99).
+  test-split guard are approved (PR #62, Entry 99).
 - A tested ModelBundle format (`src/bundle/`) whose loader verifies every part before use,
   documented in `docs/model_bundle.md`.
 - Governance rules that keep the external set metadata-only until the one guarded Stage 13 run.
@@ -3133,7 +3134,7 @@ this format). The Stage 11 runtime and environment plan (to be proposed as D46) 
 - `docs/stage10-brief`: Stage 10 brief (Entry 95) and closeout (Entry 96), merged as PR #61 (`f166001`).
 - `docs/stage18-ui-prototype-v3`: analyst console prototype v3 (Entry 97), merged as PR #63 (`c5eebbb`).
 - `docs/stage18-ui-prototype-v4`: prototype v4 and design handoff (Entry 98), merged as PR #64 (`e2e5eb6`).
-- `feat/stage11-d41-registry-storage`: D41 registry and per-clip storage implementation (Entry 99), in review.
+- `feat/stage11-d41-registry-storage`: D41 registry and per-clip storage implementation (Entry 99), PR #62, approved.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
@@ -3146,5 +3147,5 @@ this format). The Stage 11 runtime and environment plan (to be proposed as D46) 
 2. Before Stage 13, implement the approved file-level view, speaker-average convention and guarded
    runner; resolve the external-run governance allowlist.
 3. Stage 7 is closed (PR #43); Stages 8–9: the official run is complete (Entry 86), validation only; PR D merged as #52; D43 approved (PR #53, Entry 87; implementation only at Stage 16, after the D41 storage implementation); the 08–09 teach-backs are done (Entry 88); Stage 10 is closed (Entry 96); next: Stage 11 (FoR test, once), after its runtime and environment plan (Entry 94) and the reviewed D41 registry and storage implementation (D41, ADR 0010). Preserve the recorded validation-only scope of Entries 74 and 86.
-4. D41 and ADR 0010 are approved in PR #46; the closed-purpose registry and Stage 11 per-clip score storage are implemented on `feat/stage11-d41-registry-storage` (Entry 99). Review (Khalil required, Malak requested) before any FoR test access; then the Stage 11 runner in its own PR.
+4. D41 and ADR 0010 are approved in PR #46; the closed-purpose registry and Stage 11 per-clip score storage are implemented on `feat/stage11-d41-registry-storage` (Entry 99), reviewed and approved in PR #62 (Khalil required, Malak requested). Next: D46 (the Stage 11 runtime and environment plan), then the Stage 11 runner in its own PR; no FoR test access before both.
 5. Then run the real Part C work on the frozen F3 preprocessing profile; the W&B project is set up (entity `voice-spoofing-detection-must`, project `voice-spoofing-detection`, D40), and teammates' Member invites are pending (see Open items).
