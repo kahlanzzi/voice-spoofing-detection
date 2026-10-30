@@ -1,6 +1,6 @@
 # API design: backend ↔ analyst web app (Stage 17)
 
-- **Status:** Proposed, for team review. Nothing here is decided until the PR is approved.
+- **Status:** Approved (PR #65, Donia, 2026-10-30).
 - **Owner:** Iheb Zemzemi (Part E). **Reviewers (D26):** Donia Mabrouk, Malak Ben Salem, Khalil Dridi.
 - **Serves:** the Stage 17 API (`api/`, FastAPI) and the Stage 18 web app (`web/`, React, D38).
 - **Sources:** [HANDOFF.md](design/HANDOFF.md) §1, §11, §12; the
@@ -290,6 +290,7 @@ Every error uses one shape:
 | `not_found` | 404 | Unknown request ID or route | S8 Unknown request ID |
 | `internal_error` | 500 | Anything unexpected, including a failed store | S5 Unexpected service error |
 | `invalid_request` | 400 | Bad query or body (**proposal beyond the agreed list**) | none (the app prevents these) |
+| `invalid_request` | 405 | Method not allowed on a known path | none (the app never sends these) |
 
 Rules:
 

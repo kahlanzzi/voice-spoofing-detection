@@ -1,0 +1,88 @@
+"""configs/api.yaml: the Stage 17 API settings (docs/api_design.md §9), validated.
+
+The loader refuses a missing key, an unknown key or a value of the wrong type (True for 1, 30.5
+for 30), so a typo in the file stops the API at start instead of changing its behaviour.
+VSD_API_CONFIG, when set, points to another file (tests, deployments).
+"""
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass
+from pathlib import Path
+
+import yaml
+
+ENV_VAR = "VSD_API_CONFIG"
+DEFAULT_PATH = Path(__file__).resolve().parents[1] / "configs" / "api.yaml"
+
+# §9 key -> accepted type (a tuple accepts several; NoneType allows null).
+TYPES = {
+    "formats": list,
+    "max_size_bytes": int,
+    "max_duration_s": int,
+    "audio_deletion": str,
+    "analysis_timeout_s": int,
+    "page_size_max": int,
+    "note_max_chars": int,
+    "stats_time_zone": str,
+    "notice_text": str,
+    "mock_deferral_on_fit": float,
+    "temp_dir": (str, type(None)),
+}
+POSITIVE = ("max_size_bytes", "max_duration_s", "analysis_timeout_s", "page_size_max", "note_max_chars")
+
+
+@dataclass(frozen=True)
+class ApiConfig:
+    formats: tuple[str, ...]
+    max_size_bytes: int
+    max_duration_s: int
+    audio_deletion: str
+    analysis_timeout_s: int
+    page_size_max: int
+    note_max_chars: int
+    stats_time_zone: str
+    notice_text: str
+    mock_deferral_on_fit: float
+    temp_dir: str | None
+
+
+def config_path() -> Path:
+    """The config file to load: $VSD_API_CONFIG if set, else configs/api.yaml in this repo."""
+    override = os.environ.get(ENV_VAR)
+    return Path(override) if override else DEFAULT_PATH
+
+
+def _type_ok(value, expected) -> bool:
+    if isinstance(value, bool):  # bool is an int subclass; never accept it for a number
+        return False
+    return isinstance(value, expected)
+
+
+def load_api_config(path=None) -> ApiConfig:
+    """Read the API config with yaml.safe_load; strict keys and types; raise ValueError if invalid."""
+    path = Path(path) if path is not None else config_path()
+    try:
+        cfg = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except (OSError, yaml.YAMLError) as exc:
+        raise ValueError(f"cannot read API config {path}: {exc}") from exc
+    if not isinstance(cfg, dict):
+        raise ValueError(f"{path} must hold a YAML mapping")
+    missing = sorted(set(TYPES) - set(cfg))
+    extra = sorted(set(cfg) - set(TYPES))
+    if missing or extra:
+        raise ValueError(f"{path}: missing keys {missing}, unknown keys {extra}")
+    for key, expected in TYPES.items():
+        if not _type_ok(cfg[key], expected):
+            raise ValueError(f"{path}: {key} has the wrong type: {cfg[key]!r}")
+    for key in POSITIVE:
+        if cfg[key] <= 0:
+            raise ValueError(f"{path}: {key} must be > 0, got {cfg[key]!r}")
+    formats = cfg["formats"]
+    if not formats or not all(isinstance(f, str) and f and f == f.lower() for f in formats):
+        raise ValueError(f"{path}: formats must be a non-empty list of lower-case extensions, got {formats!r}")
+    if not 0.0 <= cfg["mock_deferral_on_fit"] <= 1.0:
+        raise ValueError(f"{path}: mock_deferral_on_fit must be in [0, 1], got {cfg['mock_deferral_on_fit']!r}")
+    if not cfg["notice_text"].strip():
+        raise ValueError(f"{path}: notice_text must not be empty")
+    return ApiConfig(**{**cfg, "formats": tuple(formats)})

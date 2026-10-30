@@ -2777,6 +2777,48 @@ reviews the diff.
 **Gate:** team review of the contract in this PR. AI agents do not merge.
 
 ---
+
+### Entry 101 — Stage 17 step 2: API skeleton (2026-10-30)
+
+**What:** on `feat/stage17-api-skeleton` (Iheb, Part E), the first API code, following the approved
+contract `docs/api_design.md`. `api/main.py`: `create_app()`, every route under `/api`, module-level
+`app` for `uvicorn api.main:app`. `api/config.py`: strict loader for `configs/api.yaml` (the 11 §9
+keys; missing, unknown or wrongly typed keys raise `ValueError`); `VSD_API_CONFIG` points to another
+file. `api/errors.py`: `ApiError` and handlers so every error uses the §6 shape: FastAPI validation
+errors become `400 invalid_request`, unknown routes `404 not_found`, wrong methods
+`405 invalid_request`, unhandled exceptions `500 internal_error` with a fixed message (traceback in
+the server log only). `request_id` in error bodies is `null` (§6). `api/middleware.py`: `req_` +
+32 hex request ID in an `X-Request-ID` header on every response, including 500s; a client-sent ID
+is ignored. `api/schemas.py`: `AnalysisResponse` (exactly the 8 §11 fields, extra fields
+forbidden), `StoredAnalysis`, `Error` and the §4.1 status shape. `api/routers/status.py`:
+`GET /api/status` with fixed mock values (state `ready`, `mock: true`, `deferral_on_fit` from
+config). `requirements.txt`: `fastapi==0.162.0`, `httpx==0.28.1`, `python-multipart==0.0.32`,
+`uvicorn==0.54.0`. 50 tests in `tests/api/`. Not in this PR: analyzer, uploads, storage, limits,
+history, stats, auth, Docker.
+
+**Contract changes [doc]:** with Iheb's approval, `docs/api_design.md` status set to "Approved
+(PR #65, Donia, 2026-10-30)" and §6 gains a row: `invalid_request` with HTTP 405 for a method not
+allowed on a known path.
+
+**Evidence [verified]:** the requirements install cleanly in fresh venvs on Python 3.13.2 and
+3.14.6 (installed versions equal the pins; FastAPI brings Starlette 1.10.0 and Pydantic 2.14.2).
+`python -m pytest -q` on 3.14: 794 passed, 9 skipped (torch tests; CI runs them with torch).
+`tests/api` on 3.13: 50 passed. `uvicorn api.main:app` started locally: `GET /api/status` answered
+`200` with the §4.1 body and an `X-Request-ID`; `GET /api/nope` answered `404` in the §6 shape.
+No dataset access; no DEEP-VOICE path.
+
+**Finding [verified]:** Starlette 1.10 has a built-in request body limit (`max_body_size`,
+`RequestBodyLimitMiddleware`). It is relevant to the §4.3 size protection and is left to the
+uploads PR.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) proposed the plan, wrote the code, tests and
+this entry, and ran the checks. Iheb approved the plan with changes (405 row, approval line) and
+reviews the diff. Context7 was not used: it rejected the configured key, so FastAPI and Starlette
+behaviour was checked against the installed source and the tests.
+
+**Gate:** team review of this PR. AI agents do not merge.
+
+---
 ## Open items
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
@@ -3012,8 +3054,11 @@ reviews the diff.
 - [ ] Stage 14 and 16 score readers: check the sidecar `run_id` against a completed `stage11_test` registry record and `manifest_sha256` against F2 (Entry 99)
 
 **Stage 17 API (Part E, Entry 100)**
-- [ ] Team review of the API contract `docs/api_design.md`, including the proposed `invalid_request` (400) code.
+- [x] Team review of the API contract `docs/api_design.md`, including the proposed `invalid_request` (400) code. (approved, PR #65, Donia, 2026-10-30; Entry 101)
 - [ ] Decide whether the approved API contract needs a D-ID (HANDOFF.md §11 item 10).
+- [ ] Review the API skeleton PR, including the 405 `invalid_request` row added to §6 (Entry 101).
+- [ ] Next API PRs: `MockAnalyzer` and the analyzer seam (§8), `GET /limits`, `POST /analyses` with the §4.3 checks (consider Starlette's `max_body_size`), storage (§7), history, notes, stats (Entry 101).
+- [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
 
 **Later stages (reminders)**
 - [ ] `configs/robustness.yaml` → Stage 14. `docker-compose.yml` → Stage 17.
@@ -3028,11 +3073,13 @@ reviews the diff.
 
 **Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 closed (Entry 96): run and results merged (PR #60; Entry 94), brief accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-28; Donia attended as author; no corrections; Q9 reading agreed), merged as PR #61 (`f166001`). Stage 11 is current: the D41 registry and per-clip storage implementation is approved (PR #62, Entry 99); next: the Stage 11 runtime and environment plan (to be proposed as D46), then the Stage 11 runner in its own PR; no FoR test access before both.
 
-**Part E status:** Stage 17 API design note proposed (Entry 100), in review; no API code yet.
+**Part E status:** Stage 17 API contract approved (PR #65); API skeleton (Entry 101) in review: `create_app()`, config, §6 errors, request IDs, schemas and a mock `GET /api/status`; no analyzer or uploads yet.
 
 **What was done:**
-- **Stage 17 API design note** on `docs/stage17-api-design` (Entry 100): `docs/api_design.md`,
-  the proposed `/api` contract for the web app (Iheb, Part E); no code.
+- **Stage 17 API skeleton** on `feat/stage17-api-skeleton` (Entry 101): `api/` package
+  (app factory, strict config, §6 error shape for every error, `X-Request-ID`, §5 schemas,
+  mock `GET /api/status`) and 50 tests (Iheb, Part E). The contract `docs/api_design.md` (Entry 100)
+  is approved (PR #65).
 - **Stage 11 prep, D41 registry and per-clip storage** on `feat/stage11-d41-registry-storage`
   (Entry 99): purpose-keyed registry with the closed purpose set and a keyword-only purpose;
   per-clip score files (CSV + sidecar, applicability by role from D41/D45, exact floats,
