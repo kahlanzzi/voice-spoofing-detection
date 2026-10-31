@@ -20,8 +20,6 @@ not add requirements.
 
 The detailed use-case descriptions, responsibility tables, class-design table, interface contracts,
 logical data model and sequence-message lists remain in the source reports under `docs/reference/`.
-The relationship-by-relationship proof is recorded in
-[`CONSISTENCY_AUDIT.md`](CONSISTENCY_AUDIT.md).
 
 ## Controlled post-report updates
 

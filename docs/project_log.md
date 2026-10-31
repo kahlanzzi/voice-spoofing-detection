@@ -2974,36 +2974,6 @@ boundaries; Khalil validates UC-08 and evaluation governance; then teammate revi
 agents do not merge.
 
 ---
-### Entry 107 — UML relationship-level consistency proof recorded (2026-10-31)
-
-**What:** added `docs/uml/CONSISTENCY_AUDIT.md`, a figure-by-figure and cross-view traceability audit
-against SRS Figure 1 and SDD Figures 1-6. The audit records canonical and repository element counts,
-the use-case/component/class relationship ledgers, both sequence orders, shared-concept traceability,
-and the closed list of three approved post-report labels/notes.
-
-**Result [verified]:** 7/7 canonical figures checked; 0 added or removed domain elements; 0 added,
-removed or reversed relationships; 0 multiplicity changes; 0 message-order changes; 3 approved and
-disclosed label/note updates (D38, PR #65 and D41); 0 undisclosed differences.
-
-**Evidence [verified]:** mechanical inventory assertions passed for all canonical counts: 5 actors,
-10 use cases, 9 actor associations, 5 includes, 1 extend; 13 online components, 4 stores and 19
-dependencies; 10 research components, 3 external systems and 16 dependencies; 10 analysis classes,
-1 interface and 10 relationships; 7 evaluation classes and 8 relationships; 21 UC-01 and 22 UC-08
-messages, each with one two-operand alternative fragment. PlantUML accepted all 6 sources; the
-draw.io source and all 7 SVGs parsed as XML.
-
-**Checks [verified]:** `python -m pytest -q`: 794 passed, 9 skipped in 99.96s;
-`tests/governance/test_deepvoice_access.py`: 3 passed in 0.66s; `git diff --check`: passed.
-Documentation-only change; no audio, dataset, checkpoint or DEEP-VOICE access.
-
-**AI assistance:** **Codex**, using the Diagram Maker review and PDF inspection rules, performed the
-relationship-level comparison and prepared the traceability record. Malak reviews the proof and
-remains responsible for the submission.
-
-**Gate:** domain owners review the proof with the seven figures, then green CI. AI agents do not
-merge.
-
----
 ## Open items
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
@@ -3273,13 +3243,13 @@ merge.
 unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and Donia
-validated its requirements and priorities by team message. Entries 104–107 correct and audit the UML
+validated its requirements and priorities by team message. Entries 104–106 correct and audit the UML
 package on `docs/stage11-midterm-uml-malak` against the canonical SRS/SDD figures, including the
 fixed-layout use-case source and the visually aligned component, class and sequence figures. Domain
 validation by Iheb, Donia and Khalil is pending.
 
 **What was done:**
-- **Canonical midterm UML package** on `docs/stage11-midterm-uml-malak` (Entries 104–107): six
+- **Canonical midterm UML package** on `docs/stage11-midterm-uml-malak` (Entries 104–106): six
   editable PlantUML sources, one fixed-layout draw.io source and seven SVG exports reconstructing SRS
   Figure 1 and SDD Figures 1-6, with controlled D38/API-contract/D41 annotations and no parallel
   model.
@@ -3418,8 +3388,7 @@ validation by Iheb, Donia and Khalil is pending.
 
 **Branches:**
 - `origin/main`: at `023bfa4` (Entry 102 backlog merged as PR #69; earlier history remains in Git).
-- `docs/stage11-midterm-uml-malak`: Entries 104–107 canonical UML package, visual audit and
-  relationship-level consistency proof,
+- `docs/stage11-midterm-uml-malak`: Entries 104–106 canonical UML package and final visual audit,
   awaiting domain review.
 - `docs/stage11-midterm-backlog-malak`: Entry 102 backlog, merged as PR #69 (`023bfa4`).
 - `docs/stage8-cnn-selection`: merged as PR #52 (remote branch deleted).
