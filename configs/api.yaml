@@ -1,0 +1,16 @@
+# Stage 17 API settings (docs/api_design.md §9). Read by api/config.py.
+# VSD_API_CONFIG points the API at another file (tests, deployments).
+# Mock = prototype value until the open decision is taken; proposal = value proposed in §9.
+formats: [wav, flac, mp3]                      # mock; open decision 2
+max_size_bytes: 20971520                       # 20 MB; mock; open decision 2
+max_duration_s: 60                             # mock; open decision 2
+audio_deletion: Deleted when processing finishes   # depends on open decision 4
+analysis_timeout_s: 30                         # proposal; not a latency target (open decision 5)
+page_size_max: 50                              # proposal
+note_max_chars: 2000                           # proposal
+stats_time_zone: UTC                           # open decision 6
+notice_text: >-
+  Decision support only. This result estimates whether the recording is synthetic.
+  It does not prove fraud and does not verify identity.
+mock_deferral_on_fit: 0.0993                   # MockAnalyzer only; replaced by the bundle's value
+temp_dir: null                                 # deployment setting; null = the system temp folder

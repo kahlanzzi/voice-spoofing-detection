@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 17 API skeleton `api/` (FastAPI): `create_app()` with routes under `/api`, `configs/api.yaml` (§9, strict loader, `VSD_API_CONFIG`), the §6 error shape for every error (400 for invalid params, 404/405/500 included, no traceback), `X-Request-ID` on every response, the §5 shapes, and `GET /api/status` with mock values; `fastapi`, `uvicorn`, `python-multipart` and `httpx` pinned; `docs/api_design.md` approved and §6 gains the 405 row.
 - Stage 17 API design note `docs/api_design.md` (proposed): `/api` endpoints for status, limits, analyses, notes and stats, one error shape, storage, analyzer seam and config; §11 unchanged.
 - D41 implementation (Stage 11 prep): run registry keyed by `(dataset, split, evaluation_purpose, model_set)` with the closed purpose set and a keyword-only purpose; per-clip score files `src/evaluation/clip_scores.py` (CSV + strict JSON sidecar, applicability by model role fixed from D41/D45, exact floats, canonical bytes, exclusive creation; design note `docs/clip_scores.md`); FoR test-split governance guard `tests/governance/test_for_test_access.py` (empty allow-list); synthetic tests only, no FoR test access.
 - Stage 10 brief `docs/stages/stage10-risk-policy.md` (D32), draft; teach-back by Iheb, Malak and Khalil pending.

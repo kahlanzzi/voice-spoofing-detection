@@ -1,11 +1,15 @@
-# Direct dependencies, pinned to the exact versions in use (2026-10-11).
+# Direct dependencies, pinned to the exact versions in use (2026-10-30).
 # Must install on Python 3.13 (official, D15; CI) and 3.14 (local development).
+fastapi==0.162.0
+httpx==0.28.1
 huggingface_hub==2.0.0
 kaggle==2.2.4
 librosa==1.0.0
 numpy==2.5.3
 pandas==3.0.6
 pytest==9.1.1
+python-multipart==0.0.32
 PyYAML==6.0.3
 scikit-learn==1.9.1
 soundfile==0.14.0
+uvicorn==0.54.0
