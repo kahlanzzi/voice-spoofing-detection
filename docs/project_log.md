@@ -2974,6 +2974,31 @@ boundaries; Khalil validates UC-08 and evaluation governance; then teammate revi
 agents do not merge.
 
 ---
+### Entry 107 — Midterm AI ethics and usage reflection drafted (2026-10-31)
+
+**What [doc]:** added `docs/ai-usage-reflection.md`, a team-level reflection owned by Malak and based
+only on repository evidence through 2026-10-31. It records the tools actually attributed in the log,
+human review and verification, four corrected AI outputs, privacy and MCP safeguards, model/data bias
+risks, licensing and rights limits, and academic accountability. Gemini/Antigravity support and the
+Context7 failure are distinguished from tools that produced accepted artifacts; no unsupported use is
+claimed.
+
+**Evidence [verified]:** every factual example traces to `AGENTS.md`, `CONTRIBUTING.md`, the decision
+register/ADR 0006, dataset audit, threat model or named project-log entries. Link and terminology
+checks passed. `python -m pytest -q`: 794 passed, 9 skipped in 21.99s;
+`tests/governance/test_deepvoice_access.py`: 3 passed in 0.59s; `git diff --check`: passed; token scan:
+no token found. Documentation only; no data, audio, model or experiment accessed.
+
+**Human review:** Malak confirmed that the team used no additional AI tool beyond the recorded
+inventory. Donia approved the reflection's content and assignment coverage by team message.
+
+**AI assistance:** **Codex** audited the repository evidence and drafted the reflection. Human review
+is recorded above; AI does not approve or merge.
+
+**Gate:** commit and push the reviewed document, then require green CI and GitHub PR approval before
+merge. **WAITING FOR PR REVIEW.**
+
+---
 ## Open items
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
@@ -3215,14 +3240,18 @@ agents do not merge.
 - [ ] Next API PRs: `MockAnalyzer` and the analyzer seam (§8), `GET /limits`, `POST /analyses` with the §4.3 checks (consider Starlette's `max_body_size`), storage (§7), history, notes, stats (Entry 101).
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
 
-**Midterm documentation (Entries 102–104)**
+**Midterm documentation (Entries 102–107)**
 - [x] Review and merge the prioritized backlog against the SRS and merged evidence. (PR #69,
   `023bfa4`; Khalil approved; Donia validated requirements and priorities by team message)
 - [ ] Update backlog statuses only from merged evidence as implementation PRs land.
 - [ ] Iheb validates the canonical online component and UC-01 figures against Part E.
 - [ ] Donia validates the canonical shared-core, ModelBundle, preprocessing and risk-policy figures.
 - [ ] Khalil validates the canonical UC-08 and evaluation/governance figures.
-- [ ] Review and merge the seven canonical UML sources and matching SVG exports with green CI.
+- [x] Review and merge the seven canonical UML sources and matching SVG exports with green CI.
+  (PR #70, `85829e1`)
+- [x] Malak confirmed the team AI-tool inventory; Donia approved the reflection's ethics and
+  requirements coverage by team message.
+- [ ] Review and merge the AI ethics reflection with green CI.
 
 **Later stages (reminders)**
 - [ ] `configs/robustness.yaml` → Stage 14. `docker-compose.yml` → Stage 17.
@@ -3242,13 +3271,16 @@ agents do not merge.
 `GET /api/status`; no analyzer or uploads yet. The midterm backlog in Entry 102 keeps all
 unimplemented end-to-end flows Partial or Planned.
 
-**Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and Donia
-validated its requirements and priorities by team message. Entries 104–106 correct and audit the UML
-package on `docs/stage11-midterm-uml-malak` against the canonical SRS/SDD figures, including the
-fixed-layout use-case source and the visually aligned component, class and sequence figures. Domain
-validation by Iheb, Donia and Khalil is pending.
+**Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
+canonical UML package is merged in PR #70 (`85829e1`). Entry 107 drafts the evidence-based AI ethics
+and usage reflection on `docs/stage11-midterm-ai-ethics-malak`; the team tool inventory is confirmed
+and Donia approved the content by message; PR review and merge remain.
 
 **What was done:**
+- **Midterm AI ethics and usage reflection** on `docs/stage11-midterm-ai-ethics-malak` (Entry 107):
+  documented tools, human oversight, corrected AI errors, privacy/data governance, bias and harm,
+  licensing, MCP security and academic responsibility; tool inventory confirmed and content approved
+  by Donia, pending PR review and merge.
 - **Canonical midterm UML package** on `docs/stage11-midterm-uml-malak` (Entries 104–106): six
   editable PlantUML sources, one fixed-layout draw.io source and seven SVG exports reconstructing SRS
   Figure 1 and SDD Figures 1-6, with controlled D38/API-contract/D41 annotations and no parallel
@@ -3387,9 +3419,10 @@ validation by Iheb, Donia and Khalil is pending.
 - Stage briefs (`docs/stages/`, D32): 00–10 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), 07 (PR #43), 08–09 (PR #54), and 10 (PR #61).
 
 **Branches:**
-- `origin/main`: at `023bfa4` (Entry 102 backlog merged as PR #69; earlier history remains in Git).
-- `docs/stage11-midterm-uml-malak`: Entries 104–106 canonical UML package and final visual audit,
-  awaiting domain review.
+- `origin/main`: at `85829e1` (Entry 106 UML package merged as PR #70; earlier history remains in Git).
+- `docs/stage11-midterm-ai-ethics-malak`: Entry 107 AI ethics and usage reflection, content approved
+  by Donia and ready for PR.
+- `docs/stage11-midterm-uml-malak`: Entries 104–106, merged as PR #70 (`85829e1`).
 - `docs/stage11-midterm-backlog-malak`: Entry 102 backlog, merged as PR #69 (`023bfa4`).
 - `docs/stage8-cnn-selection`: merged as PR #52 (remote branch deleted).
 - `docs/stage16-d43-loudness-diagnostic`: D43 proposal and approval (Entry 87), merged as PR #53 (`a022e7a`) (remote branch deleted).
