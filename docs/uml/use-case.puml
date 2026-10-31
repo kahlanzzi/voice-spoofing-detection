@@ -1,76 +1,63 @@
 @startuml
 !pragma layout smetana
-title Voice-spoofing detection — approved online use cases
+title Figure 1 — Merged use-case model: submission, review, research evaluation and operations
 left to right direction
 
 skinparam shadowing false
 skinparam backgroundColor white
+skinparam actorStyle awesome
 skinparam usecase {
-  BackgroundColor<<implemented>> #E8F5E9
-  BorderColor<<implemented>> #2E7D32
-  BackgroundColor<<planned>> #FFF8E1
-  BorderColor<<planned>> #B26A00
-  BackgroundColor<<open>> #F3E5F5
-  BorderColor<<open>> #6A1B9A
+  BackgroundColor #FCE8E6
+  BorderColor #9E1B16
+}
+skinparam rectangle {
+  BorderColor #9E1B16
 }
 
 actor "Fraud Prevention\nAnalyst" as Analyst
-actor "API Client" as Client
-actor "Operations\nAdministrator" as Ops
+actor "API Client\n<<external system>>" as ApiClient
+actor "ML / Research\nEngineer" as Engineer
+actor "Compliance\nOfficer" as Compliance
+actor "Operations /\nSecurity Administrator" as Operations
 
-rectangle "Voice-spoofing detection system" {
-  usecase "Check service and\nbundle status" as UCStatus <<implemented>>
-  usecase "Authenticate session" as UCAuth <<open>>
-  usecase "Load upload limits" as UCLimits <<planned>>
-  usecase "Submit one audio file" as UCSubmit <<planned>>
-  usecase "Validate upload" as UCValidate <<planned>>
-  usecase "Analyze with frozen\nmodel and risk policy" as UCAnalyze <<planned>>
-  usecase "View verdict, confidence,\nrisk and notice" as UCResult <<planned>>
-  usecase "Browse and filter\nanalysis History" as UCHistory <<planned>>
-  usecase "Open stored result" as UCDetails <<planned>>
-  usecase "Add, replace or\nremove analyst note" as UCNote <<planned>>
-  usecase "View operational\noverview" as UCStats <<planned>>
-  usecase "Store result metadata\nwithout audio" as UCStore <<planned>>
+rectangle "Voice-Spoofing Detection & Risk Scoring System" {
+  usecase "UC-01\nAnalyze Audio via\nDashboard" as UC01
+  usecase "UC-02\nAnalyze Audio via API" as UC02
+  usecase "UC-03\nValidate & Analyze\nAudio" as UC03
+  usecase "UC-04\nRecord Analysis\nMetadata" as UC04
+  usecase "UC-05\nReview Analysis History" as UC05
+  usecase "UC-06\nAnnotate Result" as UC06
+  usecase "UC-07\nRun Model Evaluation" as UC07
+  usecase "UC-08\nRun External\nGeneralization Test" as UC08
+  usecase "UC-09\nView Evaluation Report" as UC09
+  usecase "UC-10\nReview Service Logs" as UC10
 }
 
-Analyst --> UCAuth
-Analyst --> UCStatus
-Analyst --> UCSubmit
-Analyst --> UCResult
-Analyst --> UCHistory
-Analyst --> UCDetails
-Analyst --> UCNote
-Analyst --> UCStats
+Analyst --> UC01
+Analyst --> UC05
+Analyst --> UC06
+ApiClient --> UC02
+Engineer --> UC07
+Engineer --> UC08
+Engineer --> UC09
+Compliance --> UC09
+Operations --> UC10
 
-Client --> UCStatus
-Client --> UCSubmit
-Client --> UCResult
+UC01 .> UC03 : <<include>>
+UC02 .> UC03 : <<include>>
+UC03 .> UC04 : <<include>>
+UC05 .> UC04 : <<include>>
+UC06 .> UC04 : <<include>>
+UC06 .> UC05 : <<extend>>
 
-Ops --> UCStatus
-Ops --> UCStats
-
-UCSubmit .> UCLimits : <<include>>
-UCSubmit .> UCValidate : <<include>>
-UCSubmit .> UCAnalyze : <<include>>
-UCAnalyze .> UCStore : <<include>>
-UCResult .> UCAnalyze : <<extend>>\nsuccess only
-UCDetails .> UCHistory : <<extend>>
-UCNote .> UCDetails : <<extend>>
-
-legend right
-  |= Status |= Meaning |
-  |<#E8F5E9> Implemented | Mock GET /api/status exists on main |
-  |<#FFF8E1> Planned | Approved requirement/design; code not on main |
-  |<#F3E5F5> Open | Capability reserved; mechanism undecided |
+legend bottom
+  Solid line = actor association
+  Dashed arrow <<include>> = base use case to required shared use case
+  Dashed arrow <<extend>> = optional extension to base use case
 endlegend
 
-note bottom of UCStore
-  Store request/result metadata and notes only.
-  Never store audio, original file name or client IP.
-end note
-
-note bottom of UCAnalyze
-  Decision support only: authentic, synthetic or uncertain.
-  A result is never proof of fraud or identity.
+note bottom of UC01
+  D38 update: Dashboard is implemented as the React analyst web app.
+  The UC-01 goal and actor remain unchanged.
 end note
 @enduml

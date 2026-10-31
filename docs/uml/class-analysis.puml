@@ -1,0 +1,128 @@
+@startuml
+!pragma layout smetana
+title Figure 3 — Specification-level UML class diagram: analysis domain
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam class {
+  BackgroundColor #EAF2FB
+  BorderColor #1F5A99
+  ArrowColor #333333
+}
+hide circle
+
+class AudioSubmission {
+  - requestId: String
+  - channel: Channel
+  - receivedAt: DateTime
+  - audioRef: String
+  + validate(policy: InputPolicy): ValidationResult
+  + discardAudio(): void
+}
+
+class InputPolicy {
+  - supportedFormats: Set<String>
+  - maxUploadMb: Integer
+  - maxAudioSeconds: Decimal
+  + check(meta: AudioMeta): ValidationResult
+  + describe(): String
+}
+
+class PreprocessingProfile {
+  - profileVersion: String
+  - sampleRateHz: Integer
+  - trimSilence: Boolean
+  - featureType: FeatureType
+  + apply(audio: AudioSignal): FeatureTensor
+  + fingerprint(): String
+}
+
+class AnalysisRecord {
+  - requestId: String
+  - createdAt: DateTime
+  - bundleVersion: String
+  - latencyMs: Integer
+  + addAnnotation(note: String, authorId: String): Annotation
+  + matches(filter: HistoryFilter): Boolean
+}
+
+class AnalysisResult {
+  - prediction: Prediction
+  - confidence: Decimal
+  - riskLevel: RiskLevel
+  + isFlagged(): Boolean
+  + decisionSupportNotice(): String
+}
+
+class Annotation {
+  - annotationId: String
+  - note: String
+  - createdAt: DateTime
+  - authorId: String
+  + isAuthoredBy(accountId: String): Boolean
+  + toText(): String
+}
+
+class ModelBundle {
+  - bundleId: String
+  - frozen: Boolean
+  - deployable: Boolean
+  - createdAt: DateTime
+  + freeze(): void
+  + isFrozen(): Boolean
+  + versionTag(): String
+}
+
+class RiskPolicy {
+  - policyVersion: String
+  - lowThreshold: Decimal
+  - highThreshold: Decimal
+  - calibrationMethod: String
+  + fit(valScores: List<Score>, labels: List<Label>): void
+  + calibrate(score: Score): Decimal
+  + decide(score: Score): Decision
+}
+
+interface Detector {
+  + score(features: FeatureTensor): Score
+  + modelVersion(): String
+  + isDeployable(): Boolean
+}
+
+class CnnDetector {
+  - weightsRef: String
+  - inputShape: String
+  + score(features: FeatureTensor): Score
+  + modelVersion(): String
+  + isDeployable(): Boolean
+}
+
+class MfccBaselineDetector {
+  - classifierKind: String
+  - mfccCount: Integer
+  + score(features: FeatureTensor): Score
+  + modelVersion(): String
+  + isDeployable(): Boolean
+}
+
+AudioSubmission ..> InputPolicy : uses
+AudioSubmission "1" -- "0..1" AnalysisRecord : yields
+AnalysisRecord "1" *-- "1" AnalysisResult
+AnalysisRecord "1" *-- "0..*" Annotation
+RiskPolicy ..> AnalysisResult : creates
+
+ModelBundle "1" *-- "1" PreprocessingProfile
+ModelBundle "1" *-- "1" RiskPolicy
+ModelBundle "1" *-- "1" Detector
+Detector <|.. CnnDetector
+Detector <|.. MfccBaselineDetector
+
+note right of MfccBaselineDetector
+  Evaluation-only baseline; not deployable (PC-08).
+end note
+
+note bottom of AnalysisRecord
+  The record stores result metadata and annotations,
+  never the submitted audio.
+end note
+@enduml

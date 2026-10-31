@@ -1,0 +1,77 @@
+@startuml
+!pragma layout smetana
+title Figure 2 — UML component diagram of the research tier: training and evaluation
+left to right direction
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam componentStyle rectangle
+skinparam component {
+  BackgroundColor #EAF2FB
+  BorderColor #1F5A99
+}
+
+actor "ML / Research\nEngineer" as Engineer
+
+rectangle "Voice-Spoofing Detection System — research tier: Colab / Kaggle and shared Drive" {
+  component "Research Notebooks" as Notebooks
+  component "Training & Tuning Pipeline" as Training
+  component "Evaluation Service" as Evaluation
+  component "External Test Guard" as Guard
+
+  package "Shared core library\nsame source as online tier" {
+    component "Preprocessing Service" as Preprocess
+    component "Detector Runtime" as Detector
+    component "Risk & Confidence Service" as Risk
+  }
+
+  package "Research infrastructure adapters" {
+    component "Dataset Manager" as Dataset
+    component "Model Registry" as Registry
+    component "Experiment Tracker" as Tracker
+  }
+}
+
+cloud "Kaggle /\nHugging Face" as Kaggle
+cloud "Google Drive" as Drive
+cloud "Weights & Biases" as WandB
+
+Engineer --> Notebooks
+Notebooks ..> Training : ITraining
+Notebooks ..> Evaluation : IEvaluation
+Notebooks ..> Dataset : IDatasetManager\naudit
+
+Training ..> Preprocess : IPreprocessing
+Training ..> Detector : IDetection
+Training ..> Risk : IRiskScoring
+Training ..> Dataset : IDatasetManager
+Training ..> Registry : IModelRegistry
+Training ..> Tracker : IExperimentTracker
+
+Evaluation ..> Preprocess : IPreprocessing
+Evaluation ..> Detector : IDetection
+Evaluation ..> Risk : IRiskScoring
+Evaluation ..> Dataset : IDatasetManager
+Evaluation ..> Registry : IModelRegistry
+Evaluation ..> Tracker : IExperimentTracker
+Evaluation ..> Guard : IExternalTest
+
+Guard ..> Registry : frozen bundle check
+Guard ..> Tracker : run-registry check
+
+Dataset ..> Kaggle
+Dataset ..> Drive
+Registry ..> Drive
+Tracker ..> Drive
+Tracker ..> WandB
+
+note bottom of Guard
+  The guard authorizes the one external run only after the bundle is frozen
+  and the registry confirms that no prohibited prior run exists.
+end note
+
+note bottom of Preprocess
+  Preprocessing, detection and risk code is shared with the online tier,
+  preventing training/serving drift.
+end note
+@enduml

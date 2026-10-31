@@ -2879,6 +2879,40 @@ required records. Malak reviews the complete diff and remains responsible for th
 risk-policy boundaries; then teammate review and green CI. AI agents do not merge.
 
 ---
+### Entry 104 — UML package aligned to the canonical SRS/SDD figures (2026-10-31)
+
+**What:** corrected `docs/uml/` after review identified that Entry 103's five diagrams formed a
+parallel implementation/planning model instead of the assignment's canonical report figures. The
+package now contains seven editable PlantUML sources and matching SVG exports that reconstruct SRS
+Figure 1 and SDD Figures 1-6: one merged use-case model, online and research component views,
+analysis and evaluation/governance class views, and the UC-01 and UC-08 sequences. The package
+README maps every repository file to its report figure and defines one-source consistency rules.
+
+**Scope [doc]:** the SRS/SDD actors, UC IDs, include/extend relations, component boundaries,
+classes, multiplicities, participants and message order. No requirement, use case or domain class was
+invented. The only post-report annotations are approved D38/ADR 0008 (React label), PR #65's API
+contract (`POST /api/analyses`, `201`, exact eight-field response) and D41/ADR 0010's registry-key
+refinement. Implementation status remains in `docs/midterm/backlog.md` and this log, outside the UML.
+
+**Evidence [verified]:** PlantUML `-checkonly` accepted all 7 sources; all 7 generated SVG files
+parsed as XML; all 7 rendered PNG previews were visually reviewed for correct UML notation,
+readable labels, component boundaries, multiplicities, include/extend direction, sequence ordering,
+alternative paths, contrast and clipping. No rendering defect remained.
+
+**Checks [verified]:** `python -m pytest -q`: 794 passed, 9 skipped in 19.68s;
+`tests/governance/test_deepvoice_access.py`: 3 passed in 0.54s. Documentation-only change; no audio,
+dataset, checkpoint or DEEP-VOICE access.
+
+**AI assistance:** **Codex**, using the Diagram Maker UML and diagram-review rules, compared the
+editable reconstructions with the canonical PDF figures, corrected the UML notation, regenerated and
+visually inspected every export, and prepared the records. Malak reviews the complete diff and remains
+responsible for the submission.
+
+**Gate:** Iheb validates the online/API and UC-01 figures; Donia validates the shared core and model
+boundaries; Khalil validates UC-08 and evaluation governance; then teammate review and green CI. AI
+agents do not merge.
+
+---
 ## Open items
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
@@ -3120,13 +3154,14 @@ risk-policy boundaries; then teammate review and green CI. AI agents do not merg
 - [ ] Next API PRs: `MockAnalyzer` and the analyzer seam (§8), `GET /limits`, `POST /analyses` with the §4.3 checks (consider Starlette's `max_body_size`), storage (§7), history, notes, stats (Entry 101).
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
 
-**Midterm documentation (Entries 102–103)**
+**Midterm documentation (Entries 102–104)**
 - [x] Review and merge the prioritized backlog against the SRS and merged evidence. (PR #69,
   `023bfa4`; Khalil approved; Donia validated requirements and priorities by team message)
 - [ ] Update backlog statuses only from merged evidence as implementation PRs land.
-- [ ] Iheb validates the UML API, React, storage and deployment flows against Part E.
-- [ ] Donia validates the UML analyzer, ModelBundle, preprocessing and risk-policy boundaries.
-- [ ] Review and merge the five UML sources and matching SVG exports with green CI.
+- [ ] Iheb validates the canonical online component and UC-01 figures against Part E.
+- [ ] Donia validates the canonical shared-core, ModelBundle, preprocessing and risk-policy figures.
+- [ ] Khalil validates the canonical UC-08 and evaluation/governance figures.
+- [ ] Review and merge the seven canonical UML sources and matching SVG exports with green CI.
 
 **Later stages (reminders)**
 - [ ] `configs/robustness.yaml` → Stage 14. `docker-compose.yml` → Stage 17.
@@ -3147,12 +3182,14 @@ risk-policy boundaries; then teammate review and green CI. AI agents do not merg
 unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and Donia
-validated its requirements and priorities by team message. The Entry 103 UML package is prepared on
-`docs/stage11-midterm-uml-malak`; domain validation by Iheb and Donia is pending.
+validated its requirements and priorities by team message. Entry 104 corrects the UML package on
+`docs/stage11-midterm-uml-malak` to the canonical SRS/SDD figures; domain validation by Iheb, Donia
+and Khalil is pending.
 
 **What was done:**
-- **Midterm UML package** on `docs/stage11-midterm-uml-malak` (Entry 103): five editable PlantUML
-  sources and five SVG exports, with implemented/planned status and source traceability.
+- **Canonical midterm UML package** on `docs/stage11-midterm-uml-malak` (Entry 104): seven editable
+  PlantUML sources and seven SVG exports reconstructing SRS Figure 1 and SDD Figures 1-6, with
+  controlled D38/API-contract/D41 annotations and no parallel model.
 - **Stage 17 API skeleton**, merged in PR #66 as `d9e8c4a` (Entry 101): `api/` package
   (app factory, strict config, §6 error shape for every error, `X-Request-ID`, §5 schemas,
   mock `GET /api/status`) and 50 tests (Iheb, Part E). The contract `docs/api_design.md` (Entry 100)
@@ -3288,7 +3325,7 @@ validated its requirements and priorities by team message. The Entry 103 UML pac
 
 **Branches:**
 - `origin/main`: at `023bfa4` (Entry 102 backlog merged as PR #69; earlier history remains in Git).
-- `docs/stage11-midterm-uml-malak`: Entry 103 UML package, awaiting domain review.
+- `docs/stage11-midterm-uml-malak`: Entry 104 canonical UML correction, awaiting domain review.
 - `docs/stage11-midterm-backlog-malak`: Entry 102 backlog, merged as PR #69 (`023bfa4`).
 - `docs/stage8-cnn-selection`: merged as PR #52 (remote branch deleted).
 - `docs/stage16-d43-loudness-diagnostic`: D43 proposal and approval (Entry 87), merged as PR #53 (`a022e7a`) (remote branch deleted).

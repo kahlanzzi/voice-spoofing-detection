@@ -1,0 +1,88 @@
+@startuml
+!pragma layout smetana
+title Figure 1 — UML component diagram of the online inference and analysis tier
+left to right direction
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam componentStyle rectangle
+skinparam component {
+  BackgroundColor #EAF2FB
+  BorderColor #1F5A99
+}
+skinparam database {
+  BackgroundColor #F5F5F5
+  BorderColor #555555
+}
+
+cloud "API Client\n<<external system>>" as ApiClient
+
+rectangle "Voice-Spoofing Detection System — deployed as two containers" as System {
+  package "Presentation" {
+    component "Analyst Web App\nReact, D38" as Dashboard
+  }
+
+  package "API layer" {
+    component "API Gateway" as Gateway
+    component "Access Control\n[mechanism open]" as Access
+  }
+
+  package "Application services" {
+    component "Evaluation Service\n[detailed in research view]" as Evaluation
+    component "Analysis Service" as Analysis
+    component "Analysis Record Service" as Record
+    component "Operational Log" as OpLog
+  }
+
+  package "Core services — shared library" {
+    component "Audio Intake Service" as Intake
+    component "Preprocessing Service" as Preprocess
+    component "Detector Runtime" as Detector
+    component "Risk & Confidence Service" as Risk
+  }
+
+  package "Persistence and integration" {
+    component "Model Registry\n[detailed in research view]" as Registry
+    component "Repository Layer" as Repository
+    folder "Temporary Audio Store" as TempAudio
+  }
+
+  package "Data stores" {
+    database "Model Artifact Store" as ModelStore
+    database "Analysis Data Store" as AnalysisStore
+    database "Service Log Store" as LogStore
+  }
+}
+
+Dashboard ..> Gateway : IAnalysisAPI\nHTTPS / JSON
+ApiClient ..> Gateway : IAnalysisAPI\nHTTPS / JSON
+Gateway ..> Access : IAccessControl
+Gateway ..> Evaluation : IEvaluation
+Gateway ..> Analysis : IAnalysisService
+Gateway ..> Record : IAnalysisRecord
+Gateway ..> OpLog : IOperationalLog
+
+Analysis ..> Intake : IAudioIntake
+Analysis ..> Preprocess : IPreprocessing
+Analysis ..> Detector : IDetection
+Analysis ..> Risk : IRiskScoring
+Analysis ..> Record : IAnalysisRecord
+
+Intake ..> TempAudio
+Preprocess ..> TempAudio
+Detector ..> Registry : IModelRegistry
+Registry ..> ModelStore
+Record ..> Repository : IAnalysisRepository
+Repository ..> AnalysisStore
+OpLog ..> LogStore
+
+note bottom of Dashboard
+  D38 replaces the report's technology-neutral dashboard
+  with React + TypeScript; the component boundary is unchanged.
+end note
+
+note bottom of System
+  The web app and API client reach detector logic only through the API Gateway.
+  Evaluation/guard/tracker components do not run in the online deployment.
+end note
+@enduml
