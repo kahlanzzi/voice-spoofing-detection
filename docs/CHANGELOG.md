@@ -76,6 +76,9 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - `docs/experimental_protocol.md` v1.0 frozen (F1): all sections decided from the team-accepted defaults.
 
 ### Changed
+- The six PlantUML figures under `docs/uml/` now follow the SDD's visual grouping more closely:
+  layered component views, report-style class/sequence legends and no implementation-status labels;
+  canonical UML semantics are unchanged.
 - `docs/design/`: analyst-console prototype v4 (proposed final design reference; model output moved to Technical details) and `HANDOFF.md` (developer handoff and verification report).
 - `docs/design/`: analyst-console prototype v3 (second UI/UX review, aligned with `risk-v1`); README replaced (the Entry 84 copy was an unrelated file).
 - Stage 10 closed: brief accepted after the D32 teach-back (Iheb, Malak, Khalil); Stage 11 current.

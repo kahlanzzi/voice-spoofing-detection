@@ -82,4 +82,11 @@ note right of RunRegistry
   (dataset, split, evaluation_purpose, model_set) with a closed
   purpose list; the specification-level responsibility is unchanged.
 end note
+
+legend bottom
+  Filled diamond = composition
+  Hollow diamond = aggregation
+  Dashed open arrow = dependency
+  Solid line = association
+endlegend
 @enduml

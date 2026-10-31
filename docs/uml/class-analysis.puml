@@ -117,12 +117,11 @@ ModelBundle "1" *-- "1" Detector
 Detector <|.. CnnDetector
 Detector <|.. MfccBaselineDetector
 
-note right of MfccBaselineDetector
-  Evaluation-only baseline; not deployable (PC-08).
-end note
-
-note bottom of AnalysisRecord
-  The record stores result metadata and annotations,
-  never the submitted audio.
-end note
+legend bottom
+  Filled diamond = composition
+  Hollow triangle + dashed line = realization
+  Dashed open arrow = dependency
+  Solid line = association
+  PC-08: only CnnDetector is deployable; records never contain submitted audio
+endlegend
 @enduml

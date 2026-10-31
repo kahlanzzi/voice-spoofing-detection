@@ -3,6 +3,19 @@ title Figure 5 — UML sequence diagram for UC-01 Analyze Audio via Dashboard
 hide footbox
 autonumber
 
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam participant {
+  BackgroundColor #EAF2FB
+  BorderColor #1F5A99
+}
+skinparam sequence {
+  ArrowColor #333333
+  LifeLineBorderColor #777777
+  GroupBorderColor #1F5A99
+  GroupHeaderFontColor #1F5A99
+}
+
 actor "Fraud Prevention\nAnalyst" as Analyst
 boundary "Analyst Web App\nReact, D38" as Dashboard
 participant "API Gateway" as Gateway
@@ -61,13 +74,9 @@ else unreadable, unsupported or policy-violating file
 end
 deactivate Dashboard
 
-note over Dashboard,Gateway
-  Controlled update from the approved API contract:
-  POST /api/analyses replaces the older /analyze-audio label.
-end note
-
-note over Analysis,Record
-  The success path records metadata before returning a verdict.
-  Raw audio is released and never stored in the analysis record.
-end note
+legend bottom
+  Solid arrow = synchronous call; dashed arrow = return
+  Narrow bars = activation; alt = alternative fragment
+  PR #65 updates the route to POST /api/analyses and the success response to 201
+endlegend
 @enduml

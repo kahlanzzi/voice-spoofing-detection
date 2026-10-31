@@ -54,8 +54,9 @@ current implementation status belongs in `docs/midterm/backlog.md` and `docs/pro
 ## Render and validate
 
 The use-case model uses draw.io XML so its actor and use-case positions remain faithful to the
-approved SRS figure. The other six diagrams use PlantUML. All seven have editable source and a
-matching SVG committed beside it.
+approved SRS figure. The other six diagrams use PlantUML and retain the SDD's figure-level grouping:
+online versus research components, analysis versus evaluation classes, and one sequence per named
+use case. All seven have editable source and a matching SVG committed beside it.
 
 ```powershell
 java -Djava.awt.headless=true -jar plantuml.jar -checkonly docs/uml/*.puml

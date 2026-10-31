@@ -3,6 +3,19 @@ title Figure 6 — UML sequence diagram for UC-08 Run External Generalization Te
 hide footbox
 autonumber
 
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam participant {
+  BackgroundColor #EAF2FB
+  BorderColor #1F5A99
+}
+skinparam sequence {
+  ArrowColor #333333
+  LifeLineBorderColor #777777
+  GroupBorderColor #1F5A99
+  GroupHeaderFontColor #1F5A99
+}
+
 actor "ML / Research\nEngineer" as Engineer
 participant "Evaluation\nService" as Evaluation
 participant "External Test\nGuard" as Guard
@@ -65,8 +78,9 @@ else bundle not frozen, or an external run already registered
 end
 deactivate Evaluation
 
-note over Guard,Tracker
-  Authorization completes before the external split is loaded.
-  The append-only registry blocks a prohibited second run.
-end note
+legend bottom
+  Solid arrow = synchronous call; dashed arrow = return
+  Narrow bars = activation; alt = alternative fragment
+  Authorization completes before the external split is loaded
+endlegend
 @enduml

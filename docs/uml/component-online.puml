@@ -1,7 +1,7 @@
 @startuml
 !pragma layout smetana
 title Figure 1 — UML component diagram of the online inference and analysis tier
-left to right direction
+top to bottom direction
 
 skinparam shadowing false
 skinparam backgroundColor white
@@ -24,11 +24,11 @@ rectangle "Voice-Spoofing Detection System — deployed as two containers" as Sy
 
   package "API layer" {
     component "API Gateway" as Gateway
-    component "Access Control\n[mechanism open]" as Access
+    component "Access Control" as Access
   }
 
   package "Application services" {
-    component "Evaluation Service\n[detailed in research view]" as Evaluation
+    component "Evaluation Service" as Evaluation
     component "Analysis Service" as Analysis
     component "Analysis Record Service" as Record
     component "Operational Log" as OpLog
@@ -42,7 +42,7 @@ rectangle "Voice-Spoofing Detection System — deployed as two containers" as Sy
   }
 
   package "Persistence and integration" {
-    component "Model Registry\n[detailed in research view]" as Registry
+    component "Model Registry" as Registry
     component "Repository Layer" as Repository
     folder "Temporary Audio Store" as TempAudio
   }
@@ -76,13 +76,8 @@ Record ..> Repository : IAnalysisRepository
 Repository ..> AnalysisStore
 OpLog ..> LogStore
 
-note bottom of Dashboard
-  D38 replaces the report's technology-neutral dashboard
-  with React + TypeScript; the component boundary is unchanged.
-end note
-
-note bottom of System
-  The web app and API client reach detector logic only through the API Gateway.
-  Evaluation/guard/tracker components do not run in the online deployment.
-end note
+legend bottom
+  Dashed arrow = dependency on a provided interface
+  D38 changes only the dashboard technology label; the boundary is unchanged
+endlegend
 @enduml

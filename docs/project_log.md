@@ -2940,6 +2940,40 @@ remains responsible for the submission.
 then teammate review and green CI. AI agents do not merge.
 
 ---
+### Entry 106 — Remaining canonical UML figures audited and visually aligned (2026-10-31)
+
+**What:** cross-checked the six remaining editable UML sources and SVG exports against SDD Figures
+1–6 after the use-case layout correction. The online and research component views now use clear
+vertical layers; research dependencies point to the same shared-core and infrastructure boundaries
+shown in the report instead of crossing individual components. The class and sequence diagrams use
+compact report-style legends and consistent blue sequence styling. Implementation-status wording was
+removed from specification-level figures. No actor, component, class, relationship, multiplicity,
+participant, message, alternative path or requirement changed.
+
+**Controlled differences [verified]:** the only post-report differences remain the three already
+listed in `docs/uml/README.md`: D38 / ADR 0008's React label, PR #65's approved
+`POST /api/analyses` / `201` eight-field response, and D41 / ADR 0010's registry-key refinement.
+The figures do not introduce a second domain model.
+
+**Evidence [verified]:** PlantUML `-checkonly` accepted all 6 PlantUML sources; all 7 SVG exports and
+the draw.io source parsed as XML. All 7 final renders were visually reviewed at full resolution for
+boundaries, direction, multiplicities, message order, alternative fragments, label readability,
+contrast and clipping. No rendering defect or cross-diagram naming conflict remained.
+
+**Checks [verified]:** `python -m pytest -q`: 794 passed, 9 skipped in 19.14s;
+`tests/governance/test_deepvoice_access.py`: 3 passed in 0.50s. Documentation-only change; no audio,
+dataset, checkpoint or DEEP-VOICE access.
+
+**AI assistance:** **Codex**, using the Diagram Maker UML, diagram-review and PDF inspection rules,
+compared each editable figure to the canonical SDD page, preserved the report semantics, improved
+only the presentation, regenerated the exports and prepared this audit record. Malak reviews the
+complete diff and remains responsible for the submission.
+
+**Gate:** Iheb validates the online/API and UC-01 figures; Donia validates the shared core and model
+boundaries; Khalil validates UC-08 and evaluation governance; then teammate review and green CI. AI
+agents do not merge.
+
+---
 ## Open items
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
@@ -3209,13 +3243,13 @@ then teammate review and green CI. AI agents do not merge.
 unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and Donia
-validated its requirements and priorities by team message. Entry 104 corrects the UML package on
-`docs/stage11-midterm-uml-malak` to the canonical SRS/SDD figures; Entry 105 replaces the automatic
-use-case layout with a PDF-faithful editable layout. Domain validation by Iheb, Donia and Khalil is
-pending.
+validated its requirements and priorities by team message. Entries 104–106 correct and audit the UML
+package on `docs/stage11-midterm-uml-malak` against the canonical SRS/SDD figures, including the
+fixed-layout use-case source and the visually aligned component, class and sequence figures. Domain
+validation by Iheb, Donia and Khalil is pending.
 
 **What was done:**
-- **Canonical midterm UML package** on `docs/stage11-midterm-uml-malak` (Entries 104–105): six
+- **Canonical midterm UML package** on `docs/stage11-midterm-uml-malak` (Entries 104–106): six
   editable PlantUML sources, one fixed-layout draw.io source and seven SVG exports reconstructing SRS
   Figure 1 and SDD Figures 1-6, with controlled D38/API-contract/D41 annotations and no parallel
   model.
@@ -3354,7 +3388,8 @@ pending.
 
 **Branches:**
 - `origin/main`: at `023bfa4` (Entry 102 backlog merged as PR #69; earlier history remains in Git).
-- `docs/stage11-midterm-uml-malak`: Entry 105 PDF-faithful use-case layout, awaiting domain review.
+- `docs/stage11-midterm-uml-malak`: Entries 104–106 canonical UML package and final visual audit,
+  awaiting domain review.
 - `docs/stage11-midterm-backlog-malak`: Entry 102 backlog, merged as PR #69 (`023bfa4`).
 - `docs/stage8-cnn-selection`: merged as PR #52 (remote branch deleted).
 - `docs/stage16-d43-loudness-diagnostic`: D43 proposal and approval (Entry 87), merged as PR #53 (`a022e7a`) (remote branch deleted).
