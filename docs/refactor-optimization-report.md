@@ -4,7 +4,7 @@
 
 **Audit date:** 2026-10-31
 
-**Status:** Initial audit and measured software baseline ready for team review. No code refactor performed; implementation, after-results and final human review remain pending.
+**Status:** Two focused lint cleanups implemented and tested; before/after evidence recorded. Ready for team review. Publication, PR/CI and final human acceptance remain pending.
 
 **Scope:** Existing repository implementation only. No new features, model changes, frozen-evidence changes, or protected-dataset access.
 
@@ -32,7 +32,7 @@ Token scan (exact invocation not preserved in Entry 107)
 Output: no token found
 ```
 
-The results above are historical repository records. The fresh baseline below was run by Khalil on `docs/stage11-midterm-refactor-khalil` at `98fd8d7e17f81ff1f9687f6ea3a83804a50fa628`, matching GitHub main at audit time. Khalil fetched and created the branch in PowerShell. The initial report was committed as `7c0e2437b63cd8eb5691184625bbc5813afdeec1`, and the measured baseline as `3f57ec3ba4c7ba677e82de5dae7891d7dc96c98a`. At this pre-push review, publication and PR review have not yet occurred.
+The results above are historical repository records. The fresh baseline below was run by Khalil on `docs/stage11-midterm-refactor-khalil`, whose application source matched main `98fd8d7e17f81ff1f9687f6ea3a83804a50fa628` at audit time. Documentation changes existed during the measurements; the evidence summary records their provenance. Khalil fetched and created the branch in PowerShell. The initial report was committed as `7c0e2437b63cd8eb5691184625bbc5813afdeec1`, and the measured baseline as `3f57ec3ba4c7ba677e82de5dae7891d7dc96c98a`. At this pre-push review, publication and PR review have not yet occurred.
 
 Khalil subsequently ran fresh checks in his own PowerShell after installing `requirements.txt`. The pasted output and screenshot show:
 
@@ -86,7 +86,7 @@ The earlier 0.22 s governance result is retained above as a separate baseline ru
 
 ## Measured software baseline
 
-These are user-executed measurements from the current Python 3.13.16 project environment, before any code refactor. Coverage 7.17.0, Radon 6.0.1 and Ruff 0.17.3 versions are captured in the raw evidence. The `api/` and `src/` source code remains identical to base commit `98fd8d7`; only documentation has changed. [Summary and provenance](audit_evidence/midterm_refactor/before/summary.json) records the exact source/base distinction, tool scope and raw file hashes.
+These are user-executed measurements from the current Python 3.13.16 project environment, before any code refactor. Coverage 7.17.0, Radon 6.0.1 and Ruff 0.17.3 versions are captured in the raw evidence. At the before measurement, the `api/` and `src/` source code was identical to base commit `98fd8d7`; only documentation had changed at that point. [Summary and provenance](audit_evidence/midterm_refactor/before/summary.json) records the exact source/base distinction, tool scope and raw file hashes.
 
 ```powershell
 $env:REQUIRE_TORCH_TESTS = "1"
@@ -115,11 +115,71 @@ $env:RADONFILESENCODING = "UTF-8"
 
 [Radon output](audit_evidence/midterm_refactor/before/complexity.json) contains no file parse errors. Aggregating top-level function blocks and class methods, excluding class summary blocks and nested closures, gives **342 blocks**, mean CC **4.6082**: A=249, B=61, C=25, D=3, E=4. Highest functions: `load_logmel_cache` 37, `load_profile` 33, `load_mfcc_cache` 33, and `speaker_average` 32. These scores identify review candidates; they do not establish a defect or justify removing validation.
 
-[Ruff output](audit_evidence/midterm_refactor/before/lint.json) has exactly **2 findings**, exit code **1**: F541 at `src/audit/for2sec_audit.py:387` (an f-string without placeholders), and F401 at `src/tuning/baseline_fit.py:31` (an unused `BaselineModel` import). This is a limited-rule audit, not an assertion that every possible lint rule passes. Source inspection found that the fixed string has no interpolations and no repository consumer imports `BaselineModel` through `baseline_fit`. These are the first proposed low-risk cleanup; they have not yet been modified. Cache-helper restructuring is deferred for team review.
+[Ruff output](audit_evidence/midterm_refactor/before/lint.json) has exactly **2 findings**, exit code **1**: F541 at `src/audit/for2sec_audit.py:387` (an f-string without placeholders), and F401 at `src/tuning/baseline_fit.py:31` (an unused `BaselineModel` import). This is a limited-rule audit, not an assertion that every possible lint rule passes. Source inspection found that the fixed string has no interpolations and no repository consumer imports `BaselineModel` through `baseline_fit`. These were the first proposed low-risk cleanup and are now implemented in the commit linked below. Cache-helper restructuring is deferred for team review.
 
 The [tool version capture](audit_evidence/midterm_refactor/before/tool-versions.txt) has trailing line whitespace removed and UTF-8/LF formatting for Git; all package/version values are unchanged, and both original and stored hashes are recorded. The original capture remains outside the repo. The three raw JSON files are preserved byte-for-byte. Source-relative summaries are in `summary.json`. No `.coverage` database, audio, model, checkpoint or protected dataset is added. The original temporary output folder name was `voice-spoofing-part6-before-20261031-231133`; the reproducibility procedure below explains creating an external `$part6Out` directory. Its generated paths are local evidence locations, not data inputs.
 
 The instrumented 73.21 s test duration and uninstrumented 89.85 s duration are not comparable optimization benchmarks: instrumentation and run conditions differ, and no source refactor occurred.
+
+## Implemented cleanup and measured comparison
+
+The focused cleanup is committed as [de94333](https://github.com/kahlanzzi/voice-spoofing-detection/commit/de943333c9f8e51416666b84f37d319cd8cac4b9) on `chore/stage11-lint-cleanup-khalil`, stacked on the audit documentation at `3a33105`. The link becomes accessible on GitHub after publication; no PR number is claimed yet. The commit changes two source lines plus its change record. The measured source edits were subsequently committed without additional source changes. Final report/evidence updates are separate documentation changes.
+
+The constant heading lost only its unnecessary `f` prefix; its text is unchanged. The other edit removes the unused `BaselineModel` import alias from a module that still imports the same dependency for other names. Static AST comparison confirmed those are the only source edits. Existing tests were sufficient for these two syntax/import cleanups; no behavior-sensitive function was restructured and no new test was added merely to mirror them.
+
+| Measurement | Before | After | Interpretation |
+|---|---|---|---|
+| Full suite, REQUIRE_TORCH_TESTS=1 | 937 passed in 89.85s (0:01:29) | 937 passed in 57.15s | Same passing count; no skips shown. Durations do not establish a speedup. |
+| Governance test | 3 passed in 0.18s (latest before check; initial 0.22s) | 3 passed in 0.18s | No allowlist change. |
+| Coverage-instrumented suite | 937 passed in 73.21s (0:01:13) | 937 passed in 85.53s (0:01:25) | Same scope/tools; timings are not optimization benchmarks. |
+| Statement coverage | 3748/4215 = 88.92% | 3748/4215 = 88.92% | Unchanged. |
+| Branch coverage | 1047/1312 = 79.80% | 1047/1312 = 79.80% | Unchanged. |
+| Combined coverage | 86.76% | 86.76% | Unchanged aggregate. |
+| Radon complexity | 342 blocks, mean 4.6082, maximum 37 | 342 blocks, mean 4.6082, maximum 37 | Every measured block's complexity unchanged. |
+| Scoped Ruff | 2 findings, exit 1 | 0 findings, exit 0; JSON `[]` | F541 and F401 removed. No formatter assessment. |
+| API latency/resource use | Not measured before | Not measured after | No performance improvement claimed. |
+
+Exact commands from Khalil's after checks (environment variable setup and captures preserved in the report/evidence):
+
+```powershell
+$env:REQUIRE_TORCH_TESTS = "1"
+.\.venv\Scripts\python.exe -m pytest -q -ra
+.\.venv\Scripts\python.exe -m pytest -q tests/governance/test_deepvoice_access.py
+```
+
+```text
+937 passed in 57.15s
+3 passed in 0.18s
+```
+
+```powershell
+$part6After = Join-Path $env:TEMP ("voice-spoofing-part6-after-" + (Get-Date -Format "yyyyMMdd-HHmmss"))
+New-Item -ItemType Directory -Path $part6After | Out-Null
+$env:COVERAGE_FILE = Join-Path $part6After ".coverage"
+$env:REQUIRE_TORCH_TESTS = "1"
+.\.venv\Scripts\python.exe -m coverage run --branch --source=api,src -m pytest -q -ra
+.\.venv\Scripts\python.exe -m coverage report --precision=2
+.\.venv\Scripts\python.exe -m coverage json -o (Join-Path $part6After "coverage.json")
+```
+
+```text
+937 passed in 85.53s (0:01:25)
+TOTAL  4215  467  1312  191  86.76%
+```
+
+```powershell
+$env:RADONFILESENCODING = "UTF-8"
+.\.venv\Scripts\python.exe -m radon cc -j api src | Set-Content -Encoding utf8 (Join-Path $part6After "complexity.json")
+.\.venv\Scripts\python.exe -m ruff check --isolated --no-cache --target-version py313 --select E4,E7,E9,F --output-format json api src | Set-Content -Encoding utf8 (Join-Path $part6After "lint.json")
+"Ruff exit code: $LASTEXITCODE"
+.\.venv\Scripts\python.exe -m pip show coverage radon ruff | Set-Content -Encoding utf8 (Join-Path $part6After "tool-versions.txt")
+```
+
+```text
+Ruff exit code: 0
+```
+
+Radon emits JSON into its captured file, rather than a numeric console summary. The [after summary](audit_evidence/midterm_refactor/after/summary.json) records calculated values, source hashes, raw-file hashes and provenance. [After evidence notes](audit_evidence/midterm_refactor/after/README.md) distinguish byte-preserved JSON from normalized console/version text. [Captured console](audit_evidence/midterm_refactor/after/console.txt) preserves the full coverage table and static-tool commands; the plain full-suite/governance results were supplied as screenshots. Tool versions match the before capture exactly. The Python version was measured before, not reprinted in the after console; after checks used the same local environment.
 
 ## Existing API/UI and ML measurements collected from GitHub
 
@@ -168,7 +228,7 @@ The read-only audit reviewed the feature-cache pair, preprocessing validation, S
 
 | Area/file | Original problem / observation | Evidence before | Refactoring performed / proposed | Evidence after | Test result | Commit/PR | Remaining limitation |
 |---|---|---|---|---|---|---|---|
-| src/audit/for2sec_audit.py + src/tuning/baseline_fit.py | Ruff identifies one unnecessary f-string prefix and one unused import. | F541 at audit line 387 and F401 at baseline-fit line 31; 2 total findings under E4/E7/E9/F. | First proposed cleanup: remove only the unused `f` prefix and unused `BaselineModel` import on a separate focused branch. Keep the literal text and all model fitting logic intact. | Pending; no code change yet. | Complete before baseline is 937 passed; same test and tool scopes must be checked after implementation. | No refactor commit/PR yet. | These are small code-quality improvements; no complexity or performance gain is assumed. |
+| src/audit/for2sec_audit.py + src/tuning/baseline_fit.py | Ruff identifies one unnecessary f-string prefix and one unused import. | F541 at audit line 387 and F401 at baseline-fit line 31; 2 total findings under E4/E7/E9/F. | Removed only the unused `f` prefix and unused `BaselineModel` import on `chore/stage11-lint-cleanup-khalil`; literal text and fitting logic preserved. | Scoped Ruff findings 2 to 0; coverage and complexity unchanged. | After: 937 passed; governance 3 passed; coverage run 937 passed. | [de94333](https://github.com/kahlanzzi/voice-spoofing-detection/commit/de943333c9f8e51416666b84f37d319cd8cac4b9); PR pending. | These are small code-quality improvements; no complexity or performance gain is assumed. |
 | src/features/mfcc_cache.py + src/features/logmel_cache.py | The log-Mel module imports private constants and validators from the MFCC-specific module, coupling two feature caches by implementation detail. | `logmel_cache.py` imports `_check_split`, `_check_hex`, `_split_rows`, `_meta_text`, and schema constants from `mfcc_cache.py`. The matching test files define 20 MFCC test functions, 22 log-Mel test functions, and one code-commit-independent NPZ-byte test function. | Proposed for team review: move only the genuinely shared cache constants/helpers into a neutral internal module, then have both caches import it. Preserve validation order, exception text, JSON/NPZ bytes, and feature-specific schema. No speedup is claimed. | N/A; no code changed. | If approved: rerun the three cache test files, full suite, and governance test; verify byte-for-byte cache outputs remain identical. The complete baseline passed; checks after the proposed refactor are pending. | None; report branch exists, no refactor commit or PR. | The cache formats and evidence are governed; helper extraction can still change observable errors or bytes and needs review before implementation. |
 | src/preprocessing/validation.py | The `run()` orchestrator coordinates manifest processing, shortcut and padding checks, invariance checks, and report assembly in one function. | `run()` is 79 lines (312–390) in a 410-line module. It already calls focused helpers; measured CC is 6 (rank B), and no maintenance failure was found. | No refactor recommended now. Keep the audit steps visible together unless reviewers identify a specific maintenance problem and agree on exact-output regression checks. | N/A; no code changed. | Existing `tests/preprocessing/test_validation.py`; no code change; included in the complete baseline. | None. | It validates the frozen preprocessing profile; changing its order or report can alter governed evidence. |
 | api/config.py | Three input parameters lack annotations: `path` in `load_api_config` and both parameters of `_type_ok`. | `load_api_config(path=None) -> ApiConfig` and `_type_ok(value, expected) -> bool`; 88-line module. No static type checker/configuration is present in the current-main tree. | Lower-priority candidate: add accurate input annotations only; keep behavior and error text unchanged. No split is recommended because the loader's validation steps are cohesive. | N/A; no code changed. | Existing `tests/api/test_api_config.py` is the behavior guard; no code change; included in the complete baseline. | None; report branch exists, no refactor commit or PR. | Small maintainability gain only; no performance gain or type-check result can be claimed without a configured checker. |
@@ -178,21 +238,21 @@ The read-only audit reviewed the feature-cache pair, preprocessing validation, S
 
 ## Initial recommendation and team review gate
 
-This audit does not establish a measurable performance problem. The first proposed cleanup is the two measured Ruff findings. The private-helper coupling between the two feature-cache modules is a larger candidate for later team review; it is a structural cleanup, not a performance optimization. The lower-priority `api/config.py` typing gap is optional. No code has been changed. The cache refactor should wait for team review because it touches governed schemas and deterministic evidence. Storage or run-orchestration changes are out of scope without explicit team agreement.
+This audit does not establish a measurable performance problem. The two measured Ruff findings have been cleaned up and tested. The private-helper coupling between the two feature-cache modules is a larger candidate for later team review; it is a structural cleanup, not a performance optimization. The lower-priority `api/config.py` typing gap is optional. Only the two lint edits have been made. The cache refactor should wait for team review because it touches governed schemas and deterministic evidence. Storage or run-orchestration changes are out of scope without explicit team agreement.
 
 ## Evidence and review status
 
 - Iheb's existing API/UI checks and UI correction are documented in PRs #64 and #66 and have been included above.
 - Donia's existing ML quality, timing and resource evidence is committed under `docs/results/` and `docs/audit_evidence/` and has been included above.
-- The new software baseline now includes coverage, complexity and lint evidence. API response-time/resource measurements and a before/after refactor comparison are not recorded in the inspected sources. They remain explicitly unmeasured; the existing evidence does not justify estimating them.
+- The new software baseline now includes coverage, complexity and lint evidence. The two-edit before/after comparison is recorded below. API response-time/resource measurements remain unmeasured before and after; the existing evidence does not justify estimating them.
 - No team approval or implementation PR for the newly proposed cache-helper extraction has been verified in this audit. The initial audit must reach the team before this evidence-sensitive change is implemented, as requested in the task brief.
 - Khalil's human review and Malak's final editorial review remain to be recorded.
 
 ## Final submission requirements and measurement plan
 
-The supplied Midterm Instructions, section E, require refactors applied through PRs and human review with before/after metrics. The mandatory-deliverables section also requests repository content plus PDF. The implementation guidance names a coverage target of at least 60%, subject to course policy. The measured statement, branch and combined coverage each exceed 60% for the explicitly stated `api/` and `src/` scope. This establishes the recorded baseline coverage result for that scope; it does not establish per-file coverage attainment or instructor acceptance of the scope. This report completes the initial-audit stage and does not yet demonstrate a completed refactor or measured performance improvement.
+The supplied Midterm Instructions, section E, require refactors applied through PRs and human review with before/after metrics. The mandatory-deliverables section also requests repository content plus PDF. The implementation guidance names a coverage target of at least 60%, subject to course policy. The measured statement, branch and combined coverage each exceed 60% for the explicitly stated `api/` and `src/` scope. This establishes the recorded baseline coverage result for that scope; it does not establish per-file coverage attainment or instructor acceptance of the scope. This report documents a completed small cleanup with actual before/after checks. Its scope is modest: two lint fixes, with no measured performance improvement. Whether that scope satisfies the assignment must be confirmed by the team/instructor; it is not represented as a major structural refactor.
 
-The companion `refactor-optimization-report.pdf` is an export of this initial audit and must be regenerated after the final metrics and review decisions are added. It must not be submitted as a completed final report while those items remain pending.
+The companion `refactor-optimization-report.pdf` is regenerated from this Markdown, including the after-results and review limitations. Team review, required CI and final acceptance must be completed before treating it as an approved submission.
 
 Coverage, Radon and Ruff are measurement tools only; they are not new application dependencies. The measured baseline above was collected through the equivalent individual commands supplied to Khalil. The following procedure documents creating an external output folder and collecting the same categories; it is a reusable procedure, not a claim that the entire block was executed verbatim. Run from the repository root before any code refactor, preserve the outputs outside the repository, and keep the captured tool versions for the after-run. Copy commands from the Markdown version; PDF code lines can wrap for display. If the run fails, retain its output and resolve the cause before interpreting coverage.
 
@@ -228,13 +288,13 @@ After an agreed code refactor, run the same procedure with an `after` output dir
 
 Tool references: [Coverage.py execution](https://coverage.readthedocs.io/en/latest/commands/cmd_run.html), [JSON reporting](https://coverage.readthedocs.io/en/latest/commands/cmd_json.html), [Radon CLI](https://radon.readthedocs.io/en/latest/commandline.html), [Ruff configuration](https://docs.astral.sh/ruff/configuration/).
 
-Completion gates: initial audit reaches the team; refactor scope is agreed; any implementation is isolated in its own focused branch/PR; real before/after results are recorded; human code/report review and required CI pass; the final Markdown and PDF agree. These gates remain open and cannot be replaced by a claim of 100% correctness.
+Completion gates still open: publish the audit for the team; open the focused cleanup PR, obtain required CI and human code/report review, and record final acceptance. The cleanup is implemented and measured, and the PDF is checked against this Markdown. No high-risk structural refactor was attempted while team review is pending. These checks cannot establish 100% correctness.
 
 ## Closing record
 
-- Improvements achieved by this task: repository evidence consolidated, resource and validation figures traced to their original sources, and refactor candidates prioritized. No code-performance improvement is claimed. The historical UI contrast correction belongs to Iheb's PR #64.
-- Intentionally unchanged: model behavior, preprocessing rules, thresholds, API contracts, frozen evidence, governance decisions, datasets, audio, and test splits.
-- Remaining technical debt: the measured baseline contains two lint findings, four rank-E functions and individual coverage gaps. Reproducible online latency remains unmeasured; no refactor has yet been accepted or implemented.
-- Measurement limitations: user-executed baseline results are recorded above, with no skips in the final full-suite run. The assistant could not launch the project interpreter directly. No runtime improvement or before/after refactor comparison has been measured. The initial audit and measured baseline are recorded in commits `7c0e243` and `3f57ec3`; the remaining delivery gates are PR review, any agreed implementation, after-checks and final human review.
-- AI tools used: Codex for repository audit and report drafting.
-- Human review: Khalil must verify the audit, review the proposed change, review the captured baseline output and run checks after any approved change, and understand this AI-assisted report before accepting or submitting it. Command execution by Khalil is recorded above; his acceptance of the report content and proposed change remains pending.
+- Improvements achieved: two measured lint findings removed in the linked cleanup commit; no change to aggregate coverage or any measured complexity block. Repository API/UI and ML evidence is traced to its sources. No performance improvement is claimed; the historical UI contrast correction belongs to Iheb.
+- Intentionally unchanged: model behavior, preprocessing rules, thresholds, API contracts, frozen evidence, governance decisions, datasets, audio and test splits.
+- Remaining technical debt: four rank-E functions, cache-helper coupling, optional API input annotations and individual coverage gaps. API latency and resource use remain unmeasured. The larger cache refactor is deferred for team review.
+- Measurement limitations: full before and after runs each show 937 passing tests with no skips. Khalil executed project-runtime checks because the assistant could not launch the project interpreter. Timings are observations rather than speed benchmarks; lint covers only E4/E7/E9/F, and coverage excludes tests/notebooks. Passing tests and a coverage target do not prove correctness or instructor acceptance.
+- AI tools used: Codex for inspection, the two lint edits, evidence comparison, report drafting and PDF generation. No application feature or model optimization was generated.
+- Human review: Khalil ran the full suite, governance checks and measurement commands, supplied their outputs, and committed the cleanup. These actions validate the recorded execution; they do not establish independent code/report acceptance. Khalil must understand the two-line diff and report; teammate code review, Malak's editorial review, required CI and final acceptance remain pending. Publication/PR numbers will be recorded after the branches are pushed.
