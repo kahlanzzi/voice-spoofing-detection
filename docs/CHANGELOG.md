@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Group documentation refresh: current README status and React stack, regenerated file tree, complete-test setup, documentation navigation, and clear merged/mock/pending delivery status; folder structure unchanged.
 - Midterm initial refactor and optimization audit with Markdown/PDF exports, complete local baseline, source-linked API/UI and ML evidence, reproducible measurement plan, and proposed work awaiting team review.
 - Midterm AI ethics and usage reflection grounded in the project's recorded tools, human reviews,
   corrections, data safeguards, bias limitations, licensing and academic-integrity rules.

@@ -21,13 +21,27 @@ tools all read it. Project rules live in `../AGENTS.md`.
 | [cnn.md](cnn.md) | D42 CNN (Stage 8): model, train-only normalization, seeding, safetensors checkpoint | a CNN step is added |
 | [cnn_training.md](cnn_training.md) | CNN training (Stage 8): configs/cnn.yaml drift guard, D42 early stopping, W&B allow-list, D30 search and selection | the training loop, search or W&B logging changes |
 | [stages/](stages/) | Stage briefs (D32): one short explanation per closed stage, from `stages/TEMPLATE.md` | a stage closes |
-| [api_design.md](api_design.md) | API contract between the backend (`api/`) and the web app (`web/`), Stage 17 (proposed) | an endpoint, error code or stored field changes |
+| [api_design.md](api_design.md) | API contract between the backend (`api/`) and the web app (`web/`), Stage 17 (approved in PR #65; implementation partial) | an endpoint, error code or stored field changes |
 | [uml/](uml/) | Canonical midterm UML package: the SRS use-case model and SDD component, class and sequence figures, with editable sources and SVG exports | an approved requirement, decision or source-report figure changes |
 | [refactor-optimization-report.md](refactor-optimization-report.md) / [PDF](refactor-optimization-report.pdf) | Khalil’s Part 6 measured lint cleanup, before/after evidence, merged PRs and review status | evidence or approved refactoring changes |
 | [ai-usage-reflection.md](ai-usage-reflection.md) | Midterm AI ethics and usage reflection: tools, human review, corrections, privacy, bias, licensing and academic integrity | AI practices, evidence or course requirements change |
+| [feature_cache.md](feature_cache.md) / [logmel_cache.md](logmel_cache.md) | Verified MFCC and log-Mel cache formats, provenance and deterministic output rules | cache implementation changes |
+| [baseline_run.md](baseline_run.md) / [risk_run.md](risk_run.md) | Existing research-run orchestration and reproduction instructions | an approved runner changes |
+| [speaker_analysis.md](speaker_analysis.md) / [speaker_average.md](speaker_average.md) | Per-speaker metrics and speaker-average conventions | reporting implementation changes |
+| [synthetic_reporting.md](synthetic_reporting.md) | Synthetic integration and discrimination checks; not real model evaluation | synthetic checks change |
+| [results/](results/) | Recorded baseline/CNN validation and risk-policy results, linked to immutable evidence | new approved results are recorded |
+| [design/](design/) | HTML mock-data prototype and frontend/backend handoff; not a production React app | approved design or integration decisions change |
+| [midterm/backlog.md](midterm/backlog.md) | Team midterm requirement priorities, owners, implemented and pending work | merged implementation evidence changes |
 | [model_bundle.md](model_bundle.md) | ModelBundle (Stage 12): format, verifying loader, tests | the bundle format changes |
-| [setup-report.md](setup-report.md) | Lab 6 setup report (skeleton) | the Lab 6 report is written |
+| [setup-report.md](setup-report.md) | Lab 6 setup report with recorded local results and remaining TODOs | the Lab 6 report is written |
 | [reference/](reference/) | SRS, SDD, Execution Plan, Proposal (read-only sources) | never edited here |
+
+## Current implementation and review pointers
+
+- Research roadmap: Stage 11 is current; [D46 runtime plan PR #67](https://github.com/kahlanzzi/voice-spoofing-detection/pull/67) and [runner PR #68](https://github.com/kahlanzzi/voice-spoofing-detection/pull/68) remain under review. This index does not authorize a test-split run.
+- API contract: approved; merged code currently exposes a mock status endpoint, not the complete analysis/history flow. Frontend/backend implementation is Iheb’s ongoing work; see the [backlog](midterm/backlog.md).
+- Part 6 report/PDF status correction merged in [PR #74](https://github.com/kahlanzzi/voice-spoofing-detection/pull/74); this documentation refresh does not duplicate it.
+- All pointers describe the checked snapshot (2026-11-01), not completion of unpublished work. Update them as implementation/review PRs merge.
 
 ## The one rule
 
