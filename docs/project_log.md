@@ -2819,6 +2819,35 @@ behaviour was checked against the installed source and the tests.
 **Gate:** team review of this PR. AI agents do not merge.
 
 ---
+### Entry 102 — Midterm requirements backlog prepared (2026-10-31)
+
+**What:** added `docs/midterm/backlog.md` on `docs/stage11-midterm-backlog-malak`. The backlog
+reorganizes the repository's existing SRS v3.0 requirement set into a midterm implementation view:
+FR-01–FR-20, NFR-01–NFR-11 and PC-01–PC-09. Each row records the existing priority, D26 owner or
+stage, current status, repository evidence and remaining work. It explicitly forbids adding rows
+without an approved requirements change and records the two current source conflicts instead of
+silently choosing a new requirement.
+
+**Evidence [verified]:** 40 unique requirement rows: 20 FR, 11 NFR and 9 PC. IDs and priorities
+were checked against SRS v3.0; owners, stages and status evidence were checked against `AGENTS.md`,
+the decision register, accepted stage briefs, `docs/project_log.md`, merged `main` and the current
+open Stage 11 PRs. The API skeleton is merged in PR #66; the backlog does not mark its unimplemented
+upload, storage, History, notes, statistics or React flows as done.
+
+**Requirement / decision served [doc]:** midterm assignment backlog; D26 ownership; no new
+requirement or decision.
+
+**Checks [verified]:** `python -m pytest -q`: 794 passed, 9 skipped in 89.78s;
+`tests/governance/test_deepvoice_access.py`: 3 passed in 0.37s. Documentation-only change; no
+dataset or DEEP-VOICE access.
+
+**AI assistance:** **Codex** audited the repository sources, extracted the closed requirement list,
+cross-checked status claims and drafted the backlog and required records. Malak reviews the diff and
+remains responsible for the submission.
+
+**Gate:** teammate review of the backlog and its evidence before merge. AI agents do not merge.
+
+---
 ## Open items
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
@@ -3056,9 +3085,13 @@ behaviour was checked against the installed source and the tests.
 **Stage 17 API (Part E, Entry 100)**
 - [x] Team review of the API contract `docs/api_design.md`, including the proposed `invalid_request` (400) code. (approved, PR #65, Donia, 2026-10-30; Entry 101)
 - [ ] Decide whether the approved API contract needs a D-ID (HANDOFF.md §11 item 10).
-- [ ] Review the API skeleton PR, including the 405 `invalid_request` row added to §6 (Entry 101).
+- [x] Review and merge the API skeleton, including the 405 `invalid_request` row added to §6. (PR #66, `d9e8c4a`; Entry 101)
 - [ ] Next API PRs: `MockAnalyzer` and the analyzer seam (§8), `GET /limits`, `POST /analyses` with the §4.3 checks (consider Starlette's `max_body_size`), storage (§7), history, notes, stats (Entry 101).
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
+
+**Midterm documentation (Entry 102)**
+- [ ] Teammate review of the prioritized backlog against the SRS and merged evidence.
+- [ ] Update backlog statuses only from merged evidence as implementation PRs land.
 
 **Later stages (reminders)**
 - [ ] `configs/robustness.yaml` → Stage 14. `docker-compose.yml` → Stage 17.
@@ -3069,14 +3102,17 @@ behaviour was checked against the installed source and the tests.
 
 ---
 
-## Current status — updated 2026-10-30
+## Current status — updated 2026-10-31
 
 **Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 closed (Entry 96): run and results merged (PR #60; Entry 94), brief accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-28; Donia attended as author; no corrections; Q9 reading agreed), merged as PR #61 (`f166001`). Stage 11 is current: the D41 registry and per-clip storage implementation is approved (PR #62, Entry 99); next: the Stage 11 runtime and environment plan (to be proposed as D46), then the Stage 11 runner in its own PR; no FoR test access before both.
 
-**Part E status:** Stage 17 API contract approved (PR #65); API skeleton (Entry 101) in review: `create_app()`, config, §6 errors, request IDs, schemas and a mock `GET /api/status`; no analyzer or uploads yet.
+**Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
+(`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
+`GET /api/status`; no analyzer or uploads yet. The midterm backlog in Entry 102 keeps all
+unimplemented end-to-end flows Partial or Planned.
 
 **What was done:**
-- **Stage 17 API skeleton** on `feat/stage17-api-skeleton` (Entry 101): `api/` package
+- **Stage 17 API skeleton**, merged in PR #66 as `d9e8c4a` (Entry 101): `api/` package
   (app factory, strict config, §6 error shape for every error, `X-Request-ID`, §5 schemas,
   mock `GET /api/status`) and 50 tests (Iheb, Part E). The contract `docs/api_design.md` (Entry 100)
   is approved (PR #65).
@@ -3210,7 +3246,8 @@ behaviour was checked against the installed source and the tests.
 - Stage briefs (`docs/stages/`, D32): 00–10 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), 07 (PR #43), 08–09 (PR #54), and 10 (PR #61).
 
 **Branches:**
-- `origin/main`: at `e2e5eb6` (PR B1 merged as #47, PR B2 as #48, PR C as #49, PR #33 as `6d84d8b`, the tests shadowing fix as #50 (`9be2f25`), the UI prototype as #51 (`6c29486`), PR D as #52 (`ea26959`), D43 as #53 (`a022e7a`), the Stages 8–9 closeout as #54 (`e2374cc`), D44 as #55 (`9da66f1`), the D44 approval record as #56 (`4720bc2`), D45 as #57 (`13a7d38`), the risk-policy runner as #58 (`7556ac9`), notebook 05 as #59 (`11c07fe`), the Stage 10 results as #60 (`ff0a226`), the Stage 10 brief and closeout as #61 (`f166001`), the analyst console prototype v3 as #63 (`c5eebbb`), prototype v4 and design handoff as #64 (`e2e5eb6`)).
+- `origin/main`: at `d9e8c4a` (Stage 17 API skeleton merged as PR #66; earlier history remains in Git).
+- `docs/stage11-midterm-backlog-malak`: Entry 102 midterm requirements backlog, awaiting review.
 - `docs/stage8-cnn-selection`: merged as PR #52 (remote branch deleted).
 - `docs/stage16-d43-loudness-diagnostic`: D43 proposal and approval (Entry 87), merged as PR #53 (`a022e7a`) (remote branch deleted).
 - `feat/stage13-window-runner`: D35 per-window integration test; its log entry needs renumbering to 85.
