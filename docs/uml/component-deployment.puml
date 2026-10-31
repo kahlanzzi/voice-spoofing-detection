@@ -1,0 +1,102 @@
+@startuml
+!pragma layout smetana
+title Voice-spoofing detection — component and deployment view
+left to right direction
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam component {
+  BackgroundColor<<implemented>> #E8F5E9
+  BorderColor<<implemented>> #2E7D32
+  BackgroundColor<<planned>> #FFF8E1
+  BorderColor<<planned>> #B26A00
+}
+
+node "Analyst device" as Device {
+  artifact "Web browser" as Browser
+  component "React + TypeScript app\nweb/" as Web <<planned>>
+  Browser -- Web
+}
+
+cloud "API client" as Client
+
+node "Docker host [planned Stage 19]" as Host {
+  node "web container" as WebContainer {
+    component "nginx static server\nand /api reverse proxy" as Nginx <<planned>>
+    artifact "Vite production build" as StaticBuild <<planned>>
+    Nginx -- StaticBuild
+  }
+
+  node "api container" as ApiContainer {
+    component "FastAPI app factory, errors,\nrequest IDs and schemas" as ApiSkeleton <<implemented>>
+    component "GET /api/status\nmock response" as StatusRoute <<implemented>>
+    component "Limits, analyses, History,\nnotes and stats routers" as ApiRoutes <<planned>>
+    component "Upload validation and\nanalysis service" as AnalysisService <<planned>>
+    component "Analyzer interface" as Analyzer <<planned>>
+    component "Metadata repository" as Repository <<planned>>
+  }
+
+  database "SQLite volume\nmetadata and notes only" as SQLite <<planned>>
+  folder "Temporary upload\nrandom name; deleted" as Temp <<planned>>
+  folder "Frozen F4 ModelBundle\nread-only, Stage 12" as F4 <<planned>>
+}
+
+package "Shared core src/" as Core {
+  component "Verified bundle loader\nsrc/bundle" as BundleLoader <<implemented>>
+  component "Preprocessing profile\nsrc/preprocessing" as Preprocess <<implemented>>
+  component "CNN runtime\nsrc/models" as CNN <<implemented>>
+  component "Risk policy\nsrc/risk" as Risk <<implemented>>
+}
+
+node "Research environment\nColab / local" as Research {
+  component "Training and tuning" as Training <<implemented>>
+  component "Evaluation and run guards" as Evaluation <<implemented>>
+  database "FoR manifests and\nresearch evidence" as ResearchData <<implemented>>
+}
+
+Web --> Nginx : same-origin HTTPS [planned]
+Client --> Nginx : /api [planned deployment]
+Nginx --> ApiSkeleton : proxy /api [planned]
+ApiSkeleton *-- StatusRoute
+ApiSkeleton ..> ApiRoutes : future registration
+ApiRoutes --> AnalysisService
+AnalysisService --> Analyzer
+AnalysisService --> Repository
+AnalysisService --> Temp
+Repository --> SQLite
+Analyzer --> BundleLoader
+BundleLoader --> F4 : verify hashes before use
+BundleLoader --> Preprocess
+BundleLoader --> CNN
+BundleLoader --> Risk
+
+Training --> Preprocess
+Training --> CNN
+Training --> Risk
+Evaluation --> BundleLoader
+ResearchData --> Training
+ResearchData --> Evaluation
+Training ..> F4 : freeze after Stage 11\n[planned Stage 12]
+
+note right of Web
+  Planned: web/ does not exist on main yet.
+  It calls the API only and computes no verdicts,
+  upload limits or operational statistics.
+end note
+
+note bottom of ApiSkeleton
+  Implemented on main: app factory, strict config,
+  request-ID middleware, error handlers, schemas
+  and mock GET /api/status only.
+end note
+
+note bottom of SQLite
+  Never store raw audio, original file names,
+  client IP addresses or DEEP-VOICE data.
+end note
+
+note bottom of Research
+  Training, evaluation and the guarded external test
+  remain outside the online deployment.
+end note
+@enduml

@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Midterm UML package under `docs/uml/`: editable PlantUML and SVG exports for approved online use cases, the implemented/planned class model, upload-analysis and History-result sequences, and the research/online component-deployment boundary.
 - Midterm prioritized backlog under `docs/midterm/`, mapping the closed SRS requirement set (FR-01–FR-20, NFR-01–NFR-11 and PC-01–PC-09) to existing owners, stages, merged evidence and remaining work without adding scope.
 - Stage 17 API skeleton `api/` (FastAPI): `create_app()` with routes under `/api`, `configs/api.yaml` (§9, strict loader, `VSD_API_CONFIG`), the §6 error shape for every error (400 for invalid params, 404/405/500 included, no traceback), `X-Request-ID` on every response, the §5 shapes, and `GET /api/status` with mock values; `fastapi`, `uvicorn`, `python-multipart` and `httpx` pinned; `docs/api_design.md` approved and §6 gains the 405 row.
 - Stage 17 API design note `docs/api_design.md` (proposed): `/api` endpoints for status, limits, analyses, notes and stats, one error shape, storage, analyzer seam and config; §11 unchanged.

@@ -2848,6 +2848,37 @@ remains responsible for the submission.
 **Gate:** teammate review of the backlog and its evidence before merge. AI agents do not merge.
 
 ---
+### Entry 103 — Midterm UML package prepared (2026-10-31)
+
+**What:** added `docs/uml/` on `docs/stage11-midterm-uml-malak`: five editable PlantUML sources
+and five matching SVG exports for the online use cases, API/analyzer class model, upload-analysis
+sequence, History/result/note sequence, and the research/online component-deployment boundary. The
+package README records its sources, status notation, open assumptions, render commands and review
+owners; `docs/README.md` links the package.
+
+**Scope [doc]:** the SRS, Execution Plan, `AGENTS.md`, D38/ADR 0008, approved API design, UI handoff,
+architecture summary, midterm backlog and current `api/`/`src/` code. The diagrams add no
+requirements. They label the current mock `GET /api/status` and existing shared core as implemented;
+the analyzer seam, upload/history/note/stats routes, metadata repository, React/nginx app and Docker
+deployment remain planned. Access control remains an open decision. Research evaluation and
+DEEP-VOICE stay outside the online deployment.
+
+**Evidence [verified]:** PlantUML `-checkonly` accepted all 5 sources; all 5 generated SVG files
+parsed as XML; the rendered images were visually inspected for readable actors, relationships,
+sequence fragments, component boundaries and implemented/planned labels.
+
+**Checks [verified]:** `python -m pytest -q`: 794 passed, 9 skipped in 106.60s;
+`tests/governance/test_deepvoice_access.py`: 3 passed in 0.46s. Documentation-only change; no
+audio, dataset, checkpoint or DEEP-VOICE access.
+
+**AI assistance:** **Codex**, using the Diagram Maker UML, sequence and export skills, audited the
+repository interfaces, drafted the sources, rendered and visually checked the SVGs, and prepared the
+required records. Malak reviews the complete diff and remains responsible for the submission.
+
+**Gate:** Iheb validates API/backend/deployment flows; Donia validates ModelBundle/preprocessing/
+risk-policy boundaries; then teammate review and green CI. AI agents do not merge.
+
+---
 ## Open items
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
@@ -3089,9 +3120,13 @@ remains responsible for the submission.
 - [ ] Next API PRs: `MockAnalyzer` and the analyzer seam (§8), `GET /limits`, `POST /analyses` with the §4.3 checks (consider Starlette's `max_body_size`), storage (§7), history, notes, stats (Entry 101).
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
 
-**Midterm documentation (Entry 102)**
-- [ ] Teammate review of the prioritized backlog against the SRS and merged evidence.
+**Midterm documentation (Entries 102–103)**
+- [x] Review and merge the prioritized backlog against the SRS and merged evidence. (PR #69,
+  `023bfa4`; Khalil approved; Donia validated requirements and priorities by team message)
 - [ ] Update backlog statuses only from merged evidence as implementation PRs land.
+- [ ] Iheb validates the UML API, React, storage and deployment flows against Part E.
+- [ ] Donia validates the UML analyzer, ModelBundle, preprocessing and risk-policy boundaries.
+- [ ] Review and merge the five UML sources and matching SVG exports with green CI.
 
 **Later stages (reminders)**
 - [ ] `configs/robustness.yaml` → Stage 14. `docker-compose.yml` → Stage 17.
@@ -3111,7 +3146,13 @@ remains responsible for the submission.
 `GET /api/status`; no analyzer or uploads yet. The midterm backlog in Entry 102 keeps all
 unimplemented end-to-end flows Partial or Planned.
 
+**Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and Donia
+validated its requirements and priorities by team message. The Entry 103 UML package is prepared on
+`docs/stage11-midterm-uml-malak`; domain validation by Iheb and Donia is pending.
+
 **What was done:**
+- **Midterm UML package** on `docs/stage11-midterm-uml-malak` (Entry 103): five editable PlantUML
+  sources and five SVG exports, with implemented/planned status and source traceability.
 - **Stage 17 API skeleton**, merged in PR #66 as `d9e8c4a` (Entry 101): `api/` package
   (app factory, strict config, §6 error shape for every error, `X-Request-ID`, §5 schemas,
   mock `GET /api/status`) and 50 tests (Iheb, Part E). The contract `docs/api_design.md` (Entry 100)
@@ -3246,8 +3287,9 @@ unimplemented end-to-end flows Partial or Planned.
 - Stage briefs (`docs/stages/`, D32): 00–10 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), 07 (PR #43), 08–09 (PR #54), and 10 (PR #61).
 
 **Branches:**
-- `origin/main`: at `d9e8c4a` (Stage 17 API skeleton merged as PR #66; earlier history remains in Git).
-- `docs/stage11-midterm-backlog-malak`: Entry 102 midterm requirements backlog, awaiting review.
+- `origin/main`: at `023bfa4` (Entry 102 backlog merged as PR #69; earlier history remains in Git).
+- `docs/stage11-midterm-uml-malak`: Entry 103 UML package, awaiting domain review.
+- `docs/stage11-midterm-backlog-malak`: Entry 102 backlog, merged as PR #69 (`023bfa4`).
 - `docs/stage8-cnn-selection`: merged as PR #52 (remote branch deleted).
 - `docs/stage16-d43-loudness-diagnostic`: D43 proposal and approval (Entry 87), merged as PR #53 (`a022e7a`) (remote branch deleted).
 - `feat/stage13-window-runner`: D35 per-window integration test; its log entry needs renumbering to 85.

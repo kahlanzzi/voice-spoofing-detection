@@ -1,0 +1,76 @@
+@startuml
+!pragma layout smetana
+title Voice-spoofing detection — approved online use cases
+left to right direction
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam usecase {
+  BackgroundColor<<implemented>> #E8F5E9
+  BorderColor<<implemented>> #2E7D32
+  BackgroundColor<<planned>> #FFF8E1
+  BorderColor<<planned>> #B26A00
+  BackgroundColor<<open>> #F3E5F5
+  BorderColor<<open>> #6A1B9A
+}
+
+actor "Fraud Prevention\nAnalyst" as Analyst
+actor "API Client" as Client
+actor "Operations\nAdministrator" as Ops
+
+rectangle "Voice-spoofing detection system" {
+  usecase "Check service and\nbundle status" as UCStatus <<implemented>>
+  usecase "Authenticate session" as UCAuth <<open>>
+  usecase "Load upload limits" as UCLimits <<planned>>
+  usecase "Submit one audio file" as UCSubmit <<planned>>
+  usecase "Validate upload" as UCValidate <<planned>>
+  usecase "Analyze with frozen\nmodel and risk policy" as UCAnalyze <<planned>>
+  usecase "View verdict, confidence,\nrisk and notice" as UCResult <<planned>>
+  usecase "Browse and filter\nanalysis History" as UCHistory <<planned>>
+  usecase "Open stored result" as UCDetails <<planned>>
+  usecase "Add, replace or\nremove analyst note" as UCNote <<planned>>
+  usecase "View operational\noverview" as UCStats <<planned>>
+  usecase "Store result metadata\nwithout audio" as UCStore <<planned>>
+}
+
+Analyst --> UCAuth
+Analyst --> UCStatus
+Analyst --> UCSubmit
+Analyst --> UCResult
+Analyst --> UCHistory
+Analyst --> UCDetails
+Analyst --> UCNote
+Analyst --> UCStats
+
+Client --> UCStatus
+Client --> UCSubmit
+Client --> UCResult
+
+Ops --> UCStatus
+Ops --> UCStats
+
+UCSubmit .> UCLimits : <<include>>
+UCSubmit .> UCValidate : <<include>>
+UCSubmit .> UCAnalyze : <<include>>
+UCAnalyze .> UCStore : <<include>>
+UCResult .> UCAnalyze : <<extend>>\nsuccess only
+UCDetails .> UCHistory : <<extend>>
+UCNote .> UCDetails : <<extend>>
+
+legend right
+  |= Status |= Meaning |
+  |<#E8F5E9> Implemented | Mock GET /api/status exists on main |
+  |<#FFF8E1> Planned | Approved requirement/design; code not on main |
+  |<#F3E5F5> Open | Capability reserved; mechanism undecided |
+endlegend
+
+note bottom of UCStore
+  Store request/result metadata and notes only.
+  Never store audio, original file name or client IP.
+end note
+
+note bottom of UCAnalyze
+  Decision support only: authentic, synthetic or uncertain.
+  A result is never proof of fraud or identity.
+end note
+@enduml
