@@ -3159,6 +3159,38 @@ and checked the PDF. No code, model, governance rule, frozen evidence or dataset
 editorial acceptance and team submission remain unverified.
 **WAITING FOR HUMAN REVIEW.**
 
+### Entry 114 — Group README, index and current-status refresh (2026-11-01)
+
+**Numbering:** provisional. Main ends at 113 after PR #74 merged.
+Open PRs #67/#68 and fetched remote branch histories were checked; 114 is not
+reserved there. Recheck all open PRs and main before merge. This standalone
+branch starts from main after PR #74; its report/PDF edits are retained unchanged.
+
+**What [doc]:** refreshed README status, approved React stack and current
+folder tree; documented complete CPU test dependencies, the mock API/status
+and standalone design prototype, and the remaining end-to-end/Compose work.
+Expanded the docs index and corrected verified current-status records.
+Folder layout, application code, model behavior, frozen evidence and historical
+log entries are preserved. Part 6 report/PDF corrections are already merged through PR #74 and are not changed here.
+
+**Evidence:** merged main `ca45601` (PR #74); Stage 11 open PRs #67/#68; approved D38,
+API contract PR #65, API skeleton #66, AI ethics reflection #71 and combined
+Part 6 #72/#73. Iheb’s ongoing frontend/backend work is user-reported and is
+not presented as merged or verified. No research gate is advanced.
+
+**Checks:** Khalil ran `$env:REQUIRE_TORCH_TESTS = "1"`, then
+`.\.venv\Scripts\python.exe -m pytest -q -ra`: `937 passed in 58.30s`.
+`.\.venv\Scripts\python.exe -m pytest -q tests/governance/test_deepvoice_access.py`:
+`3 passed in 0.19s`. These are user-executed results supplied by screenshot.
+Relative links, the generated tree, old-entry preservation, token-pattern scan and
+changed-file scope were checked; `git diff --check` returned no errors. The Part 6
+report/PDF are byte-identical to merged main. No fresh-install/MVP demo validation
+or performance improvement is inferred from these tests.
+
+**AI assistance:** Codex inspected main/open PRs and drafted navigation/status
+corrections. Team owners must review descriptions of their ongoing work.
+**WAITING FOR HUMAN REVIEW.**
+
 ---
 ## Open items
 
@@ -3407,7 +3439,8 @@ editorial acceptance and team submission remain unverified.
 - [x] Implement the two low-risk lint cleanups and compare actual after-results (Entry 111); cache-helper restructuring remains deferred.
 - [x] Prepare the Part 6 report/PDF with the cleanup commit and after evidence (Entry 112).
 - [x] Publish Part 6 audit/cleanup: #73 integrated into #72; combined #72 approved by Donia and merged as `76c55aa`, CI passed.
-- [ ] Review the Part 6 status correction (Entry 113); confirm separate final editorial acceptance and inclusion in the team submission.
+- [x] Review and merge the Part 6 status correction (Entry 113; PR #74, `ca45601`).
+- [ ] Confirm separate final editorial acceptance and inclusion in the team submission.
 - [ ] Finalize the refactor report after any approved code change and its checks; regenerate matching Markdown/PDF and obtain human review.
 - [x] Review and merge the prioritized backlog against the SRS and merged evidence. (PR #69,
   `023bfa4`; Khalil approved; Donia validated requirements and priorities by team message)
@@ -3419,7 +3452,8 @@ editorial acceptance and team submission remain unverified.
   (PR #70, `85829e1`)
 - [x] Malak confirmed the team AI-tool inventory; Donia approved the reflection's ethics and
   requirements coverage by team message.
-- [ ] Review and merge the AI ethics reflection with green CI.
+- [x] Review and merge the AI ethics reflection (PR #71, `98fd8d7`).
+- [ ] Independently verify README setup and label mock versus real flows in the team demo; confirm final editorial acceptance and LMS submission.
 
 **Later stages (reminders)**
 - [ ] `configs/robustness.yaml` → Stage 14. `docker-compose.yml` → Stage 17.
@@ -3430,27 +3464,24 @@ editorial acceptance and team submission remain unverified.
 
 ---
 
-## Current status — updated 2026-10-31
+## Current status — updated 2026-11-01
 
-**Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 closed (Entry 96): run and results merged (PR #60; Entry 94), brief accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-28; Donia attended as author; no corrections; Q9 reading agreed), merged as PR #61 (`f166001`). Stage 11 is current: the D41 registry and per-clip storage implementation is approved (PR #62, Entry 99); next: the Stage 11 runtime and environment plan (to be proposed as D46), then the Stage 11 runner in its own PR; no FoR test access before both.
+**Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 closed (Entry 96): run and results merged (PR #60; Entry 94), brief accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-28; Donia attended as author; no corrections; Q9 reading agreed), merged as PR #61 (`f166001`). Stage 11 is current: the D41 registry and per-clip storage implementation is approved (PR #62, Entry 99); the D46 runtime/environment plan is proposed in PR #67 and the Stage 11 runner is proposed in PR #68; both await review/merge. No FoR test access before the approved prerequisites are met.
 
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
-`GET /api/status`; no analyzer or uploads yet. The midterm backlog in Entry 102 keeps all
-unimplemented end-to-end flows Partial or Planned.
+`GET /api/status`; no analyzer or uploads yet on merged main. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; React `web/` and Compose are not yet present on main. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
-canonical UML package is merged in PR #70 (`85829e1`). Entry 107 drafts the evidence-based AI ethics
-and usage reflection on `docs/stage11-midterm-ai-ethics-malak`; the team tool inventory is confirmed
-and Donia approved the content by message; PR review and merge remain.
+canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.
 
-**Midterm refactor audit:** Entries 108–110 record the initial report and baseline. Entry 111 implements two small lint cleanups on the stacked cleanup branch: 937 tests pass, governance 3 passed, scoped lint findings 2 to 0, coverage and complexity unchanged. No speedup is claimed. Entry 112 adds the measured report/PDF and after captures. The work merged via #73 into combined #72 (`76c55aa`) after recorded teammate approvals and successful CI. Entry 113 corrects stale report status; this follow-up and separate final editorial/course acceptance remain open. Evidence-sensitive restructuring stays deferred.
+**Midterm refactor audit:** Entries 108–110 record the initial report and baseline. Entry 111 implements two small lint cleanups on the stacked cleanup branch: 937 tests pass, governance 3 passed, scoped lint findings 2 to 0, coverage and complexity unchanged. No speedup is claimed. Entry 112 adds the measured report/PDF and after captures. The work merged via #73 into combined #72 (`76c55aa`) after recorded teammate approvals and successful CI. Entry 113 corrected stale report status and merged as PR #74 (`ca45601`); separate final editorial/course acceptance remains open. Evidence-sensitive restructuring stays deferred.
 
 **What was done:**
 - **Midterm AI ethics and usage reflection** on `docs/stage11-midterm-ai-ethics-malak` (Entry 107):
   documented tools, human oversight, corrected AI errors, privacy/data governance, bias and harm,
   licensing, MCP security and academic responsibility; tool inventory confirmed and content approved
-  by Donia, pending PR review and merge.
+  by Donia; merged as PR #71 (`98fd8d7`).
 - **Canonical midterm UML package** on `docs/stage11-midterm-uml-malak` (Entries 104–106): six
   editable PlantUML sources, one fixed-layout draw.io source and seven SVG exports reconstructing SRS
   Figure 1 and SDD Figures 1-6, with controlled D38/API-contract/D41 annotations and no parallel
@@ -3589,9 +3620,8 @@ and Donia approved the content by message; PR review and merge remain.
 - Stage briefs (`docs/stages/`, D32): 00–10 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), 07 (PR #43), 08–09 (PR #54), and 10 (PR #61).
 
 **Branches:**
-- `origin/main`: at `85829e1` (Entry 106 UML package merged as PR #70; earlier history remains in Git).
-- `docs/stage11-midterm-ai-ethics-malak`: Entry 107 AI ethics and usage reflection, content approved
-  by Donia and ready for PR.
+- `origin/main`: checked at `ca45601` (Part 6 status correction PR #74 merged; includes combined Part 6 PR #72 and AI ethics PR #71).
+- `docs/stage11-midterm-ai-ethics-malak`: Entry 107 AI ethics and usage reflection, merged as PR #71 (`98fd8d7`).
 - `docs/stage11-midterm-uml-malak`: Entries 104–106, merged as PR #70 (`85829e1`).
 - `docs/stage11-midterm-backlog-malak`: Entry 102 backlog, merged as PR #69 (`023bfa4`).
 - `docs/stage8-cnn-selection`: merged as PR #52 (remote branch deleted).
@@ -3620,5 +3650,5 @@ and Donia approved the content by message; PR review and merge remain.
 2. Before Stage 13, implement the approved file-level view, speaker-average convention and guarded
    runner; resolve the external-run governance allowlist.
 3. Stage 7 is closed (PR #43); Stages 8–9: the official run is complete (Entry 86), validation only; PR D merged as #52; D43 approved (PR #53, Entry 87; implementation only at Stage 16, after the D41 storage implementation); the 08–09 teach-backs are done (Entry 88); Stage 10 is closed (Entry 96); next: Stage 11 (FoR test, once), after its runtime and environment plan (Entry 94) and the reviewed D41 registry and storage implementation (D41, ADR 0010). Preserve the recorded validation-only scope of Entries 74 and 86.
-4. D41 and ADR 0010 are approved in PR #46; the closed-purpose registry and Stage 11 per-clip score storage are implemented on `feat/stage11-d41-registry-storage` (Entry 99), reviewed and approved in PR #62 (Khalil required, Malak requested). Next: D46 (the Stage 11 runtime and environment plan), then the Stage 11 runner in its own PR; no FoR test access before both.
+4. D41/ADR 0010 registry and per-clip storage implementation merged in PR #62 (Entry 99). The D46 runtime/environment proposal is in open PR #67 and the Stage 11 runner in open PR #68; review and merge the required prerequisites before any FoR test access.
 5. Then run the real Part C work on the frozen F3 preprocessing profile; the W&B project is set up (entity `voice-spoofing-detection-must`, project `voice-spoofing-detection`, D40), and teammates' Member invites are pending (see Open items).
