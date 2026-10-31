@@ -2999,6 +2999,36 @@ is recorded above; AI does not approve or merge.
 merge. **WAITING FOR PR REVIEW.**
 
 ---
+### Entry 108 — Midterm initial refactor and optimization audit (2026-10-31)
+
+**Numbering:** provisional; main ends at 107. Open PRs #67 and #68 and fetched remote branch logs were checked; their highest entries are 101 and 102. Recheck at merge time.
+
+**What [doc]:** added `docs/refactor-optimization-report.md` on
+`docs/stage11-midterm-refactor-khalil`, based on main `98fd8d7`. It consolidates the existing
+API/UI and ML evidence, distinguishes historical results from new baseline checks, and proposes
+neutral placement of cache helpers shared by MFCC and log-Mel. This is an initial audit for team
+review, not an implemented refactor or a measured performance improvement.
+
+**Checks [user-executed]:** Khalil updated the declared dependencies after an initial missing-FastAPI
+collection error. The first complete non-CNN run was `794 passed, 9 skipped in 51.00s`.
+After installing CPU torch 2.11.0, safetensors 0.8.0 and wandb 0.31.0, `pip check` printed
+`No broken requirements found.` With `REQUIRE_TORCH_TESTS=1`,
+`python -m pytest -q -ra` printed `937 passed in 89.85s (0:01:29)`; no skips shown.
+Separate baseline DEEP-VOICE governance check: `3 passed in 0.22s`; after the documentation was added, the governance check passed again: `3 passed in 0.18s`. These outputs were supplied as pasted
+text/screenshots; the assistant could not launch the local interpreter directly.
+
+**Scope:** documentation only; no code refactor, source model/preprocessing/threshold change,
+frozen-evidence edit, dataset access or governed run. The report credits earlier improvements
+to their original PRs and does not claim them as Khalil's implementation.
+
+**AI assistance:** Codex inspected repository sources, verified recorded arithmetic and links,
+drafted the report and documentation records. Khalil ran the baseline commands; human review of
+the proposal and report remains pending.
+
+**Gate:** team review of the initial audit before any evidence-sensitive cache refactor; then any
+approved implementation gets a separate focused branch/PR. **WAITING FOR HUMAN REVIEW.**
+
+---
 ## Open items
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
@@ -3241,6 +3271,8 @@ merge. **WAITING FOR PR REVIEW.**
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
 
 **Midterm documentation (Entries 102–107)**
+- [ ] Review Khalil's initial refactor audit (Entry 108); agree on scope before any cache-helper implementation.
+- [ ] Finalize the refactor report after any approved code change and its checks.
 - [x] Review and merge the prioritized backlog against the SRS and merged evidence. (PR #69,
   `023bfa4`; Khalil approved; Donia validated requirements and priorities by team message)
 - [ ] Update backlog statuses only from merged evidence as implementation PRs land.
@@ -3275,6 +3307,8 @@ unimplemented end-to-end flows Partial or Planned.
 canonical UML package is merged in PR #70 (`85829e1`). Entry 107 drafts the evidence-based AI ethics
 and usage reflection on `docs/stage11-midterm-ai-ethics-malak`; the team tool inventory is confirmed
 and Donia approved the content by message; PR review and merge remain.
+
+**Midterm refactor audit:** Entry 108 prepares Khalil's initial report on the main-based documentation branch; the full local CNN-enabled baseline is 937 passed with no skips shown. No code refactor or performance gain is claimed; team review precedes implementation.
 
 **What was done:**
 - **Midterm AI ethics and usage reflection** on `docs/stage11-midterm-ai-ethics-malak` (Entry 107):

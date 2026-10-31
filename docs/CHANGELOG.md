@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Midterm initial refactor and optimization audit, with the complete local baseline, source-linked API/UI and ML evidence, and proposed work awaiting team review.
 - Midterm AI ethics and usage reflection grounded in the project's recorded tools, human reviews,
   corrections, data safeguards, bias limitations, licensing and academic-integrity rules.
 - Canonical midterm UML package under `docs/uml/`: editable diagram sources and SVG reconstructions of SRS Figure 1 and SDD Figures 1-6, with only the approved D38, API-contract and D41 annotations.
