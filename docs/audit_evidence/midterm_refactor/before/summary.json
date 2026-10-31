@@ -1,0 +1,188 @@
+{
+  "kind": "midterm_refactor_before",
+  "execution": "Khalil user-executed commands; outputs supplied to Codex",
+  "source_base_commit": "98fd8d7e17f81ff1f9687f6ea3a83804a50fa628",
+  "documentation_commit": "7c0e2437b63cd8eb5691184625bbc5813afdeec1",
+  "source_state": "api/ and src/ unchanged from source base; documentation changes pending during measurement",
+  "scope": [
+    "api",
+    "src"
+  ],
+  "python": "3.13.16",
+  "tools": {
+    "coverage": "7.17.0",
+    "radon": "6.0.1",
+    "ruff": "0.17.3"
+  },
+  "tests": {
+    "uninstrumented": "937 passed in 89.85s (0:01:29)",
+    "coverage_instrumented": "937 passed in 73.21s (0:01:13)",
+    "governance": "3 passed in 0.18s"
+  },
+  "coverage": {
+    "covered_statements": 3748,
+    "statements": 4215,
+    "statement_percent": 88.92052194543298,
+    "covered_branches": 1047,
+    "branches": 1312,
+    "branch_percent": 79.80182926829268,
+    "combined_percent": 86.7559254568482,
+    "missing_statements": 467,
+    "missing_branches": 265
+  },
+  "complexity": {
+    "aggregation": "top-level function blocks and class methods; class summary blocks and nested closures excluded",
+    "block_count": 342,
+    "mean": 4.608187134502924,
+    "rank_counts": {
+      "A": 249,
+      "B": 61,
+      "C": 25,
+      "D": 3,
+      "E": 4
+    },
+    "highest_blocks": [
+      {
+        "file": "src/features/logmel_cache.py",
+        "name": "load_logmel_cache",
+        "line": 125,
+        "complexity": 37,
+        "rank": "E"
+      },
+      {
+        "file": "src/features/mfcc_cache.py",
+        "name": "load_mfcc_cache",
+        "line": 156,
+        "complexity": 33,
+        "rank": "E"
+      },
+      {
+        "file": "src/preprocessing/profile.py",
+        "name": "load_profile",
+        "line": 90,
+        "complexity": 33,
+        "rank": "E"
+      },
+      {
+        "file": "src/evaluation/speaker_average.py",
+        "name": "speaker_average",
+        "line": 21,
+        "complexity": 32,
+        "rank": "E"
+      },
+      {
+        "file": "src/models/cnn_checkpoint.py",
+        "name": "validate_metadata",
+        "line": 67,
+        "complexity": 27,
+        "rank": "D"
+      },
+      {
+        "file": "src/splitting/for2sec.py",
+        "name": "validate_source",
+        "line": 123,
+        "complexity": 25,
+        "rank": "D"
+      },
+      {
+        "file": "src/splitting/for2sec.py",
+        "name": "load_config",
+        "line": 44,
+        "complexity": 22,
+        "rank": "D"
+      },
+      {
+        "file": "src/evaluation/clip_scores.py",
+        "name": "read_clip_scores",
+        "line": 328,
+        "complexity": 19,
+        "rank": "C"
+      },
+      {
+        "file": "src/tuning/cnn_search.py",
+        "name": "run_search",
+        "line": 149,
+        "complexity": 19,
+        "rank": "C"
+      },
+      {
+        "file": "api/config.py",
+        "name": "load_api_config",
+        "line": 62,
+        "complexity": 17,
+        "rank": "C"
+      },
+      {
+        "file": "src/freezing/manifests.py",
+        "name": "load_config",
+        "line": 69,
+        "complexity": 17,
+        "rank": "C"
+      },
+      {
+        "file": "src/audit/for2sec_audit.py",
+        "name": "run",
+        "line": 294,
+        "complexity": 16,
+        "rank": "C"
+      },
+      {
+        "file": "src/preprocessing/benchmark.py",
+        "name": "_gpu_dry_run",
+        "line": 32,
+        "complexity": 16,
+        "rank": "C"
+      },
+      {
+        "file": "src/bundle/bundle.py",
+        "name": "build_bundle",
+        "line": 213,
+        "complexity": 15,
+        "rank": "C"
+      }
+    ],
+    "parse_error_files": 0
+  },
+  "lint": {
+    "rules": [
+      "E4",
+      "E7",
+      "E9",
+      "F"
+    ],
+    "isolated": true,
+    "target_version": "py313",
+    "exit_code": 1,
+    "count": 2,
+    "findings": [
+      {
+        "file": "src/audit/for2sec_audit.py",
+        "line": 387,
+        "rule": "F541",
+        "message": "f-string without any placeholders"
+      },
+      {
+        "file": "src/tuning/baseline_fit.py",
+        "line": 31,
+        "rule": "F401",
+        "message": "`src.models.baseline.BaselineModel` imported but unused"
+      }
+    ]
+  },
+  "raw_file_sha256": {
+    "coverage.json": "ae59f4a63ba3fbe3fe0017753c4eef2a303c8777c885ff9b8d82635b6891f56e",
+    "complexity.json": "7b059c1fe8aef0d5668459362ec0cd869d937c43ba8f89b2afe543d9ce263ca8",
+    "lint.json": "794fb18e8a16840b7f54dc795cbd226cff820e14ec802550e7f28a6cad269851"
+  },
+  "limitations": [
+    "No code refactor or after measurements yet",
+    "Coverage excludes tests and notebooks",
+    "Source metrics do not establish performance improvement",
+    "The test-run durations are not comparable performance benchmarks"
+  ],
+  "tool_version_capture": {
+    "original_sha256": "ded795a06c2c770498bb391063da2fc787c8c3dc20a56abe13238754d508f234",
+    "stored_sha256": "b0e622caf670aa7732d2ea2262c6fa99f29b38f0c3f6030eef54f33c0a68fa1a",
+    "normalization": "Trailing line whitespace removed and UTF-8/LF used for Git; package/version values unchanged. Original capture retained outside repository."
+  }
+}

@@ -3029,6 +3029,33 @@ the proposal and report remains pending.
 approved implementation gets a separate focused branch/PR. **WAITING FOR HUMAN REVIEW.**
 
 ---
+### Entry 109 — Part 6 review corrections and measurement plan (2026-10-31)
+
+**Numbering:** provisional; main ends at 107, this branch has Entry 108. Open PRs #67/#68 and fetched remote logs were checked during preparation; their entries do not reserve 109. Recheck at merge time.
+
+**What [doc]:** corrected outdated commit-pending wording in the Part 6 report (initial commit
+`7c0e243`), replaced explanatory arithmetic notation with runnable PowerShell, and distinguished
+the configured Python version from a captured runtime version. Added an explicit course-requirement
+and completion section: initial audit is not the final refactor submission. Subsequent user-executed measurements now establish the software baseline; after-refactor results remain pending.
+
+**PDF [artifact]:** added a clearly labelled initial-audit PDF exported from the Markdown report;
+the PDF records its source Markdown SHA-256. All pages were rendered and visually inspected;
+record layouts and code blocks were checked for clipping, orphaned continuations and readability.
+Regenerate after final evidence and review decisions.
+
+**Checks:** report links and recorded arithmetic rechecked against the current repository;
+`git diff --check` clean. Earlier user-run checks remain `937 passed in 89.85s (0:01:29)`
+and governance `3 passed in 0.18s`; this review did not rerun or relabel them as assistant runs.
+Khalil then collected coverage (937 passed in 73.21s), Radon and Ruff outputs. Coverage: 88.92% statement, 79.80% branch, 86.76% combined; Radon: 342 function/method blocks (class summaries and nested closures excluded), mean CC 4.6082, maximum 37; Ruff: 2 findings under E4/E7/E9/F. Raw JSON, versions and a provenance summary are preserved in `docs/audit_evidence/midterm_refactor/before/`. No source code or frozen evidence changed.
+
+**AI assistance:** Codex performed the review, corrected documentation and prepared/rendered the
+PDF. New user-generated metrics were verified and summarized; after-refactor evidence and final human acceptance are still required.
+
+**Gate:** review this corrected initial audit and measured baseline, then obtain team review
+before any evidence-sensitive refactor; final Markdown/PDF and implementation evidence must agree.
+**WAITING FOR HUMAN REVIEW.**
+
+---
 ## Open items
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
@@ -3270,9 +3297,11 @@ approved implementation gets a separate focused branch/PR. **WAITING FOR HUMAN R
 - [ ] Next API PRs: `MockAnalyzer` and the analyzer seam (§8), `GET /limits`, `POST /analyses` with the §4.3 checks (consider Starlette's `max_body_size`), storage (§7), history, notes, stats (Entry 101).
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
 
-**Midterm documentation (Entries 102–107)**
+**Midterm documentation (Entries 102–109)**
 - [ ] Review Khalil's initial refactor audit (Entry 108); agree on scope before any cache-helper implementation.
-- [ ] Finalize the refactor report after any approved code change and its checks.
+- [x] Capture coverage, complexity and lint baseline outputs (Entry 109): 88.92% statement / 79.80% branch / 86.76% combined coverage; maximum CC 37; 2 Ruff findings.
+- [ ] Review and implement the two low-risk lint cleanups on a focused branch, then compare actual after-results; defer cache-helper restructuring for team review.
+- [ ] Finalize the refactor report after any approved code change and its checks; regenerate matching Markdown/PDF and obtain human review.
 - [x] Review and merge the prioritized backlog against the SRS and merged evidence. (PR #69,
   `023bfa4`; Khalil approved; Donia validated requirements and priorities by team message)
 - [ ] Update backlog statuses only from merged evidence as implementation PRs land.
@@ -3308,7 +3337,7 @@ canonical UML package is merged in PR #70 (`85829e1`). Entry 107 drafts the evid
 and usage reflection on `docs/stage11-midterm-ai-ethics-malak`; the team tool inventory is confirmed
 and Donia approved the content by message; PR review and merge remain.
 
-**Midterm refactor audit:** Entry 108 prepares Khalil's initial report on the main-based documentation branch; the full local CNN-enabled baseline is 937 passed with no skips shown. No code refactor or performance gain is claimed; team review precedes implementation.
+**Midterm refactor audit:** Entries 108–109 prepare and correct the initial report and PDF on the main-based documentation branch. The local CNN-enabled baseline is 937 passed with no skips shown. Coverage, complexity and lint baseline outputs are captured (Entry 109); two lint findings await a focused cleanup. No refactor or performance gain is claimed. Team review precedes evidence-sensitive implementation, and final human acceptance remains open.
 
 **What was done:**
 - **Midterm AI ethics and usage reflection** on `docs/stage11-midterm-ai-ethics-malak` (Entry 107):
