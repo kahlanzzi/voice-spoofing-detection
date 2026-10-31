@@ -2913,6 +2913,33 @@ boundaries; Khalil validates UC-08 and evaluation governance; then teammate revi
 agents do not merge.
 
 ---
+### Entry 105 — Canonical use-case figure given fixed, PDF-faithful layout (2026-10-31)
+
+**What:** replaced only the use-case diagram's automatic PlantUML layout with editable draw.io XML
+and a matching hand-positioned SVG. The layout now follows the approved SRS Figure 1: API Client and
+Fraud Prevention Analyst on the left, research/compliance/operations actors on the right, and the
+submission, shared analysis and research/operations use cases in compact columns. The five actors,
+UC-01–UC-10 labels, nine actor associations, five `include` relations and one `extend` relation are
+unchanged. No requirement or system behaviour changed.
+
+**Evidence [verified]:** `use-case.drawio` and `use-case.svg` parse as XML; the 1400×750 SVG was
+rendered in a browser and visually reviewed at full resolution. Actor labels do not overlap, every
+actor remains outside the system boundary, every use case remains inside it, relationship arrows and
+legend are readable, and no content is clipped. The other six canonical diagrams are unchanged.
+
+**Checks [verified]:** `python -m pytest -q`: 794 passed, 9 skipped in 19.30s;
+`tests/governance/test_deepvoice_access.py`: 3 passed in 0.62s. Documentation-only change; no audio,
+dataset, checkpoint or DEEP-VOICE access.
+
+**AI assistance:** **Codex**, using the Diagram Maker UML and diagram-review rules, compared the
+automatic render with the approved PDF figure, rejected two inadequate automatic layouts, produced
+the fixed vector layout, and visually inspected the final render. Malak reviews the complete diff and
+remains responsible for the submission.
+
+**Gate:** Iheb, Donia and Khalil confirm that the fixed layout preserves the canonical SRS meaning;
+then teammate review and green CI. AI agents do not merge.
+
+---
 ## Open items
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
@@ -3183,13 +3210,15 @@ unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and Donia
 validated its requirements and priorities by team message. Entry 104 corrects the UML package on
-`docs/stage11-midterm-uml-malak` to the canonical SRS/SDD figures; domain validation by Iheb, Donia
-and Khalil is pending.
+`docs/stage11-midterm-uml-malak` to the canonical SRS/SDD figures; Entry 105 replaces the automatic
+use-case layout with a PDF-faithful editable layout. Domain validation by Iheb, Donia and Khalil is
+pending.
 
 **What was done:**
-- **Canonical midterm UML package** on `docs/stage11-midterm-uml-malak` (Entry 104): seven editable
-  PlantUML sources and seven SVG exports reconstructing SRS Figure 1 and SDD Figures 1-6, with
-  controlled D38/API-contract/D41 annotations and no parallel model.
+- **Canonical midterm UML package** on `docs/stage11-midterm-uml-malak` (Entries 104–105): six
+  editable PlantUML sources, one fixed-layout draw.io source and seven SVG exports reconstructing SRS
+  Figure 1 and SDD Figures 1-6, with controlled D38/API-contract/D41 annotations and no parallel
+  model.
 - **Stage 17 API skeleton**, merged in PR #66 as `d9e8c4a` (Entry 101): `api/` package
   (app factory, strict config, §6 error shape for every error, `X-Request-ID`, §5 schemas,
   mock `GET /api/status`) and 50 tests (Iheb, Part E). The contract `docs/api_design.md` (Entry 100)
@@ -3325,7 +3354,7 @@ and Khalil is pending.
 
 **Branches:**
 - `origin/main`: at `023bfa4` (Entry 102 backlog merged as PR #69; earlier history remains in Git).
-- `docs/stage11-midterm-uml-malak`: Entry 104 canonical UML correction, awaiting domain review.
+- `docs/stage11-midterm-uml-malak`: Entry 105 PDF-faithful use-case layout, awaiting domain review.
 - `docs/stage11-midterm-backlog-malak`: Entry 102 backlog, merged as PR #69 (`023bfa4`).
 - `docs/stage8-cnn-selection`: merged as PR #52 (remote branch deleted).
 - `docs/stage16-d43-loudness-diagnostic`: D43 proposal and approval (Entry 87), merged as PR #53 (`a022e7a`) (remote branch deleted).

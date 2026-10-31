@@ -10,7 +10,7 @@ not add requirements.
 
 | Repository diagram | Canonical report figure | Editable source | SVG export |
 |---|---|---|---|
-| Merged use-case model | SRS v3.0, Figure 1 | [`use-case.puml`](use-case.puml) | [`use-case.svg`](use-case.svg) |
+| Merged use-case model | SRS v3.0, Figure 1 | [`use-case.drawio`](use-case.drawio) | [`use-case.svg`](use-case.svg) |
 | Online component view | SDD v1.0, Figure 1 | [`component-online.puml`](component-online.puml) | [`component-online.svg`](component-online.svg) |
 | Research component view | SDD v1.0, Figure 2 | [`component-research.puml`](component-research.puml) | [`component-research.svg`](component-research.svg) |
 | Analysis-domain classes | SDD v1.0, Figure 3 | [`class-analysis.puml`](class-analysis.puml) | [`class-analysis.svg`](class-analysis.svg) |
@@ -53,15 +53,18 @@ current implementation status belongs in `docs/midterm/backlog.md` and `docs/pro
 
 ## Render and validate
 
-The sources use PlantUML and are the editable originals for the SVGs committed beside them.
+The use-case model uses draw.io XML so its actor and use-case positions remain faithful to the
+approved SRS figure. The other six diagrams use PlantUML. All seven have editable source and a
+matching SVG committed beside it.
 
 ```powershell
 java -Djava.awt.headless=true -jar plantuml.jar -checkonly docs/uml/*.puml
 java -Djava.awt.headless=true -jar plantuml.jar -tsvg docs/uml/*.puml
 ```
 
-Any change to a `.puml` file must regenerate and review the matching `.svg`. A semantic change to a
-canonical figure requires an approved requirement or decision; layout-only corrections do not.
+Open `use-case.drawio` in diagrams.net to edit or re-export the use-case SVG. Any source change must
+regenerate and review the matching `.svg`. A semantic change to a canonical figure requires an
+approved requirement or decision; layout-only corrections do not.
 
 ## Review ownership
 
