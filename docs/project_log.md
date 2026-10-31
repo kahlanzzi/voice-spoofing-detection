@@ -3191,8 +3191,32 @@ or performance improvement is inferred from these tests.
 corrections. Team owners must review descriptions of their ongoing work.
 **WAITING FOR HUMAN REVIEW.**
 
+### Entry 115 — Organize documentation index by topic (2026-11-01)
+
+**Numbering:** provisional. Main ends at 114 after group-docs PR #75.
+Open PRs #67/#68 reserve neither 114 nor 115 at the latest check; recheck before merge.
+
+**What [doc]:** grouped the existing `docs/README.md` entries into six sections:
+start here; requirements/decisions/history; implementation guides; API/design/UML;
+results/evidence; and midterm/course deliverables. Added quick navigation.
+Every original table row and link is retained. No files or folders moved;
+application code, reports/PDFs and original evidence are unchanged.
+
+**Checks:** original-row/link preservation, local link targets, navigation anchors,
+old-log-entry preservation and whitespace checks passed. Khalil set
+`REQUIRE_TORCH_TESTS=1` and ran `.\.venv\Scripts\python.exe -m pytest -q -ra`:
+`937 passed in 52.48s`. Then `.\.venv\Scripts\python.exe -m pytest -q tests/governance/test_deepvoice_access.py`:
+`3 passed in 0.57s`. These are user-executed results supplied by screenshot;
+no fresh-install demonstration is claimed. PR/CI and human review remain pending.
+
+**AI assistance:** Codex grouped the existing entries and checked their preservation.
+This changes navigation only and introduces no requirement or governance decision.
+**WAITING FOR HUMAN REVIEW.**
+
 ---
 ## Open items
+
+- [ ] Review the sectioned documentation index (Entry 115); confirm existing entries and links remain available.
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
 **Part C: external comparison (Entry 58)**
@@ -3465,6 +3489,8 @@ corrections. Team owners must review descriptions of their ongoing work.
 ---
 
 ## Current status — updated 2026-11-01
+
+**Documentation navigation:** Entry 115 groups the docs index by topic without moving files. This follow-up awaits PR/CI and human review; implementation status below is unchanged.
 
 **Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 closed (Entry 96): run and results merged (PR #60; Entry 94), brief accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-28; Donia attended as author; no corrections; Q9 reading agreed), merged as PR #61 (`f166001`). Stage 11 is current: the D41 registry and per-clip storage implementation is approved (PR #62, Entry 99); the D46 runtime/environment plan is proposed in PR #67 and the Stage 11 runner is proposed in PR #68; both await review/merge. No FoR test access before the approved prerequisites are met.
 
