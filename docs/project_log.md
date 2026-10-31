@@ -3136,6 +3136,29 @@ committed the two source edits. No model, dataset or frozen evidence changed.
 review and final human acceptance remain open. The cache extraction is still deferred.
 **WAITING FOR HUMAN REVIEW.**
 
+### Entry 113 — Correct Part 6 post-merge report status (2026-11-01)
+
+**Numbering:** provisional. Main ends at 112. Open PRs #67/#68 and remote
+branch history do not reserve 113 at this check; recheck at merge time.
+
+**What [doc]:** corrected only Khalil’s Part 6 report/PDF, its documentation-index
+row and this change record. PR #73 merged into the audit branch as `c60d02f`;
+combined PR #72 merged into main as `76c55aa`. The report now distinguishes
+completed publication/CI/PR review from unverified final editorial/course acceptance.
+Original baseline revisions, measurements and evidence remain unchanged.
+
+**Verification:** GitHub records Malak’s approval of #73 at `32bd764`, Donia’s
+approval of combined #72 at `c60d02f`, and successful CI on merged main `76c55aa`.
+Relative links, original evidence hashes, preserved old log entries and the regenerated
+PDF source hash/render are checked before handoff. No new local test run or changed
+model-performance result is claimed for this documentation correction.
+
+**AI assistance:** Codex verified the GitHub records, corrected wording and regenerated
+and checked the PDF. No code, model, governance rule, frozen evidence or dataset changed.
+**Gate:** this follow-up needs its own commit, PR/CI and human review; separate final
+editorial acceptance and team submission remain unverified.
+**WAITING FOR HUMAN REVIEW.**
+
 ---
 ## Open items
 
@@ -3383,7 +3406,8 @@ review and final human acceptance remain open. The cache extraction is still def
 - [x] Capture coverage, complexity and lint baseline outputs (Entry 109): 88.92% statement / 79.80% branch / 86.76% combined coverage; maximum CC 37; 2 Ruff findings.
 - [x] Implement the two low-risk lint cleanups and compare actual after-results (Entry 111); cache-helper restructuring remains deferred.
 - [x] Prepare the Part 6 report/PDF with the cleanup commit and after evidence (Entry 112).
-- [ ] Publish the audit and focused cleanup, obtain CI, independent human review and final submission acceptance.
+- [x] Publish Part 6 audit/cleanup: #73 integrated into #72; combined #72 approved by Donia and merged as `76c55aa`, CI passed.
+- [ ] Review the Part 6 status correction (Entry 113); confirm separate final editorial acceptance and inclusion in the team submission.
 - [ ] Finalize the refactor report after any approved code change and its checks; regenerate matching Markdown/PDF and obtain human review.
 - [x] Review and merge the prioritized backlog against the SRS and merged evidence. (PR #69,
   `023bfa4`; Khalil approved; Donia validated requirements and priorities by team message)
@@ -3420,7 +3444,7 @@ canonical UML package is merged in PR #70 (`85829e1`). Entry 107 drafts the evid
 and usage reflection on `docs/stage11-midterm-ai-ethics-malak`; the team tool inventory is confirmed
 and Donia approved the content by message; PR review and merge remain.
 
-**Midterm refactor audit:** Entries 108–110 record the initial report and baseline. Entry 111 implements two small lint cleanups on the stacked cleanup branch: 937 tests pass, governance 3 passed, scoped lint findings 2 to 0, coverage and complexity unchanged. No speedup is claimed. Entry 112 adds the measured report/PDF and after captures. Branch publication, PR/CI and independent human acceptance remain pending; evidence-sensitive restructuring is deferred.
+**Midterm refactor audit:** Entries 108–110 record the initial report and baseline. Entry 111 implements two small lint cleanups on the stacked cleanup branch: 937 tests pass, governance 3 passed, scoped lint findings 2 to 0, coverage and complexity unchanged. No speedup is claimed. Entry 112 adds the measured report/PDF and after captures. The work merged via #73 into combined #72 (`76c55aa`) after recorded teammate approvals and successful CI. Entry 113 corrects stale report status; this follow-up and separate final editorial/course acceptance remain open. Evidence-sensitive restructuring stays deferred.
 
 **What was done:**
 - **Midterm AI ethics and usage reflection** on `docs/stage11-midterm-ai-ethics-malak` (Entry 107):
