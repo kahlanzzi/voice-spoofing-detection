@@ -3056,6 +3056,31 @@ before any evidence-sensitive refactor; final Markdown/PDF and implementation ev
 **WAITING FOR HUMAN REVIEW.**
 
 ---
+### Entry 110 — Pre-push Part 6 documentation consistency review (2026-10-31)
+
+**Numbering:** provisional; main ends at 107 and this branch has Entries 108–109. Open PRs #67/#68 and fetched branch logs were rechecked; neither reserves 110. Recheck at merge time.
+
+**What [doc]:** corrected three report issues identified during Khalil's requested read-only
+review of `3f57ec3`: a coverage-attainment contradiction, outdated revision-pending wording,
+and an unpinned audit-tool installation recipe. The report now states the measured coverage
+result for its explicit source scope, records both existing report commits, and pins the
+reproduction tools to coverage 7.17.0, Radon 6.0.1 and Ruff 0.17.3. The matching initial-audit
+PDF was regenerated from the corrected Markdown and checked before handoff.
+
+**Evidence/checks:** committed raw-evidence SHA-256 values, tool-version capture hash,
+coverage and complexity arithmetic, lint count, relative links and PDF source hash were
+rechecked. Baseline data remain unchanged: user runs show 937 passing tests, governance
+3 passed, statement coverage 88.92%, branch 79.80%, combined 86.76%, maximum CC 37 and
+2 Ruff findings. No new test run or runtime improvement is claimed by this wording correction.
+
+**AI assistance:** Codex applied the user-authorized report corrections and repeated document
+and evidence checks. No application code, test, config, model, frozen evidence or dataset changed.
+
+**Gate:** corrected initial audit is ready for Khalil's review; the final Part 6 submission
+still needs any approved refactor, actual after-results, PR/CI and human acceptance.
+**WAITING FOR HUMAN REVIEW.**
+
+---
 ## Open items
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
@@ -3297,7 +3322,7 @@ before any evidence-sensitive refactor; final Markdown/PDF and implementation ev
 - [ ] Next API PRs: `MockAnalyzer` and the analyzer seam (§8), `GET /limits`, `POST /analyses` with the §4.3 checks (consider Starlette's `max_body_size`), storage (§7), history, notes, stats (Entry 101).
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
 
-**Midterm documentation (Entries 102–109)**
+**Midterm documentation (Entries 102–110)**
 - [ ] Review Khalil's initial refactor audit (Entry 108); agree on scope before any cache-helper implementation.
 - [x] Capture coverage, complexity and lint baseline outputs (Entry 109): 88.92% statement / 79.80% branch / 86.76% combined coverage; maximum CC 37; 2 Ruff findings.
 - [ ] Review and implement the two low-risk lint cleanups on a focused branch, then compare actual after-results; defer cache-helper restructuring for team review.
@@ -3337,7 +3362,7 @@ canonical UML package is merged in PR #70 (`85829e1`). Entry 107 drafts the evid
 and usage reflection on `docs/stage11-midterm-ai-ethics-malak`; the team tool inventory is confirmed
 and Donia approved the content by message; PR review and merge remain.
 
-**Midterm refactor audit:** Entries 108–109 prepare and correct the initial report and PDF on the main-based documentation branch. The local CNN-enabled baseline is 937 passed with no skips shown. Coverage, complexity and lint baseline outputs are captured (Entry 109); two lint findings await a focused cleanup. No refactor or performance gain is claimed. Team review precedes evidence-sensitive implementation, and final human acceptance remains open.
+**Midterm refactor audit:** Entries 108–110 prepare and correct the initial report and PDF on the main-based documentation branch. The local CNN-enabled baseline is 937 passed with no skips shown. Coverage, complexity and lint baseline outputs are captured (Entry 109); two lint findings await a focused cleanup. No refactor or performance gain is claimed. Team review precedes evidence-sensitive implementation, and final human acceptance remains open.
 
 **What was done:**
 - **Midterm AI ethics and usage reflection** on `docs/stage11-midterm-ai-ethics-malak` (Entry 107):

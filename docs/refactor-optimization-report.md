@@ -32,7 +32,7 @@ Token scan (exact invocation not preserved in Entry 107)
 Output: no token found
 ```
 
-The results above are historical repository records. The fresh baseline below was run by Khalil on `docs/stage11-midterm-refactor-khalil` at `98fd8d7e17f81ff1f9687f6ea3a83804a50fa628`, matching GitHub main at audit time. Khalil fetched and created the branch in PowerShell. The initial report was committed as `7c0e2437b63cd8eb5691184625bbc5813afdeec1`. This corrected revision is being prepared on the same branch; push and PR review remain pending.
+The results above are historical repository records. The fresh baseline below was run by Khalil on `docs/stage11-midterm-refactor-khalil` at `98fd8d7e17f81ff1f9687f6ea3a83804a50fa628`, matching GitHub main at audit time. Khalil fetched and created the branch in PowerShell. The initial report was committed as `7c0e2437b63cd8eb5691184625bbc5813afdeec1`, and the measured baseline as `3f57ec3ba4c7ba677e82de5dae7891d7dc96c98a`. At this pre-push review, publication and PR review have not yet occurred.
 
 Khalil subsequently ran fresh checks in his own PowerShell after installing `requirements.txt`. The pasted output and screenshot show:
 
@@ -190,14 +190,14 @@ This audit does not establish a measurable performance problem. The first propos
 
 ## Final submission requirements and measurement plan
 
-The supplied Midterm Instructions, section E, require refactors applied through PRs and human review with before/after metrics. The mandatory-deliverables section also requests repository content plus PDF. The implementation guidance names a coverage target of at least 60%, subject to course policy. This report currently completes the initial-audit stage; it does not demonstrate a completed refactor, coverage attainment, or measured performance improvement.
+The supplied Midterm Instructions, section E, require refactors applied through PRs and human review with before/after metrics. The mandatory-deliverables section also requests repository content plus PDF. The implementation guidance names a coverage target of at least 60%, subject to course policy. The measured statement, branch and combined coverage each exceed 60% for the explicitly stated `api/` and `src/` scope. This establishes the recorded baseline coverage result for that scope; it does not establish per-file coverage attainment or instructor acceptance of the scope. This report completes the initial-audit stage and does not yet demonstrate a completed refactor or measured performance improvement.
 
 The companion `refactor-optimization-report.pdf` is an export of this initial audit and must be regenerated after the final metrics and review decisions are added. It must not be submitted as a completed final report while those items remain pending.
 
 Coverage, Radon and Ruff are measurement tools only; they are not new application dependencies. The measured baseline above was collected through the equivalent individual commands supplied to Khalil. The following procedure documents creating an external output folder and collecting the same categories; it is a reusable procedure, not a claim that the entire block was executed verbatim. Run from the repository root before any code refactor, preserve the outputs outside the repository, and keep the captured tool versions for the after-run. Copy commands from the Markdown version; PDF code lines can wrap for display. If the run fails, retain its output and resolve the cause before interpreting coverage.
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install coverage radon ruff
+.\.venv\Scripts\python.exe -m pip install coverage==7.17.0 radon==6.0.1 ruff==0.17.3
 if ($LASTEXITCODE -ne 0) { throw 'Audit-tool installation failed' }
 $part6Out = Join-Path $env:TEMP ('voice-spoofing-part6-before-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
 New-Item -ItemType Directory -Path $part6Out | Out-Null
@@ -235,6 +235,6 @@ Completion gates: initial audit reaches the team; refactor scope is agreed; any 
 - Improvements achieved by this task: repository evidence consolidated, resource and validation figures traced to their original sources, and refactor candidates prioritized. No code-performance improvement is claimed. The historical UI contrast correction belongs to Iheb's PR #64.
 - Intentionally unchanged: model behavior, preprocessing rules, thresholds, API contracts, frozen evidence, governance decisions, datasets, audio, and test splits.
 - Remaining technical debt: the measured baseline contains two lint findings, four rank-E functions and individual coverage gaps. Reproducible online latency remains unmeasured; no refactor has yet been accepted or implemented.
-- Measurement limitations: user-executed baseline results are recorded above, with no skips in the final full-suite run. The assistant could not launch the project interpreter directly. No runtime improvement or before/after refactor comparison has been measured. The initial audit is committed as `7c0e243`; this corrected revision, PR review, any agreed implementation, after-checks and final human review remain pending.
+- Measurement limitations: user-executed baseline results are recorded above, with no skips in the final full-suite run. The assistant could not launch the project interpreter directly. No runtime improvement or before/after refactor comparison has been measured. The initial audit and measured baseline are recorded in commits `7c0e243` and `3f57ec3`; the remaining delivery gates are PR review, any agreed implementation, after-checks and final human review.
 - AI tools used: Codex for repository audit and report drafting.
 - Human review: Khalil must verify the audit, review the proposed change, review the captured baseline output and run checks after any approved change, and understand this AI-assisted report before accepting or submitting it. Command execution by Khalil is recorded above; his acceptance of the report content and proposed change remains pending.
