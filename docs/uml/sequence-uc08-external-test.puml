@@ -1,0 +1,86 @@
+@startuml
+title Figure 6 — UML sequence diagram for UC-08 Run External Generalization Test
+hide footbox
+autonumber
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam participant {
+  BackgroundColor #EAF2FB
+  BorderColor #1F5A99
+}
+skinparam sequence {
+  ArrowColor #333333
+  LifeLineBorderColor #777777
+  GroupBorderColor #1F5A99
+  GroupHeaderFontColor #1F5A99
+}
+
+actor "ML / Research\nEngineer" as Engineer
+participant "Evaluation\nService" as Evaluation
+participant "External Test\nGuard" as Guard
+participant "Model\nRegistry" as Registry
+participant "Experiment\nTracker" as Tracker
+participant "Dataset\nManager" as Dataset
+participant "Preprocessing\nService" as Preprocess
+participant "Detector\nRuntime" as Detector
+participant "Risk & Confidence\nService" as Risk
+
+Engineer -> Evaluation: runExternalTest(bundleId, "DEEP-VOICE")
+activate Evaluation
+Evaluation -> Guard: authorize(bundleId, "DEEP-VOICE")
+activate Guard
+Guard -> Registry: isFrozen(bundleId)
+activate Registry
+Registry --> Guard: frozen = true
+deactivate Registry
+Guard -> Tracker: externalRunExists("DEEP-VOICE")
+activate Tracker
+Tracker --> Guard: false (no external run yet)
+deactivate Tracker
+Guard --> Evaluation: authorized | refused(reason)
+deactivate Guard
+
+alt authorized: bundle frozen and no earlier external run
+  Evaluation -> Registry: loadBundle(bundleId)
+  activate Registry
+  Registry --> Evaluation: ModelBundle(frozen)
+  deactivate Registry
+
+  Evaluation -> Dataset: loadSplit("DEEP-VOICE", "external")
+  activate Dataset
+  Dataset --> Evaluation: DatasetSplit(labels, class counts)
+  deactivate Dataset
+
+  Evaluation -> Preprocess: transform(audioRef, profile)
+  activate Preprocess
+  Preprocess --> Evaluation: FeatureTensor
+  deactivate Preprocess
+
+  Evaluation -> Detector: score(features)
+  activate Detector
+  Detector --> Evaluation: Score
+  deactivate Detector
+
+  Evaluation -> Risk: decide(score) [frozen thresholds]
+  activate Risk
+  Risk --> Evaluation: Decision
+  deactivate Risk
+
+  Evaluation -> Evaluation: computeMetrics(labels, decisions)
+  Evaluation -> Tracker: registerExternalRun(run, metrics, seed, config)
+  activate Tracker
+  Tracker --> Evaluation: runId
+  deactivate Tracker
+  Evaluation --> Engineer: externalResult(metrics, class counts)
+else bundle not frozen, or an external run already registered
+  Evaluation --> Engineer: rejection(reason); no scoring, no metrics
+end
+deactivate Evaluation
+
+legend bottom
+  Solid arrow = synchronous call; dashed arrow = return
+  Narrow bars = activation; alt = alternative fragment
+  Authorization completes before the external split is loaded
+endlegend
+@enduml

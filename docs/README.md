@@ -22,6 +22,7 @@ tools all read it. Project rules live in `../AGENTS.md`.
 | [cnn_training.md](cnn_training.md) | CNN training (Stage 8): configs/cnn.yaml drift guard, D42 early stopping, W&B allow-list, D30 search and selection | the training loop, search or W&B logging changes |
 | [stages/](stages/) | Stage briefs (D32): one short explanation per closed stage, from `stages/TEMPLATE.md` | a stage closes |
 | [api_design.md](api_design.md) | API contract between the backend (`api/`) and the web app (`web/`), Stage 17 (proposed) | an endpoint, error code or stored field changes |
+| [uml/](uml/) | Canonical midterm UML package: the SRS use-case model and SDD component, class and sequence figures, with editable sources and SVG exports | an approved requirement, decision or source-report figure changes |
 | [model_bundle.md](model_bundle.md) | ModelBundle (Stage 12): format, verifying loader, tests | the bundle format changes |
 | [setup-report.md](setup-report.md) | Lab 6 setup report (skeleton) | the Lab 6 report is written |
 | [reference/](reference/) | SRS, SDD, Execution Plan, Proposal (read-only sources) | never edited here |

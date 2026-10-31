@@ -1,0 +1,63 @@
+@startuml
+!pragma layout smetana
+title Figure 2 — UML component diagram of the research tier: training and evaluation
+top to bottom direction
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam componentStyle rectangle
+skinparam component {
+  BackgroundColor #EAF2FB
+  BorderColor #1F5A99
+}
+
+rectangle "Voice-Spoofing Detection System — research tier: Colab / Kaggle and shared Drive" {
+  actor "ML / Research\nEngineer" as Engineer
+  component "Research Notebooks" as Notebooks
+  component "Training & Tuning Pipeline" as Training
+  component "Evaluation Service" as Evaluation
+  component "External Test Guard" as Guard
+
+  package "Shared core library\nsame source as online tier" as SharedCore {
+    component "Preprocessing Service" as Preprocess
+    component "Detector Runtime" as Detector
+    component "Risk & Confidence Service" as Risk
+  }
+
+  package "Research infrastructure adapters" as Infra {
+    component "Dataset Manager" as Dataset
+    component "Model Registry" as Registry
+    component "Experiment Tracker" as Tracker
+  }
+}
+
+cloud "Kaggle /\nHugging Face" as Kaggle
+cloud "Google Drive" as Drive
+cloud "Weights & Biases" as WandB
+
+Engineer --> Notebooks
+Notebooks ..> Training : ITraining
+Notebooks ..> Evaluation : IEvaluation
+Notebooks ..> Dataset : IDatasetManager\naudit
+
+Training ..> SharedCore : shared core interfaces
+Training ..> Infra : research adapters
+Evaluation ..> SharedCore : shared core interfaces
+Evaluation ..> Infra : research adapters
+Evaluation ..> Guard : IExternalTest
+
+Guard ..> Registry : frozen bundle check
+Guard ..> Tracker : run-registry check
+
+Dataset ..> Kaggle
+Dataset ..> Drive
+Registry ..> Drive
+Tracker ..> Drive
+Tracker ..> WandB
+
+legend bottom
+  Dashed arrow = dependency on a provided interface
+  Shared core is the same source used by the online tier
+  Guard authorization precedes any external-set load
+endlegend
+@enduml

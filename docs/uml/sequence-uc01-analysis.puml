@@ -1,0 +1,82 @@
+@startuml
+title Figure 5 — UML sequence diagram for UC-01 Analyze Audio via Dashboard
+hide footbox
+autonumber
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam participant {
+  BackgroundColor #EAF2FB
+  BorderColor #1F5A99
+}
+skinparam sequence {
+  ArrowColor #333333
+  LifeLineBorderColor #777777
+  GroupBorderColor #1F5A99
+  GroupHeaderFontColor #1F5A99
+}
+
+actor "Fraud Prevention\nAnalyst" as Analyst
+boundary "Analyst Web App\nReact, D38" as Dashboard
+participant "API Gateway" as Gateway
+participant "Analysis Service" as Analysis
+participant "Audio Intake\nService" as Intake
+participant "Preprocessing\nService" as Preprocess
+participant "Detector\nRuntime" as Detector
+participant "Risk & Confidence\nService" as Risk
+participant "Analysis Record\nService" as Record
+
+Analyst -> Dashboard: selectAudioFile(file)
+activate Dashboard
+Dashboard -> Gateway: POST /api/analyses (file)
+activate Gateway
+Gateway -> Gateway: assignRequestId()
+Gateway -> Analysis: analyze(file, channel, requestId)
+activate Analysis
+Analysis -> Intake: accept(file, requestId)
+activate Intake
+Intake --> Analysis: AudioSubmission(audioRef) | ValidationError
+deactivate Intake
+
+alt valid file: readable, supported format, within limits
+  Analysis -> Preprocess: transform(audioRef, profile)
+  activate Preprocess
+  Preprocess --> Analysis: FeatureTensor
+  deactivate Preprocess
+
+  Analysis -> Detector: score(features)
+  activate Detector
+  Detector --> Analysis: Score
+  deactivate Detector
+
+  Analysis -> Risk: decide(score)
+  activate Risk
+  Risk --> Analysis: Decision(prediction, confidence, riskLevel)
+  deactivate Risk
+
+  Analysis -> Record: record(decision, bundleVersion, latencyMs)
+  activate Record
+  Record --> Analysis: recorded (no raw audio)
+  deactivate Record
+
+  Analysis -> Intake: release(audioRef)
+  Analysis --> Gateway: AnalysisResult(requestId, decision)
+  deactivate Analysis
+  Gateway --> Dashboard: 201 AnalysisResponse (exact 8 fields)
+  deactivate Gateway
+  Dashboard --> Analyst: displayResult(prediction, confidence, riskLevel, notice)
+else unreadable, unsupported or policy-violating file
+  Analysis --> Gateway: ValidationError(reason)
+  deactivate Analysis
+  Gateway --> Dashboard: 4xx structured error(reason)
+  deactivate Gateway
+  Dashboard --> Analyst: displayError(reason)
+end
+deactivate Dashboard
+
+legend bottom
+  Solid arrow = synchronous call; dashed arrow = return
+  Narrow bars = activation; alt = alternative fragment
+  PR #65 updates the route to POST /api/analyses and the success response to 201
+endlegend
+@enduml

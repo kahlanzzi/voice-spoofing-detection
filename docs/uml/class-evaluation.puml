@@ -1,0 +1,92 @@
+@startuml
+!pragma layout smetana
+title Figure 4 — UML class diagram: evaluation and research-governance domain
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam class {
+  BackgroundColor #EAF2FB
+  BorderColor #1F5A99
+  ArrowColor #333333
+}
+hide circle
+
+class ModelBundle {
+  .. attributes and operations in Figure 3 ..
+}
+
+class ExternalTestGuard {
+  - guardedDataset: DatasetName
+  - requiresFrozenBundle: Boolean
+  - maxRuns: Integer
+  + authorize(bundle: ModelBundle, split: DatasetSplit): AuthorizationResult
+  + complete(run: EvaluationRun): void
+}
+
+class RunRegistry {
+  - registryRef: String
+  - appendOnly: Boolean
+  + hasExternalRun(dataset: DatasetName): Boolean
+  + register(run: EvaluationRun): void
+  + list(kind: RunKind): List<EvaluationRun>
+}
+
+class EvaluationRun {
+  - runId: String
+  - seed: Integer
+  - configRef: String
+  - isExternal: Boolean
+  + execute(bundle: ModelBundle, split: DatasetSplit): MetricSet
+  + record(tracker: IExperimentTracker): void
+}
+
+class DatasetSplit {
+  - datasetName: DatasetName
+  - partition: Partition
+  - groupAware: Boolean
+  + samples(): List<SampleRef>
+  + labelCounts(): Map<Label, Integer>
+  + assertNoGroupLeakage(): Boolean
+}
+
+class MetricSet {
+  - scalars: Map<String, Decimal>
+  - confusionMatrix: ConfusionMatrix
+  + compute(labels: List<Label>, scores: List<Score>, decisions: List<Decision>): void
+  + classDistribution(): Map<Label, Integer>
+}
+
+class EvaluationReport {
+  - reportId: String
+  - generatedAt: DateTime
+  - includesExternal: Boolean
+  + build(runs: List<EvaluationRun>): void
+  + externalSectionStatus(): String
+  + export(format: String): File
+}
+
+ExternalTestGuard ..> ModelBundle : checks
+ExternalTestGuard "1" -- "1" RunRegistry : consults
+ExternalTestGuard ..> EvaluationRun : authorizes
+ModelBundle "1" -- "0..*" EvaluationRun : evaluates
+RunRegistry "1" o-- "0..*" EvaluationRun : registers
+EvaluationRun "0..*" --> "1" DatasetSplit : uses
+EvaluationRun "1" *-- "1" MetricSet : produces
+MetricSet "1..*" --o "1" EvaluationReport : presents
+
+note right of RunRegistry
+  PC-05: a prohibited second external run is refused by the guard,
+  not left to team discipline.
+
+  D41 later refines the implementation registry key to
+  (dataset, split, evaluation_purpose, model_set) with a closed
+  purpose list; the specification-level responsibility is unchanged.
+end note
+
+legend bottom
+  Filled diamond = composition
+  Hollow diamond = aggregation
+  Dashed open arrow = dependency
+  Solid line = association
+endlegend
+@enduml

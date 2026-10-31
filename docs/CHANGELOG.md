@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Canonical midterm UML package under `docs/uml/`: editable diagram sources and SVG reconstructions of SRS Figure 1 and SDD Figures 1-6, with only the approved D38, API-contract and D41 annotations.
 - Midterm prioritized backlog under `docs/midterm/`, mapping the closed SRS requirement set (FR-01–FR-20, NFR-01–NFR-11 and PC-01–PC-09) to existing owners, stages, merged evidence and remaining work without adding scope.
 - Stage 17 API skeleton `api/` (FastAPI): `create_app()` with routes under `/api`, `configs/api.yaml` (§9, strict loader, `VSD_API_CONFIG`), the §6 error shape for every error (400 for invalid params, 404/405/500 included, no traceback), `X-Request-ID` on every response, the §5 shapes, and `GET /api/status` with mock values; `fastapi`, `uvicorn`, `python-multipart` and `httpx` pinned; `docs/api_design.md` approved and §6 gains the 405 row.
 - Stage 17 API design note `docs/api_design.md` (proposed): `/api` endpoints for status, limits, analyses, notes and stats, one error shape, storage, analyzer seam and config; §11 unchanged.
@@ -75,6 +76,9 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - `docs/experimental_protocol.md` v1.0 frozen (F1): all sections decided from the team-accepted defaults.
 
 ### Changed
+- The six PlantUML figures under `docs/uml/` now follow the SDD's visual grouping more closely:
+  layered component views, report-style class/sequence legends and no implementation-status labels;
+  canonical UML semantics are unchanged.
 - `docs/design/`: analyst-console prototype v4 (proposed final design reference; model output moved to Technical details) and `HANDOFF.md` (developer handoff and verification report).
 - `docs/design/`: analyst-console prototype v3 (second UI/UX review, aligned with `risk-v1`); README replaced (the Entry 84 copy was an unrelated file).
 - Stage 10 closed: brief accepted after the D32 teach-back (Iheb, Malak, Khalil); Stage 11 current.

@@ -1,0 +1,76 @@
+<mxfile host="app.diagrams.net" modified="2026-10-31T00:00:00.000Z" agent="Codex" version="24.7.17">
+  <diagram id="canonical-use-case" name="Canonical use-case model">
+    <mxGraphModel dx="1400" dy="750" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="750" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="boundary" value="Voice-Spoofing Detection &amp; Risk Scoring System" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=1;strokeWidth=2;strokeColor=#9E1B16;fillColor=none;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="200" y="40" width="960" height="570" as="geometry"/>
+        </mxCell>
+        <mxCell id="uc01" value="UC-01&lt;br&gt;Analyze Audio via Dashboard" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;strokeColor=#9E1B16;fillColor=#FCE8E6;" vertex="1" parent="1">
+          <mxGeometry x="240" y="108" width="220" height="84" as="geometry"/>
+        </mxCell>
+        <mxCell id="uc03" value="UC-03&lt;br&gt;Validate &amp; Analyze Audio" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;strokeColor=#9E1B16;fillColor=#FCE8E6;" vertex="1" parent="1">
+          <mxGeometry x="540" y="108" width="220" height="84" as="geometry"/>
+        </mxCell>
+        <mxCell id="uc07" value="UC-07&lt;br&gt;Run Model Evaluation" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;strokeColor=#9E1B16;fillColor=#FCE8E6;" vertex="1" parent="1">
+          <mxGeometry x="840" y="108" width="220" height="84" as="geometry"/>
+        </mxCell>
+        <mxCell id="uc02" value="UC-02&lt;br&gt;Analyze Audio via API" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;strokeColor=#9E1B16;fillColor=#FCE8E6;" vertex="1" parent="1">
+          <mxGeometry x="240" y="228" width="220" height="84" as="geometry"/>
+        </mxCell>
+        <mxCell id="uc04" value="UC-04&lt;br&gt;Record Analysis Metadata" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;strokeColor=#9E1B16;fillColor=#FCE8E6;" vertex="1" parent="1">
+          <mxGeometry x="540" y="228" width="220" height="84" as="geometry"/>
+        </mxCell>
+        <mxCell id="uc08" value="UC-08&lt;br&gt;Run External Generalization Test" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;strokeColor=#9E1B16;fillColor=#FCE8E6;" vertex="1" parent="1">
+          <mxGeometry x="840" y="228" width="220" height="84" as="geometry"/>
+        </mxCell>
+        <mxCell id="uc05" value="UC-05&lt;br&gt;Review Analysis History" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;strokeColor=#9E1B16;fillColor=#FCE8E6;" vertex="1" parent="1">
+          <mxGeometry x="240" y="368" width="220" height="84" as="geometry"/>
+        </mxCell>
+        <mxCell id="uc09" value="UC-09&lt;br&gt;View Evaluation Report" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;strokeColor=#9E1B16;fillColor=#FCE8E6;" vertex="1" parent="1">
+          <mxGeometry x="840" y="368" width="220" height="84" as="geometry"/>
+        </mxCell>
+        <mxCell id="uc06" value="UC-06&lt;br&gt;Annotate Result" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;strokeColor=#9E1B16;fillColor=#FCE8E6;" vertex="1" parent="1">
+          <mxGeometry x="240" y="488" width="220" height="84" as="geometry"/>
+        </mxCell>
+        <mxCell id="uc10" value="UC-10&lt;br&gt;Review Service Logs" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;strokeColor=#9E1B16;fillColor=#FCE8E6;" vertex="1" parent="1">
+          <mxGeometry x="840" y="488" width="220" height="84" as="geometry"/>
+        </mxCell>
+        <mxCell id="api" value="API Client&lt;br&gt;&lt;&lt;external system&gt;&gt;" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" vertex="1" parent="1">
+          <mxGeometry x="25" y="190" width="110" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="analyst" value="Fraud Prevention&lt;br&gt;Analyst" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" vertex="1" parent="1">
+          <mxGeometry x="25" y="380" width="110" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="engineer" value="ML / Research&lt;br&gt;Engineer" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1225" y="180" width="110" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="compliance" value="Compliance&lt;br&gt;Officer" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1225" y="360" width="110" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="operations" value="Operations /&lt;br&gt;Security Administrator" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1225" y="520" width="110" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="a1" style="endArrow=none;html=1;" edge="1" parent="1" source="api" target="uc02"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a2" style="endArrow=none;html=1;" edge="1" parent="1" source="analyst" target="uc01"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a3" style="endArrow=none;html=1;" edge="1" parent="1" source="analyst" target="uc05"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a4" style="endArrow=none;html=1;" edge="1" parent="1" source="analyst" target="uc06"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a5" style="endArrow=none;html=1;" edge="1" parent="1" source="uc07" target="engineer"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a6" style="endArrow=none;html=1;" edge="1" parent="1" source="uc08" target="engineer"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a7" style="endArrow=none;html=1;" edge="1" parent="1" source="uc09" target="engineer"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a8" style="endArrow=none;html=1;" edge="1" parent="1" source="uc09" target="compliance"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a9" style="endArrow=none;html=1;" edge="1" parent="1" source="uc10" target="operations"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="i1" value="&lt;&lt;include&gt;&gt;" style="dashed=1;endArrow=open;endFill=0;html=1;" edge="1" parent="1" source="uc01" target="uc03"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="i2" value="&lt;&lt;include&gt;&gt;" style="dashed=1;endArrow=open;endFill=0;html=1;" edge="1" parent="1" source="uc02" target="uc03"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="i3" value="&lt;&lt;include&gt;&gt;" style="dashed=1;endArrow=open;endFill=0;html=1;" edge="1" parent="1" source="uc03" target="uc04"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="i4" value="&lt;&lt;include&gt;&gt;" style="dashed=1;endArrow=open;endFill=0;html=1;" edge="1" parent="1" source="uc05" target="uc04"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="i5" value="&lt;&lt;include&gt;&gt;" style="dashed=1;endArrow=open;endFill=0;html=1;curved=1;" edge="1" parent="1" source="uc06" target="uc04"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e1" value="&lt;&lt;extend&gt;&gt;" style="dashed=1;endArrow=open;endFill=0;html=1;" edge="1" parent="1" source="uc06" target="uc05"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="legend1" value="association" style="shape=line;html=1;strokeWidth=1;labelPosition=right;align=left;verticalAlign=middle;" vertex="1" parent="1"><mxGeometry x="260" y="675" width="170" height="20" as="geometry"/></mxCell>
+        <mxCell id="legend2" value="&lt;&lt;include&gt;&gt;: base → included" style="shape=line;html=1;dashed=1;endArrow=open;endFill=0;labelPosition=right;align=left;verticalAlign=middle;" vertex="1" parent="1"><mxGeometry x="520" y="675" width="250" height="20" as="geometry"/></mxCell>
+        <mxCell id="legend3" value="&lt;&lt;extend&gt;&gt;: extension → base" style="shape=line;html=1;dashed=1;endArrow=open;endFill=0;labelPosition=right;align=left;verticalAlign=middle;" vertex="1" parent="1"><mxGeometry x="890" y="675" width="260" height="20" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

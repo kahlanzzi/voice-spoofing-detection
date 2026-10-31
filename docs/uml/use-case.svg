@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="750" viewBox="0 0 1400 750" role="img" aria-labelledby="title desc">
+  <title id="title">Merged use-case model for the Voice-Spoofing Detection and Risk Scoring System</title>
+  <desc id="desc">The canonical SRS use-case diagram with five actors, ten use cases, actor associations, include relations and one extend relation.</desc>
+  <defs>
+    <style>
+      .boundary{fill:#fff;stroke:#9e1b16;stroke-width:2}
+      .usecase{fill:#fce8e6;stroke:#9e1b16;stroke-width:2}
+      .assoc{fill:none;stroke:#4a4a4a;stroke-width:1.7}
+      .relation{fill:none;stroke:#4a4a4a;stroke-width:1.7;stroke-dasharray:7 6;marker-end:url(#open-arrow)}
+      .actor-line{fill:none;stroke:#333;stroke-width:1.8;stroke-linecap:round}
+      .title{font:700 18px Arial,sans-serif;fill:#7d1713}
+      .label{font:15px Arial,sans-serif;fill:#181818;text-anchor:middle}
+      .uc-id{font:700 13px Arial,sans-serif;fill:#181818;text-anchor:middle}
+      .relation-label{font:12px Arial,sans-serif;fill:#333;text-anchor:middle}
+      .legend{font:13px Arial,sans-serif;fill:#333}
+    </style>
+    <marker id="open-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M1,1 L9,5 L1,9" fill="#fff" stroke="#4a4a4a" stroke-width="1.4"/>
+    </marker>
+    <g id="actor">
+      <circle cx="0" cy="-30" r="10" fill="#fff" stroke="#333" stroke-width="1.8"/>
+      <path d="M0,-20 V18 M-18,-7 H18 M0,18 L-17,42 M0,18 L17,42" class="actor-line"/>
+    </g>
+  </defs>
+
+  <rect x="200" y="40" width="960" height="570" class="boundary"/>
+  <text x="680" y="68" class="title" text-anchor="middle">Voice-Spoofing Detection &amp; Risk Scoring System</text>
+
+  <g transform="translate(350 150)"><ellipse rx="110" ry="42" class="usecase"/><text y="-7" class="uc-id">UC-01</text><text y="14" class="label"><tspan x="0">Analyze Audio via</tspan><tspan x="0" dy="18">Dashboard</tspan></text></g>
+  <g transform="translate(650 150)"><ellipse rx="110" ry="42" class="usecase"/><text y="-7" class="uc-id">UC-03</text><text y="14" class="label"><tspan x="0">Validate &amp; Analyze</tspan><tspan x="0" dy="18">Audio</tspan></text></g>
+  <g transform="translate(950 150)"><ellipse rx="110" ry="42" class="usecase"/><text y="-7" class="uc-id">UC-07</text><text y="17" class="label">Run Model Evaluation</text></g>
+
+  <g transform="translate(350 270)"><ellipse rx="110" ry="42" class="usecase"/><text y="-7" class="uc-id">UC-02</text><text y="17" class="label">Analyze Audio via API</text></g>
+  <g transform="translate(650 270)"><ellipse rx="110" ry="42" class="usecase"/><text y="-7" class="uc-id">UC-04</text><text y="14" class="label"><tspan x="0">Record Analysis</tspan><tspan x="0" dy="18">Metadata</tspan></text></g>
+  <g transform="translate(950 270)"><ellipse rx="110" ry="42" class="usecase"/><text y="-7" class="uc-id">UC-08</text><text y="14" class="label"><tspan x="0">Run External</tspan><tspan x="0" dy="18">Generalization Test</tspan></text></g>
+
+  <g transform="translate(350 410)"><ellipse rx="110" ry="42" class="usecase"/><text y="-7" class="uc-id">UC-05</text><text y="17" class="label">Review Analysis History</text></g>
+  <g transform="translate(950 410)"><ellipse rx="110" ry="42" class="usecase"/><text y="-7" class="uc-id">UC-09</text><text y="17" class="label">View Evaluation Report</text></g>
+
+  <g transform="translate(350 530)"><ellipse rx="110" ry="42" class="usecase"/><text y="-7" class="uc-id">UC-06</text><text y="17" class="label">Annotate Result</text></g>
+  <g transform="translate(950 530)"><ellipse rx="110" ry="42" class="usecase"/><text y="-7" class="uc-id">UC-10</text><text y="17" class="label">Review Service Logs</text></g>
+
+  <g transform="translate(80 220)"><use href="#actor"/><text y="67" class="label"><tspan x="0">API Client</tspan><tspan x="0" dy="18">&lt;&lt;external system&gt;&gt;</tspan></text></g>
+  <g transform="translate(80 430)"><use href="#actor"/><text y="67" class="label"><tspan x="0">Fraud Prevention</tspan><tspan x="0" dy="18">Analyst</tspan></text></g>
+  <g transform="translate(1300 220)"><use href="#actor"/><text y="67" class="label"><tspan x="0">ML / Research</tspan><tspan x="0" dy="18">Engineer</tspan></text></g>
+  <g transform="translate(1300 410)"><use href="#actor"/><text y="67" class="label"><tspan x="0">Compliance</tspan><tspan x="0" dy="18">Officer</tspan></text></g>
+  <g transform="translate(1300 570)"><use href="#actor"/><text y="67" class="label"><tspan x="0">Operations /</tspan><tspan x="0" dy="18">Security Administrator</tspan></text></g>
+
+  <path d="M100 220 L240 270" class="assoc"/>
+  <path d="M100 405 L240 150" class="assoc"/>
+  <path d="M100 430 L240 410" class="assoc"/>
+  <path d="M100 450 L240 530" class="assoc"/>
+  <path d="M1060 150 L1280 205" class="assoc"/>
+  <path d="M1060 270 L1280 220" class="assoc"/>
+  <path d="M1060 410 L1280 240" class="assoc"/>
+  <path d="M1060 410 L1280 410" class="assoc"/>
+  <path d="M1060 530 L1280 555" class="assoc"/>
+
+  <path d="M460 150 L540 150" class="relation"/>
+  <text x="500" y="137" class="relation-label">&lt;&lt;include&gt;&gt;</text>
+  <path d="M448 245 L558 178" class="relation"/>
+  <text x="500" y="207" class="relation-label">&lt;&lt;include&gt;&gt;</text>
+  <path d="M650 192 L650 228" class="relation"/>
+  <text x="700" y="214" class="relation-label">&lt;&lt;include&gt;&gt;</text>
+  <path d="M438 383 L566 298" class="relation"/>
+  <text x="505" y="332" class="relation-label">&lt;&lt;include&gt;&gt;</text>
+  <path d="M438 505 C520 470 520 350 574 300" class="relation"/>
+  <text x="535" y="430" class="relation-label">&lt;&lt;include&gt;&gt;</text>
+  <path d="M350 488 L350 452" class="relation"/>
+  <text x="400" y="475" class="relation-label">&lt;&lt;extend&gt;&gt;</text>
+
+  <line x1="235" y1="690" x2="295" y2="690" class="assoc"/><text x="310" y="695" class="legend">association</text>
+  <line x1="500" y1="690" x2="560" y2="690" class="relation"/><text x="575" y="695" class="legend">&lt;&lt;include&gt;&gt;: base → included</text>
+  <line x1="900" y1="690" x2="960" y2="690" class="relation"/><text x="975" y="695" class="legend">&lt;&lt;extend&gt;&gt;: extension → base</text>
+</svg>

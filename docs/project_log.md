@@ -2848,6 +2848,132 @@ remains responsible for the submission.
 **Gate:** teammate review of the backlog and its evidence before merge. AI agents do not merge.
 
 ---
+### Entry 103 — Midterm UML package prepared (2026-10-31)
+
+**What:** added `docs/uml/` on `docs/stage11-midterm-uml-malak`: five editable PlantUML sources
+and five matching SVG exports for the online use cases, API/analyzer class model, upload-analysis
+sequence, History/result/note sequence, and the research/online component-deployment boundary. The
+package README records its sources, status notation, open assumptions, render commands and review
+owners; `docs/README.md` links the package.
+
+**Scope [doc]:** the SRS, Execution Plan, `AGENTS.md`, D38/ADR 0008, approved API design, UI handoff,
+architecture summary, midterm backlog and current `api/`/`src/` code. The diagrams add no
+requirements. They label the current mock `GET /api/status` and existing shared core as implemented;
+the analyzer seam, upload/history/note/stats routes, metadata repository, React/nginx app and Docker
+deployment remain planned. Access control remains an open decision. Research evaluation and
+DEEP-VOICE stay outside the online deployment.
+
+**Evidence [verified]:** PlantUML `-checkonly` accepted all 5 sources; all 5 generated SVG files
+parsed as XML; the rendered images were visually inspected for readable actors, relationships,
+sequence fragments, component boundaries and implemented/planned labels.
+
+**Checks [verified]:** `python -m pytest -q`: 794 passed, 9 skipped in 106.60s;
+`tests/governance/test_deepvoice_access.py`: 3 passed in 0.46s. Documentation-only change; no
+audio, dataset, checkpoint or DEEP-VOICE access.
+
+**AI assistance:** **Codex**, using the Diagram Maker UML, sequence and export skills, audited the
+repository interfaces, drafted the sources, rendered and visually checked the SVGs, and prepared the
+required records. Malak reviews the complete diff and remains responsible for the submission.
+
+**Gate:** Iheb validates API/backend/deployment flows; Donia validates ModelBundle/preprocessing/
+risk-policy boundaries; then teammate review and green CI. AI agents do not merge.
+
+---
+### Entry 104 — UML package aligned to the canonical SRS/SDD figures (2026-10-31)
+
+**What:** corrected `docs/uml/` after review identified that Entry 103's five diagrams formed a
+parallel implementation/planning model instead of the assignment's canonical report figures. The
+package now contains seven editable PlantUML sources and matching SVG exports that reconstruct SRS
+Figure 1 and SDD Figures 1-6: one merged use-case model, online and research component views,
+analysis and evaluation/governance class views, and the UC-01 and UC-08 sequences. The package
+README maps every repository file to its report figure and defines one-source consistency rules.
+
+**Scope [doc]:** the SRS/SDD actors, UC IDs, include/extend relations, component boundaries,
+classes, multiplicities, participants and message order. No requirement, use case or domain class was
+invented. The only post-report annotations are approved D38/ADR 0008 (React label), PR #65's API
+contract (`POST /api/analyses`, `201`, exact eight-field response) and D41/ADR 0010's registry-key
+refinement. Implementation status remains in `docs/midterm/backlog.md` and this log, outside the UML.
+
+**Evidence [verified]:** PlantUML `-checkonly` accepted all 7 sources; all 7 generated SVG files
+parsed as XML; all 7 rendered PNG previews were visually reviewed for correct UML notation,
+readable labels, component boundaries, multiplicities, include/extend direction, sequence ordering,
+alternative paths, contrast and clipping. No rendering defect remained.
+
+**Checks [verified]:** `python -m pytest -q`: 794 passed, 9 skipped in 19.68s;
+`tests/governance/test_deepvoice_access.py`: 3 passed in 0.54s. Documentation-only change; no audio,
+dataset, checkpoint or DEEP-VOICE access.
+
+**AI assistance:** **Codex**, using the Diagram Maker UML and diagram-review rules, compared the
+editable reconstructions with the canonical PDF figures, corrected the UML notation, regenerated and
+visually inspected every export, and prepared the records. Malak reviews the complete diff and remains
+responsible for the submission.
+
+**Gate:** Iheb validates the online/API and UC-01 figures; Donia validates the shared core and model
+boundaries; Khalil validates UC-08 and evaluation governance; then teammate review and green CI. AI
+agents do not merge.
+
+---
+### Entry 105 — Canonical use-case figure given fixed, PDF-faithful layout (2026-10-31)
+
+**What:** replaced only the use-case diagram's automatic PlantUML layout with editable draw.io XML
+and a matching hand-positioned SVG. The layout now follows the approved SRS Figure 1: API Client and
+Fraud Prevention Analyst on the left, research/compliance/operations actors on the right, and the
+submission, shared analysis and research/operations use cases in compact columns. The five actors,
+UC-01–UC-10 labels, nine actor associations, five `include` relations and one `extend` relation are
+unchanged. No requirement or system behaviour changed.
+
+**Evidence [verified]:** `use-case.drawio` and `use-case.svg` parse as XML; the 1400×750 SVG was
+rendered in a browser and visually reviewed at full resolution. Actor labels do not overlap, every
+actor remains outside the system boundary, every use case remains inside it, relationship arrows and
+legend are readable, and no content is clipped. The other six canonical diagrams are unchanged.
+
+**Checks [verified]:** `python -m pytest -q`: 794 passed, 9 skipped in 19.30s;
+`tests/governance/test_deepvoice_access.py`: 3 passed in 0.62s. Documentation-only change; no audio,
+dataset, checkpoint or DEEP-VOICE access.
+
+**AI assistance:** **Codex**, using the Diagram Maker UML and diagram-review rules, compared the
+automatic render with the approved PDF figure, rejected two inadequate automatic layouts, produced
+the fixed vector layout, and visually inspected the final render. Malak reviews the complete diff and
+remains responsible for the submission.
+
+**Gate:** Iheb, Donia and Khalil confirm that the fixed layout preserves the canonical SRS meaning;
+then teammate review and green CI. AI agents do not merge.
+
+---
+### Entry 106 — Remaining canonical UML figures audited and visually aligned (2026-10-31)
+
+**What:** cross-checked the six remaining editable UML sources and SVG exports against SDD Figures
+1–6 after the use-case layout correction. The online and research component views now use clear
+vertical layers; research dependencies point to the same shared-core and infrastructure boundaries
+shown in the report instead of crossing individual components. The class and sequence diagrams use
+compact report-style legends and consistent blue sequence styling. Implementation-status wording was
+removed from specification-level figures. No actor, component, class, relationship, multiplicity,
+participant, message, alternative path or requirement changed.
+
+**Controlled differences [verified]:** the only post-report differences remain the three already
+listed in `docs/uml/README.md`: D38 / ADR 0008's React label, PR #65's approved
+`POST /api/analyses` / `201` eight-field response, and D41 / ADR 0010's registry-key refinement.
+The figures do not introduce a second domain model.
+
+**Evidence [verified]:** PlantUML `-checkonly` accepted all 6 PlantUML sources; all 7 SVG exports and
+the draw.io source parsed as XML. All 7 final renders were visually reviewed at full resolution for
+boundaries, direction, multiplicities, message order, alternative fragments, label readability,
+contrast and clipping. No rendering defect or cross-diagram naming conflict remained.
+
+**Checks [verified]:** `python -m pytest -q`: 794 passed, 9 skipped in 19.14s;
+`tests/governance/test_deepvoice_access.py`: 3 passed in 0.50s. Documentation-only change; no audio,
+dataset, checkpoint or DEEP-VOICE access.
+
+**AI assistance:** **Codex**, using the Diagram Maker UML, diagram-review and PDF inspection rules,
+compared each editable figure to the canonical SDD page, preserved the report semantics, improved
+only the presentation, regenerated the exports and prepared this audit record. Malak reviews the
+complete diff and remains responsible for the submission.
+
+**Gate:** Iheb validates the online/API and UC-01 figures; Donia validates the shared core and model
+boundaries; Khalil validates UC-08 and evaluation governance; then teammate review and green CI. AI
+agents do not merge.
+
+---
 ## Open items
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
@@ -3089,9 +3215,14 @@ remains responsible for the submission.
 - [ ] Next API PRs: `MockAnalyzer` and the analyzer seam (§8), `GET /limits`, `POST /analyses` with the §4.3 checks (consider Starlette's `max_body_size`), storage (§7), history, notes, stats (Entry 101).
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
 
-**Midterm documentation (Entry 102)**
-- [ ] Teammate review of the prioritized backlog against the SRS and merged evidence.
+**Midterm documentation (Entries 102–104)**
+- [x] Review and merge the prioritized backlog against the SRS and merged evidence. (PR #69,
+  `023bfa4`; Khalil approved; Donia validated requirements and priorities by team message)
 - [ ] Update backlog statuses only from merged evidence as implementation PRs land.
+- [ ] Iheb validates the canonical online component and UC-01 figures against Part E.
+- [ ] Donia validates the canonical shared-core, ModelBundle, preprocessing and risk-policy figures.
+- [ ] Khalil validates the canonical UC-08 and evaluation/governance figures.
+- [ ] Review and merge the seven canonical UML sources and matching SVG exports with green CI.
 
 **Later stages (reminders)**
 - [ ] `configs/robustness.yaml` → Stage 14. `docker-compose.yml` → Stage 17.
@@ -3111,7 +3242,17 @@ remains responsible for the submission.
 `GET /api/status`; no analyzer or uploads yet. The midterm backlog in Entry 102 keeps all
 unimplemented end-to-end flows Partial or Planned.
 
+**Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and Donia
+validated its requirements and priorities by team message. Entries 104–106 correct and audit the UML
+package on `docs/stage11-midterm-uml-malak` against the canonical SRS/SDD figures, including the
+fixed-layout use-case source and the visually aligned component, class and sequence figures. Domain
+validation by Iheb, Donia and Khalil is pending.
+
 **What was done:**
+- **Canonical midterm UML package** on `docs/stage11-midterm-uml-malak` (Entries 104–106): six
+  editable PlantUML sources, one fixed-layout draw.io source and seven SVG exports reconstructing SRS
+  Figure 1 and SDD Figures 1-6, with controlled D38/API-contract/D41 annotations and no parallel
+  model.
 - **Stage 17 API skeleton**, merged in PR #66 as `d9e8c4a` (Entry 101): `api/` package
   (app factory, strict config, §6 error shape for every error, `X-Request-ID`, §5 schemas,
   mock `GET /api/status`) and 50 tests (Iheb, Part E). The contract `docs/api_design.md` (Entry 100)
@@ -3246,8 +3387,10 @@ unimplemented end-to-end flows Partial or Planned.
 - Stage briefs (`docs/stages/`, D32): 00–10 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), 07 (PR #43), 08–09 (PR #54), and 10 (PR #61).
 
 **Branches:**
-- `origin/main`: at `d9e8c4a` (Stage 17 API skeleton merged as PR #66; earlier history remains in Git).
-- `docs/stage11-midterm-backlog-malak`: Entry 102 midterm requirements backlog, awaiting review.
+- `origin/main`: at `023bfa4` (Entry 102 backlog merged as PR #69; earlier history remains in Git).
+- `docs/stage11-midterm-uml-malak`: Entries 104–106 canonical UML package and final visual audit,
+  awaiting domain review.
+- `docs/stage11-midterm-backlog-malak`: Entry 102 backlog, merged as PR #69 (`023bfa4`).
 - `docs/stage8-cnn-selection`: merged as PR #52 (remote branch deleted).
 - `docs/stage16-d43-loudness-diagnostic`: D43 proposal and approval (Entry 87), merged as PR #53 (`a022e7a`) (remote branch deleted).
 - `feat/stage13-window-runner`: D35 per-window integration test; its log entry needs renumbering to 85.
