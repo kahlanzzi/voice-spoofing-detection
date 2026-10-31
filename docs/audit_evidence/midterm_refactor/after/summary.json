@@ -1,0 +1,187 @@
+{
+  "kind": "midterm_refactor_after",
+  "execution": "Khalil user-executed project-runtime commands; outputs supplied to Codex",
+  "cleanup_commit": "de943333c9f8e51416666b84f37d319cd8cac4b9",
+  "measurement_state": "Two source edits measured before commit; subsequently committed without further source changes. Documentation finalized separately.",
+  "parent_documentation_commit": "3a33105078b8b3bf569f98d1edd7f58534be8e6c",
+  "source_base_commit": "98fd8d7e17f81ff1f9687f6ea3a83804a50fa628",
+  "scope": [
+    "api",
+    "src"
+  ],
+  "python": "3.13.16 (same local environment as before; version not reprinted in after console)",
+  "tools": {
+    "coverage": "7.17.0",
+    "radon": "6.0.1",
+    "ruff": "0.17.3"
+  },
+  "tests": {
+    "uninstrumented": "937 passed in 57.15s",
+    "coverage_instrumented": "937 passed in 85.53s (0:01:25)",
+    "governance": "3 passed in 0.18s"
+  },
+  "coverage": {
+    "covered_statements": 3748,
+    "statements": 4215,
+    "statement_percent": 88.92052194543298,
+    "covered_branches": 1047,
+    "branches": 1312,
+    "branch_percent": 79.80182926829268,
+    "combined_percent": 86.7559254568482,
+    "missing_statements": 467,
+    "missing_branches": 265
+  },
+  "complexity": {
+    "aggregation": "top-level function blocks and class methods; class summary blocks and nested closures excluded",
+    "block_count": 342,
+    "mean": 4.608187134502924,
+    "rank_counts": {
+      "A": 249,
+      "B": 61,
+      "C": 25,
+      "D": 3,
+      "E": 4
+    },
+    "highest_blocks": [
+      {
+        "file": "src/features/logmel_cache.py",
+        "name": "load_logmel_cache",
+        "line": 125,
+        "complexity": 37,
+        "rank": "E"
+      },
+      {
+        "file": "src/features/mfcc_cache.py",
+        "name": "load_mfcc_cache",
+        "line": 156,
+        "complexity": 33,
+        "rank": "E"
+      },
+      {
+        "file": "src/preprocessing/profile.py",
+        "name": "load_profile",
+        "line": 90,
+        "complexity": 33,
+        "rank": "E"
+      },
+      {
+        "file": "src/evaluation/speaker_average.py",
+        "name": "speaker_average",
+        "line": 21,
+        "complexity": 32,
+        "rank": "E"
+      },
+      {
+        "file": "src/models/cnn_checkpoint.py",
+        "name": "validate_metadata",
+        "line": 67,
+        "complexity": 27,
+        "rank": "D"
+      },
+      {
+        "file": "src/splitting/for2sec.py",
+        "name": "validate_source",
+        "line": 123,
+        "complexity": 25,
+        "rank": "D"
+      },
+      {
+        "file": "src/splitting/for2sec.py",
+        "name": "load_config",
+        "line": 44,
+        "complexity": 22,
+        "rank": "D"
+      },
+      {
+        "file": "src/evaluation/clip_scores.py",
+        "name": "read_clip_scores",
+        "line": 328,
+        "complexity": 19,
+        "rank": "C"
+      },
+      {
+        "file": "src/tuning/cnn_search.py",
+        "name": "run_search",
+        "line": 149,
+        "complexity": 19,
+        "rank": "C"
+      },
+      {
+        "file": "api/config.py",
+        "name": "load_api_config",
+        "line": 62,
+        "complexity": 17,
+        "rank": "C"
+      },
+      {
+        "file": "src/freezing/manifests.py",
+        "name": "load_config",
+        "line": 69,
+        "complexity": 17,
+        "rank": "C"
+      },
+      {
+        "file": "src/audit/for2sec_audit.py",
+        "name": "run",
+        "line": 294,
+        "complexity": 16,
+        "rank": "C"
+      },
+      {
+        "file": "src/preprocessing/benchmark.py",
+        "name": "_gpu_dry_run",
+        "line": 32,
+        "complexity": 16,
+        "rank": "C"
+      },
+      {
+        "file": "src/bundle/bundle.py",
+        "name": "build_bundle",
+        "line": 213,
+        "complexity": 15,
+        "rank": "C"
+      }
+    ],
+    "parse_error_files": 0
+  },
+  "lint": {
+    "rules": [
+      "E4",
+      "E7",
+      "E9",
+      "F"
+    ],
+    "isolated": true,
+    "target_version": "py313",
+    "exit_code": 0,
+    "count": 0,
+    "findings": []
+  },
+  "comparison": {
+    "lint_before": 2,
+    "lint_after": 0,
+    "aggregate_coverage_unchanged": true,
+    "all_measured_complexity_blocks_unchanged": true,
+    "performance_improvement": "not measured"
+  },
+  "raw_file_sha256": {
+    "coverage.json": "2777c2a1e72f611579dfb5cd0095c7fb7966ee721c0eec2d119cebc5ac0a26cc",
+    "complexity.json": "0e912bb702627be6538bdd2d304cfd9f28ff342dfebb291c18f70cd03d43e9e0",
+    "lint.json": "50056c08ce479cc2f54c4d6595a4264bdf32bf84f2995d59ff3bd513897ab414"
+  },
+  "normalized_capture_sha256": {
+    "tool-versions.txt": "b0e622caf670aa7732d2ea2262c6fa99f29b38f0c3f6030eef54f33c0a68fa1a",
+    "console.txt": "3131b650dbc1d475bc7c91129cb39be597f2301b1449c93ed7acf35f9c339379"
+  },
+  "source_file_sha256": {
+    "src/audit/for2sec_audit.py": "fe0a37829d62aaae2d5833169c617b192e347162814fa88298ecc1ac1c700e3d",
+    "src/tuning/baseline_fit.py": "e1537ce5c0b0872f2964ff13134969f0cafe84c6afcfa34cd516ddf38255e1d7"
+  },
+  "limitations": [
+    "Selected lint rules only; no formatter check",
+    "Coverage api/src only; not every file meets 60%",
+    "Test durations are observations, not reproducible optimization benchmarks",
+    "PR, CI and independent human review pending",
+    "No API latency or resource benchmark measured before or after"
+  ]
+}

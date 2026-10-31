@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Midterm initial refactor and optimization audit with Markdown/PDF exports, complete local baseline, source-linked API/UI and ML evidence, reproducible measurement plan, and proposed work awaiting team review.
 - Midterm AI ethics and usage reflection grounded in the project's recorded tools, human reviews,
   corrections, data safeguards, bias limitations, licensing and academic-integrity rules.
 - Canonical midterm UML package under `docs/uml/`: editable diagram sources and SVG reconstructions of SRS Figure 1 and SDD Figures 1-6, with only the approved D38, API-contract and D41 annotations.
@@ -107,6 +108,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - D26 completed with the v2.1 §5 hand-overs; per-folder `CODEOWNERS` (owner + consumer reviewer); project log header updated.
 
 ### Fixed
+- Part 6 lint cleanup: removed the constant-heading f-string prefix in `src/audit/for2sec_audit.py` and unused `BaselineModel` import in `src/tuning/baseline_fit.py`; scoped Ruff findings 2 to 0, with 937 passing tests and unchanged coverage/complexity; the Part 6 report/PDF now links the cleanup commit and preserved after evidence.
 - `docs/risk_policy.md` Why (d): the confidence bound for uncertain cases is `max(threshold + half_width, 1 − (threshold − half_width))`, not "about 0.5 + half_width" (0.997 for `risk-v1`, so an uncertain case can display 1.00); documentation only, no behaviour change.
 - D44 (approved, PR #55): Newton-decrement stop (λ²/2 ≤ 1e-12), stall and non-descent guards in the Platt fit; tests T1–T5; reproducible pre-check in `docs/audit_evidence/stage10_d44/`; no val-B accessed.
 - `tests/` is now a regular package (`tests/__init__.py`) with an import-root guard (`tests/test_import_roots.py`), so a site-packages `tests` package on Colab can no longer shadow it and break `from tests._torch import ...`.

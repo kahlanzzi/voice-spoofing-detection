@@ -2999,6 +2999,144 @@ is recorded above; AI does not approve or merge.
 merge. **WAITING FOR PR REVIEW.**
 
 ---
+### Entry 108 — Midterm initial refactor and optimization audit (2026-10-31)
+
+**Numbering:** provisional; main ends at 107. Open PRs #67 and #68 and fetched remote branch logs were checked; their highest entries are 101 and 102. Recheck at merge time.
+
+**What [doc]:** added `docs/refactor-optimization-report.md` on
+`docs/stage11-midterm-refactor-khalil`, based on main `98fd8d7`. It consolidates the existing
+API/UI and ML evidence, distinguishes historical results from new baseline checks, and proposes
+neutral placement of cache helpers shared by MFCC and log-Mel. This is an initial audit for team
+review, not an implemented refactor or a measured performance improvement.
+
+**Checks [user-executed]:** Khalil updated the declared dependencies after an initial missing-FastAPI
+collection error. The first complete non-CNN run was `794 passed, 9 skipped in 51.00s`.
+After installing CPU torch 2.11.0, safetensors 0.8.0 and wandb 0.31.0, `pip check` printed
+`No broken requirements found.` With `REQUIRE_TORCH_TESTS=1`,
+`python -m pytest -q -ra` printed `937 passed in 89.85s (0:01:29)`; no skips shown.
+Separate baseline DEEP-VOICE governance check: `3 passed in 0.22s`; after the documentation was added, the governance check passed again: `3 passed in 0.18s`. These outputs were supplied as pasted
+text/screenshots; the assistant could not launch the local interpreter directly.
+
+**Scope:** documentation only; no code refactor, source model/preprocessing/threshold change,
+frozen-evidence edit, dataset access or governed run. The report credits earlier improvements
+to their original PRs and does not claim them as Khalil's implementation.
+
+**AI assistance:** Codex inspected repository sources, verified recorded arithmetic and links,
+drafted the report and documentation records. Khalil ran the baseline commands; human review of
+the proposal and report remains pending.
+
+**Gate:** team review of the initial audit before any evidence-sensitive cache refactor; then any
+approved implementation gets a separate focused branch/PR. **WAITING FOR HUMAN REVIEW.**
+
+---
+### Entry 109 — Part 6 review corrections and measurement plan (2026-10-31)
+
+**Numbering:** provisional; main ends at 107, this branch has Entry 108. Open PRs #67/#68 and fetched remote logs were checked during preparation; their entries do not reserve 109. Recheck at merge time.
+
+**What [doc]:** corrected outdated commit-pending wording in the Part 6 report (initial commit
+`7c0e243`), replaced explanatory arithmetic notation with runnable PowerShell, and distinguished
+the configured Python version from a captured runtime version. Added an explicit course-requirement
+and completion section: initial audit is not the final refactor submission. Subsequent user-executed measurements now establish the software baseline; after-refactor results remain pending.
+
+**PDF [artifact]:** added a clearly labelled initial-audit PDF exported from the Markdown report;
+the PDF records its source Markdown SHA-256. All pages were rendered and visually inspected;
+record layouts and code blocks were checked for clipping, orphaned continuations and readability.
+Regenerate after final evidence and review decisions.
+
+**Checks:** report links and recorded arithmetic rechecked against the current repository;
+`git diff --check` clean. Earlier user-run checks remain `937 passed in 89.85s (0:01:29)`
+and governance `3 passed in 0.18s`; this review did not rerun or relabel them as assistant runs.
+Khalil then collected coverage (937 passed in 73.21s), Radon and Ruff outputs. Coverage: 88.92% statement, 79.80% branch, 86.76% combined; Radon: 342 function/method blocks (class summaries and nested closures excluded), mean CC 4.6082, maximum 37; Ruff: 2 findings under E4/E7/E9/F. Raw JSON, versions and a provenance summary are preserved in `docs/audit_evidence/midterm_refactor/before/`. No source code or frozen evidence changed.
+
+**AI assistance:** Codex performed the review, corrected documentation and prepared/rendered the
+PDF. New user-generated metrics were verified and summarized; after-refactor evidence and final human acceptance are still required.
+
+**Gate:** review this corrected initial audit and measured baseline, then obtain team review
+before any evidence-sensitive refactor; final Markdown/PDF and implementation evidence must agree.
+**WAITING FOR HUMAN REVIEW.**
+
+---
+### Entry 110 — Pre-push Part 6 documentation consistency review (2026-10-31)
+
+**Numbering:** provisional; main ends at 107 and this branch has Entries 108–109. Open PRs #67/#68 and fetched branch logs were rechecked; neither reserves 110. Recheck at merge time.
+
+**What [doc]:** corrected three report issues identified during Khalil's requested read-only
+review of `3f57ec3`: a coverage-attainment contradiction, outdated revision-pending wording,
+and an unpinned audit-tool installation recipe. The report now states the measured coverage
+result for its explicit source scope, records both existing report commits, and pins the
+reproduction tools to coverage 7.17.0, Radon 6.0.1 and Ruff 0.17.3. The matching initial-audit
+PDF was regenerated from the corrected Markdown and checked before handoff.
+
+**Evidence/checks:** committed raw-evidence SHA-256 values, tool-version capture hash,
+coverage and complexity arithmetic, lint count, relative links and PDF source hash were
+rechecked. Baseline data remain unchanged: user runs show 937 passing tests, governance
+3 passed, statement coverage 88.92%, branch 79.80%, combined 86.76%, maximum CC 37 and
+2 Ruff findings. No new test run or runtime improvement is claimed by this wording correction.
+
+**AI assistance:** Codex applied the user-authorized report corrections and repeated document
+and evidence checks. No application code, test, config, model, frozen evidence or dataset changed.
+
+**Gate:** corrected initial audit is ready for Khalil's review; the final Part 6 submission
+still needs any approved refactor, actual after-results, PR/CI and human acceptance.
+**WAITING FOR HUMAN REVIEW.**
+
+### Entry 111 — Part 6 focused lint cleanup and after-checks (2026-10-31)
+
+**Numbering:** provisional. Main ends at 107; this branch has 108–110. Open PRs
+#67/#68 and their fetched branch logs were rechecked; neither reserves 111. Recheck at merge.
+
+**What [code]:** on `chore/stage11-lint-cleanup-khalil`, removed an unnecessary
+f-string prefix from the constant audit-report heading in `src/audit/for2sec_audit.py`
+and the unused `BaselineModel` import in `src/tuning/baseline_fit.py`. Static AST
+comparison confirmed these are the only source changes. Cache-helper restructuring is deferred.
+
+**Evidence/checks:** Khalil ran the full suite with `REQUIRE_TORCH_TESTS=1`:
+`937 passed in 57.15s`; the governance test returned `3 passed in 0.18s`.
+The after coverage run returned `937 passed in 85.53s (0:01:25)`.
+Compared with the before capture, scoped Ruff E4/E7/E9/F findings fell from 2 to 0
+(exit 0). Statement coverage remains 3748/4215 (88.92%), branch coverage 1047/1312
+(79.80%), combined 86.76%. Radon remains 342 function/method blocks, mean CC
+4.6082 and maximum 37. Tool versions and measurement scopes match the before run.
+Different test durations are not evidence of a speedup; no performance gain is claimed.
+
+**AI assistance:** Codex proposed and applied the two small edits, inspected their diff,
+and compared the user-run measurements. Khalil executed the project-runtime checks.
+No model, preprocessing rule, threshold, API contract, governance rule or frozen evidence
+changed. No DEEP-VOICE or FoR test-split access was performed for this cleanup.
+
+**Gate:** commit this tested cleanup, then finalize the report/PDF and preserve the after
+captures with a link to the actual cleanup commit. PR/CI and independent human review remain pending.
+**WAITING FOR HUMAN REVIEW.**
+
+### Entry 112 — Part 6 measured cleanup report and after evidence (2026-10-31)
+
+**Numbering:** provisional; main still ends at 107, local history at 111. Open PRs
+#67/#68 reserve neither 111 nor 112 at the latest check. Recheck before merge.
+
+**What [doc]:** updated `docs/refactor-optimization-report.md` and its PDF to record
+the focused cleanup commit `de943333c9f8e51416666b84f37d319cd8cac4b9` and actual
+before/after results. Preserved the after JSON outputs, normalized console/version
+captures and comparison provenance under `docs/audit_evidence/midterm_refactor/after/`.
+The before evidence remains unchanged. Every claimed code improvement links the
+actual cleanup commit; no PR number or approval is invented.
+
+**Evidence/checks:** user-run after suite: `937 passed in 57.15s`; governance:
+`3 passed in 0.18s`; coverage suite: `937 passed in 85.53s (0:01:25)`.
+Compared the raw captures: Ruff findings 2 to 0; statement/branch/combined coverage
+88.92%/79.80%/86.76% unchanged; all 342 measured complexity blocks unchanged.
+Versions match. Test durations are not presented as a speedup. The modest lint-only
+scope and unresolved course acceptance are explicit. PDF source hash and rendered
+pages are checked before handoff; no new runtime test is attributed to this doc edit.
+
+**AI assistance:** Codex compared captured evidence, drafted the final review version
+and generated/inspected its PDF. Khalil executed the project-runtime checks and
+committed the two source edits. No model, dataset or frozen evidence changed.
+
+**Gate:** audit publication, focused cleanup PR, required CI, independent code/report
+review and final human acceptance remain open. The cache extraction is still deferred.
+**WAITING FOR HUMAN REVIEW.**
+
+---
 ## Open items
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
@@ -3240,7 +3378,13 @@ merge. **WAITING FOR PR REVIEW.**
 - [ ] Next API PRs: `MockAnalyzer` and the analyzer seam (§8), `GET /limits`, `POST /analyses` with the §4.3 checks (consider Starlette's `max_body_size`), storage (§7), history, notes, stats (Entry 101).
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
 
-**Midterm documentation (Entries 102–107)**
+**Midterm documentation (Entries 102–110)**
+- [ ] Review Khalil's initial refactor audit (Entry 108); agree on scope before any cache-helper implementation.
+- [x] Capture coverage, complexity and lint baseline outputs (Entry 109): 88.92% statement / 79.80% branch / 86.76% combined coverage; maximum CC 37; 2 Ruff findings.
+- [x] Implement the two low-risk lint cleanups and compare actual after-results (Entry 111); cache-helper restructuring remains deferred.
+- [x] Prepare the Part 6 report/PDF with the cleanup commit and after evidence (Entry 112).
+- [ ] Publish the audit and focused cleanup, obtain CI, independent human review and final submission acceptance.
+- [ ] Finalize the refactor report after any approved code change and its checks; regenerate matching Markdown/PDF and obtain human review.
 - [x] Review and merge the prioritized backlog against the SRS and merged evidence. (PR #69,
   `023bfa4`; Khalil approved; Donia validated requirements and priorities by team message)
 - [ ] Update backlog statuses only from merged evidence as implementation PRs land.
@@ -3275,6 +3419,8 @@ unimplemented end-to-end flows Partial or Planned.
 canonical UML package is merged in PR #70 (`85829e1`). Entry 107 drafts the evidence-based AI ethics
 and usage reflection on `docs/stage11-midterm-ai-ethics-malak`; the team tool inventory is confirmed
 and Donia approved the content by message; PR review and merge remain.
+
+**Midterm refactor audit:** Entries 108–110 record the initial report and baseline. Entry 111 implements two small lint cleanups on the stacked cleanup branch: 937 tests pass, governance 3 passed, scoped lint findings 2 to 0, coverage and complexity unchanged. No speedup is claimed. Entry 112 adds the measured report/PDF and after captures. Branch publication, PR/CI and independent human acceptance remain pending; evidence-sensitive restructuring is deferred.
 
 **What was done:**
 - **Midterm AI ethics and usage reflection** on `docs/stage11-midterm-ai-ethics-malak` (Entry 107):
