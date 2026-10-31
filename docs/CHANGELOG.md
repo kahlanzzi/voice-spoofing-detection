@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- D46 (proposed): Stage 11 run procedure: T4 runtime with CPU scoring, environment gate and record, val-A log-Mel/MFCC reproduction gate, durable registry claim on Drive before the first test read, test features in memory only (computed twice), pre-declared rerun rule; no FoR test accessed.
 - Stage 17 API design note `docs/api_design.md` (proposed): `/api` endpoints for status, limits, analyses, notes and stats, one error shape, storage, analyzer seam and config; §11 unchanged.
 - D41 implementation (Stage 11 prep): run registry keyed by `(dataset, split, evaluation_purpose, model_set)` with the closed purpose set and a keyword-only purpose; per-clip score files `src/evaluation/clip_scores.py` (CSV + strict JSON sidecar, applicability by model role fixed from D41/D45, exact floats, canonical bytes, exclusive creation; design note `docs/clip_scores.md`); FoR test-split governance guard `tests/governance/test_for_test_access.py` (empty allow-list); synthetic tests only, no FoR test access.
 - Stage 10 brief `docs/stages/stage10-risk-policy.md` (D32), draft; teach-back by Iheb, Malak and Khalil pending.
