@@ -60,3 +60,34 @@ def test_invalid_values_are_rejected(repo, change):
     with pytest.raises(sqlite3.IntegrityError):
         repo.add(dataclasses.replace(RECORD, **change))
     assert repo.count() == 0
+
+
+def test_probe_passes_on_a_built_schema(repo):
+    repo.add(RECORD)
+    repo.probe()
+    assert repo.count() == 1  # read only: nothing added or removed
+
+
+def test_probe_raises_on_a_missing_file_and_creates_nothing(tmp_path):
+    path = tmp_path / "missing" / "api.sqlite"
+    with pytest.raises(sqlite3.Error):
+        AnalysisRepository(path).probe(timeout_s=0.1)
+    assert not path.parent.exists()
+
+
+def test_probe_raises_when_the_table_is_missing(tmp_path):
+    path = tmp_path / "api.sqlite"
+    connect(path).close()  # empty database, no analysis_record table
+    with pytest.raises(sqlite3.OperationalError, match="no such table"):
+        AnalysisRepository(path).probe(timeout_s=0.1)
+
+
+def test_probe_raises_when_the_database_stays_locked(repo):
+    locker = connect(repo.path)
+    try:
+        locker.execute("BEGIN EXCLUSIVE")
+        with pytest.raises(sqlite3.OperationalError, match="locked"):
+            repo.probe(timeout_s=0.05)
+    finally:
+        locker.rollback()
+        locker.close()

@@ -1,10 +1,13 @@
 import dataclasses
 import re
+from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from api.analyzer import AnalyzerInfo
 from api.main import create_app
+from api.routers.status import derive_state
 
 
 def test_status_returns_the_section_4_1_shape(client, config):
@@ -41,8 +44,17 @@ BUNDLE_INFO = AnalyzerInfo(ready=True, model_version="cnn-v3", profile_version="
                            mock=False)
 
 
+def status_of(config, analyzer=None, lifespan=True):
+    """GET /api/status; lifespan=True builds the database first, as at a real start."""
+    app = create_app(config, analyzer=analyzer)
+    if not lifespan:
+        return TestClient(app).get("/api/status")
+    with TestClient(app) as client:
+        return client.get("/api/status")
+
+
 def test_status_values_come_from_the_analyzer_info(config):
-    body = TestClient(create_app(config, analyzer=InfoOnly(BUNDLE_INFO))).get("/api/status").json()
+    body = status_of(config, InfoOnly(BUNDLE_INFO)).json()
     assert body["state"] == "ready"
     assert body["checks"]["analysis"] == "available"
     assert body["versions"] == {"model_version": "cnn-v3", "profile_version": "preprocessing-v1",
@@ -54,7 +66,7 @@ def test_status_values_come_from_the_analyzer_info(config):
 
 def test_status_is_unavailable_when_the_analyzer_is_not_ready(config):
     info = dataclasses.replace(BUNDLE_INFO, ready=False)
-    response = TestClient(create_app(config, analyzer=InfoOnly(info))).get("/api/status")
+    response = status_of(config, InfoOnly(info))
     assert response.status_code == 200
     assert response.json()["state"] == "unavailable"
     assert response.json()["checks"] == {"analysis": "unavailable", "history_and_stats": "available"}
@@ -62,3 +74,51 @@ def test_status_is_unavailable_when_the_analyzer_is_not_ready(config):
 
 def test_status_is_only_under_the_api_prefix(client):
     assert client.get("/status").status_code == 404
+
+
+def assert_database_unavailable(response):
+    assert response.status_code == 200
+    body = response.json()
+    assert body["state"] == "unavailable"
+    assert body["checks"] == {"analysis": "available", "history_and_stats": "unavailable"}
+    assert body["versions"]["model_version"] == "mock"  # still the full §4.1 body
+
+
+def test_status_reports_a_missing_database_and_does_not_create_it(config):
+    response = status_of(config, lifespan=False)  # no lifespan: the database file was never made
+    assert_database_unavailable(response)
+    db_path = Path(config.database_path)
+    assert not db_path.exists()
+    assert not db_path.parent.exists()
+
+
+def test_status_reports_a_file_that_is_not_a_database(config, tmp_path):
+    garbage = tmp_path / "garbage.sqlite"
+    garbage.write_bytes(b"not a database" * 100)
+    response = status_of(dataclasses.replace(config, database_path=str(garbage)), lifespan=False)
+    assert_database_unavailable(response)
+    assert garbage.read_bytes() == b"not a database" * 100  # the probe never writes
+
+
+def test_status_reports_an_unreadable_database_after_start(config):
+    app = create_app(config)
+    with TestClient(app) as client:
+        app.state.repository.path.unlink()  # database gone while the service runs
+        assert_database_unavailable(client.get("/api/status"))
+
+
+def test_status_is_unavailable_when_both_checks_fail(config):
+    info = dataclasses.replace(BUNDLE_INFO, ready=False)
+    body = status_of(config, InfoOnly(info), lifespan=False).json()
+    assert body["state"] == "unavailable"
+    assert body["checks"] == {"analysis": "unavailable", "history_and_stats": "unavailable"}
+
+
+@pytest.mark.parametrize("analysis, history_and_stats, state", [
+    ("available", "available", "ready"),
+    ("unavailable", "available", "unavailable"),
+    ("unavailable", "unavailable", "unavailable"),
+    ("available", "unavailable", "unavailable"),  # records are stored before the 201
+])
+def test_derive_state_provisional_rule(analysis, history_and_stats, state):
+    assert derive_state(analysis, history_and_stats) == state

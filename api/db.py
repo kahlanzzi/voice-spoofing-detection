@@ -15,3 +15,9 @@ def connect(path: Path) -> sqlite3.Connection:
     conn = sqlite3.connect(path)
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
+
+
+def connect_readonly(path: Path, timeout_s: float) -> sqlite3.Connection:
+    """Open an existing database file read-only (mode=ro): never creates the file or its folder,
+    and refuses writes. timeout_s bounds the wait on a locked database."""
+    return sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True, timeout=timeout_s)

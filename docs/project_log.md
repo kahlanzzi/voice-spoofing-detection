@@ -3264,9 +3264,52 @@ fast-forward, and reviews the diff. Context7 was not used.
 
 **Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
 
+### Entry 117 — Stage 17 step 4: GET /api/limits and a real GET /api/status (2026-11-01)
+
+**Numbering:** provisional. Main ends at 116 (PR #77); recheck against open PRs before merge.
+
+**What:** on `feat/stage17-limits-status` (Iheb, Part E; branched from `main` at `87b4108`),
+following `docs/api_design.md` §2, §4.1, §4.2, §6–§9. `GET /api/limits` (`api/routers/limits.py`,
+`LimitsResponse`) returns `formats`, `max_size_bytes`, `max_duration_s` and `audio_deletion` from
+the loaded config only. No new config keys. `GET /api/status`: `checks.history_and_stats` now comes
+from `AnalysisRepository.probe()`. The probe is `SELECT 1 FROM analysis_record LIMIT 1` over a
+`mode=ro` connection (`api/db.py` `connect_readonly`; `PROBE_TIMEOUT_S = 1.0`, an internal setting,
+not a §9 value). It never creates the file or folder and never writes. A probe failure is caught,
+logged with the exception class only (no path, IP or file name) and reported as `unavailable` in
+the 200 body, never as a 500. `analyzer.info()` errors still give `500` (§4.1): without `info()`
+there are no versions to report.
+
+**Provisional state rule [doc → proposal, open decision 7]:** `derive_state()` is the only place
+`state` is computed. Ready = both checks available. Unavailable = analysis unavailable (§4.1 as
+written) **or** database unavailable, because records are stored before the `201`, so a database
+failure makes every analysis fail too. Under the prototype rule (HANDOFF §11 item 7) a database
+failure would show "Degraded" while uploads fail. `degraded` stays in the schema but is not produced
+until the team decides. **Known limit:** the probe is read-only (a write probe would take write
+locks on every status call). A database that is readable but not writable (disk full, read-only
+mount, permissions) passes the probe, so `/status` says `ready` while `POST /api/analyses` answers
+`500`. This is noted in the `probe()` and `derive_state()` docstrings.
+
+**Contract change [doc]:** approved by Iheb in the plan. §4.1 gains one bullet on what
+`history_and_stats` means. The degraded wording and §10 item 7 are unchanged.
+
+**Evidence [verified]:** `python -m pytest -q` (3.14): 871 passed, 9 skipped (torch tests).
+`tests/api`: 127 passed. New tests cover: limits equal `configs/api.yaml` and follow
+`VSD_API_CONFIG`; status ready; database missing (file and folder not created), not a database
+(bytes unchanged), deleted after start, analyzer not ready, both failing; the `derive_state` table;
+`connect_readonly` refusing writes; the probe on a missing table and on a locked database. Manual
+`uvicorn` run: see the PR report. No audio committed; no dataset access; no DEEP-VOICE path.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) read the contract, HANDOFF §11 and the code,
+proposed the plan, wrote the code, tests and this entry, and ran the checks. Iheb approved the plan
+with two additions (document the read-only limit; check how `api/main.py` exposes the app) and
+reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
 ---
 ## Open items
 
+- [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
 - [ ] Review the sectioned documentation index (Entry 115); confirm existing entries and links remain available.
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
@@ -3550,8 +3593,8 @@ fast-forward, and reviews the diff. Context7 was not used.
 
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
-`GET /api/status`; no analyzer or uploads yet on merged main. `POST /api/analyses` with the
-MockAnalyzer, the §4.3 checks and SQLite storage is on `feat/stage17-analyze`, awaiting review (Entry 116). Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; React `web/` and Compose are not yet present on main. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
+`GET /api/status`. `POST /api/analyses` with the
+MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) are on `feat/stage17-limits-status`, awaiting review (Entry 117). Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; React `web/` and Compose are not yet present on main. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
 canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.
