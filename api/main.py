@@ -17,7 +17,7 @@ from api.errors import install_error_handlers
 from api.intake import ContentLengthGuard, body_limit, note_body_limit
 from api.middleware import RequestIdMiddleware
 from api.repository import AnalysisRepository
-from api.routers import analyses, limits, notes, status
+from api.routers import analyses, limits, notes, stats, status
 
 API_PREFIX = "/api"
 
@@ -52,6 +52,7 @@ def create_app(config: ApiConfig | None = None, analyzer: Analyzer | None = None
     app.include_router(limits.router, prefix=API_PREFIX)
     app.include_router(analyses.router, prefix=API_PREFIX)
     app.include_router(notes.router, prefix=API_PREFIX)
+    app.include_router(stats.router, prefix=API_PREFIX)
     return app
 
 

@@ -1,4 +1,4 @@
-"""Request and response shapes (docs/api_design.md §4.1, §4.2, §4.4, §4.6, §5, §6). Every model
+"""Request and response shapes (docs/api_design.md §4.1, §4.2, §4.4, §4.6, §4.7, §5, §6). Every model
 forbids extra fields.
 
 AnalysisResponse is exactly the 8 Protocol §11 fields; the web app mirrors it (ADR 0008 §3), so a
@@ -92,6 +92,45 @@ class StatusResponse(_Strict):
     bundle_manifest_sha256: str | None
     deferral_on_fit: float
     mock: bool
+
+
+class StatsToday(_Strict):
+    date: str  # YYYY-MM-DD in stats_time_zone
+    total: int
+
+
+class StatsDay(_Strict):
+    date: str  # YYYY-MM-DD in stats_time_zone
+    synthetic: int
+    uncertain: int
+    authentic: int
+    total: int
+
+
+class AwaitingNote(_Strict):
+    total: int
+    recent: list[StoredAnalysis]
+
+
+class MonitoringMarker(_Strict):
+    deferral_on_fit: float
+    policy_version: str
+    mock: bool
+
+
+class StatsResponse(_Strict):
+    from_: str = Field(alias="from")  # "from" is a Python keyword
+    to: str
+    time_zone: str
+    generated_at: str  # UTC, ISO 8601 with Z
+    today: StatsToday
+    total: int
+    counts: VerdictCounts
+    uncertain_share: float | None
+    median_processing_ms: int | None
+    awaiting_note: AwaitingNote
+    days: list[StatsDay]
+    monitoring_marker: MonitoringMarker
 
 
 class LimitsResponse(_Strict):

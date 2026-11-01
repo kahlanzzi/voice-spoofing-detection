@@ -1,7 +1,7 @@
 """All SQL of the API (docs/api_design.md §7): the analysis_record and analysis_note tables.
 probe() is the read-only check behind GET /api/status; get_stored() and history() serve §4.5 and
-§4.4; save_note() and delete_note() serve §4.6. Notes live in their own table and never change
-analysis_record (FR-11).
+§4.4; save_note() and delete_note() serve §4.6; stats() serves §4.7. Notes live in their own table
+and never change analysis_record (FR-11).
 
 Never stored: audio, the original file name, the client IP address. No table has a column for them.
 """
@@ -87,6 +87,22 @@ class HistoryPage:
     counts: dict[str, int]  # per verdict, matching day_from, day_to and q only
 
 
+@dataclass(frozen=True)
+class StatsFigures:
+    """The §4.7 figures of one period, read in one snapshot. Every figure but today_total covers
+    the period only; mock and real records are both counted, as in history (§4.7)."""
+    total: int
+    counts: dict[str, int]  # per verdict, same as HistoryPage.counts for the same days
+    per_day: dict[str, dict[str, int]]  # YYYY-MM-DD -> per-verdict counts, days with results only
+    median_processing_ms: int | None  # None when total is 0
+    awaiting_total: int  # synthetic or uncertain with no note
+    awaiting_recent: list[tuple[AnalysisRecord, None]]  # newest first, as in history
+    today_total: int  # all verdicts on the given day, whatever the period
+
+
+AWAITING_VERDICTS = frozenset({"synthetic", "uncertain"})
+
+
 # Newest first; the same second keeps store order, last stored first (rowid grows with each insert).
 _ORDER = "ORDER BY r.created_at DESC, r.rowid DESC"
 _SELECT_STORED = (f"SELECT {', '.join('r.' + c for c in COLUMNS)}, n.text, n.updated_at "
@@ -167,6 +183,41 @@ class AnalysisRepository:
                 rows = conn.execute(f"{_SELECT_STORED}{where_all} {_ORDER} LIMIT ? OFFSET ?",
                                     [*params_all, limit, offset]).fetchall()
         return HistoryPage([_stored_from_row(row) for row in rows], total, counts)
+
+    def stats(self, day_from: str, day_to: str, today: str, recent_limit: int) -> StatsFigures:
+        """The §4.7 figures for the inclusive UTC days day_from..day_to. The period filter is the one
+        history() uses, so total and counts equal history's for the same days."""
+        period = HistoryQuery(day_from=day_from, day_to=day_to)
+        where, params = _where(period, with_verdicts=False)
+        awaiting_where, awaiting_params = _where(HistoryQuery(verdicts=AWAITING_VERDICTS, day_from=day_from,
+                                                              day_to=day_to), with_verdicts=True)
+        awaiting_where += (" AND " if awaiting_where else " WHERE ") + "n.request_id IS NULL"
+        today_where, today_params = _where(HistoryQuery(day_from=today, day_to=today), with_verdicts=False)
+        joined = "FROM analysis_record AS r LEFT JOIN analysis_note AS n ON n.request_id = r.request_id"
+        with closing(connect(self.path)) as conn, conn:  # one transaction: one consistent snapshot
+            conn.execute("BEGIN")
+            counts = dict.fromkeys(VERDICTS, 0)
+            per_day: dict[str, dict[str, int]] = {}
+            for day, prediction, n in conn.execute(
+                    f"SELECT substr(r.created_at, 1, 10), r.prediction, COUNT(*) FROM analysis_record AS r{where} "
+                    "GROUP BY substr(r.created_at, 1, 10), r.prediction", params):
+                per_day.setdefault(day, dict.fromkeys(VERDICTS, 0))[prediction] = n
+                counts[prediction] += n
+            total = sum(counts.values())
+            median = None
+            if total:
+                # The middle value, or the two middle values for an even total; mean rounded halves up.
+                middle = [row[0] for row in conn.execute(
+                    f"SELECT r.processing_ms FROM analysis_record AS r{where} ORDER BY r.processing_ms "
+                    "LIMIT ? OFFSET ?", [*params, 2 - total % 2, (total - 1) // 2])]
+                median = (sum(middle) * 2 // len(middle) + 1) // 2
+            awaiting_total = conn.execute(f"SELECT COUNT(*) {joined}{awaiting_where}", awaiting_params).fetchone()[0]
+            recent = conn.execute(f"{_SELECT_STORED}{awaiting_where} {_ORDER} LIMIT ?",
+                                  [*awaiting_params, recent_limit]).fetchall()
+            today_total = conn.execute(f"SELECT COUNT(*) FROM analysis_record AS r{today_where}",
+                                       today_params).fetchone()[0]
+        return StatsFigures(total, counts, per_day, median, awaiting_total,
+                            [_stored_from_row(row) for row in recent], today_total)
 
     def save_note(self, request_id: str, text: str, updated_at: str) -> StoredNote | None:
         """Store or replace the note of one record; None if the record is unknown. Checked in the same

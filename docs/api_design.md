@@ -262,6 +262,21 @@ Response `200`:
 - No accuracy, EER or other quality metric, no per-analyst figure, nothing from DEEP-VOICE
   (ADR 0008 §8).
 - Malformed date or `from` after `to` → `400 invalid_request`.
+- Only `from` given: `to` is today. Only `to` given: `from` is 6 days before `to`.
+- A period longer than 366 days, or one that would start before 0001-01-01, → `400 invalid_request`.
+- `today` is always the current day in `stats_time_zone`, with its total across all verdicts, whatever
+  `from` and `to` are. Its `date` is the date of `generated_at`.
+- `total`, `counts`, `days`, `uncertain_share`, `median_processing_ms` and `awaiting_note` cover the period
+  only. For the same `from` and `to`, `total` and `counts` equal those of `GET /analyses`.
+- `uncertain_share` is rounded to 4 decimal places. `median_processing_ms` is the middle `processing_ms` of
+  the period, or the mean of the two middle values rounded to the nearest integer (halves up); `null` when
+  total is 0. `awaiting_note.recent` is newest first, ordered as in History.
+- Stats and History count every stored result, mock or real; `is_mock` is not a filter.
+  `monitoring_marker.mock` describes the analyzer now loaded. Before the real ModelBundle is served, the
+  store starts empty (a fresh database file) or mock results and their notes are removed (`analysis_note`
+  has a foreign key to `analysis_record`), so the figures never mix the two.
+- Dates use the §4.4 rules (exactly `YYYY-MM-DD`, a real date). Unknown query parameters are ignored. All
+  figures are read in one consistent snapshot. A failed read → `500 internal_error`.
 
 Status codes: `200`; `400`; `401`/`403`; `500`.
 

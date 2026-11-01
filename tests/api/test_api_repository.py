@@ -208,3 +208,55 @@ def test_probe_raises_when_the_database_stays_locked(repo):
     finally:
         locker.rollback()
         locker.close()
+
+
+def stats_record(n: int, created_at: str, prediction: str = "authentic", processing_ms: int = 10) -> AnalysisRecord:
+    return dataclasses.replace(RECORD, request_id=f"req_{n:032x}", created_at=created_at, prediction=prediction,
+                               risk_level={"synthetic": "HIGH", "uncertain": "MEDIUM", "authentic": "LOW"}[prediction],
+                               processing_ms=processing_ms)
+
+
+def test_stats_on_an_empty_store(repo):
+    figures = repo.stats("2026-10-24", "2026-10-30", "2026-10-30", 6)
+    assert (figures.total, figures.per_day, figures.median_processing_ms) == (0, {}, None)
+    assert figures.counts == {"synthetic": 0, "uncertain": 0, "authentic": 0}
+    assert (figures.awaiting_total, figures.awaiting_recent, figures.today_total) == (0, [], 0)
+
+
+@pytest.mark.parametrize("values, median", [
+    ([840], 840), ([30, 10, 20], 20), ([10, 20], 15), ([10, 15], 13), ([0, 1], 1), ([7, 1, 9, 3], 5),
+], ids=str)
+def test_stats_median_is_the_middle_or_the_mean_of_two_rounded_halves_up(repo, values, median):
+    for n, ms in enumerate(values):
+        repo.add(stats_record(n, "2026-10-30T09:00:00Z", processing_ms=ms))
+    assert repo.stats("2026-10-30", "2026-10-30", "2026-10-30", 6).median_processing_ms == median
+
+
+def test_stats_median_ignores_records_outside_the_period(repo):
+    repo.add(stats_record(1, "2026-10-29T23:59:59Z", processing_ms=1000))
+    repo.add(stats_record(2, "2026-10-30T00:00:00Z", processing_ms=10))
+    repo.add(stats_record(3, "2026-10-31T00:00:00Z", processing_ms=1000))
+    assert repo.stats("2026-10-30", "2026-10-30", "2026-10-30", 6).median_processing_ms == 10
+
+
+def test_stats_per_day_counts_and_today_outside_the_period(repo):
+    repo.add(stats_record(1, "2026-10-28T08:00:00Z", "synthetic"))
+    repo.add(stats_record(2, "2026-10-28T09:00:00Z", "authentic"))
+    repo.add(stats_record(3, "2026-10-30T09:00:00Z", "uncertain"))
+    repo.add(stats_record(4, "2026-11-01T09:00:00Z", "authentic"))
+    figures = repo.stats("2026-10-28", "2026-10-30", "2026-11-01", 6)
+    assert figures.per_day == {"2026-10-28": {"synthetic": 1, "uncertain": 0, "authentic": 1},
+                               "2026-10-30": {"synthetic": 0, "uncertain": 1, "authentic": 0}}
+    assert figures.total == 3 and figures.today_total == 1
+
+
+def test_stats_awaiting_note_excludes_authentic_and_noted_results(repo):
+    repo.add(stats_record(1, "2026-10-30T08:00:00Z", "synthetic"))
+    repo.add(stats_record(2, "2026-10-30T09:00:00Z", "uncertain"))
+    repo.add(stats_record(3, "2026-10-30T10:00:00Z", "authentic"))
+    repo.add(stats_record(4, "2026-10-30T11:00:00Z", "synthetic"))
+    repo.save_note(f"req_{4:032x}", "Checked.", "2026-10-30T12:00:00Z")
+    figures = repo.stats("2026-10-30", "2026-10-30", "2026-10-30", 6)
+    assert figures.awaiting_total == 2
+    assert [(r.request_id, note) for r, note in figures.awaiting_recent] == [(f"req_{2:032x}", None),
+                                                                           (f"req_{1:032x}", None)]
