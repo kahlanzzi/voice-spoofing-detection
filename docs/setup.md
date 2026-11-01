@@ -86,12 +86,18 @@ and an `Origin` header from `allowed_origins` (`http://localhost:8001` in `confi
 
 `docker-compose.yml` builds the API image from `deploy/api.Dockerfile` (Python 3.13.15 slim, pinned by
 digest; non-root; only `requirements-api.txt`, whose pins must equal `requirements.txt`). The `api`
-service publishes **no port**; nginx (the `web` service, `nginx:1.30.6-alpine` pinned by digest, config
-`deploy/nginx.conf` mounted read-only) is the only way in, on http://localhost:8001. Never expose the API
-without nginx (§4.8 rate limit). Needs Docker Compose v2.
+service publishes **no port**; nginx (the `web` service) is the only way in, on http://localhost:8001.
+Never expose the API without nginx (§4.8 rate limit). Needs Docker Compose v2 (BuildKit).
+
+The `web` image is built from `deploy/web.Dockerfile`: `npm ci` and `npm run build` of `web/` on
+`node:26.13.0-alpine`, then the `dist/` output and `deploy/nginx.conf` copied into `nginx:1.30.6-alpine`
+(both pinned by digest; no Node or source in the final image). Its build context is limited by
+`deploy/web.Dockerfile.dockerignore` (about 160 kB: no `node_modules`, `dist`, `.env` or data). The first
+build downloads the npm packages (a few minutes). **After editing `deploy/nginx.conf` or `web/`, run
+`docker compose build web && docker compose up -d web`**: the config is in the image, not mounted.
 
 ```bash
-docker compose build
+docker compose build                  # both images
 docker compose up -d
 docker compose ps                     # api: (healthy), from GET /api/health; web starts after it
 docker compose exec web nginx -t      # config syntax check
@@ -120,8 +126,18 @@ docker compose down                   # keeps the store; down -v deletes it
 
 ### nginx (the `web` service)
 
-- **Routes:** `/api/` is proxied to `api:8000`; `/` is a placeholder page until Stage 18; every other
-  path, including `/docs`, `/redoc` and `/openapi.json`, gets a JSON `404 not_found`.
+- **Routes (A2):** `/api/` is proxied to `api:8000`; `/` redirects to `/analyze`; `/signin`,
+  `/analyze`, `/history`, `/history/req_<32 hex>`, `/overview` and `/status` serve the app's
+  `index.html` with `Cache-Control: no-cache` (a new build is picked up at the next load); `/assets/`
+  serves the hashed build files with `immutable`, and a missing one is a 404, never the app. Every other
+  path, including `/index.html`, `/history/foo`, `/docs`, `/redoc` and `/openapi.json`, gets a JSON
+  `404 not_found`.
+- **Headers (A13):** every answer, nginx's own errors and the API's included, carries `Referrer-Policy:
+  strict-origin-when-cross-origin`, `X-Content-Type-Options: nosniff` and `Content-Security-Policy:
+  default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'`.
+  They live in `deploy/nginx_security_headers.conf`, included in every location (a location with its
+  own `add_header` would drop inherited ones). An inline script, a `data:` image or another origin
+  would need a CSP change by decision.
 - **Errors:** API answers pass through unchanged (`proxy_intercept_errors` off). nginx answers itself
   only with `413 file_too_large` (body above `client_max_body_size 22m`, which sits above the API's own
   limit), `503 analysis_unavailable` (API stopped or silent for 60 s), `429 too_many_requests` and
@@ -144,6 +160,11 @@ Manual check through nginx (test account and password only; `-c`/`-b` keep the s
 ```bash
 O='Origin: http://localhost:8001'; B=http://localhost:8001; J=$(mktemp)
 curl -si $B/docs                                         # 404 not_found from nginx
+curl -si $B/                                             # 302, Location: /analyze
+curl -si $B/history/req_00000000000000000000000000000000 # 200 text/html, no-cache, the 3 headers
+curl -si $B/history/foo                                  # 404 not_found (application/json)
+curl -si $B/assets/$(ls web/dist/assets | grep '^index-.*\.js$')   # 200, immutable (same build)
+curl -si $B/assets/missing.js                            # 404 not_found, no Cache-Control
 curl -si -c $J -H "$O" -H 'Content-Type: application/json' \
      -d '{"username":"analyst01","password":"..."}' $B/api/session   # 200, Set-Cookie vsd_session
 head -c 22020096 /dev/zero > /tmp/21m.wav                # 21 MiB: the API's 413 (X-Request-ID set)

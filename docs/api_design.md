@@ -25,9 +25,16 @@ HANDOFF §11 item 10 (endpoints beyond §11) into a concrete proposal. Items mar
 - **Base path:** every endpoint is under `/api` (for example `POST /api/analyses`). The web app
   reaches it on the same origin through nginx, which serves the app and proxies `/api` to the
   `api` container. No CORS is needed or enabled.
-- **Routing (nginx):** only `/api/` (proxied) and `/` (the app; a placeholder until Stage 18) are
-  routed. Every other path gets nginx's `404 not_found`, so FastAPI's `/docs`, `/redoc` and
-  `/openapi.json` are not reachable through nginx (`deploy/nginx.conf`).
+- **Routing (nginx):** `/api/` is proxied. `/` redirects (302) to `/analyze`, and the app routes
+  `/signin`, `/analyze`, `/history`, `/history/req_<32 hex>`, `/overview` and `/status` serve the
+  built app's `index.html` (`Cache-Control: no-cache`). `/assets/` serves the built files only
+  (`immutable`, a missing file is a 404). Every other path, including `/index.html` and
+  `/history/<anything else>`, gets nginx's `404 not_found`, so FastAPI's `/docs`, `/redoc` and
+  `/openapi.json` are not reachable through nginx (`deploy/nginx.conf`; team decision A2).
+- **Security headers (nginx, A13):** every answer, the API's and nginx's own errors included, carries
+  `Referrer-Policy: strict-origin-when-cross-origin` (never `no-referrer`, which would make the
+  browser send `Origin: null`), `X-Content-Type-Options: nosniff` and a same-origin
+  `Content-Security-Policy` (`deploy/nginx_security_headers.conf`).
 - **Transport:** plain HTTP on `http://localhost:8001` only. The `Secure` cookie works over plain HTTP
   only on `localhost` (section 4.8). Any other host needs TLS terminated in nginx first; that is a
   deployment step, not part of Stage 17.
