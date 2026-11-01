@@ -3959,6 +3959,91 @@ the team reviews the diff. Context7 was not used.
 
 ---
 
+### Entry 129 — Stage 18 PR 2: web image, A2 routes and A13 security headers (2026-11-01)
+
+**What:** on `feat/stage18-web-image` (Iheb, Part E; from `main` at `9a119d2`, not stacked), following the approved
+plan. Only `deploy/`, `docker-compose.yml`, `tests/deploy/` and docs change; no `api/`, `src/`, `configs/` or `web/`
+change; nothing from PR 3 or later (no API client, pages or components).
+- `deploy/web.Dockerfile`: build stage `node:26.13.0-alpine@sha256:c6ad9e9c…6d94` (index digest from `docker buildx
+  imagetools inspect`, 2026-11-01), `npm ci` (engine-strict kept by `web/.npmrc`) then `npm run build`; final stage
+  the unchanged `nginx:1.30.6-alpine@sha256:0e52bd05…97949` (re-inspected: same index digest), with `dist/` at
+  `/usr/share/vsd-web`, `deploy/nginx.conf` and `deploy/nginx_security_headers.conf` only.
+- `deploy/web.Dockerfile.dockerignore`: BuildKit per-Dockerfile allowlist (`web/`, the two confs; no
+  `node_modules`, `dist`, `.env`, `.venv`, `var`, `data`, audio). The root `.dockerignore` (api) is unchanged.
+- `docker-compose.yml` `web`: `build:` replaces `image:`; the `nginx.conf` bind mount is dropped (the config is in
+  the image; a mount would mask it). Ports, tmpfs, environment, `depends_on` unchanged.
+- `deploy/nginx.conf` (team decision A2, 2026-11-01): `absolute_redirect off` (otherwise `Location` names port 80,
+  not 8001); `= /` → `302 /analyze`; one regex for `/signin`, `/analyze`, `/history`, `/history/req_<32 hex>`,
+  `/overview`, `/status` → `index.html`, `Cache-Control: no-cache`; `^~ /assets/` files only (`try_files $uri
+  =404`), `public, max-age=31536000, immutable`; Cache-Control without `always`, so no 404 is cached. `/index.html`
+  directly, `/history/foo`, `/docs` and any other path stay the JSON 404 (one canonical URL per page). The `/api/`
+  blocks keep their rate limit, pass-through and untouched `Origin`; they only gain the headers include.
+- Security headers (team decision A13, 2026-11-01) in `deploy/nginx_security_headers.conf`, `always`, included in
+  every location (named ones too) because a location with its own `add_header` drops inherited ones:
+  `Referrer-Policy: strict-origin-when-cross-origin` (never `no-referrer`: the browser would send `Origin: null`),
+  `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action
+  'self'; frame-ancestors 'none'; object-src 'none'`. The build needs nothing more: `dist/index.html` has no inline
+  script or style, CSS has no `data:` URL, fonts are same-origin under `/assets/` (A14).
+- **Found and fixed during the live check:** nginx's JSON 404 for a path with an extension (`/index.html`,
+  `/assets/missing.js`, also `/favicon.ico` before this PR) was sent as `text/html` / `application/javascript`:
+  the type comes from `mime.types` by extension even in `@not_found`. An empty `types { }` in the four JSON
+  error locations makes `default_type application/json` apply; pinned in `test_nginx_conf.py`.
+
+**Tests (static, no Docker in CI):**
+- `test_nginx_conf.py`: the parser expands includes of files the web Dockerfile COPYs (the container→repo map is
+  read from its COPY lines); `resolve(path)` emulates nginx location choice. New: app routes → `index.html`
+  no-cache; `/history/foo`, `req_` + 31 / 33 / uppercase hex, `/signinx`, `/analyze/`, `/Analyze`, `/index.html`,
+  `/history/`, `/docs`, `/favicon.ico` → catch-all; `/` → `302 /analyze` with `absolute_redirect off`; `/assets/`
+  `$uri =404`, immutable, Cache-Control only in those two locations; all three headers with `always` in every
+  location (effective set per nginx's inheritance rule); no `no-referrer`; `/api/` blocks unchanged but for the
+  headers; empty `types` in the JSON locations; an in-suite planted failure (CSP removed from `@not_found` only →
+  `['@not_found']`).
+- **Removed, with reasons:** `test_only_api_paths_are_proxied_and_root_is_the_placeholder` → the `= /` `return 200`
+  assertion (placeholder gone; renamed `…_root_redirects_to_analyze`, the proxied-set assertion kept);
+  `test_web_image_is_pinned_by_tag_and_digest` (`WEB["image"]` regex and `"build" not in WEB`: the pin moved to the
+  Dockerfile, now `test_deploy_web_image.py`); `WEB["volumes"] == [nginx.conf:ro]` (mount dropped).
+- New `test_deploy_web_image.py` (4): both FROMs by tag + digest (Node = `web/.nvmrc`, nginx = the 8b pin);
+  `npm ci` before `npm run build`, no `npm install`, no engine bypass; final stage COPYs only `dist` and the two
+  confs, no RUN/ADD; ignore file allowlist and exclusions.
+- Manual planted failure on a scratchpad copy: include removed from `^~ /assets/` (which keeps its own
+  Cache-Control) → `without_security_headers` returns `['^~ /assets/']`; real file → `[]`.
+
+**Evidence [verified]:**
+- Baseline: `node --version` `v26.13.0`, Docker `28.5.2`, Compose `2.40.3`; `git log --oneline -1 main` `9a119d2
+  Merge pull request #89 …`; `pytest -q` `1261 passed, 9 skipped`.
+- `.venv/bin/python -m pytest -q` (Python 3.14.6): `1272 passed, 9 skipped` (1261 + 11 new deploy tests).
+- `web/`: `npm ci`, `npm run typecheck`, `npm run lint`, `npm test -- --run` (`Test Files 4 passed (4)`, `Tests
+  182 passed (182)`), `npm run build` (`✓ built`); all exit 0. `web/package-lock.json` unchanged.
+- `docker compose build --no-cache --progress=plain web`: `transferring context: 159.09kB` (repo 848 MB without
+  `.git`; `web/node_modules` 173 MB; tracked `web/` + `nginx.conf` 155,538 B), so the per-Dockerfile ignore applied.
+  `docker compose exec web nginx -t`: syntax ok, test successful.
+- Running image: `/usr/share/vsd-web` = `assets index.html`; 70 assets (= local `web/dist/assets`; 68 font files,
+  JS, CSS); `no node`; `ls -a /` matches only `.dockerenv` (Docker's marker, not a `.env`); `/etc/nginx` = image
+  defaults + `nginx.conf` + `vsd_security_headers.conf` (`conf.d/` present, never included).
+- curl on `:8001`: `/` → 302 `Location: /analyze`; `/analyze`, `/history`, `/history/req_` + 32 zeros, `/signin` →
+  200 `text/html`, `no-cache`; `/history/foo`, `/index.html`, `/assets/missing.js`, `/favicon.ico` → 404
+  `application/json` §6 body, no Cache-Control; `/assets/index-DJC7cMit.js` → 200 immutable; `/api/health` →
+  `{"ok":true}`; `POST /api/session` with `Origin: http://localhost:8001` and bad credentials → 401
+  `invalid_credentials` (Origin still passes); burst → 6 × 401 then 429; 23 MiB upload → nginx 413. The three
+  headers present on the 302, 200s, 404s, 413, 429, the `/api/` 200 and 401. The 503 was not run live (it needs
+  `docker compose stop api`); `@unavailable` is covered by the static header test.
+- No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
+
+**ui-ux-pro-max (checklist only; no `--design-system`, no `--persist`):** viewport meta `width=device-width,
+initial-scale=1` without zoom lock, `lang="en"`, `font-display: swap` (34 rules in the built CSS) and deep links
+for every app route: pass. No-cache shell with immutable hashed assets: no stale-UI risk after a deploy. For later
+PRs, not blockers: a mistyped app URL shows nginx's raw JSON 404 rather than an in-app page (`empty-nav-state`); a
+saved light/dark choice opposite to the system may flash before `main.tsx` runs, and a pre-paint inline script
+would need a CSP change by decision (PR 6).
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
+the checks; ui-ux-pro-max was used as a read-only checklist. The plan was approved before the build; the team
+reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
 ## Open items
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
@@ -4227,10 +4312,12 @@ the team reviews the diff. Context7 was not used.
 - [x] uvicorn's default access log prints the client IP; §1/§7 say no IP is stored. Decide for Stage 19 (e.g. `--no-access-log` or a log filter) (Entry 116). (`--no-access-log --no-proxy-headers` in the image and the documented local command; Entry 125)
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
 
-**Stage 18 web (Part E, Entries 127–128)**
+**Stage 18 web (Part E, Entries 127–129)**
 - [x] PR 1a: `web/` scaffold, theme storage, CI `web` job, pytest pin guards (merged in PR #88, `86cc77d`; Entry 127).
 - [ ] Add `web` as a required check on `main` after PR 1a merges (Iheb; Entry 127).
-- [ ] PR 1b: `tokens.css`, `base.css`, fontsource fonts, token, contrast and no-raw-colour tests (on `feat/stage18-tokens`, awaiting review; Entry 128). Still open from Entry 127: the 9 s toast vs ui-ux-pro-max 3–5 s conflict.
+- [x] PR 1b: `tokens.css`, `base.css`, fontsource fonts, token, contrast and no-raw-colour tests (merged in PR #89, `9a119d2`; Entry 128).
+- [ ] Still open from Entry 127: the 9 s toast vs ui-ux-pro-max 3–5 s conflict.
+- [ ] PR 2: `web` image (`deploy/web.Dockerfile`), A2 routes, A13 security headers, JSON 404 type fix (on `feat/stage18-web-image`, awaiting review; Entry 129).
 - [ ] Non-text contrast below 3:1, values unchanged, team answer pending: light `--line-strong`/`--surface` 1.86, dark 1.99, light `--unc-mark`/`--surface` 2.87, light `--warn-mark`/`--surface` 2.87; named exceptions in `web/src/styles/tokens.test.ts` (Entry 128).
 - [ ] `npm audit`: 12 moderate (GHSA-g3hv-75wg-m249, `minimatch` 10.2.6 under eslint and typescript-eslint, dev only; production 0). Decide: wait for upstream, or an `overrides` pin to `minimatch` ≥ 11.0.1 by approval (Entry 127).
 
@@ -4274,7 +4361,7 @@ the team reviews the diff. Context7 was not used.
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
 `GET /api/status`. `POST /api/analyses` with the
-MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) merged in PR #88 (`86cc77d`; Entry 127); PR 1b (design tokens, base styles, IBM Plex fonts, token and contrast tests) is on `feat/stage18-tokens`, awaiting review (Entry 128), with 4 non-text contrast pairs below 3:1 left open for the team; no page beyond the placeholder and no API call yet; nginx serves a placeholder at `/`. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
+MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) merged in PR #88 (`86cc77d`; Entry 127); PR 1b (design tokens, base styles, IBM Plex fonts, token and contrast tests) merged in PR #89 (`9a119d2`; Entry 128), with 4 non-text contrast pairs below 3:1 left open for the team. PR 2 (the `web` image: the built app served by nginx on the A2 routes, `/` → `/analyze`, A13 security headers on every answer) is on `feat/stage18-web-image`, awaiting review (Entry 129); no page beyond the placeholder and no API call yet. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
 canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.

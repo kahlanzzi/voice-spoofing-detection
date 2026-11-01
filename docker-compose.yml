@@ -1,4 +1,4 @@
-# Local run of the Stage 17 API (docs/setup.md "Running with Docker Compose"). nginx (web) is the only way
+# Local run of the API and the web app (docs/setup.md "Running with Docker Compose"). nginx (web) is the only way
 # in, on http://localhost:8001; the api publishes no port. Never expose the API without nginx
 # (docs/api_design.md §4.8 rate limit).
 
@@ -28,11 +28,13 @@ services:
     restart: unless-stopped
 
   web:
-    image: nginx:1.30.6-alpine@sha256:0e52bd054126cdc040b1276c0af347aeb02a41b9cfe305d6094767ac30e97949
+    # nginx (pinned by tag and digest in the Dockerfile) with the built app and deploy/nginx.conf copied in;
+    # after a config edit, run docker compose build web.
+    build:
+      context: .
+      dockerfile: deploy/web.Dockerfile
     ports:
       - "8001:80"   # the port in allowed_origins (configs/api.yaml)
-    volumes:
-      - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
     tmpfs:
       - /var/cache/nginx:size=96m   # buffered request bodies (uploads); in memory, gone at restart (NFR-03)
     environment:

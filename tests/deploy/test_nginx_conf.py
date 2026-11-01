@@ -1,8 +1,9 @@
-"""deploy/nginx.conf (Stage 17 Step 8b): routing, error pass-through, sign-in rate limit, no client address.
+"""deploy/nginx.conf (Stage 17 Step 8b, Stage 18 PR 2): routing, error pass-through, sign-in rate limit, no client
+address, the web app's routes and the security headers.
 
 CI has no nginx, so the file is read with a small parser (directives, blocks, quotes, comments) and the
-directives are checked against docs/api_design.md and configs/api.yaml. `nginx -t` is part of the manual run
-(docs/setup.md).
+directives are checked against docs/api_design.md and configs/api.yaml. Includes of files that deploy/web.Dockerfile
+copies into the image are expanded. `nginx -t` is part of the manual run (docs/setup.md).
 """
 from __future__ import annotations
 
@@ -15,6 +16,17 @@ from api.intake import body_limit
 
 REPO = Path(__file__).resolve().parents[2]
 TEXT = (REPO / "deploy" / "nginx.conf").read_text(encoding="utf-8")
+WEB_DOCKERFILE = (REPO / "deploy" / "web.Dockerfile").read_text(encoding="utf-8")
+# Container path -> repo file, from the image's COPY lines: an include nginx.conf names must be installed there.
+INSTALLED = {dest: REPO / src for src, dest in re.findall(r"^COPY (deploy/\S+) (\S+)$", WEB_DOCKERFILE, re.M)}
+(WEB_ROOT,) = re.findall(r"^COPY --from=build /web/dist (\S+)$", WEB_DOCKERFILE, re.M)
+SECURITY_HEADERS = {  # team decision A13
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; "
+                               "object-src 'none'",
+}
+APP_ROUTE = '~ ^/(signin|analyze|history|history/req_[0-9a-f]{32}|overview|status)$'
 ESCAPES = {"n": "\n", "t": "\t", "r": "\r"}
 UNITS = {"": 1, "k": 1024, "m": 1024 ** 2, "g": 1024 ** 3}
 
@@ -83,10 +95,55 @@ def parse(tokens: list[str]) -> Node:
     return stack[0]
 
 
-ROOT = parse(tokenize(TEXT))
+def expand(node: Node) -> Node:
+    """A copy of node with each include of an installed repo file replaced by that file's directives."""
+    children = []
+    for child in node.children:
+        if child.name == "include" and child.args[0] in INSTALLED:
+            children.extend(parse(tokenize(INSTALLED[child.args[0]].read_text(encoding="utf-8"))).children)
+        else:
+            children.append(child if child.children is None else expand(child))
+    return Node(node.name, node.args, children)
+
+
+def load(text: str) -> Node:
+    return expand(parse(tokenize(text)))
+
+
+ROOT = load(TEXT)
 (HTTP,) = ROOT.find("http")
 (SERVER,) = HTTP.find("server")
 LOCATIONS = {" ".join(n.args): n for n in SERVER.find("location")}
+
+
+def resolve(path: str) -> str:
+    """The location nginx picks: an exact match, else the longest prefix if it is ^~, else the first matching
+    regex in file order, else that longest prefix."""
+    if f"= {path}" in LOCATIONS:
+        return f"= {path}"
+    prefixes = [loc for loc in LOCATIONS if loc.startswith(("/", "^~ ")) and path.startswith(loc.split()[-1])]
+    longest = max(prefixes, key=lambda loc: len(loc.split()[-1]))
+    if longest.startswith("^~ "):
+        return longest
+    regexes = [loc for loc in LOCATIONS if loc.startswith("~ ") and re.search(loc[2:], path)]
+    return regexes[0] if regexes else longest
+
+
+def headers(location: Node, server: Node = SERVER, http: Node = HTTP) -> dict[str, list[str]]:
+    """name -> value (and `always`) of the add_header lines nginx applies in a location: its own if it has any,
+    else the server's, else the http block's."""
+    for level in (location, server, http):
+        if level.find("add_header"):
+            return {n.args[0]: n.args[1:] for n in level.find("add_header")}
+    return {}
+
+
+def without_security_headers(root: Node) -> list[str]:
+    """Locations that lack any of the three security headers with `always`."""
+    (http,) = root.find("http")
+    (server,) = http.find("server")
+    return [" ".join(loc.args) for loc in server.find("location")
+            if any(headers(loc, server, http).get(name) != [value, "always"] for name, value in SECURITY_HEADERS.items())]
 
 
 def size_bytes(value: str) -> int:
@@ -129,6 +186,8 @@ def test_nginx_answers_use_the_section6_shape_and_codes():
     for target in targets:
         location = LOCATIONS[target]
         assert location.find("default_type")[0].args == ["application/json"]
+        (types,) = location.find("types")  # empty, so /assets/missing.js is not answered as JavaScript
+        assert types.children == []
         (ret,) = location.find("return")
         status, body = int(ret.args[0]), json.loads(ret.args[1])
         assert set(body) == {"error"} and set(body["error"]) == {"code", "message", "request_id"}
@@ -195,12 +254,71 @@ def test_forwarded_headers_are_cleared_towards_the_api():
 
 # Routing (§2)
 
-def test_only_api_paths_are_proxied_and_root_is_the_placeholder():
+def test_only_api_paths_are_proxied_and_root_redirects_to_analyze():
     proxied = {loc: node.find("proxy_pass")[0].args for loc, node in LOCATIONS.items() if node.find("proxy_pass")}
     assert proxied == {"= /api/session": ["http://api:8000"], "/api/": ["http://api:8000"]}
-    (ret,) = LOCATIONS["= /"].find("return")
-    assert ret.args[0] == "200"
+    assert LOCATIONS["= /"].find("return")[0].args == ["302", "/analyze"]
+    assert SERVER.find("absolute_redirect")[0].args == ["off"]  # Location: /analyze, not http://localhost:80/...
     assert LOCATIONS["/"].find("return")[0].args == ["404"]
+
+
+def test_api_blocks_gain_only_the_security_headers():
+    def rest(loc):
+        return [(n.name, n.args) for n in LOCATIONS[loc].children if n.name != "add_header"]
+    assert rest("= /api/session") == [("limit_req", ["zone=signin", "burst=5", "nodelay"]),
+                                      ("proxy_pass", ["http://api:8000"])]
+    assert rest("/api/") == [("proxy_pass", ["http://api:8000"])]
+
+
+def test_app_routes_serve_index_html_without_caching():
+    paths = ["/signin", "/analyze", "/history", "/history/req_" + "0" * 32, "/history/req_" + "a1" * 16,
+             "/overview", "/status"]
+    for path in paths:
+        assert resolve(path) == APP_ROUTE, path
+    app = LOCATIONS[APP_ROUTE]
+    assert app.find("root")[0].args == [WEB_ROOT]
+    assert app.find("try_files")[0].args == ["/index.html", "=404"]
+    assert headers(app)["Cache-Control"] == ["no-cache"]  # no `always`: not on a 404
+
+
+def test_other_paths_are_not_routed_to_the_app():
+    paths = ["/history/foo", "/history/req_" + "0" * 31, "/history/req_" + "A" * 32, "/history/req_" + "0" * 33,
+             "/signinx", "/analyze/", "/Analyze", "/index.html", "/history/", "/docs", "/favicon.ico"]
+    for path in paths:
+        assert resolve(path) == "/", path  # the catch-all 404
+
+
+def test_assets_are_files_only_and_cached_as_immutable():
+    assert resolve("/assets/index-abc.js") == "^~ /assets/"
+    assets = LOCATIONS["^~ /assets/"]
+    assert assets.find("root")[0].args == [WEB_ROOT]
+    assert assets.find("try_files")[0].args == ["$uri", "=404"]  # never index.html
+    assert not assets.find("index") and not assets.find("autoindex")
+    assert headers(assets)["Cache-Control"] == ["public, max-age=31536000, immutable"]
+    cached = {loc for loc, node in LOCATIONS.items() if "Cache-Control" in headers(node)}
+    assert cached == {APP_ROUTE, "^~ /assets/"}
+
+
+# Security headers (A13)
+
+def test_every_location_sends_the_three_security_headers_always():
+    assert without_security_headers(ROOT) == []
+    assert set(INSTALLED) >= {"/etc/nginx/nginx.conf", "/etc/nginx/vsd_security_headers.conf"}
+
+
+def test_header_check_catches_one_header_missing_from_one_location():
+    include = "            include /etc/nginx/vsd_security_headers.conf;\n"
+    two = ('            add_header Referrer-Policy "strict-origin-when-cross-origin" always;\n'
+           '            add_header X-Content-Type-Options "nosniff" always;\n')
+    planted = TEXT.replace("location @not_found {\n" + include, "location @not_found {\n" + two, 1)
+    assert planted != TEXT
+    assert without_security_headers(load(planted)) == ["@not_found"]
+
+
+def test_referrer_policy_is_never_no_referrer():
+    assert not [n for n in ROOT.walk() for a in n.args if "no-referrer" in a.lower()]
+    assert not [n for n in ROOT.walk() if n.name == "add_header" and n.args[0] == "Referrer-Policy"
+                and n.args[1] != SECURITY_HEADERS["Referrer-Policy"]]
 
 
 def test_fastapi_docs_routes_are_not_routed():

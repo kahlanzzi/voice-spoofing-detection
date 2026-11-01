@@ -3,8 +3,8 @@
 The HMAC key comes only from the environment (.env through Compose interpolation), never from a file in the
 repo; the api publishes no port (only nginx may front it, §4.8); the store is on a named volume; temp uploads
 are on a tmpfs large enough for the declared number of concurrent uploads at the configs/api.yaml limit.
-nginx (web) is pinned by digest, reads deploy/nginx.conf read-only, publishes the port in allowed_origins and
-buffers request bodies on a tmpfs.
+nginx (web) is built from deploy/web.Dockerfile (pins: tests/deploy/test_deploy_web_image.py) with the app and
+deploy/nginx.conf inside, publishes the port in allowed_origins and buffers request bodies on a tmpfs.
 """
 from __future__ import annotations
 
@@ -75,13 +75,13 @@ def test_api_container_is_hardened():
     assert "no-new-privileges:true" in API["security_opt"]
 
 
-def test_web_image_is_pinned_by_tag_and_digest():
-    assert re.fullmatch(r"nginx:\d+\.\d+\.\d+-alpine@sha256:[0-9a-f]{64}", WEB["image"]), WEB["image"]
-    assert "build" not in WEB
+def test_web_is_built_from_its_dockerfile_with_the_config_inside():
+    assert WEB["build"] == {"context": ".", "dockerfile": "deploy/web.Dockerfile"}
+    assert "image" not in WEB  # the nginx pin lives in the Dockerfile
+    assert "volumes" not in WEB  # a mount would mask the image's nginx.conf
 
 
-def test_web_mounts_the_repo_config_read_only_and_starts_after_a_healthy_api():
-    assert WEB["volumes"] == ["./deploy/nginx.conf:/etc/nginx/nginx.conf:ro"]
+def test_web_starts_after_a_healthy_api_without_secrets():
     assert WEB["depends_on"] == {"api": {"condition": "service_healthy"}}
     assert "env_file" not in WEB and HMAC_KEY_ENV not in WEB.get("environment", {})
 
