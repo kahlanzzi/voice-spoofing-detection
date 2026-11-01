@@ -4065,7 +4065,9 @@ change; no new dependency (`package.json` and `web/package-lock.json` unchanged)
   `session.expire()` (PR 10). Any other call, `GET /api/analyses` included, calls the handler.
 - `web/src/api/errors.ts`: `ApiError` with `kind` (`http` | `network`), `status`, `code` (§6 union; `null` for a
   network error) and `requestId` (from the body, `req_` form or `null`; `undefined` when there was no response).
-  The server `message` is never kept; `.message` is a fixed `API error <status> <code>` or `Network error`. A body
+  The guards `isHttpError` / `isNetworkError` narrow all four fields together (`code` is `ErrorCode` or `null`),
+  because checking `kind` alone does not. The server `message` is never kept; `.message` is a fixed `API error
+  <status> <code>` or `Network error`. A body
   that is not JSON, not the §6 shape, or has an unknown code or a malformed `request_id` → `internal_error`, `null`.
 - `web/src/api/types.ts`: §2/§4/§5/§6 request and response types; `AnalysisResponse` = the 8 §11 fields; the
   17-code `ErrorCode` union. Types follow the §4 examples, checked field by field against `api/schemas.py`

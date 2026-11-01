@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
-import { ApiError, parseErrorBody } from './errors'
+import { describe, expect, expectTypeOf, it } from 'vitest'
+import { ApiError, isHttpError, isNetworkError, parseErrorBody } from './errors'
+import type { ErrorCode, RequestId } from './types'
 
 const ID = 'req_8fa98c02e4b14d0c9a1f3b7d6e5c2a10'
 const SERVER_TEXT = 'The recording could not be decoded.'
@@ -78,5 +79,48 @@ describe('ApiError.network', () => {
     expect(error).toBeInstanceOf(ApiError)
     expect(error).toMatchObject({ kind: 'network', status: undefined, code: null, requestId: undefined })
     expect(error.message).toBe('Network error')
+  })
+})
+
+describe('isHttpError and isNetworkError', () => {
+  const http = ApiError.http(422, { error: { code: 'corrupt_audio', message: SERVER_TEXT, request_id: ID } })
+  const network = ApiError.network()
+
+  it.each([
+    ['an http ApiError', http, true, false],
+    ['a network ApiError', network, false, true],
+    ['a plain Error', new Error('x'), false, false],
+    ['a TypeError', new TypeError('Failed to fetch'), false, false],
+    ['an ApiError-shaped object', { kind: 'http', code: 'not_found', requestId: null, status: 404 }, false, false],
+    ['null', null, false, false],
+    ['undefined', undefined, false, false],
+  ])('%s → http %s, network %s', (_, value, httpExpected, networkExpected) => {
+    expect(isHttpError(value)).toBe(httpExpected)
+    expect(isNetworkError(value)).toBe(networkExpected)
+  })
+
+  it('isHttpError narrows code, requestId and status', () => {
+    const error: unknown = http
+    if (!isHttpError(error)) throw new Error('expected an http error')
+    expectTypeOf(error.kind).toEqualTypeOf<'http'>()
+    expectTypeOf(error.code).toEqualTypeOf<ErrorCode>()
+    expectTypeOf(error.requestId).toEqualTypeOf<RequestId | null>()
+    expectTypeOf(error.requestId).toExtend<string | null>()
+    expectTypeOf(error.status).toEqualTypeOf<number>()
+    expect(error.code).toBe('corrupt_audio')
+  })
+
+  it('isNetworkError narrows code to null', () => {
+    const error: unknown = network
+    if (!isNetworkError(error)) throw new Error('expected a network error')
+    expectTypeOf(error.kind).toEqualTypeOf<'network'>()
+    expectTypeOf(error.code).toEqualTypeOf<null>()
+    expectTypeOf(error.requestId).toEqualTypeOf<undefined>()
+    expectTypeOf(error.status).toEqualTypeOf<undefined>()
+    expect(error.code).toBeNull()
+  })
+
+  it('checking kind alone does not narrow code', () => {
+    expectTypeOf<ApiError['code']>().toEqualTypeOf<ErrorCode | null>()
   })
 })

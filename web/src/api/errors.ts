@@ -70,3 +70,17 @@ export class ApiError extends Error {
     return ApiError.http(response.status, body)
   }
 }
+
+// kind, code, requestId and status are separate fields, so checking kind alone does not narrow the
+// others. These guards do.
+export type HttpApiError = ApiError & { kind: 'http'; status: number; code: ErrorCode; requestId: RequestId | null }
+
+export type NetworkApiError = ApiError & { kind: 'network'; status: undefined; code: null; requestId: undefined }
+
+export function isHttpError(error: unknown): error is HttpApiError {
+  return error instanceof ApiError && error.kind === 'http'
+}
+
+export function isNetworkError(error: unknown): error is NetworkApiError {
+  return error instanceof ApiError && error.kind === 'network'
+}
