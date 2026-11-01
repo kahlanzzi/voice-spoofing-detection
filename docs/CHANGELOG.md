@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 17 Step 8a: API image (`deploy/api.Dockerfile`, Python 3.13.15 slim by digest, non-root, `requirements-api.txt`), `.dockerignore` allowlist, `docker-compose.yml` with the `api` service (no published port, key from `.env`, store on a named volume, uploads on a config-sized tmpfs), `configs/api_logging.yaml` (api logger at INFO, no access log).
 - Stage 17 sign-in, Step 7b-2: every `/api` route but `POST /session` and `GET /health` needs a session, `Origin` on `POST /analyses` and `PUT …/note` (refused before the body is read); notes record their author (`updated_by`), with a one-transaction migration of existing database files.
 - Stage 17 sign-in, Step 7b-1b: `POST`/`GET`/`DELETE /api/session` and `GET /api/health` (§4.8), the `SessionGuard` middleware (Origin then session, `/session` routes only for now), the 4 KiB sign-in body limit, lockout, rehash at sign-in, and a start-up refusal without `VSD_SIGNIN_HMAC_KEY`; `python-dotenv` 1.2.4 pinned for `uvicorn --env-file .env`.
 - Stage 17 sign-in, Step 7b-1a: `account`/`session`/`sign_in_failure` tables, argon2id hashing (`argon2-cffi` 25.1.0), `VSD_SIGNIN_HMAC_KEY` loading, `python -m api.admin` (create-account, set-password, disable, enable, unlock; with a NIST context-word check) and the §9 sign-in keys in `configs/api.yaml`.

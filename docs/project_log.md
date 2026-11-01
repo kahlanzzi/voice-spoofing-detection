@@ -3678,6 +3678,66 @@ entry, and ran the checks. Iheb approved the plan and reviews the diff. Context7
 **Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
 
 ---
+### Entry 125 — Stage 17 step 8a: API image, .dockerignore, Compose api service and logging (2026-11-01)
+
+**Numbering:** main ends at 124 (PR #85, `ad236b0`); open PRs #67 and #68 carry Entries 101–102, so 125 is next.
+
+**What:** on `feat/stage17-docker` (Iheb, Part E; from `main` at `ad236b0`), the first half of Step 8, following
+the approved plan with the team's changes (tmpfs for uploads, split 8a / 8b with 8b on a new branch from `main`
+after 8a merges, tmpfs sized from `configs/api.yaml`). Sources followed: `api_design.md` §2, §4.3, §4.8, §6,
+§9; ADR 0008 §2 (`api` and `web` containers); ADR 0011 (rate limit in nginx). HANDOFF.md says nothing on
+Docker or deployment. No API code change, no new `api.yaml` key.
+- `deploy/api.Dockerfile`: `python:3.13.15-slim-trixie` pinned by digest (D15), non-root `app` (uid 10001),
+  copies only `api/`, `configs/api.yaml`, `configs/api_logging.yaml`, `requirements-api.txt`. `HEALTHCHECK`
+  on `GET /api/health` with Python's urllib (no curl in slim). CMD: `uvicorn ... --no-access-log
+  --no-proxy-headers --log-config configs/api_logging.yaml`.
+- `requirements-api.txt`: the API subset (argon2-cffi, fastapi, numpy, python-multipart, PyYAML, soundfile,
+  starlette, uvicorn). `requirements.txt` pulls no torch (that is `requirements-cnn.txt` plus a separate
+  install) but does pull librosa, scikit-learn, pandas, kaggle, huggingface_hub, pytest and httpx, none
+  imported by `api/`. The ModelBundle integration adds its own pins here in its PR; the test then holds them
+  equal to the main files too.
+- `.dockerignore`: allowlist (`*`, then the four paths); `.env`, `var/`, `.venv/`, `data/` and audio also listed.
+- `docker-compose.yml`: `api` only, `expose: 8000`, no `ports`. `VSD_SIGNIN_HMAC_KEY:
+  ${VSD_SIGNIN_HMAC_KEY:?...}` (not `env_file`: `.env` also holds the Kaggle, HF and W&B tokens). Named volume
+  `vsd-var` at `/app/var` (`database_path: var/api.sqlite` unchanged). `/tmp` tmpfs `size=192m`: each upload
+  uses `/tmp` twice (Starlette spools a file part over 1 MB to the system temp folder, then `api/intake.py`
+  copies it with `mkstemp`), so 2 x 21,037,056 x 4 = 168,296,448 bytes for `x-vsd-concurrent-uploads: 4`
+  (4 analysts uploading at once; nothing enforces it yet, linked to the Entry 116 item). `read_only`,
+  `cap_drop: [ALL]`, `no-new-privileges`.
+- `configs/api_logging.yaml`: `api` and `uvicorn.error` at INFO to stderr; `uvicorn.access` no handler,
+  CRITICAL, no propagation.
+- Tests (`tests/deploy/`, 19, no Docker needed): pinned `FROM` with digest, non-root `USER`, exact COPY set,
+  CMD flags, health check; `requirements-api.txt` pins equal `requirements.txt`, no model/dataset/test
+  package, every third-party import in `api/` covered; `.dockerignore` allowlist; key only via `${...:?}`, no
+  `env_file`, no hex secret, no published port, volume, tmpfs >= 2 x `body_limit()` x concurrent uploads
+  (fails if `max_size_bytes` grows without the tmpfs); logging config applied with `dictConfig`.
+- Docs: `docs/setup.md` "Running with Docker Compose (Stage 17)"; the local uvicorn command gains
+  `--no-access-log --log-config configs/api_logging.yaml`. README API row, CHANGELOG, AGENTS.md reminder
+  removed.
+
+**Evidence [verified]:**
+- `.venv/bin/python -m pytest -q` (Python 3.14.6): `1229 passed, 9 skipped in 147.25s` (Entry 124: 1210
+  passed, 9 skipped; +19). `tests/deploy`: `19 passed`. `tests/governance`: `50 passed`.
+- Manual, Docker 28.5.2 / Docker Compose 2.40.3: `docker compose build` and `up -d` → `(healthy)`; in the
+  container `uid=10001(app)`, `/tmp` tmpfs 192M, writing `/app` refused (read-only), no torch, librosa,
+  scikit-learn, pandas, pytest, httpx or dotenv installed; image `/app` holds only `api`, `configs`
+  (`api.yaml`, `api_logging.yaml`), `requirements-api.txt`, `var`. Two `GET /api/health` → `{"ok":true}`
+  with no log line. `docker compose exec -T api python -m api.admin create-account analyst01` (password on
+  stdin, test only) → created; sign-in with `Origin: http://localhost:8001`: wrong password 401
+  `invalid_credentials`, right one 200 with `vsd_session`. Log: `INFO api sign-in failed` (no username),
+  `INFO api sign-in succeeded, account_id=1`; no request line, no IP. `down` then `up -d`: the account still
+  signs in (volume kept). Empty key: Compose refuses (`required variable VSD_SIGNIN_HMAC_KEY is missing a
+  value`); a 2-byte key: the API refuses at startup (`must hold at least 32 bytes`). `down -v` removed the
+  test volume.
+- No audio, dataset or DEEP-VOICE path touched; no key or secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and
+ran the checks. The team approved the plan with changes and reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
 ## Open items
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
@@ -3925,22 +3985,23 @@ entry, and ran the checks. Iheb approved the plan and reviews the diff. Context7
 - [x] Step 7b-1b: `POST`/`GET`/`DELETE /session`, `GET /health`, session + Origin middleware on the `/session` routes, refuse to start without the key, `--env-file` run command and `python-dotenv` pin; add the two agreed §4.8 sentences (disabled + right password neither counts nor resets the failure count; store error on `/session` → 503, session check elsewhere → 500) (Entry 122). (merged in PR #84, `2e42e1b`; Entry 123)
 - [x] §4.8 wording: "before a request ID is assigned" vs the agreed RequestId → SessionGuard order (refusals carry `X-Request-ID`, body `request_id: null`); approve a rewording or keep it (Entry 123). (reworded in §4.8 and §4.3, approved by Iheb; Entry 123)
 - [ ] Lockout is checked before the password verify and counted after it, so parallel sign-in requests can pass the lock check together; nginx's per-IP limit (Step 8) bounds this. Do not expose the API without nginx (Entry 123).
-- [ ] Configure the `api` logger level under uvicorn so the INFO sign-in lines (failure without username, success with account ID) are written; with Step 8 logging (Entry 123).
+- [x] Configure the `api` logger level under uvicorn so the INFO sign-in lines (failure without username, success with account ID) are written; with Step 8 logging (Entry 123). (`configs/api_logging.yaml` via `--log-config`; Entry 125)
 - [x] Step 7b-2: session + Origin middleware on every route, note `updated_by` with the migration of existing database files, existing tests signed in (Entry 122). (on `feat/stage17-protect-routes`, awaiting review; Entry 124)
 - [ ] FastAPI's `/docs`, `/redoc` and `/openapi.json` are outside `/api` and need no session (no data, but they list the routes); decide with Step 8 / nginx whether to turn them off (Entry 124).
+- [ ] Step 8b (new branch from `main` after 8a merges): nginx `web` service on `8001:80`, only `/api` proxied; body limit and proxy timeouts above `configs/api.yaml` (tested); `limit_req` 10/min burst 5 on `POST /api/session` with §6 JSON 429; no address in logs or forwarded headers (tested); `proxy_intercept_errors` off so the API's own 413/503/504 pass unchanged (tested), nginx's §6 JSON only for its own 413, 502/504 and 429; `/` placeholder; `api_design.md` gaps (nginx errors, error-log `client:` field, docs routes, HTTPS outside localhost, `nodelay`) (Entry 125).
 - [x] Team confirms the §9 proposed sign-in values (idle 30 min, absolute 12 h, lockout 5 / 15 min, password 15–128, nginx 10/min burst 5, 32-byte session ID) (Entry 121). (confirmed unchanged, user-reported; Entry 122)
 - [ ] Accepted risk: anyone who knows a username can lock that analyst out for `lockout_minutes`; nginx's per-IP limit only slows this; the remedy is an admin unlock (D47, ADR 0011). Revisit if it happens in practice (Entry 121).
 - [x] Decide whether Step 7b adds the NIST SP 800-63B-4 §3.1.1.2 blocklist check of common or compromised passwords (Entry 121). (context check done in the admin command: no username, `vsd`, `voice`, `spoof`; Entry 122)
 - [ ] Common-password list for the admin command (e.g. SecLists, filtered to ≥ 15 characters): needs an explicit AGENTS.md rule 7 exception before any file is committed (Entry 122).
-- [ ] Step 8: `GET /health` must write no log line (§4.8), but uvicorn's access log prints its request line; handle it with the uvicorn access-log item below (Entry 122).
+- [x] Step 8: `GET /health` must write no log line (§4.8), but uvicorn's access log prints its request line; handle it with the uvicorn access-log item below (Entry 122). (`--no-access-log`, no `uvicorn.access` handler; Entry 125)
 - [ ] Stage 18: Map a 500 or no answer from GET /status to Unavailable (relates to open decision 7) (Entry 124).
 - [ ] Stage 18: remove the S1 "open product decision" banner; avoid background polling that keeps sessions from going idle (Entry 121).
 - [ ] Threat model §10.1 / §11 item 5: update the "unmitigated until access control is decided" wording once sign-in is implemented (Entry 121).
 - [ ] Integration: before the real ModelBundle is served, the store starts empty (a fresh database file) or mock results and their notes are removed (`analysis_note` has a foreign key to `analysis_record`), so the figures never mix the two (§4.7 G6; Entry 120).
 - [ ] Routes other than `POST /api/analyses` and `PUT …/note` answer a Content-Length above `max_size_bytes` + 64 KiB with Starlette's plain-text 413, not the §6 shape (GET-only today) (Entry 119).
 - [ ] Shared helpers (utc_now_iso, REQUEST_ID, invalid_request) live in routers and are imported across routers; move to a shared module in a later refactor PR (Entry 119).
-- [ ] Integration: limit concurrent analyses; a timed-out analyzer thread keeps running (cannot be killed), so repeated timeouts with the real model could pile up (Entry 116).
-- [ ] uvicorn's default access log prints the client IP; §1/§7 say no IP is stored. Decide for Stage 19 (e.g. `--no-access-log` or a log filter) (Entry 116).
+- [ ] Integration: limit concurrent analyses; a timed-out analyzer thread keeps running (cannot be killed), so repeated timeouts with the real model could pile up (Entry 116). The container's `/tmp` tmpfs is sized for `x-vsd-concurrent-uploads: 4` (2 × body limit each); the limit should match that number (Entry 125).
+- [x] uvicorn's default access log prints the client IP; §1/§7 say no IP is stored. Decide for Stage 19 (e.g. `--no-access-log` or a log filter) (Entry 116). (`--no-access-log --no-proxy-headers` in the image and the documented local command; Entry 125)
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
 
 **Midterm documentation (Entries 102–110)**
@@ -3966,7 +4027,7 @@ entry, and ran the checks. Iheb approved the plan and reviews the diff. Context7
 - [ ] Independently verify README setup and label mock versus real flows in the team demo; confirm final editorial acceptance and LMS submission.
 
 **Later stages (reminders)**
-- [ ] `configs/robustness.yaml` → Stage 14. `docker-compose.yml` → Stage 17.
+- [ ] `configs/robustness.yaml` → Stage 14. `docker-compose.yml` → Stage 17. (`docker-compose.yml` added with the `api` service; `web` in Step 8b; Entry 125)
 - [ ] Stage 17: verify the ModelBundle checkpoint hash at load (threat model §10, tampering recommendation).
 - [ ] Stage 6: re-run the shortcut screen *after* preprocessing (silence, bandwidth).
 - [ ] Stage 6: decide the silence / voice-activity detector explicitly (energy-based vs `silero-vad`) and record it as a decision; D17 depends on it.
@@ -3983,7 +4044,7 @@ entry, and ran the checks. Iheb approved the plan and reviews the diff. Context7
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
 `GET /api/status`. `POST /api/analyses` with the
-MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) is on `feat/stage17-protect-routes`, awaiting review (Entry 124). Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; React `web/` and Compose are not yet present on main. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
+MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service only, logging config) is on `feat/stage17-docker`, awaiting review (Entry 125); nginx is Step 8b. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; React `web/` and Compose are not yet present on main. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
 canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.

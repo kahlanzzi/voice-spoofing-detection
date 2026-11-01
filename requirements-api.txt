@@ -1,0 +1,11 @@
+# API image dependencies only (deploy/api.Dockerfile). Every pin must equal the same package's pin in
+# requirements.txt (tests/deploy/test_deploy_api_image.py checks this). No model, dataset or test packages.
+# The ModelBundle integration adds its own lines here (e.g. CPU torch, safetensors) in that PR.
+argon2-cffi==25.1.0
+fastapi==0.162.0
+numpy==2.5.3
+python-multipart==0.0.32
+PyYAML==6.0.3
+soundfile==0.14.0
+starlette==1.10.0
+uvicorn==0.54.0
