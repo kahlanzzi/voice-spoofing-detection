@@ -19,6 +19,13 @@ SECTION_9 = {
     "mock_deferral_on_fit": 0.0993,
     "temp_dir": None,
     "database_path": "var/api.sqlite",
+    "session_idle_minutes": 30,
+    "session_absolute_hours": 12,
+    "lockout_threshold": 5,
+    "lockout_minutes": 15,
+    "password_min_chars": 15,
+    "password_max_chars": 128,
+    "allowed_origins": ("http://localhost:8001", "http://127.0.0.1:8001"),
 }
 
 
@@ -66,6 +73,17 @@ def test_default_path_without_env_var(monkeypatch):
     {"temp_dir": 5},                      # neither str nor null
     {"database_path": None},              # required string
     {"database_path": " "},               # empty path
+    {"session_idle_minutes": ...},        # sign-in keys are required (§9)
+    {"lockout_threshold": 0},             # must be positive
+    {"session_absolute_hours": 12.0},     # float is not an int
+    {"password_min_chars": True},         # bool is not an int
+    {"password_min_chars": 129},          # above password_max_chars
+    {"allowed_origins": []},              # empty
+    {"allowed_origins": "http://localhost:8001"},   # not a list
+    {"allowed_origins": ["http://localhost:8001/"]},  # trailing slash
+    {"allowed_origins": ["http://localhost:8001/api"]},  # a path
+    {"allowed_origins": ["localhost:8001"]},  # no scheme
+    {"allowed_origins": [8001]},          # not a string
 ], ids=lambda c: next(iter(c)) + "=" + repr(next(iter(c.values()))))
 def test_invalid_config_raises(tmp_path, changes):
     with pytest.raises(ValueError):

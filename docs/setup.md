@@ -49,6 +49,25 @@ python -m pip install -r requirements-cnn.txt
 - CI sets `REQUIRE_TORCH_TESTS=1`, so a torch test fails instead of skipping if torch is missing.
   Locally without torch, those tests are skipped.
 
+## API accounts (Stage 17, D47)
+
+Analyst accounts exist only through the admin command (`docs/api_design.md` §4.8). It uses the
+database and password limits of `configs/api.yaml` (or `$VSD_API_CONFIG`). Passwords are typed twice
+at a hidden prompt, never on the command line.
+
+```bash
+python -m api.admin create-account analyst01   # also: set-password, disable, enable, unlock
+```
+
+`set-password` and `disable` end all of the account's sessions. `unlock` needs the sign-in key
+`VSD_SIGNIN_HMAC_KEY` (make it with the command in `.env.example` and put it in `.env`); load `.env`
+into the shell first:
+
+```bash
+set -a; . ./.env; set +a
+python -m api.admin unlock analyst01
+```
+
 ## Colab
 
 1. Open a notebook from `notebooks/` in Colab (Python 3.13 runtime, GPU when training).

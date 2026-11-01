@@ -4,7 +4,8 @@ import sqlite3
 import pytest
 
 from api.db import connect
-from api.repository import COLUMNS, AnalysisRecord, AnalysisRepository, HistoryQuery, StoredNote
+from api.repository import (COLUMNS, AccountRepository, AnalysisRecord, AnalysisRepository, DuplicateAccount,
+                            HistoryQuery, StoredNote)
 
 SECTION_7 = ["request_id", "created_at", "prediction", "confidence", "risk_level", "model_version",
              "profile_version", "policy_version", "notice", "processing_ms", "is_mock"]
@@ -260,3 +261,144 @@ def test_stats_awaiting_note_excludes_authentic_and_noted_results(repo):
     assert figures.awaiting_total == 2
     assert [(r.request_id, note) for r, note in figures.awaiting_recent] == [(f"req_{2:032x}", None),
                                                                            (f"req_{1:032x}", None)]
+
+
+# --- Sign-in tables (§4.8, §7) ---------------------------------------------------------------
+
+NOW = "2026-11-01T09:00:00Z"
+HASH = "$argon2id$v=19$m=65536,t=3,p=4$c2FsdHNhbHRzYWx0c2FsdA$aGFzaGhhc2hoYXNoaGFzaGhhc2hoYXNoaGFzaGhhc2g"
+SIGN_IN_TABLES = {
+    "account": ["account_id", "username", "password_hash", "disabled", "created_at", "password_changed_at"],
+    "session": ["session_hash", "account_id", "created_at", "last_seen_at", "expires_at"],
+    "sign_in_failure": ["username_hmac", "failures", "last_failure_at", "locked_until"],
+}
+
+
+@pytest.fixture
+def accounts(repo):
+    return AccountRepository(repo.path)
+
+
+def add_session(repo, account_id, n):
+    conn = connect(repo.path)
+    try:
+        with conn:
+            conn.execute("INSERT INTO session VALUES (?, ?, ?, ?, ?)",
+                         (f"{n:064x}", account_id, NOW, NOW, "2026-11-01T21:00:00Z"))
+    finally:
+        conn.close()
+
+
+def sessions_of(repo, account_id):
+    conn = connect(repo.path)
+    try:
+        return conn.execute("SELECT COUNT(*) FROM session WHERE account_id = ?", (account_id,)).fetchone()[0]
+    finally:
+        conn.close()
+
+
+@pytest.mark.parametrize("table", SIGN_IN_TABLES)
+def test_sign_in_tables_have_exactly_the_section_7_columns(repo, table):
+    conn = connect(repo.path)
+    try:
+        columns = [row[1] for row in conn.execute(f"PRAGMA table_info({table})")]
+    finally:
+        conn.close()
+    assert columns == SIGN_IN_TABLES[table]
+
+
+def test_no_sign_in_table_has_an_ip_user_agent_or_clear_secret_column(repo):
+    conn = connect(repo.path)
+    try:
+        for table in SIGN_IN_TABLES:
+            columns = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+            assert not columns & {"ip", "client_ip", "ip_address", "user_agent", "password", "session_id"}
+    finally:
+        conn.close()
+
+
+def test_create_schema_twice_keeps_accounts(repo, accounts):
+    accounts.create_account("analyst01", HASH, NOW)
+    repo.create_schema()
+    assert accounts.get_account("analyst01").username == "analyst01"
+
+
+def test_create_and_get_account(accounts):
+    account_id = accounts.create_account("analyst01", HASH, NOW)
+    account = accounts.get_account("analyst01")
+    assert account.account_id == account_id
+    assert (account.password_hash, account.disabled, account.created_at, account.password_changed_at) == \
+        (HASH, False, NOW, NOW)
+    assert accounts.get_account("nobody") is None
+
+
+def test_duplicate_username_is_refused(accounts):
+    accounts.create_account("analyst01", HASH, NOW)
+    with pytest.raises(DuplicateAccount):
+        accounts.create_account("analyst01", HASH, NOW)
+
+
+@pytest.mark.parametrize("username, password_hash, now", [
+    ("Analyst01", HASH, NOW),                       # not lower case
+    ("ab", HASH, NOW),                              # too short
+    ("x" * 65, HASH, NOW),                          # too long
+    ("analyst01", "clear-text-password", NOW),      # not an argon2id hash
+    ("analyst01", "$argon2i$v=19$m=65536", NOW),    # argon2i, not argon2id
+    ("analyst01", HASH, "2026-11-01 09:00:00"),     # not UTC ISO with Z
+])
+def test_invalid_account_values_are_refused(accounts, username, password_hash, now):
+    with pytest.raises(sqlite3.IntegrityError):
+        accounts.create_account(username, password_hash, now)
+
+
+def test_set_password_ends_all_sessions_of_that_account_only(repo, accounts):
+    mine = accounts.create_account("analyst01", HASH, NOW)
+    other = accounts.create_account("analyst02", HASH, NOW)
+    add_session(repo, mine, 1)
+    add_session(repo, mine, 2)
+    add_session(repo, other, 3)
+    new_hash = HASH.replace("c2FsdH", "bmV3c2")
+    assert accounts.set_password("analyst01", new_hash, "2026-11-02T10:00:00Z") == 2
+    account = accounts.get_account("analyst01")
+    assert (account.password_hash, account.password_changed_at, account.created_at) == \
+        (new_hash, "2026-11-02T10:00:00Z", NOW)
+    assert sessions_of(repo, mine) == 0 and sessions_of(repo, other) == 1
+    assert accounts.set_password("nobody", HASH, NOW) is None
+
+
+def test_disable_ends_all_sessions_and_enable_keeps_none(repo, accounts):
+    mine = accounts.create_account("analyst01", HASH, NOW)
+    other = accounts.create_account("analyst02", HASH, NOW)
+    add_session(repo, mine, 1)
+    add_session(repo, other, 2)
+    assert accounts.set_disabled("analyst01", True) == 1
+    assert accounts.get_account("analyst01").disabled is True
+    assert sessions_of(repo, mine) == 0 and sessions_of(repo, other) == 1
+    assert accounts.set_disabled("analyst01", False) == 0
+    assert accounts.get_account("analyst01").disabled is False
+    assert sessions_of(repo, mine) == 0
+    assert accounts.set_disabled("nobody", True) is None
+
+
+def test_session_needs_a_known_account_and_a_hex_hash(repo, accounts):
+    with pytest.raises(sqlite3.IntegrityError):
+        add_session(repo, 999, 1)  # foreign key
+    account_id = accounts.create_account("analyst01", HASH, NOW)
+    conn = connect(repo.path)
+    try:
+        with pytest.raises(sqlite3.IntegrityError), conn:
+            conn.execute("INSERT INTO session VALUES (?, ?, ?, ?, ?)", ("Z" * 64, account_id, NOW, NOW, NOW))
+    finally:
+        conn.close()
+
+
+def test_clear_failures(repo, accounts):
+    digest = "ab" * 32
+    conn = connect(repo.path)
+    try:
+        with conn:
+            conn.execute("INSERT INTO sign_in_failure VALUES (?, 5, ?, ?)", (digest, NOW, "2026-11-01T09:15:00Z"))
+    finally:
+        conn.close()
+    assert accounts.clear_failures(digest) is True
+    assert accounts.clear_failures(digest) is False

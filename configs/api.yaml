@@ -15,3 +15,11 @@ notice_text: >-
 mock_deferral_on_fit: 0.0993                   # MockAnalyzer only; replaced by the bundle's value
 temp_dir: null                                 # deployment setting; null = the system temp folder
 database_path: var/api.sqlite                  # deployment setting; SQLite file (§7); relative = to the repo root
+# Sign-in (§4.8, D47); values confirmed by the team in review of PR #82.
+session_idle_minutes: 30                       # a session unused for longer is ended
+session_absolute_hours: 12                     # from sign-in; never extended
+lockout_threshold: 5                           # consecutive failed sign-ins before a lock
+lockout_minutes: 15                            # lock length, and how long a failure counts
+password_min_chars: 15                         # NIST SP 800-63B-4 §3.1.1.2 (single factor)
+password_max_chars: 128
+allowed_origins: [http://localhost:8001, http://127.0.0.1:8001]   # deployment setting; dev value

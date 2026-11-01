@@ -1,5 +1,6 @@
 # Direct dependencies, pinned to the exact versions in use (2026-10-30).
 # Must install on Python 3.13 (official, D15; CI) and 3.14 (local development).
+argon2-cffi==25.1.0  # argon2id password hashes (D47, docs/api_design.md §4.8)
 fastapi==0.162.0
 httpx==0.28.1
 huggingface_hub==2.0.0
