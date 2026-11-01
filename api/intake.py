@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import logging
 import os
-import re
 import tempfile
 from contextlib import asynccontextmanager
 from pathlib import Path, PurePath
@@ -38,12 +37,10 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 from api.config import ApiConfig, resolve_path
 from api.errors import HTTP_ERRORS, ApiError, error_body
 from api.middleware import STATE_KEY
-from api.session_guard import SESSION_PATH
+from api.session_guard import ANALYSES_PATH, NOTE_PATH, SESSION_PATH
 
 log = logging.getLogger("api")
 
-ANALYSES_PATH = "/api/analyses"
-NOTE_PATH = re.compile(r"/api/analyses/[^/]+/note")
 MULTIPART_OVERHEAD_BYTES = 64 * 1024
 NOTE_JSON_OVERHEAD_BYTES = 1024
 NOTE_BYTES_PER_CHAR = 12  # worst case in JSON: one code point outside the BMP as \uXXXX\uXXXX

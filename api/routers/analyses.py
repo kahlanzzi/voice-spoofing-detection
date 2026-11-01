@@ -66,7 +66,8 @@ def to_stored(record: AnalysisRecord, note: StoredNote | None) -> StoredAnalysis
     """The §5 StoredAnalysis: the §11 object rebuilt whole from the record, beside created_at and note."""
     analysis = AnalysisResponse(**{name: getattr(record, name) for name in AnalysisResponse.model_fields})
     return StoredAnalysis(analysis=analysis, created_at=record.created_at,
-                          note=None if note is None else Note(text=note.text, updated_at=note.updated_at))
+                          note=None if note is None else Note(text=note.text, updated_at=note.updated_at,
+                                                              updated_by=note.updated_by))
 
 
 @router.post("/analyses", status_code=201, response_model=AnalysisResponse)

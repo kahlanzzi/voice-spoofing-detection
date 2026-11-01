@@ -1,8 +1,8 @@
 import yaml
-from fastapi.testclient import TestClient
 
 from api.config import DEFAULT_PATH, ENV_VAR, load_api_config
 from api.main import create_app
+from tests.api.conftest import signed_in_client
 
 SECTION_4_2 = {"formats", "max_size_bytes", "max_duration_s", "audio_deletion"}
 
@@ -24,7 +24,7 @@ def test_limits_follow_the_config_named_by_the_env_var(tmp_path, monkeypatch):
     path = tmp_path / "api.yaml"
     path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
     monkeypatch.setenv(ENV_VAR, str(path))
-    with TestClient(create_app()) as client:
+    with signed_in_client(create_app()) as client:
         body = client.get("/api/limits").json()
     assert body == {"formats": ["wav"], "max_size_bytes": 1_048_576, "max_duration_s": 10,
                     "audio_deletion": "Deleted at once"}

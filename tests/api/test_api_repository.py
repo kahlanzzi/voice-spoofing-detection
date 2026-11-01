@@ -3,9 +3,10 @@ import sqlite3
 
 import pytest
 
+import api.repository
 from api.db import connect
-from api.repository import (COLUMNS, AccountRepository, AnalysisRecord, AnalysisRepository, DuplicateAccount,
-                            HistoryQuery, StoredNote)
+from api.repository import (ACCOUNT_SCHEMA, COLUMNS, SCHEMA, SESSION_SCHEMA, SIGN_IN_FAILURE_SCHEMA, AccountRepository,
+                            AnalysisRecord, AnalysisRepository, DuplicateAccount, HistoryQuery, StoredNote)
 
 SECTION_7 = ["request_id", "created_at", "prediction", "confidence", "risk_level", "model_version",
              "profile_version", "policy_version", "notice", "processing_ms", "is_mock"]
@@ -21,6 +22,13 @@ def repo(tmp_path):
     repository = AnalysisRepository(tmp_path / "api.sqlite")
     repository.create_schema()
     return repository
+
+
+@pytest.fixture
+def author(repo):
+    """Two accounts that can write notes: {username: account_id}."""
+    accounts = AccountRepository(repo.path)
+    return {name: accounts.create_account(name, HASH, NOW) for name in ("analyst01", "analyst02")}
 
 
 def test_table_has_exactly_the_section_7_columns(repo):
@@ -39,8 +47,9 @@ def test_note_table_has_exactly_the_section_7_columns(repo):
         foreign_keys = [(row[2], row[3], row[4]) for row in conn.execute("PRAGMA foreign_key_list(analysis_note)")]
     finally:
         conn.close()
-    assert columns == ["request_id", "text", "updated_at"]
-    assert foreign_keys == [("analysis_record", "request_id", "request_id")]
+    assert columns == ["request_id", "text", "updated_at", "updated_by_account_id"]
+    assert sorted(foreign_keys) == [("account", "updated_by_account_id", "account_id"),
+                                    ("analysis_record", "request_id", "request_id")]
 
 
 def insert_note(repo, request_id, text="Called back.", updated_at="2026-10-30T09:20:11Z"):
@@ -81,7 +90,7 @@ def test_get_stored_returns_the_record_with_its_note(repo):
     repo.add(RECORD)
     assert repo.get_stored(RECORD.request_id) == (RECORD, None)
     insert_note(repo, RECORD.request_id)
-    assert repo.get_stored(RECORD.request_id) == (RECORD, StoredNote("Called back.", "2026-10-30T09:20:11Z"))
+    assert repo.get_stored(RECORD.request_id) == (RECORD, StoredNote("Called back.", "2026-10-30T09:20:11Z", None))
     assert repo.get(RECORD.request_id) == RECORD  # the note does not change the record
 
 
@@ -94,29 +103,119 @@ def record_row(repo, request_id):
         conn.close()
 
 
-def test_save_note_stores_then_replaces_without_changing_the_record(repo):
+def test_save_note_stores_then_replaces_without_changing_the_record(repo, author):
     repo.add(RECORD)
     before = record_row(repo, RECORD.request_id)
-    first, second = StoredNote("first", "2026-10-30T09:20:11Z"), StoredNote("second", "2026-10-30T09:21:00Z")
-    assert repo.save_note(RECORD.request_id, first.text, first.updated_at) == first
-    assert repo.save_note(RECORD.request_id, second.text, second.updated_at) == second
+    first = StoredNote("first", "2026-10-30T09:20:11Z", "analyst01")
+    second = StoredNote("second", "2026-10-30T09:21:00Z", "analyst02")
+    assert repo.save_note(RECORD.request_id, first.text, first.updated_at, author["analyst01"]) == first
+    assert repo.get_stored(RECORD.request_id)[1] == first
+    # Another account replaces the text and the author (§4.6).
+    assert repo.save_note(RECORD.request_id, second.text, second.updated_at, author["analyst02"]) == second
     assert repo.get_stored(RECORD.request_id)[1] == second
     assert record_row(repo, RECORD.request_id) == before
 
 
-def test_delete_note_reports_whether_a_note_was_removed(repo):
+def test_save_note_needs_a_known_account(repo):
+    repo.add(RECORD)
+    with pytest.raises(sqlite3.IntegrityError, match="FOREIGN KEY"):
+        repo.save_note(RECORD.request_id, "x", "2026-10-30T09:20:11Z", 999)
+    assert repo.get_stored(RECORD.request_id)[1] is None
+
+
+def test_delete_note_reports_whether_a_note_was_removed(repo, author):
     repo.add(RECORD)
     before = record_row(repo, RECORD.request_id)
-    repo.save_note(RECORD.request_id, "first", "2026-10-30T09:20:11Z")
+    repo.save_note(RECORD.request_id, "first", "2026-10-30T09:20:11Z", author["analyst01"])
     assert repo.delete_note(RECORD.request_id) is True
     assert repo.delete_note(RECORD.request_id) is False
     assert repo.get_stored(RECORD.request_id)[1] is None
     assert record_row(repo, RECORD.request_id) == before
 
 
-def test_note_writes_for_an_unknown_record_return_none_and_store_nothing(repo):
+# --- Migration: the note author on an older database file (§7, Step 7b-2) ------------------------
+
+# analysis_note as created by the code merged in #83 and #84, before the author column.
+OLD_NOTE_SCHEMA = """
+CREATE TABLE IF NOT EXISTS analysis_note (
+    request_id TEXT NOT NULL PRIMARY KEY REFERENCES analysis_record (request_id),
+    text       TEXT NOT NULL CHECK (length(trim(text)) > 0),
+    updated_at TEXT NOT NULL
+               CHECK (updated_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]Z')
+)
+"""
+OLD_NOTES = [("req_" + "a" * 32, "Called back.\nCaller confirmed – ok ✓", "2026-10-30T09:20:11Z"),
+             ("req_" + "c" * 32, "Second note.", "2026-10-30T10:00:00Z")]
+
+
+def old_database(path, *ddl):
+    """A database file built with the given older DDL, holding two records with notes."""
+    conn = connect(path)
+    try:
+        with conn:
+            for statement in ddl:
+                conn.execute(statement)
+            for request_id, text, updated_at in OLD_NOTES:
+                placeholders = ", ".join("?" * len(COLUMNS))
+                conn.execute(f"INSERT INTO analysis_record ({', '.join(COLUMNS)}) VALUES ({placeholders})",
+                             dataclasses.astuple(dataclasses.replace(RECORD, request_id=request_id)))
+                conn.execute("INSERT INTO analysis_note (request_id, text, updated_at) VALUES (?, ?, ?)",
+                             (request_id, text, updated_at))
+    finally:
+        conn.close()
+
+
+def table_dump(path, sql):
+    conn = connect(path)
+    try:
+        return conn.execute(sql).fetchall()
+    finally:
+        conn.close()
+
+
+def test_create_schema_adds_the_note_author_to_a_7b_1_database_without_data_loss(tmp_path):
+    path = tmp_path / "old.sqlite"
+    old_database(path, SCHEMA, OLD_NOTE_SCHEMA, ACCOUNT_SCHEMA, SESSION_SCHEMA, SIGN_IN_FAILURE_SCHEMA)
+    records_before = table_dump(path, "SELECT rowid, * FROM analysis_record ORDER BY rowid")
+    repository = AnalysisRepository(path)
+    repository.create_schema()
+    repository.create_schema()  # safe to run twice
+    columns = [row[1] for row in table_dump(path, "PRAGMA table_info(analysis_note)")]
+    assert columns == ["request_id", "text", "updated_at", "updated_by_account_id"]
+    assert table_dump(path, "SELECT request_id, text, updated_at, updated_by_account_id FROM analysis_note "
+                            "ORDER BY request_id") == [(*note, None) for note in OLD_NOTES]
+    assert table_dump(path, "SELECT rowid, * FROM analysis_record ORDER BY rowid") == records_before
+    assert table_dump(path, "PRAGMA foreign_key_check") == []
+    for request_id, text, updated_at in OLD_NOTES:
+        assert repository.get_stored(request_id)[1] == StoredNote(text, updated_at, None)
+    # An old note can then be saved again with an author.
+    account_id = AccountRepository(path).create_account("analyst01", HASH, NOW)
+    saved = repository.save_note(OLD_NOTES[0][0], "Replaced.", "2026-11-01T09:00:00Z", account_id)
+    assert saved == StoredNote("Replaced.", "2026-11-01T09:00:00Z", "analyst01")
+
+
+class FailOnAlter(sqlite3.Connection):
+    def execute(self, sql, *args):
+        if sql.lstrip().startswith("ALTER TABLE"):
+            raise sqlite3.OperationalError("disk I/O error")
+        return super().execute(sql, *args)
+
+
+def test_a_failed_migration_leaves_the_file_as_it_was(tmp_path, monkeypatch):
+    path = tmp_path / "older.sqlite"
+    old_database(path, SCHEMA, OLD_NOTE_SCHEMA)  # before the sign-in tables too
+    schema_before = table_dump(path, "SELECT type, name, sql FROM sqlite_master ORDER BY name")
+    monkeypatch.setattr(api.repository, "connect", lambda p: sqlite3.connect(p, factory=FailOnAlter))
+    with pytest.raises(sqlite3.OperationalError):
+        AnalysisRepository(path).create_schema()
+    # One transaction: the sign-in tables created before the ALTER are rolled back with it.
+    assert table_dump(path, "SELECT type, name, sql FROM sqlite_master ORDER BY name") == schema_before
+    assert table_dump(path, "SELECT request_id, text, updated_at FROM analysis_note ORDER BY request_id") == OLD_NOTES
+
+
+def test_note_writes_for_an_unknown_record_return_none_and_store_nothing(repo, author):
     unknown = "req_" + "b" * 32
-    assert repo.save_note(unknown, "x", "2026-10-30T09:20:11Z") is None
+    assert repo.save_note(unknown, "x", "2026-10-30T09:20:11Z", author["analyst01"]) is None
     assert repo.delete_note(unknown) is None
     conn = connect(repo.path)
     try:
@@ -251,12 +350,12 @@ def test_stats_per_day_counts_and_today_outside_the_period(repo):
     assert figures.total == 3 and figures.today_total == 1
 
 
-def test_stats_awaiting_note_excludes_authentic_and_noted_results(repo):
+def test_stats_awaiting_note_excludes_authentic_and_noted_results(repo, author):
     repo.add(stats_record(1, "2026-10-30T08:00:00Z", "synthetic"))
     repo.add(stats_record(2, "2026-10-30T09:00:00Z", "uncertain"))
     repo.add(stats_record(3, "2026-10-30T10:00:00Z", "authentic"))
     repo.add(stats_record(4, "2026-10-30T11:00:00Z", "synthetic"))
-    repo.save_note(f"req_{4:032x}", "Checked.", "2026-10-30T12:00:00Z")
+    repo.save_note(f"req_{4:032x}", "Checked.", "2026-10-30T12:00:00Z", author["analyst01"])
     figures = repo.stats("2026-10-30", "2026-10-30", "2026-10-30", 6)
     assert figures.awaiting_total == 2
     assert [(r.request_id, note) for r, note in figures.awaiting_recent] == [(f"req_{2:032x}", None),

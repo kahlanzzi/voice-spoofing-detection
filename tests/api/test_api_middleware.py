@@ -1,10 +1,10 @@
 import re
 
 import pytest
-from fastapi.testclient import TestClient
 
 from api.main import create_app
 from api.middleware import new_request_id
+from tests.api.conftest import signed_in_client
 
 REQUEST_ID = re.compile(r"req_[0-9a-f]{32}")
 
@@ -27,7 +27,8 @@ def client_with_failures(config):
     def typed(page: int):
         return {"page": page}
 
-    return TestClient(app, raise_server_exceptions=False)
+    with signed_in_client(app, raise_server_exceptions=False) as client:
+        yield client
 
 
 @pytest.mark.parametrize("method, path, status", [

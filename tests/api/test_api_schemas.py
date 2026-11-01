@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from api.schemas import AnalysisResponse, Error, NoteRequest, NoteResponse, StoredAnalysis
+from api.schemas import AnalysisResponse, Error, Note, NoteRequest, NoteResponse, StoredAnalysis
 
 VALID = {
     "prediction": "uncertain",
@@ -72,3 +72,11 @@ def test_note_request_refuses_anything_else(body):
 
 def test_note_response_allows_a_null_note():
     assert NoteResponse(note=None).model_dump() == {"note": None}
+
+
+def test_note_has_text_updated_at_and_a_nullable_updated_by():
+    note = {"text": "ok", "updated_at": "2026-11-01T09:20:11Z", "updated_by": "analyst01"}
+    assert NoteResponse(note=note).model_dump() == {"note": note}
+    assert Note(text="ok", updated_at="2026-10-30T09:20:11Z", updated_by=None).updated_by is None
+    with pytest.raises(ValidationError):  # always present, null for notes saved before sign-in (§4.6)
+        Note(text="ok", updated_at="2026-10-30T09:20:11Z")

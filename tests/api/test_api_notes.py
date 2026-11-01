@@ -2,10 +2,15 @@ import json
 import logging
 import re
 import sqlite3
+from pathlib import Path
 
 import pytest
+from fastapi.testclient import TestClient
 
-from tests.api.conftest import audio_bytes
+from api.main import create_app
+from api.repository import ACCOUNT_SCHEMA, SCHEMA, SESSION_SCHEMA, SIGN_IN_FAILURE_SCHEMA
+from tests.api.conftest import ANALYST, HTTPS, audio_bytes, signed_in, signed_in_client
+from tests.api.test_api_repository import OLD_NOTE_SCHEMA, OLD_NOTES, old_database
 
 SECRET = "note-secret-text-5519"
 INVALID = {"error": {"code": "invalid_request", "message": "The request is not valid.", "request_id": None}}
@@ -53,9 +58,10 @@ def test_save_returns_the_note_and_details_show_it(client):
     response = put(client, request_id, "Called back on the known number.")
     assert response.status_code == 200
     note = response.json()["note"]
-    assert set(response.json()) == {"note"} and set(note) == {"text", "updated_at"}
+    assert set(response.json()) == {"note"} and set(note) == {"text", "updated_at", "updated_by"}
     assert note["text"] == "Called back on the known number."
     assert UTC_SECOND.fullmatch(note["updated_at"])
+    assert note["updated_by"] == ANALYST
     assert client.get(f"/api/analyses/{request_id}").json()["note"] == note
     assert client.get("/api/analyses").json()["items"][0]["note"] == note
 
@@ -65,6 +71,54 @@ def test_a_second_put_replaces_the_note(client, config):
     put(client, request_id, "first")
     assert put(client, request_id, "second").json()["note"]["text"] == "second"
     assert note_rows(config) == [(request_id, "second")]
+
+
+def author_rows(config):
+    return rows(config, "SELECT n.text, a.username FROM analysis_note AS n "
+                        "LEFT JOIN account AS a ON a.account_id = n.updated_by_account_id")
+
+
+def test_another_account_replaces_the_text_and_the_author(client, config):
+    request_id = upload(client)
+    put(client, request_id, "first")
+    other = signed_in(TestClient(client.app, base_url=HTTPS), "analyst02")  # a second analyst, same service
+    note = put(other, request_id, "second").json()["note"]
+    assert (note["text"], note["updated_by"]) == ("second", "analyst02")
+    assert client.get(f"/api/analyses/{request_id}").json()["note"] == note
+    assert author_rows(config) == [("second", "analyst02")]
+
+
+def test_removing_a_note_keeps_no_author(client, config):
+    request_id = upload(client)
+    put(client, request_id, "first")
+    assert put(client, request_id, " ").json() == {"note": None}
+    assert author_rows(config) == []
+    assert client.get(f"/api/analyses/{request_id}").json()["note"] is None
+    assert put(client, request_id, "again").json()["note"]["updated_by"] == ANALYST
+
+
+def test_a_note_saved_before_sign_in_has_a_null_author(client, config):
+    request_id = upload(client)
+    conn = sqlite3.connect(config.database_path)
+    try:
+        with conn:
+            conn.execute("INSERT INTO analysis_note (request_id, text, updated_at) VALUES (?, ?, ?)",
+                         (request_id, "old", "2026-10-30T09:20:11Z"))
+    finally:
+        conn.close()
+    expected = {"text": "old", "updated_at": "2026-10-30T09:20:11Z", "updated_by": None}
+    assert client.get(f"/api/analyses/{request_id}").json()["note"] == expected
+    assert client.get("/api/analyses").json()["items"][0]["note"] == expected
+
+
+def test_a_database_from_before_the_author_column_is_migrated_at_start(config):
+    old_database(Path(config.database_path), SCHEMA, OLD_NOTE_SCHEMA, ACCOUNT_SCHEMA, SESSION_SCHEMA,
+                 SIGN_IN_FAILURE_SCHEMA)
+    with signed_in_client(create_app(config)) as client:  # the lifespan runs the migration
+        request_id, text, updated_at = OLD_NOTES[0]
+        details = client.get(f"/api/analyses/{request_id}").json()
+        assert details["note"] == {"text": text, "updated_at": updated_at, "updated_by": None}
+        assert put(client, request_id, "Replaced.").json()["note"]["updated_by"] == ANALYST
 
 
 def test_json_with_a_charset_parameter_is_accepted(client):

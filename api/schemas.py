@@ -33,6 +33,7 @@ class AnalysisResponse(_Strict):
 class Note(_Strict):
     text: str
     updated_at: str  # UTC, ISO 8601 with Z
+    updated_by: str | None  # the author's username; None for notes saved before sign-in existed
 
 
 class NoteRequest(_Strict):
