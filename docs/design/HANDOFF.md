@@ -248,6 +248,8 @@ Not decided here. Each is shown in the prototype as a placeholder, a mock value 
 
 1. Production authentication and access-control mechanism (SRS §7.4; threat model §10.1). The
    sign-in screen shows one option; password recovery and sign-out confirmation depend on it.
+   **Decided:** D47 (2026-11-01), username + password with server-side cookie sessions; contract in
+   [api_design.md](../api_design.md) §4.8.
 2. Real upload limits (formats, size, duration). Mock: WAV/FLAC/MP3, 20 MB, 60 s.
 3. Handling of recordings longer than 2 s (the model works on 2 s clips).
 4. Fallback audio-retention behaviour if deletion after processing fails.
