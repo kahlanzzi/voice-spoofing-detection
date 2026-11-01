@@ -1,0 +1,25 @@
+/* Element-level base styles (Stage 18 PR 1b). Tokens only; from prototype lines 72-81 and 445,
+   with HANDOFF.md §4 line heights (line 121). Component styles arrive with their components. */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--font-sans); font-size: var(--fs-base); line-height: var(--lh-body);
+}
+h1, h2, h3 { margin: 0; text-wrap: balance; line-height: var(--lh-title); }
+h1 { font-size: var(--fs-xl); font-weight: 700; }
+p { margin: 0; }
+a { color: var(--link); }
+button, input, textarea, select { font: inherit; color: inherit; }
+/* B4: 16 px on phones via --fs-input (tokens.css), so iOS does not zoom on focus. */
+input, select, textarea { font-size: var(--fs-input); }
+::selection { background: var(--accent-soft); color: var(--ink); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* Placeholder page until the shell PR. */
+main { max-width: var(--content-max); padding: var(--sp-6); display: flex; flex-direction: column; gap: var(--sp-3); }
+
+/* HANDOFF.md lines 126 and 185: all motion off under reduced motion (prototype line 445). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

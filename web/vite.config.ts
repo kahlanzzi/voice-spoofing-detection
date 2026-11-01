@@ -23,5 +23,8 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    // Process CSS in tests: without it Vitest returns '' for CSS, `?raw` included, and the token and
+    // colour tests would read empty files.
+    css: true,
   },
 })

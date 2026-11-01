@@ -1,0 +1,104 @@
+/* Design tokens (Stage 18 PR 1b). The only file with raw values (HANDOFF.md line 93).
+   Sources: H = docs/design/HANDOFF.md §4 (lines 100-114, 120-126), copied exactly.
+   P = docs/design/analyst-console-prototype.html (lines 14-69), for tokens HANDOFF names without a
+   value ("see prototype", line 113; --elev-*, --r-pill, lines 123-124) or does not list. Each P token
+   is cited at its first (light) definition; the dark values are prototype lines 42-68.
+   Theme selectors match web/src/theme.ts and P lines 42, 55, 69. */
+:root {
+  /* Neutral surfaces and text: H 100-104 */
+  --bg: #F2F4F8; --surface: #FFFFFF; --surface-2: #F7F9FC; --line: #DAE0E8; --line-strong: #B4BFCC;
+  --ink: #132033; --ink-2: #364457; --muted: #576476;
+  /* Navigation rail: H 109 */
+  --nav: #13233A; --nav-2: #1C3050; --nav-ink: #E2E9F2; --nav-indicator: #8FB0FF;
+  --nav-ink-strong: #FFFFFF; /* P 19 */
+  --nav-muted: #A3B2C6; /* P 19 */
+  --nav-line: #2A3F5F; /* P 19 */
+  /* Actions and focus: H 105-108 */
+  --accent: #1F49B6; --accent-hover: #193C97; --accent-active: #132E75; --accent-soft: #E7EDFB;
+  --link: #1F49B6; --focus: #1F49B6;
+  --danger: #A8231A; --danger-soft: #FBEAE8;
+  --accent-ink: #FFFFFF; /* P 21 */
+  /* Verdicts: surface, text, mark: H 110-112 */
+  --syn-bg: #FBE9E4; --syn-fg: #872A13; --syn-mark: #B23A1C;
+  --unc-bg: #FCF1D7; --unc-fg: #694200; --unc-mark: #D08A0C;
+  --auth-bg: #E1F0F5; --auth-fg: #0A4C62; --auth-mark: #0A7FA3;
+  /* System states, Ready / Degraded / Unavailable (H 113 "see prototype"): P 28.
+     --warn-* keep the prototype's literal values; they are not aliases of --unc-*. */
+  --ok-bg: #E3F2E8; --ok-fg: #1D6A3D; --ok-mark: #2E9A58; /* P 28 */
+  --warn-bg: #FCF1D7; --warn-fg: #694200; --warn-mark: #D08A0C; /* P 28 */
+  --err-bg: #FBE8E8; --err-fg: #9A1C1C; --err-mark: #C9372C; /* P 28 */
+  /* Prototype notice: H 114 */
+  --demo-bg: #FFE6A6; --demo-fg: #3A2900;
+  --scrim: rgba(10, 17, 28, .55); /* P 29 */
+  /* Elevation (H 124 names them): P 31 */
+  --elev-1: 0 1px 2px rgba(19,32,51,.06); /* P 31 */
+  --elev-2: 0 1px 2px rgba(19,32,51,.05), 0 8px 24px rgba(19,32,51,.10); /* P 31 */
+  /* Type: H 120-121 (fallback stacks P 33-34) */
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --fs-xs: 12px; --fs-sm: 13px; --fs-base: 15px; --fs-md: 17px; --fs-lg: 20px; --fs-xl: 26px; --fs-2xl: 28px;
+  /* Line heights: H 121 "1.5 body, 1.2 titles" (P 74, 155); token names proposed in Entry 128 */
+  --lh-body: 1.5; --lh-title: 1.2;
+  /* Text inputs: --fs-base, 16px on mobile (team decision B4; below) */
+  --fs-input: var(--fs-base);
+  /* Space, 8 px system: H 122 */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 40px; --sp-8: 48px;
+  /* Radii: H 123 */
+  --r-sm: 6px; --r-md: 10px; --r-lg: 14px;
+  --r-pill: 999px; /* P 38 */
+  /* Sizes: H 125 (--rail-w 232 below 1281 px, see media query) */
+  --target: 44px; --rail-w: 248px; --content-max: 1120px;
+  /* Motion: H 126 (off under prefers-reduced-motion: base.css). Drawer 180 ms waits for the Drawer PR. */
+  --dur: 150ms; --ease: ease-out;
+}
+
+/* H 83-84 (1101-1280 px: rail 232) and P 400 */
+@media (max-width: 1280px) { :root { --rail-w: 232px; } }
+
+/* B4: text inputs 16 px on phones only. 640 px = the phone row of H §3 (line 86) and P 415. */
+@media (max-width: 640px) { :root { --fs-input: 16px; } }
+
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0D1522; --surface: #142033; --surface-2: #19283E; --line: #283A54; --line-strong: #3A5070;
+  --ink: #E5ECF5; --ink-2: #C3CEDC; --muted: #9AA9BC;
+  --nav: #0A111C; --nav-2: #162741; --nav-ink: #E2E9F2; --nav-indicator: #8FB0FF;
+  --nav-ink-strong: #FFFFFF; --nav-muted: #94A5BB; --nav-line: #22344F;
+  --accent: #3460D6; --accent-hover: #2A50BE; --accent-active: #21409A; --accent-soft: #1A2B4D;
+  --link: #9DB6FF; --focus: #9DB6FF;
+  --danger: #F2958B; --danger-soft: #3A1714;
+  --accent-ink: #FFFFFF;
+  --syn-bg: #3A1A12; --syn-fg: #F5BBA8; --syn-mark: #E0674A;
+  --unc-bg: #382A0D; --unc-fg: #F3D08A; --unc-mark: #E3A32C;
+  --auth-bg: #0F2D39; --auth-fg: #98D5EA; --auth-mark: #3BAFD3;
+  --ok-bg: #11301E; --ok-fg: #94D8AC; --ok-mark: #3DBB6F;
+  --warn-bg: #382A0D; --warn-fg: #F3D08A; --warn-mark: #E3A32C;
+  --err-bg: #3A1616; --err-fg: #F5A9A9; --err-mark: #E5574A;
+  --demo-bg: #4A3A0B; --demo-fg: #FFE7A8;
+  --scrim: rgba(0, 0, 0, .6);
+  --elev-1: 0 1px 2px rgba(0,0,0,.3); --elev-2: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  color-scheme: dark;
+} }
+
+/* Same values as the block above (tokens.test.ts checks they stay identical). */
+:root[data-theme="dark"] {
+  --bg: #0D1522; --surface: #142033; --surface-2: #19283E; --line: #283A54; --line-strong: #3A5070;
+  --ink: #E5ECF5; --ink-2: #C3CEDC; --muted: #9AA9BC;
+  --nav: #0A111C; --nav-2: #162741; --nav-ink: #E2E9F2; --nav-indicator: #8FB0FF;
+  --nav-ink-strong: #FFFFFF; --nav-muted: #94A5BB; --nav-line: #22344F;
+  --accent: #3460D6; --accent-hover: #2A50BE; --accent-active: #21409A; --accent-soft: #1A2B4D;
+  --link: #9DB6FF; --focus: #9DB6FF;
+  --danger: #F2958B; --danger-soft: #3A1714;
+  --accent-ink: #FFFFFF;
+  --syn-bg: #3A1A12; --syn-fg: #F5BBA8; --syn-mark: #E0674A;
+  --unc-bg: #382A0D; --unc-fg: #F3D08A; --unc-mark: #E3A32C;
+  --auth-bg: #0F2D39; --auth-fg: #98D5EA; --auth-mark: #3BAFD3;
+  --ok-bg: #11301E; --ok-fg: #94D8AC; --ok-mark: #3DBB6F;
+  --warn-bg: #382A0D; --warn-fg: #F3D08A; --warn-mark: #E3A32C;
+  --err-bg: #3A1616; --err-fg: #F5A9A9; --err-mark: #E5574A;
+  --demo-bg: #4A3A0B; --demo-fg: #FFE7A8;
+  --scrim: rgba(0, 0, 0, .6);
+  --elev-1: 0 1px 2px rgba(0,0,0,.3); --elev-2: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] { color-scheme: light; }

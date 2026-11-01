@@ -3876,6 +3876,89 @@ Context7 was not used.
 
 ---
 
+### Entry 128 — Stage 18 PR 1b: design tokens, base styles and IBM Plex fonts (2026-11-01)
+
+**Numbering:** main ends at 127 (PR #88, `86cc77d`); open PRs #67 and #68 carry Entries 101–102, so 128 is next.
+
+**What:** on `feat/stage18-tokens` (Iheb, Part E; from `main` at `86cc77d`, not stacked), following the approved
+plan. Only `web/` and docs change; no `src/`, `api/`, `configs/` or `deploy/` change; nothing from PR 2 or later.
+- `web/src/styles/tokens.css`: every token. Light on `:root`; dark in two identical blocks,
+  `@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) }` and `:root[data-theme="dark"]`, plus
+  `:root[data-theme="light"] { color-scheme: light }`, matching `theme.ts` (#88) and prototype lines 42, 55, 69.
+- `web/src/styles/base.css`: element styles from prototype lines 72–81 (body, headings, links, form controls,
+  `::selection`, `:focus-visible`), reduced motion, and a placeholder `main` rule until the shell PR.
+- `main.tsx` imports the fonts, then `tokens.css` and `base.css`; the placeholder page is token-styled.
+  `App.tsx`: comment only.
+- `vite.config.ts`: `test.css: true`. Without it Vitest returns `''` for CSS, `?raw` included (found while
+  building: the first token test read an empty file), so the CSS tests would have read nothing.
+- Tests (Vitest): `styles/tokens.test.ts` and `styles/colours.test.ts`, below.
+
+**Decisions recorded (given with the plan, user-reported; reasons):**
+- HANDOFF §4 values copied exactly, cited in comments: colours `HANDOFF.md` lines 100–112 and 114; type, space,
+  shape, sizes and motion lines 120–126. Reason: HANDOFF is the design source; the build reads it, not re-derives it.
+- HANDOFF gaps (`--ok/warn/err-*`, line 113 "see prototype"; `--elev-1/2`; `--r-pill`) and prototype extras
+  (`--accent-ink`, `--nav-ink-strong`, `--nav-muted`, `--nav-line`, `--scrim`) take the values of
+  `analyst-console-prototype.html` lines 14–69, one citation comment per token. A one-off script compared every
+  value with the prototype: no difference beyond the three new tokens below.
+- A14 fonts: `@fontsource/ibm-plex-sans` and `@fontsource/ibm-plex-mono` `5.3.0` (exact, `npm view … version`
+  → `5.3.0`, published 2026-07-19; OFL-1.1; no dependencies). Weights imported: Sans 400, 500, 600, 700 and Mono
+  400, 500, the ones the prototype loads (line 9); no italics. Bundled by Vite on the same origin (`font-display:
+  swap` in the fontsource CSS), no Google Fonts. Flag: prototype line 242 sets Mono 600 (`.score-val`), which it
+  never loads; decide when Technical details is built.
+- B4: text inputs (`input`, `select`, `textarea`) use `--fs-input`, `var(--fs-base)` by default and `16px` under
+  `@media (max-width: 640px)`; body stays at `--fs-base` 15 px. 640 px = the phone row of HANDOFF §3 (line 86,
+  "390 design") and the prototype's `@media (max-width: 640px)` (line 415). The token keeps the raw value inside
+  `tokens.css` (HANDOFF line 93).
+- Reduced motion: `animation`/`transition` off on `*, *::before, *::after` under `prefers-reduced-motion:
+  reduce` (HANDOFF lines 126, 185; prototype line 445).
+- Open questions from the plan, recommendations accepted: (1) `--rail-w` 248 px, 232 px under
+  `@media (max-width: 1280px)` (HANDOFF lines 82–84, 125; prototype lines 39, 400); (2) `--lh-body: 1.5` and
+  `--lh-title: 1.2` added now (HANDOFF line 121; `base.css` uses them; names proposed here), drawer 180 ms
+  deferred to the Drawer PR (nothing uses it yet); (3) `--warn-*` kept as the prototype's literal values, not
+  aliases of `--unc-*`: they mean Degraded, not Cannot decide (HANDOFF line 113).
+- Non-text pairs below 3:1 keep their values (team answer pending): light `--line-strong`/`--surface` 1.86, dark
+  1.99, light `--unc-mark`/`--surface` 2.87 and, found during planning, light `--warn-mark`/`--surface` 2.87 (same
+  value as `--unc-mark`; 4th named exception, approved).
+
+**Tests:**
+- `tokens.test.ts` (168): 47 themed tokens in light and both dark blocks; 29 static tokens on `:root`; dark
+  blocks identical; 34 text pairs ≥ 4.5:1 and 11 non-text pairs ≥ 3:1 in both themes (WCAG 2.x formula); the
+  4 known exceptions listed by name and asserted still below 3:1, so a fix must update the list and any other
+  failure fails.
+- `colours.test.ts` (5): no `#hex`, `rgb(a)(` or `hsl(a)(` in `src/**/*.{ts,tsx,css}` outside `tokens.css`;
+  test files are excluded (they would match their own patterns); `App.tsx`, `main.tsx`, `theme.ts`, `base.css`
+  must be scanned and `base.css` must be non-empty.
+- Planted failures, reverted, not committed: `// #123456` in `App.tsx` → `× /src/App.tsx has no raw colour
+  value`, `1 failed | 4 passed (5)`, then `5 passed (5)` after removal. Light `--muted` `#9AA9BC` and `--ok-mark`
+  `#A0D0B0` → `4 failed | 164 passed (168)`; light `--unc-mark` `#8A5A00` (exception fixed) → `1 failed`; one
+  dark-attribute value changed → `1 failed` (identical blocks).
+
+**ui-ux-pro-max (user level, read-only: `--domain ux`, `--stack react`; no `--design-system`, no `--persist`, no
+files written):** contrast 4.5:1, colour not alone, reduced motion, line height 1.5–1.75 and font loading (swap +
+fallback) are met or deferred to components; `--stack react` had no match for CSS variables or font loading.
+Conflicts, HANDOFF kept, questions for the team: "minimum 16 px body text on mobile" vs `--fs-base` 15 (B4 limits
+16 px to inputs); the example scale "12 14 16 18 24 32" vs HANDOFF 12/13/15/17/20/26/28.
+
+**Evidence [verified]:**
+- `node --version` `v26.13.0`, `npm --version` `11.20.0`; baseline `git log --oneline -1 main` `86cc77d Merge pull
+  request #88 …`, `python -m pytest -q` `1261 passed, 9 skipped`.
+- `rm -rf node_modules dist && npm ci`, then `npm run typecheck`, `npm run lint`, `npm test -- --run` (`Test Files
+  4 passed (4)`, `Tests 182 passed (182)`), `npm run build` (`index-*.css 16.63 kB │ gzip: 2.89 kB`, 34 woff2 +
+  34 woff, `dist/assets` 1.2M; `grep -rl fonts.googleapis dist` → none). All exit 0.
+- `npm audit`: 12 moderate, all GHSA-g3hv-75wg-m249 (`minimatch` under eslint and typescript-eslint, dev only,
+  unchanged from Entry 127); `npm audit --omit=dev`: `found 0 vulnerabilities`.
+- `.venv/bin/python -m pytest -q` (Python 3.14.6): `1261 passed, 9 skipped` (unchanged; the pin guards in
+  `tests/web/test_web_scaffold.py` cover the two new exact pins).
+- No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
+the checks; the ui-ux-pro-max skill was used read-only as a checklist. The plan was approved before the build;
+the team reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
 ## Open items
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
@@ -4144,10 +4227,11 @@ Context7 was not used.
 - [x] uvicorn's default access log prints the client IP; §1/§7 say no IP is stored. Decide for Stage 19 (e.g. `--no-access-log` or a log filter) (Entry 116). (`--no-access-log --no-proxy-headers` in the image and the documented local command; Entry 125)
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
 
-**Stage 18 web (Part E, Entry 127)**
-- [x] PR 1a: `web/` scaffold, theme storage, CI `web` job, pytest pin guards (on `feat/stage18-scaffold`, awaiting review; Entry 127).
+**Stage 18 web (Part E, Entries 127–128)**
+- [x] PR 1a: `web/` scaffold, theme storage, CI `web` job, pytest pin guards (merged in PR #88, `86cc77d`; Entry 127).
 - [ ] Add `web` as a required check on `main` after PR 1a merges (Iheb; Entry 127).
-- [ ] PR 1b on `feat/stage18-tokens` from `main` after 1a merges: `tokens.css`, `base.css`, fontsource fonts, token and contrast tests; decide `--rail-w` 248/232, the non-text 3:1 pairs (`--line-strong` 1.86/1.99, light `--unc-mark` 2.87) and the 16 px mobile body / 9 s toast conflicts (Entry 127).
+- [ ] PR 1b: `tokens.css`, `base.css`, fontsource fonts, token, contrast and no-raw-colour tests (on `feat/stage18-tokens`, awaiting review; Entry 128). Still open from Entry 127: the 9 s toast vs ui-ux-pro-max 3–5 s conflict.
+- [ ] Non-text contrast below 3:1, values unchanged, team answer pending: light `--line-strong`/`--surface` 1.86, dark 1.99, light `--unc-mark`/`--surface` 2.87, light `--warn-mark`/`--surface` 2.87; named exceptions in `web/src/styles/tokens.test.ts` (Entry 128).
 - [ ] `npm audit`: 12 moderate (GHSA-g3hv-75wg-m249, `minimatch` 10.2.6 under eslint and typescript-eslint, dev only; production 0). Decide: wait for upstream, or an `overrides` pin to `minimatch` ≥ 11.0.1 by approval (Entry 127).
 
 **Midterm documentation (Entries 102–110)**
@@ -4190,7 +4274,7 @@ Context7 was not used.
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
 `GET /api/status`. `POST /api/analyses` with the
-MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) is on `feat/stage18-scaffold`, awaiting review (Entry 127); no page, token CSS or API call yet; nginx serves a placeholder at `/`. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
+MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) merged in PR #88 (`86cc77d`; Entry 127); PR 1b (design tokens, base styles, IBM Plex fonts, token and contrast tests) is on `feat/stage18-tokens`, awaiting review (Entry 128), with 4 non-text contrast pairs below 3:1 left open for the team; no page beyond the placeholder and no API call yet; nginx serves a placeholder at `/`. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
 canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.
