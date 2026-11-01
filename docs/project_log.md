@@ -3504,6 +3504,59 @@ the HMAC key) and the architecture.md edit, and reviews the diff. Context7 was n
 HUMAN REVIEW.**
 
 ---
+### Entry 122 — Stage 17 step 7b-1a: sign-in storage, argon2id, HMAC key and admin command (2026-11-01)
+
+**Numbering:** main ends at 121 (PR #82, `0e03e02`); recheck against open PRs (#67, #68) before merge.
+
+**What:** on `feat/stage17-signin` (Iheb, Part E; branched from `main` at `0e03e02`), first part of the
+sign-in code (`api_design.md` §4.8, D47, ADR 0011). Step 7b is split into three PRs (Iheb, approved
+plan): **7b-1a** (this one) storage, hashing, key and admin command; **7b-1b** `POST`/`GET`/`DELETE
+/session`, `GET /health` and the session + Origin middleware for the `/session` routes; **7b-2** the
+middleware on every route, note `updated_by` with its migration, and existing tests signed in.
+- `api/repository.py`: tables `account`, `session` (no IP or user-agent column) and `sign_in_failure`
+  (§7), created by `create_schema()`; `AccountRepository` (create, get, set password, disable/enable,
+  clear failures). `set_password` and disable delete all of the account's sessions in the same
+  transaction. CHECKs refuse an upper-case username, a non-argon2id hash and a non-hex session or
+  HMAC key. SQL only here, `?` parameters only.
+- `api/auth.py`: argon2id with the RFC 9106 low-memory profile (t=3, m=64 MiB, p=4, 16-byte salt);
+  `VSD_SIGNIN_HMAC_KEY` from the environment (hex, at least 32 bytes; errors name the variable, never
+  the value); HMAC-SHA-256 of the lower-case username; username rules; password rules (length in code
+  points, 15–128) plus the **NIST SP 800-63B-4 §3.1.1.2 context check** (team answer, user-reported): no
+  username, `vsd`, `voice` or `spoof`, ignoring case. The common-password list is not added (it needs an
+  AGENTS.md rule 7 exception).
+- `api/admin.py`: `python -m api.admin create-account | set-password | disable | enable | unlock
+  <username>`; password typed twice with `getpass`; exit 0 / 1 (refused, one stderr line, never the
+  password) / 2 (usage). `unlock` needs the key and works for any typed username.
+- `configs/api.yaml` + `api/config.py`: the §9 sign-in keys with the values confirmed by the team
+  (user-reported): idle 30 min, absolute 12 h, lockout 5 / 15 min, password 15–128, and the dev
+  `allowed_origins` (`http://localhost:8001`, `http://127.0.0.1:8001`). nginx values and the session ID
+  length stay out. Only the password keys are read in 7b-1a.
+- `requirements.txt`: `argon2-cffi==25.1.0`. `.env.example`: `VSD_SIGNIN_HMAC_KEY=` (name only).
+  `docs/setup.md`: the admin command and how to load `.env` for `unlock`.
+- No existing route changes; the app still starts without the key (the refusal comes with 7b-1b).
+- Agreed for 7b-1b (Iheb): a disabled account with the right password neither counts nor resets the
+  failure count; a store error on any `/session` route answers `503 sign_in_unavailable`, the session
+  check on other routes `500 internal_error`. Each becomes one sentence in §4.8 in 7b-1b.
+
+**Evidence [verified]:**
+- `argon2-cffi==25.1.0` (bindings 26.1.0) installs, hashes and verifies in fresh venvs on Python 3.13.2
+  and 3.14.6; the hash starts `$argon2id$v=19$m=65536,t=3,p=4$`.
+- `.venv/bin/python -m pytest -q` (Python 3.14.6): `1102 passed, 9 skipped in 159.43s` (Entry 121: 1032
+  passed, 9 skipped; +70 new tests). `tests/api`: `358 passed`; `tests/governance`: `50 passed`. The
+  slowest tests are untouched evaluation and splitting tests; the longer time is not attributed to this
+  change [hypothesis: machine load].
+- Manual run against a scratch database (`VSD_API_CONFIG`): create (exit 0), duplicate (exit 1),
+  context-word password (exit 1, nothing changed), disable/enable (exit 0), unlock with a key (exit 0),
+  unlock without (exit 1). The database holds only the argon2id hash; the password is not in the file.
+- No audio, dataset or DEEP-VOICE path touched; no key or secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the code, the tests and this entry,
+and ran the checks. Iheb approved the plan with changes (three-PR split, Q1–Q5 answers) and reviews the
+diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
 ## Open items
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
@@ -3747,10 +3800,14 @@ HUMAN REVIEW.**
 - [x] Review and merge the API skeleton, including the 405 `invalid_request` row added to §6. (PR #66, `d9e8c4a`; Entry 101)
 - [x] `MockAnalyzer` and the analyzer seam (§8), `POST /analyses` with the §4.3 checks, storage (§7): on `feat/stage17-analyze`, awaiting review (Entry 116).
 - [x] Open decision 1 (authentication) decided: D47 / ADR 0011, contract in `api_design.md` §4.8 (Entry 121).
-- [ ] Next API PRs: sign-in code (Step 7b, `api_design.md` §4.8: session endpoints, `GET /health`, admin command, `account`/`session`/`sign_in_failure` tables, note author migration, argon2-cffi pinned on 3.13 and 3.14, `VSD_SIGNIN_HMAC_KEY` in `.env.example`) (Entry 121; earlier: Entries 116–120).
-- [ ] Team confirms the §9 proposed sign-in values (idle 30 min, absolute 12 h, lockout 5 / 15 min, password 15–128, nginx 10/min burst 5, 32-byte session ID) (Entry 121).
+- [x] Step 7b-1a: sign-in tables, argon2id (`argon2-cffi` 25.1.0 on 3.13 and 3.14), `VSD_SIGNIN_HMAC_KEY` loading, admin command, §9 keys: on `feat/stage17-signin`, awaiting review (Entry 122).
+- [ ] Step 7b-1b: `POST`/`GET`/`DELETE /session`, `GET /health`, session + Origin middleware on the `/session` routes, refuse to start without the key, `--env-file` run command and `python-dotenv` pin; add the two agreed §4.8 sentences (disabled + right password neither counts nor resets the failure count; store error on `/session` → 503, session check elsewhere → 500) (Entry 122).
+- [ ] Step 7b-2: session + Origin middleware on every route, note `updated_by` with the migration of existing database files, existing tests signed in (Entry 122).
+- [x] Team confirms the §9 proposed sign-in values (idle 30 min, absolute 12 h, lockout 5 / 15 min, password 15–128, nginx 10/min burst 5, 32-byte session ID) (Entry 121). (confirmed unchanged, user-reported; Entry 122)
 - [ ] Accepted risk: anyone who knows a username can lock that analyst out for `lockout_minutes`; nginx's per-IP limit only slows this; the remedy is an admin unlock (D47, ADR 0011). Revisit if it happens in practice (Entry 121).
-- [ ] Decide whether Step 7b adds the NIST SP 800-63B-4 §3.1.1.2 blocklist check of common or compromised passwords (Entry 121).
+- [x] Decide whether Step 7b adds the NIST SP 800-63B-4 §3.1.1.2 blocklist check of common or compromised passwords (Entry 121). (context check done in the admin command: no username, `vsd`, `voice`, `spoof`; Entry 122)
+- [ ] Common-password list for the admin command (e.g. SecLists, filtered to ≥ 15 characters): needs an explicit AGENTS.md rule 7 exception before any file is committed (Entry 122).
+- [ ] Step 8: `GET /health` must write no log line (§4.8), but uvicorn's access log prints its request line; handle it with the uvicorn access-log item below (Entry 122).
 - [ ] Stage 18: remove the S1 "open product decision" banner; avoid background polling that keeps sessions from going idle (Entry 121).
 - [ ] Threat model §10.1 / §11 item 5: update the "unmitigated until access control is decided" wording once sign-in is implemented (Entry 121).
 - [ ] Integration: before the real ModelBundle is served, the store starts empty (a fresh database file) or mock results and their notes are removed (`analysis_note` has a foreign key to `analysis_record`), so the figures never mix the two (§4.7 G6; Entry 120).
@@ -3800,7 +3857,7 @@ HUMAN REVIEW.**
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
 `GET /api/status`. `POST /api/analyses` with the
-MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) is on `docs/stage17-signin-contract`, awaiting review (Entry 121); the sign-in code is Step 7b. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; React `web/` and Compose are not yet present on main. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
+MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) is on `feat/stage17-signin`, awaiting review (Entry 122); 7b-1b (endpoints) and 7b-2 (all routes, note author) follow. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; React `web/` and Compose are not yet present on main. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
 canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.

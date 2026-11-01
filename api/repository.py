@@ -1,12 +1,16 @@
-"""All SQL of the API (docs/api_design.md §7): the analysis_record and analysis_note tables.
+"""All SQL of the API (docs/api_design.md §7): the analysis_record and analysis_note tables, and
+the sign-in tables account, session and sign_in_failure (§4.8).
 probe() is the read-only check behind GET /api/status; get_stored() and history() serve §4.5 and
 §4.4; save_note() and delete_note() serve §4.6; stats() serves §4.7. Notes live in their own table
-and never change analysis_record (FR-11).
+and never change analysis_record (FR-11). AccountRepository serves the admin command (api/admin.py).
 
-Never stored: audio, the original file name, the client IP address. No table has a column for them.
+Never stored: audio, the original file name, the client IP address, passwords in clear (only the
+argon2id hash), session IDs in clear (only their SHA-256), the typed username of a failed sign-in
+(only its HMAC). No table has a column for them.
 """
 from __future__ import annotations
 
+import sqlite3
 from contextlib import closing
 from dataclasses import astuple, dataclass, fields
 from pathlib import Path
@@ -38,6 +42,42 @@ CREATE TABLE IF NOT EXISTS analysis_note (
     text       TEXT NOT NULL CHECK (length(trim(text)) > 0),
     updated_at TEXT NOT NULL
                CHECK (updated_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]Z')
+)
+"""
+
+_UTC = "GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]Z'"
+_HEX64 = "length({0}) = 64 AND {0} NOT GLOB '*[^0-9a-f]*'"
+
+# Usernames: rules in api/auth.py; the CHECK keeps the stored form lower case and in length.
+ACCOUNT_SCHEMA = f"""
+CREATE TABLE IF NOT EXISTS account (
+    account_id          INTEGER PRIMARY KEY,
+    username            TEXT    NOT NULL UNIQUE
+                        CHECK (username = lower(username) AND length(username) BETWEEN 3 AND 64),
+    password_hash       TEXT    NOT NULL CHECK (password_hash LIKE '$argon2id$%'),
+    disabled            INTEGER NOT NULL CHECK (disabled IN (0, 1)),
+    created_at          TEXT    NOT NULL CHECK (created_at {_UTC}),
+    password_changed_at TEXT    NOT NULL CHECK (password_changed_at {_UTC})
+)
+"""
+
+# Written by sign-in (Step 7b-1b); no IP or user-agent column (§4.8 privacy).
+SESSION_SCHEMA = f"""
+CREATE TABLE IF NOT EXISTS session (
+    session_hash TEXT    PRIMARY KEY CHECK ({_HEX64.format("session_hash")}),
+    account_id   INTEGER NOT NULL REFERENCES account (account_id),
+    created_at   TEXT    NOT NULL CHECK (created_at {_UTC}),
+    last_seen_at TEXT    NOT NULL CHECK (last_seen_at {_UTC}),
+    expires_at   TEXT    NOT NULL CHECK (expires_at {_UTC})
+)
+"""
+
+SIGN_IN_FAILURE_SCHEMA = f"""
+CREATE TABLE IF NOT EXISTS sign_in_failure (
+    username_hmac   TEXT    PRIMARY KEY CHECK ({_HEX64.format("username_hmac")}),
+    failures        INTEGER NOT NULL CHECK (failures >= 0),
+    last_failure_at TEXT    NOT NULL CHECK (last_failure_at {_UTC}),
+    locked_until    TEXT             CHECK (locked_until IS NULL OR locked_until {_UTC})
 )
 """
 
@@ -144,6 +184,9 @@ class AnalysisRepository:
         with closing(connect(self.path)) as conn, conn:
             conn.execute(SCHEMA)
             conn.execute(NOTE_SCHEMA)
+            conn.execute(ACCOUNT_SCHEMA)
+            conn.execute(SESSION_SCHEMA)
+            conn.execute(SIGN_IN_FAILURE_SCHEMA)
 
     def add(self, record: AnalysisRecord) -> None:
         """Insert one record; raises sqlite3.IntegrityError on a duplicate ID or an invalid value."""
@@ -256,3 +299,81 @@ class AnalysisRepository:
     def count(self) -> int:
         with closing(connect(self.path)) as conn:
             return conn.execute("SELECT COUNT(*) FROM analysis_record").fetchone()[0]
+
+
+class DuplicateAccount(Exception):
+    """create_account() on a username that already exists."""
+
+
+@dataclass(frozen=True)
+class Account:
+    """One account row."""
+    account_id: int
+    username: str
+    password_hash: str
+    disabled: bool
+    created_at: str  # UTC, ISO 8601 with Z
+    password_changed_at: str
+
+
+ACCOUNT_COLUMNS = tuple(f.name for f in fields(Account))
+
+
+class AccountRepository:
+    """The sign-in tables (§4.8, §7). Usernames are given in their stored, lower-case form."""
+
+    def __init__(self, path: Path):
+        self.path = path
+
+    def create_account(self, username: str, password_hash: str, now: str) -> int:
+        """Insert an enabled account and return its ID; raise DuplicateAccount if the username exists."""
+        with closing(connect(self.path)) as conn, conn:
+            try:
+                cursor = conn.execute(
+                    "INSERT INTO account (username, password_hash, disabled, created_at, password_changed_at) "
+                    "VALUES (?, ?, 0, ?, ?)", (username, password_hash, now, now))
+            except sqlite3.IntegrityError:
+                if conn.execute("SELECT 1 FROM account WHERE username = ?", (username,)).fetchone():
+                    raise DuplicateAccount(username) from None
+                raise
+            return cursor.lastrowid
+
+    def get_account(self, username: str) -> Account | None:
+        with closing(connect(self.path)) as conn:
+            row = conn.execute(f"SELECT {', '.join(ACCOUNT_COLUMNS)} FROM account WHERE username = ?",
+                               (username,)).fetchone()
+        if row is None:
+            return None
+        *rest, disabled, created_at, changed_at = row
+        return Account(*rest, disabled=bool(disabled), created_at=created_at, password_changed_at=changed_at)
+
+    def set_password(self, username: str, password_hash: str, now: str) -> int | None:
+        """Replace the hash and end all of the account's sessions in one transaction (§4.8). Return the
+        number of sessions ended, or None if the account is unknown."""
+        with closing(connect(self.path)) as conn, conn:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute("SELECT account_id FROM account WHERE username = ?", (username,)).fetchone()
+            if row is None:
+                return None
+            conn.execute("UPDATE account SET password_hash = ?, password_changed_at = ? WHERE account_id = ?",
+                         (password_hash, now, row[0]))
+            return conn.execute("DELETE FROM session WHERE account_id = ?", (row[0],)).rowcount
+
+    def set_disabled(self, username: str, disabled: bool) -> int | None:
+        """Disable or enable an account. Disabling ends all of its sessions in the same transaction
+        (§4.8). Return the number of sessions ended (0 when enabling), or None if the account is unknown."""
+        with closing(connect(self.path)) as conn, conn:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute("SELECT account_id FROM account WHERE username = ?", (username,)).fetchone()
+            if row is None:
+                return None
+            conn.execute("UPDATE account SET disabled = ? WHERE account_id = ?", (int(disabled), row[0]))
+            if not disabled:
+                return 0
+            return conn.execute("DELETE FROM session WHERE account_id = ?", (row[0],)).rowcount
+
+    def clear_failures(self, username_hmac: str) -> bool:
+        """Reset the failure count and lock of one typed username (admin unlock). True if one was held."""
+        with closing(connect(self.path)) as conn, conn:
+            return conn.execute("DELETE FROM sign_in_failure WHERE username_hmac = ?",
+                                (username_hmac,)).rowcount > 0

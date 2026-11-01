@@ -7,6 +7,7 @@ VSD_API_CONFIG, when set, points to another file (tests, deployments).
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -30,8 +31,19 @@ TYPES = {
     "mock_deferral_on_fit": float,
     "temp_dir": (str, type(None)),
     "database_path": str,
+    "session_idle_minutes": int,
+    "session_absolute_hours": int,
+    "lockout_threshold": int,
+    "lockout_minutes": int,
+    "password_min_chars": int,
+    "password_max_chars": int,
+    "allowed_origins": list,
 }
-POSITIVE = ("max_size_bytes", "max_duration_s", "analysis_timeout_s", "page_size_max", "note_max_chars")
+POSITIVE = ("max_size_bytes", "max_duration_s", "analysis_timeout_s", "page_size_max", "note_max_chars",
+            "session_idle_minutes", "session_absolute_hours", "lockout_threshold", "lockout_minutes",
+            "password_min_chars", "password_max_chars")
+# An Origin header value: scheme://host[:port], no path, no trailing slash (§4.8 CSRF).
+ORIGIN = re.compile(r"https?://[A-Za-z0-9.-]+(:[0-9]{1,5})?")
 
 
 @dataclass(frozen=True)
@@ -48,6 +60,13 @@ class ApiConfig:
     mock_deferral_on_fit: float
     temp_dir: str | None
     database_path: str
+    session_idle_minutes: int
+    session_absolute_hours: int
+    lockout_threshold: int
+    lockout_minutes: int
+    password_min_chars: int
+    password_max_chars: int
+    allowed_origins: tuple[str, ...]
 
 
 def config_path() -> Path:
@@ -90,7 +109,12 @@ def load_api_config(path=None) -> ApiConfig:
         raise ValueError(f"{path}: notice_text must not be empty")
     if not cfg["database_path"].strip():
         raise ValueError(f"{path}: database_path must not be empty")
-    return ApiConfig(**{**cfg, "formats": tuple(formats)})
+    if cfg["password_min_chars"] > cfg["password_max_chars"]:
+        raise ValueError(f"{path}: password_min_chars must not exceed password_max_chars")
+    origins = cfg["allowed_origins"]
+    if not origins or not all(isinstance(o, str) and ORIGIN.fullmatch(o) for o in origins):
+        raise ValueError(f"{path}: allowed_origins must be a non-empty list of scheme://host[:port], got {origins!r}")
+    return ApiConfig(**{**cfg, "formats": tuple(formats), "allowed_origins": tuple(origins)})
 
 
 def resolve_path(value: str) -> Path:
