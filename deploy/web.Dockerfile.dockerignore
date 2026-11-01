@@ -1,0 +1,19 @@
+# Build context for deploy/web.Dockerfile only (BuildKit uses it instead of the root .dockerignore): an allowlist.
+# Never in the context: .env and other secrets, var/ (the SQLite store), .venv/, data/, audio, models (AGENTS.md rule 7),
+# and the local web/node_modules and web/dist (npm ci and the build run inside the image).
+*
+!web/
+!deploy/nginx.conf
+!deploy/nginx_security_headers.conf
+web/node_modules
+web/dist
+**/*.tsbuildinfo
+# Listed for readers; already excluded by the first line.
+**/.env
+**/.env.*
+var/
+.venv/
+data/
+**/*.wav
+**/*.flac
+**/*.mp3
