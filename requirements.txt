@@ -12,4 +12,5 @@ python-multipart==0.0.32
 PyYAML==6.0.3
 scikit-learn==1.9.1
 soundfile==0.14.0
+starlette==1.10.0  # imported directly (api/intake.py body limit); FastAPI only requires >=0.46
 uvicorn==0.54.0

@@ -3213,6 +3213,57 @@ no fresh-install demonstration is claimed. PR/CI and human review remain pending
 This changes navigation only and introduces no requirement or governance decision.
 **WAITING FOR HUMAN REVIEW.**
 
+### Entry 116 — Stage 17 step 3: POST /api/analyses with MockAnalyzer and SQLite (2026-11-01)
+
+**Numbering:** provisional. Main ends at 115 (PR #76); recheck against open PRs before merge.
+
+**What:** on `feat/stage17-analyze` (Iheb, Part E; fast-forwarded to `4682768` before writing this
+entry), the first upload endpoint, following `docs/api_design.md` §4.3, §5–§9.
+`api/analyzer.py`: `Analyzer` Protocol (`analyze(path)`, `info()`), `AnalysisOutcome`,
+`AnalyzerInfo`, `AnalyzerUnavailable`, and `MockAnalyzer`: the SHA-256 of the file bytes picks the
+outcome (same file → same result) in risk-v1 shapes (synthetic 1.00 HIGH; uncertain 0.50–1.00
+MEDIUM; authentic 0.73–1.00 LOW), `model_version` `mock`, `mock: true`, `deferral_on_fit` from
+config; no torch or `src.models` import. `api/intake.py`: the §4.3 order with three size layers:
+(1) `ContentLengthGuard` answers a §6 `413` before the body is read; (2) Starlette 1.10's
+`RequestBodyLimitMiddleware` stops bodies without `Content-Length`; (3) the file bytes are counted
+while writing the temp file (exact `max_size_bytes`). Layers 1–2 allow 64 KiB of multipart framing
+above the cap. Then empty file, `soundfile` decode of the whole file in blocks (`corrupt_audio`;
+0 frames → `empty_file`) and duration. Random temp name in `temp_dir`, deleted in `finally` on success
+and every error; the original file name is used only for its extension. `api/db.py` +
+`api/repository.py`: `sqlite3`, `analysis_record` with the 11 §7 columns and CHECK constraints,
+created in the app lifespan; all SQL in the repository. `api/routers/analyses.py`: request ID
+first; analyzer in a worker thread with `analysis_timeout_s` (`504`; not ready or refusing → `503`;
+other exception → `500`); record stored, then `201` + `Location` + exactly the 8 §11 fields;
+`processing_ms` from handler start to result ready. `GET /api/status`: versions, manifest hash,
+`deferral_on_fit`, `mock` and `state`/`checks.analysis` (from `ready`) now come from
+`analyzer.info()`. New config key `database_path` (`var/api.sqlite`, relative to the repo root;
+`var/` gitignored). `requirements.txt`: `starlette==1.10.0` pinned, since the code now imports it
+directly and FastAPI only requires `starlette>=0.46.0`.
+
+**Contract changes [doc]:** approved by Iheb in the plan: §9 gains the `database_path` row; the
+§4.3 size note gains one sentence on the 64 KiB multipart allowance; `GET /api/status` reports
+`unavailable` when the analyzer is not ready (as §4.1 already says).
+
+**Finding [verified]:** Starlette's body limit, when `Content-Length` is over its limit, replaces
+any response with a plain-text 413 (no §6 body, no request ID). The guard therefore runs outside
+it. Each size layer has a test that fails when that layer is removed (checked by disabling it).
+python-multipart rejects a multipart preamble (400), so the layer-2 test pads with an extra field.
+
+**Evidence [verified]:** `python -m pytest -q` (3.14.6, after the fast-forward): 852 passed, 9 skipped (torch tests).
+`tests/api` on a fresh 3.13.2 venv: 108 passed. Governance test: 3 passed.
+`uvicorn api.main:app --port 8001` with a scratchpad config: `curl -F file=@sample.wav` (2 s
+generated WAV) → `201`, `Location: /api/analyses/req_7fb8…`, the 8 fields (`uncertain`, 0.75,
+`MEDIUM`, `mock`), the same ID in `X-Request-ID`; a `.ogg` name → `415 unsupported_format` with
+its request ID; the temp folder was empty and the row was stored. No audio committed; no dataset
+access; no DEEP-VOICE path.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) read the contract and the installed Starlette
+source, proposed the plan, wrote the code, tests and this entry, and ran the checks. Iheb approved
+the plan with answers (allowance, status from `ready`, `var/api.sqlite`, one open item) and the
+fast-forward, and reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
 ---
 ## Open items
 
@@ -3454,7 +3505,10 @@ This changes navigation only and introduces no requirement or governance decisio
 - [x] Team review of the API contract `docs/api_design.md`, including the proposed `invalid_request` (400) code. (approved, PR #65, Donia, 2026-10-30; Entry 101)
 - [ ] Decide whether the approved API contract needs a D-ID (HANDOFF.md §11 item 10).
 - [x] Review and merge the API skeleton, including the 405 `invalid_request` row added to §6. (PR #66, `d9e8c4a`; Entry 101)
-- [ ] Next API PRs: `MockAnalyzer` and the analyzer seam (§8), `GET /limits`, `POST /analyses` with the §4.3 checks (consider Starlette's `max_body_size`), storage (§7), history, notes, stats (Entry 101).
+- [x] `MockAnalyzer` and the analyzer seam (§8), `POST /analyses` with the §4.3 checks, storage (§7): on `feat/stage17-analyze`, awaiting review (Entry 116).
+- [ ] Next API PRs: `GET /limits`, history, details, notes, stats, auth (Entry 116).
+- [ ] Integration: limit concurrent analyses; a timed-out analyzer thread keeps running (cannot be killed), so repeated timeouts with the real model could pile up (Entry 116).
+- [ ] uvicorn's default access log prints the client IP; §1/§7 say no IP is stored. Decide for Stage 19 (e.g. `--no-access-log` or a log filter) (Entry 116).
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
 
 **Midterm documentation (Entries 102–110)**
@@ -3496,7 +3550,8 @@ This changes navigation only and introduces no requirement or governance decisio
 
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
-`GET /api/status`; no analyzer or uploads yet on merged main. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; React `web/` and Compose are not yet present on main. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
+`GET /api/status`; no analyzer or uploads yet on merged main. `POST /api/analyses` with the
+MockAnalyzer, the §4.3 checks and SQLite storage is on `feat/stage17-analyze`, awaiting review (Entry 116). Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; React `web/` and Compose are not yet present on main. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
 canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.

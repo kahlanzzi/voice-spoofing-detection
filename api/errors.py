@@ -26,6 +26,7 @@ HTTP_ERRORS = {
     403: ("access_denied", "This session is not allowed to do this."),
     404: ("not_found", "The requested resource was not found."),
     405: ("invalid_request", "This method is not allowed on this path."),
+    413: ("file_too_large", "The file is larger than the size limit."),  # fallback; intake.py sets the request_id
 }
 INTERNAL = ("internal_error", "An unexpected error occurred.")
 
