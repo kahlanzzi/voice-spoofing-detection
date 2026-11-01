@@ -1,4 +1,4 @@
-"""Response shapes (docs/api_design.md §4.1, §4.2, §5, §6). Every model forbids extra fields.
+"""Response shapes (docs/api_design.md §4.1, §4.2, §4.4, §5, §6). Every model forbids extra fields.
 
 AnalysisResponse is exactly the 8 Protocol §11 fields; the web app mirrors it (ADR 0008 §3), so a
 field is added or removed only through a contract change.
@@ -11,13 +11,15 @@ from pydantic import BaseModel, ConfigDict, Field
 
 REQUEST_ID_PATTERN = r"^req_[0-9a-f]{32}$"
 
+Verdict = Literal["synthetic", "uncertain", "authentic"]
+
 
 class _Strict(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
 class AnalysisResponse(_Strict):
-    prediction: Literal["synthetic", "uncertain", "authentic"]
+    prediction: Verdict
     confidence: float = Field(ge=0.0, le=1.0)
     risk_level: Literal["LOW", "MEDIUM", "HIGH"]
     model_version: str
@@ -36,6 +38,20 @@ class StoredAnalysis(_Strict):
     analysis: AnalysisResponse
     created_at: str  # UTC, ISO 8601 with Z
     note: Note | None
+
+
+class VerdictCounts(_Strict):
+    synthetic: int
+    uncertain: int
+    authentic: int
+
+
+class HistoryResponse(_Strict):
+    items: list[StoredAnalysis]
+    total: int
+    page: int
+    page_size: int
+    counts: VerdictCounts
 
 
 class ErrorDetail(_Strict):

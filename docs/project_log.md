@@ -3307,6 +3307,50 @@ reviews the diff. Context7 was not used.
 **Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
 
 ---
+### Entry 118 — Stage 17 step 5a: GET /api/analyses (history) and GET /api/analyses/{request_id} (2026-11-01)
+
+**Numbering:** provisional. Main ends at 117 (PR #78); recheck against open PRs before merge.
+
+**What:** on `feat/stage17-history-notes` (Iheb, Part E; branched from `main` at `2b9ec04`),
+following `docs/api_design.md` §2, §4.4, §4.5, §5, §6, §7 and §9. Step 5 is split (approved by Iheb):
+5a (this PR) is read-only history and details. 5b (notes, `PUT …/note`) comes later on a new branch from
+`main` after 5a merges. It is not stacked.
+- `GET /api/analyses`: `verdict` (repeatable), `from`/`to` (inclusive UTC days), `q` (request-ID
+  substring, ignoring case), `page`, `page_size` (1 to `page_size_max`, default 10). The response is
+  `items` (§5 `StoredAnalysis`, newest first), `total`, `page`, `page_size`, and `counts`, which ignore
+  the verdict filter (§4.4). A page past the last one gives empty `items` and its query is skipped.
+- `GET /api/analyses/{request_id}`: the `Location` from `POST /api/analyses` now resolves. An unknown
+  ID, or one not in the §2 form, gives `404 not_found`. Bad queries, wrong-type values included
+  (`page=abc`), give `400 invalid_request`. Both carry `request_id: null` (§6, "otherwise `null`").
+- Storage: the `analysis_note` table (§7) is created at startup. It has `request_id` as PK and an FK
+  to `analysis_record`, `text NOT NULL CHECK (non-blank)`, and an `updated_at NOT NULL` CHECK for the
+  `Z` form. In 5a it is only read (LEFT JOIN), so `note` is `null` until 5b. All SQL stays in
+  `api/repository.py`. `processing_ms` and `is_mock` are never returned.
+- `create_app()` raises if `stats_time_zone` is not `UTC`, because days are read as UTC with no
+  conversion until open decision 6.
+
+**Contract change [doc]:** gap text approved by Iheb in the plan. §4.4 gains 4 bullets: tie order,
+UTC days and the guard, `q` details, and counts/duplicates/unknown parameters/default page size.
+§4.5 gains 1 bullet (a malformed ID is 404). There is no §4.6 change in 5a.
+
+**Evidence [verified]:** `python -m pytest -q` (3.14): 923 passed, 9 skipped (torch tests).
+`tests/api`: 179 passed (127 before). The new tests cover an empty history, the shape, newest-first and
+the same-second tie, paging (pages 1–3, past-last, huge page), verdict filters, counts, day bounds, `q`
+(case and literal `%`/`_`), 14 bad-query cases, details from `Location`, 404 for unknown and malformed
+IDs, the note-table schema, FK and CHECKs, the time-zone guard, and no file name, client host or
+stored-only fields in responses. A mutation check (reversing the tie order, counts that follow the
+verdict filter) made 2 tests fail each. In a manual `uvicorn` + `curl` run every route answered as
+expected, and the file name appeared in no response and not in the server log. Ruff is not installed
+in the venv, so it was not run. No audio committed; no dataset access; no DEEP-VOICE path.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) read the contract and the code, proposed the plan
+and the gap list, wrote the code, tests and this entry, and ran the checks. Iheb approved the plan with
+five points (§6 quote for `request_id: null`, wrong-type queries → 400, check `stats_time_zone` before
+the guard, quote §4.4 on counts and `q`, no stacking) and reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
 ## Open items
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
@@ -3549,7 +3593,7 @@ reviews the diff. Context7 was not used.
 - [ ] Decide whether the approved API contract needs a D-ID (HANDOFF.md §11 item 10).
 - [x] Review and merge the API skeleton, including the 405 `invalid_request` row added to §6. (PR #66, `d9e8c4a`; Entry 101)
 - [x] `MockAnalyzer` and the analyzer seam (§8), `POST /analyses` with the §4.3 checks, storage (§7): on `feat/stage17-analyze`, awaiting review (Entry 116).
-- [ ] Next API PRs: `GET /limits`, history, details, notes, stats, auth (Entry 116).
+- [ ] Next API PRs: `GET /limits`, notes, stats, auth (Entry 116; history and details in Entry 118).
 - [ ] Integration: limit concurrent analyses; a timed-out analyzer thread keeps running (cannot be killed), so repeated timeouts with the real model could pile up (Entry 116).
 - [ ] uvicorn's default access log prints the client IP; §1/§7 say no IP is stored. Decide for Stage 19 (e.g. `--no-access-log` or a log filter) (Entry 116).
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
@@ -3594,7 +3638,7 @@ reviews the diff. Context7 was not used.
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
 `GET /api/status`. `POST /api/analyses` with the
-MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) are on `feat/stage17-limits-status`, awaiting review (Entry 117). Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; React `web/` and Compose are not yet present on main. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
+MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`), with the `analysis_note` table read-only, are on `feat/stage17-history-notes`, awaiting review (Entry 118); notes (5b) come next. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; React `web/` and Compose are not yet present on main. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
 canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.

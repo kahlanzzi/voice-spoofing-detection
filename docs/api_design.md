@@ -184,6 +184,13 @@ Response `200`:
 - `counts`: results per verdict matching `from`, `to` and `q`, **ignoring** the verdict filter, so
   each verdict chip shows how many results it would add (as in the prototype).
 - A page past the last one returns `200` with empty `items` and the correct `total`.
+- Newest first means by `created_at`; results stored in the same second come last-stored first.
+- `from` and `to` are exactly `YYYY-MM-DD` and are read as UTC days while `stats_time_zone` is `UTC`
+  (open decision 6); no time-zone conversion is done. Any other `stats_time_zone` stops the API at start.
+- `q` matches anywhere in the request ID, ignoring case; an empty `q` is no filter; a `q` that matches
+  nothing returns empty `items`, not an error.
+- `counts` always lists all three verdicts, with 0 when there are none. A repeated `verdict` counts once.
+  Unknown query parameters are ignored. If `page_size_max` is below 10, the default `page_size` is `page_size_max`.
 - `page < 1`, `page_size` out of range, an unknown `verdict`, a malformed date, or `from` after
   `to` → `400 invalid_request`.
 - Items include `confidence` because they carry the whole §11 object. The History table does not
@@ -194,6 +201,8 @@ Status codes: `200`; `400`; `401`/`403`; `500`.
 ### 4.5 `GET /analyses/{request_id}`
 
 Response `200`: one stored result (section 5). Used by S8, and by S6 if the page is reloaded.
+
+- An ID that does not have the request-ID form (section 2) also answers `404 not_found`.
 
 Status codes: `200`; `404 not_found` (unknown ID: S8 "unknown request ID"); `401`/`403`; `500`.
 
