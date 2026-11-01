@@ -4,7 +4,7 @@ import sqlite3
 import pytest
 
 from api.db import connect
-from api.repository import COLUMNS, AnalysisRecord, AnalysisRepository
+from api.repository import COLUMNS, AnalysisRecord, AnalysisRepository, HistoryQuery, StoredNote
 
 SECTION_7 = ["request_id", "created_at", "prediction", "confidence", "risk_level", "model_version",
              "profile_version", "policy_version", "notice", "processing_ms", "is_mock"]
@@ -31,10 +31,86 @@ def test_table_has_exactly_the_section_7_columns(repo):
     assert columns == SECTION_7 == list(COLUMNS)
 
 
+def test_note_table_has_exactly_the_section_7_columns(repo):
+    conn = connect(repo.path)
+    try:
+        columns = [row[1] for row in conn.execute("PRAGMA table_info(analysis_note)")]
+        foreign_keys = [(row[2], row[3], row[4]) for row in conn.execute("PRAGMA foreign_key_list(analysis_note)")]
+    finally:
+        conn.close()
+    assert columns == ["request_id", "text", "updated_at"]
+    assert foreign_keys == [("analysis_record", "request_id", "request_id")]
+
+
+def insert_note(repo, request_id, text="Called back.", updated_at="2026-10-30T09:20:11Z"):
+    conn = connect(repo.path)
+    try:
+        with conn:
+            conn.execute("INSERT INTO analysis_note (request_id, text, updated_at) VALUES (?, ?, ?)",
+                         (request_id, text, updated_at))
+    finally:
+        conn.close()
+
+
 def test_create_schema_is_idempotent_and_keeps_rows(repo):
     repo.add(RECORD)
+    insert_note(repo, RECORD.request_id)
     repo.create_schema()
     assert repo.count() == 1
+    assert repo.get_stored(RECORD.request_id)[1] is not None
+
+
+def test_note_for_an_unknown_record_is_rejected(repo):
+    with pytest.raises(sqlite3.IntegrityError, match="FOREIGN KEY"):
+        insert_note(repo, "req_" + "b" * 32)
+
+
+@pytest.mark.parametrize("text, updated_at", [
+    ("", "2026-10-30T09:20:11Z"), ("   ", "2026-10-30T09:20:11Z"), (None, "2026-10-30T09:20:11Z"),
+    ("ok", "2026-10-30 09:20:11"), ("ok", "2026-10-30T09:20:11+00:00"), ("ok", None),
+])
+def test_invalid_note_values_are_rejected(repo, text, updated_at):
+    repo.add(RECORD)
+    with pytest.raises(sqlite3.IntegrityError):
+        insert_note(repo, RECORD.request_id, text, updated_at)
+
+
+def test_get_stored_returns_the_record_with_its_note(repo):
+    assert repo.get_stored(RECORD.request_id) is None
+    repo.add(RECORD)
+    assert repo.get_stored(RECORD.request_id) == (RECORD, None)
+    insert_note(repo, RECORD.request_id)
+    assert repo.get_stored(RECORD.request_id) == (RECORD, StoredNote("Called back.", "2026-10-30T09:20:11Z"))
+    assert repo.get(RECORD.request_id) == RECORD  # the note does not change the record
+
+
+def _rec(n, created_at, prediction="authentic"):
+    return dataclasses.replace(RECORD, request_id=f"req_{n:032x}", created_at=created_at, prediction=prediction,
+                               risk_level="LOW")
+
+
+def test_history_orders_newest_first_then_last_stored_first(repo):
+    for r in (_rec(1, "2026-10-30T09:00:00Z"), _rec(2, "2026-10-31T09:00:00Z"), _rec(3, "2026-10-30T09:00:00Z")):
+        repo.add(r)
+    page = repo.history(HistoryQuery(), limit=10, offset=0)
+    assert [r.request_id for r, _ in page.items] == [f"req_{n:032x}" for n in (2, 3, 1)]
+    assert page.total == 3 and page.counts == {"synthetic": 0, "uncertain": 0, "authentic": 3}
+
+
+def test_history_filters_total_and_counts(repo):
+    repo.add(_rec(1, "2026-10-29T23:59:59Z", "synthetic"))
+    repo.add(_rec(2, "2026-10-30T00:00:00Z", "synthetic"))
+    repo.add(_rec(3, "2026-10-30T12:00:00Z", "authentic"))
+    page = repo.history(HistoryQuery(verdicts=frozenset({"synthetic"}), day_from="2026-10-30"), limit=10, offset=0)
+    assert [r.request_id for r, _ in page.items] == [f"req_{2:032x}"]
+    assert page.total == 1
+    assert page.counts == {"synthetic": 1, "uncertain": 0, "authentic": 1}  # verdict filter ignored
+
+
+def test_history_past_the_last_page_is_empty_with_the_total(repo):
+    repo.add(RECORD)
+    page = repo.history(HistoryQuery(), limit=10, offset=10)
+    assert page.items == [] and page.total == 1
 
 
 def test_add_then_get_round_trip(repo):

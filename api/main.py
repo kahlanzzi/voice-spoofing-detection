@@ -33,8 +33,11 @@ async def lifespan(app: FastAPI):
 
 def create_app(config: ApiConfig | None = None, analyzer: Analyzer | None = None) -> FastAPI:
     """Build the app. Without a config, load it from $VSD_API_CONFIG or configs/api.yaml.
-    Without an analyzer, use the MockAnalyzer (§8)."""
+    Without an analyzer, use the MockAnalyzer (§8). Raise ValueError if stats_time_zone is not UTC."""
     config = config if config is not None else load_api_config()
+    if config.stats_time_zone != "UTC":
+        # History days are read as UTC days with no conversion until open decision 6 (§4.4).
+        raise ValueError(f"stats_time_zone must be UTC until open decision 6 is taken, got {config.stats_time_zone!r}")
     app = FastAPI(title="Voice-spoofing detection API", lifespan=lifespan)
     app.state.config = config
     app.state.analyzer = analyzer if analyzer is not None else MockAnalyzer(config.mock_deferral_on_fit)
