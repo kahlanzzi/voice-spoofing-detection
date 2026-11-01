@@ -1,4 +1,5 @@
-"""Response shapes (docs/api_design.md §4.1, §4.2, §4.4, §5, §6). Every model forbids extra fields.
+"""Request and response shapes (docs/api_design.md §4.1, §4.2, §4.4, §4.6, §5, §6). Every model
+forbids extra fields.
 
 AnalysisResponse is exactly the 8 Protocol §11 fields; the web app mirrors it (ADR 0008 §3), so a
 field is added or removed only through a contract change.
@@ -7,7 +8,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 
 REQUEST_ID_PATTERN = r"^req_[0-9a-f]{32}$"
 
@@ -32,6 +33,14 @@ class AnalysisResponse(_Strict):
 class Note(_Strict):
     text: str
     updated_at: str  # UTC, ISO 8601 with Z
+
+
+class NoteRequest(_Strict):
+    text: StrictStr  # §4.6 body; trimming and the length check are done by the route
+
+
+class NoteResponse(_Strict):
+    note: Note | None
 
 
 class StoredAnalysis(_Strict):

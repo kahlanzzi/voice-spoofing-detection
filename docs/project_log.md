@@ -3351,6 +3351,49 @@ the guard, quote §4.4 on counts and `q`, no stacking) and reviews the diff. Con
 **Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
 
 ---
+### Entry 119 — Stage 17 step 5b: PUT /api/analyses/{request_id}/note (2026-11-01)
+
+**Numbering:** provisional. Main ends at 118 (PR #79); recheck against open PRs before merge.
+
+**What:** on `feat/stage17-notes` (Iheb, Part E; branched from `main` at `8d1ed1e` after PR #79), following
+`docs/api_design.md` §4.6, §6, §7 and §9 and the 5b part of the reviewed Step 5 plan.
+- `PUT /api/analyses/{request_id}/note` (`api/routers/notes.py`): the ID is checked against the §2 form, then
+  the Content-Type media type (`application/json`, parameters such as `charset` allowed), then the body is
+  read with a byte cap and parsed by a strict `NoteRequest`. Text is trimmed and counted in code points. Over
+  `note_max_chars` gives 400 with nothing stored, blank text removes the note, and removing an absent note
+  answers `{"note": null}`. Unknown ID → 404, storage failure → 500. Every error carries `request_id: null`.
+- `api/repository.py`: `save_note` (`INSERT … ON CONFLICT DO UPDATE`) and `delete_note`. Each checks the
+  record in the same `BEGIN IMMEDIATE` transaction and only reads `analysis_record`.
+- Body size: until now the only limit on this route was Starlette's at `max_size_bytes` + 64 KiB, which answers
+  in plain text. `note_body_limit` = 12 × `note_max_chars` + 1 KiB (25,024 bytes) is derived in code from the
+  §9 key, with no new config key. `ContentLengthGuard` answers a larger or non-numeric Content-Length on the
+  note path with a §6 400, and the route counts streamed bytes against the same cap.
+- Privacy: there is no FastAPI body parameter, and pydantic errors are dropped. The one log line holds only the
+  request ID and the exception class name.
+
+**Contract change [doc]:** §4.6 gains the four reviewed gap bullets (G9–G14). The G10 bullet also states the JSON
+Content-Type and the body cap (approved by Iheb in the delta plan, with the Content-Type check moved before the
+body read).
+
+**Evidence [verified]:** `python -m pytest -q` (3.14): 986 passed, 9 skipped (torch tests). `tests/api`: 242
+passed (200 before the new notes file, 179 at Entry 118). The new tests cover save, replace, the charset
+header, trimming, exactly `note_max_chars` (ASCII, é, 😀), +1 → 400 with nothing stored or the old note kept,
+blank removal, absent removal, 11 bad bodies (lone surrogate included), unknown and malformed IDs, an
+over-limit Content-Length, a streamed over-limit body, the `rowid` + row of `analysis_record` unchanged after
+save, replace, remove and absent remove, and the note text absent from responses and `caplog` on success, on six
+400 cases and on injected 500s whose exception message holds the text. A mutation check (no trim, logging the
+exception, an off-by-one limit) made 5, 2 and 3 tests fail. A manual `uvicorn` + `curl` run answered as expected,
+and the server log had 0 hits for the note text or the file name. Ruff is not installed in the venv, so it was
+not run. No audio committed; no dataset access; no DEEP-VOICE path.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the delta plan, the code, tests and this entry, and ran
+the checks. Iheb approved the plan with two changes (Content-Type checked before the body is read, plus a test with
+`charset=utf-8`; an Open item for the router helpers imported across routers) and reviews the diff. Context7 was
+not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
 ## Open items
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
@@ -3593,7 +3636,9 @@ the guard, quote §4.4 on counts and `q`, no stacking) and reviews the diff. Con
 - [ ] Decide whether the approved API contract needs a D-ID (HANDOFF.md §11 item 10).
 - [x] Review and merge the API skeleton, including the 405 `invalid_request` row added to §6. (PR #66, `d9e8c4a`; Entry 101)
 - [x] `MockAnalyzer` and the analyzer seam (§8), `POST /analyses` with the §4.3 checks, storage (§7): on `feat/stage17-analyze`, awaiting review (Entry 116).
-- [ ] Next API PRs: `GET /limits`, notes, stats, auth (Entry 116; history and details in Entry 118).
+- [ ] Next API PRs: stats, auth (Entry 116; `GET /limits` and real `/status` in Entry 117; history and details in Entry 118, notes in Entry 119).
+- [ ] Routes other than `POST /api/analyses` and `PUT …/note` answer a Content-Length above `max_size_bytes` + 64 KiB with Starlette's plain-text 413, not the §6 shape (GET-only today) (Entry 119).
+- [ ] Shared helpers (utc_now_iso, REQUEST_ID, invalid_request) live in routers and are imported across routers; move to a shared module in a later refactor PR (Entry 119).
 - [ ] Integration: limit concurrent analyses; a timed-out analyzer thread keeps running (cannot be killed), so repeated timeouts with the real model could pile up (Entry 116).
 - [ ] uvicorn's default access log prints the client IP; §1/§7 say no IP is stored. Decide for Stage 19 (e.g. `--no-access-log` or a log filter) (Entry 116).
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
@@ -3638,7 +3683,7 @@ the guard, quote §4.4 on counts and `q`, no stacking) and reviews the diff. Con
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
 `GET /api/status`. `POST /api/analyses` with the
-MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`), with the `analysis_note` table read-only, are on `feat/stage17-history-notes`, awaiting review (Entry 118); notes (5b) come next. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; React `web/` and Compose are not yet present on main. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
+MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) are on `feat/stage17-notes`, awaiting review (Entry 119). Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; React `web/` and Compose are not yet present on main. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
 canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.

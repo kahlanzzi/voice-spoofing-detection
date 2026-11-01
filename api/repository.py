@@ -1,7 +1,7 @@
 """All SQL of the API (docs/api_design.md §7): the analysis_record and analysis_note tables.
 probe() is the read-only check behind GET /api/status; get_stored() and history() serve §4.5 and
-§4.4. Notes live in their own table and never change analysis_record (FR-11); the note writes come
-with the notes endpoint.
+§4.4; save_note() and delete_note() serve §4.6. Notes live in their own table and never change
+analysis_record (FR-11).
 
 Never stored: audio, the original file name, the client IP address. No table has a column for them.
 """
@@ -167,6 +167,28 @@ class AnalysisRepository:
                 rows = conn.execute(f"{_SELECT_STORED}{where_all} {_ORDER} LIMIT ? OFFSET ?",
                                     [*params_all, limit, offset]).fetchall()
         return HistoryPage([_stored_from_row(row) for row in rows], total, counts)
+
+    def save_note(self, request_id: str, text: str, updated_at: str) -> StoredNote | None:
+        """Store or replace the note of one record; None if the record is unknown. Checked in the same
+        transaction as the write; analysis_record is only read."""
+        with closing(connect(self.path)) as conn, conn:
+            conn.execute("BEGIN IMMEDIATE")
+            if conn.execute("SELECT 1 FROM analysis_record WHERE request_id = ?", (request_id,)).fetchone() is None:
+                return None
+            conn.execute("INSERT INTO analysis_note (request_id, text, updated_at) VALUES (?, ?, ?) "
+                         "ON CONFLICT (request_id) DO UPDATE SET text = excluded.text, "
+                         "updated_at = excluded.updated_at",
+                         (request_id, text, updated_at))
+        return StoredNote(text, updated_at)
+
+    def delete_note(self, request_id: str) -> bool | None:
+        """Remove the note of one record: True if one was removed, False if it had none, None if the
+        record is unknown. analysis_record is only read."""
+        with closing(connect(self.path)) as conn, conn:
+            conn.execute("BEGIN IMMEDIATE")
+            if conn.execute("SELECT 1 FROM analysis_record WHERE request_id = ?", (request_id,)).fetchone() is None:
+                return None
+            return conn.execute("DELETE FROM analysis_note WHERE request_id = ?", (request_id,)).rowcount > 0
 
     def probe(self, timeout_s: float = PROBE_TIMEOUT_S) -> None:
         """Cheap read-only check that the table can be read; never writes or creates anything.
