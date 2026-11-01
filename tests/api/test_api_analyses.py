@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from api.analyzer import AnalysisOutcome, AnalyzerUnavailable, MockAnalyzer
 from api.intake import MULTIPART_OVERHEAD_BYTES
 from api.main import create_app
-from tests.api.conftest import audio_bytes
+from tests.api.conftest import HTTPS, audio_bytes, signed_in
 
 URL = "/api/analyses"
 REQUEST_ID = re.compile(r"req_[0-9a-f]{32}")
@@ -48,14 +48,15 @@ def assert_upload_error(client, config, response, status, code):
 
 @pytest.fixture
 def app_with(config):
-    """A started client for a changed config and/or another analyzer."""
+    """A started, signed-in client for a changed config and/or another analyzer."""
     clients = []
 
     def make(analyzer=None, **changes):
         cfg = dataclasses.replace(config, **changes)
-        client = TestClient(create_app(cfg, analyzer=analyzer))
+        client = TestClient(create_app(cfg, analyzer=analyzer), base_url=HTTPS)
         client.__enter__()
         clients.append(client)
+        signed_in(client)
         return client, cfg
 
     yield make

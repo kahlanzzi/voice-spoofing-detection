@@ -3,12 +3,11 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from fastapi.testclient import TestClient
 
 from api.analyzer import MockAnalyzer
 from api.main import create_app
 from api.repository import AnalysisRecord
-from tests.api.conftest import audio_bytes
+from tests.api.conftest import audio_bytes, signed_in_client
 
 URL = "/api/stats"
 NOW = "2026-10-30T09:14:05Z"
@@ -138,10 +137,10 @@ def test_monitoring_marker_comes_from_the_analyzer(config):
         def info(self):
             return dataclasses.replace(super().info(), policy_version="risk-test", mock=False)
 
-    with TestClient(create_app(config, analyzer=RealLike(0.1234))) as client:
+    with signed_in_client(create_app(config, analyzer=RealLike(0.1234))) as client:
         assert stats(client)["monitoring_marker"] == {"deferral_on_fit": 0.1234, "policy_version": "risk-test",
                                                       "mock": False}
-    with TestClient(create_app(config, analyzer=MockAnalyzer(0.5))) as client:
+    with signed_in_client(create_app(config, analyzer=MockAnalyzer(0.5))) as client:
         assert stats(client)["monitoring_marker"]["deferral_on_fit"] == 0.5
 
 
@@ -203,7 +202,7 @@ def test_a_failed_read_is_500_internal_error_with_null_request_id(config):
     def broken(*args, **kwargs):
         raise RuntimeError("disk on fire")
 
-    with TestClient(app, raise_server_exceptions=False) as client:
+    with signed_in_client(app, raise_server_exceptions=False) as client:
         app.state.repository.stats = broken
         response = client.get(URL)
     assert response.status_code == 500

@@ -1,11 +1,10 @@
 import dataclasses
 
 import pytest
-from fastapi.testclient import TestClient
 
 from api.main import create_app
 from api.repository import AnalysisRecord
-from tests.api.conftest import audio_bytes
+from tests.api.conftest import audio_bytes, signed_in_client
 
 URL = "/api/analyses"
 SECTION_11 = {"prediction", "confidence", "risk_level", "model_version", "profile_version",
@@ -84,7 +83,7 @@ def test_page_size_max_is_accepted(client, config, five):
 
 
 def test_default_page_size_is_lowered_to_a_smaller_page_size_max(config):
-    with TestClient(create_app(dataclasses.replace(config, page_size_max=3))) as client:
+    with signed_in_client(create_app(dataclasses.replace(config, page_size_max=3))) as client:
         store(client, *[record(n, f"2026-10-30T09:00:0{n}Z") for n in range(1, 6)])
         body = client.get(URL).json()
     assert body["page_size"] == 3 and len(body["items"]) == 3

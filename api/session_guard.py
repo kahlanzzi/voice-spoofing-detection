@@ -1,8 +1,9 @@
 """The Origin and session checks (docs/api_design.md §4.8), in middleware: they run before the route
 and before any request body is read. Origin is checked first, then the session.
 
-The route table covers the /session routes only (Step 7b-1b); Step 7b-2 extends it to every route
-under /api except POST /session and GET /health. A refusal uses the §6 shape with request_id null.
+Every path under /api needs a session except POST /api/session and GET /api/health; the rule is by
+prefix, so unknown paths and methods under /api need one too. Origin is needed on the four routes that
+change data. A refusal uses the §6 shape with request_id null.
 
 The session ID travels only in the vsd_session cookie; the database keeps its SHA-256 (§7). The ID,
 its hash and the Cookie header are never logged.
@@ -11,6 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import re
 import secrets
 import sqlite3
 from datetime import datetime, timedelta, timezone
@@ -28,11 +30,14 @@ log = logging.getLogger("api")
 
 COOKIE = "vsd_session"
 COOKIE_PATH = "/api"
+API_PREFIX = "/api"
 SESSION_PATH = "/api/session"
+HEALTH_PATH = "/api/health"
+ANALYSES_PATH = "/api/analyses"
+NOTE_PATH = re.compile(r"/api/analyses/[^/]+/note")
 STATE_KEY = "session"
-# (method, path) pairs. Step 7b-2 widens these to every route that changes data / needs a session.
-NEEDS_ORIGIN = frozenset({("POST", SESSION_PATH), ("DELETE", SESSION_PATH)})
-NEEDS_SESSION = frozenset({("GET", SESSION_PATH), ("HEAD", SESSION_PATH), ("DELETE", SESSION_PATH)})
+# (method, path) pairs open without a session (§4.8 "Which routes need a session").
+OPEN_ROUTES = frozenset({("POST", SESSION_PATH), ("GET", HEALTH_PATH)})
 # The account store cannot be read or written.
 STORE_ERRORS = (sqlite3.Error, OSError)
 
@@ -85,14 +90,27 @@ def clear_session_cookie(response: Response) -> None:
     response.delete_cookie(COOKIE, path=COOKIE_PATH, secure=True, httponly=True, samesite="strict")
 
 
+def needs_origin(method: str, path: str) -> bool:
+    """The routes that change data (§4.8 CSRF)."""
+    return ((method == "POST" and path in (ANALYSES_PATH, SESSION_PATH))
+            or (method == "DELETE" and path == SESSION_PATH)
+            or (method == "PUT" and NOTE_PATH.fullmatch(path) is not None))
+
+
+def needs_session(method: str, path: str) -> bool:
+    """Every path under /api, known or not, except OPEN_ROUTES."""
+    under_api = path == API_PREFIX or path.startswith(API_PREFIX + "/")
+    return under_api and (method, path) not in OPEN_ROUTES
+
+
 def guard_error(code: str) -> JSONResponse:
     status, message = ERRORS[code] if code in ERRORS else (500, INTERNAL[1])
     return JSONResponse(error_body(code, message), status_code=status)
 
 
 class SessionGuard:
-    """Refuses a request of NEEDS_ORIGIN whose Origin is not in allowed_origins (403), then a request
-    of NEEDS_SESSION without a valid session (401, cookie cleared). A valid session is put in the
+    """Refuses a request that needs_origin() whose Origin is not in allowed_origins (403), then one that
+    needs_session() without a valid session (401, cookie cleared). A valid session is put in the
     request state (STATE_KEY) and its last_seen_at is updated. A store error answers 503
     sign_in_unavailable on the /session routes and 500 internal_error elsewhere (§4.8)."""
 
@@ -107,12 +125,12 @@ class SessionGuard:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
-        route = (scope["method"], scope["path"])
+        method, path = scope["method"], scope["path"]
         headers = Headers(scope=scope)
-        if route in NEEDS_ORIGIN and headers.get("origin") not in self.allowed_origins:
+        if needs_origin(method, path) and headers.get("origin") not in self.allowed_origins:
             await guard_error("origin_not_allowed")(scope, receive, send)
             return
-        if route in NEEDS_SESSION:
+        if needs_session(method, path):
             session_id = session_id_of(headers)
             session = None
             if session_id is not None:
@@ -122,7 +140,7 @@ class SessionGuard:
                                                       iso(now), idle_before(now, self.idle_minutes))
                 except STORE_ERRORS as exc:
                     log.error("session check failed, error=%s", type(exc).__name__)
-                    code = "sign_in_unavailable" if scope["path"] == SESSION_PATH else INTERNAL[0]
+                    code = "sign_in_unavailable" if path == SESSION_PATH else INTERNAL[0]
                     await guard_error(code)(scope, receive, send)
                     return
             if session is None:

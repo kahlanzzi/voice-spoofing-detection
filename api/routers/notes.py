@@ -1,6 +1,7 @@
 """PUT /api/analyses/{request_id}/note (docs/api_design.md §4.6).
 
-Save, replace or remove the analyst note. The note lives in analysis_note and never changes the
+Save, replace or remove the analyst note, with the signed-in account as its author (the session the
+guard put in the request state). The note lives in analysis_note and never changes the
 analysis record (FR-11). The body is read and parsed here, not by a FastAPI body parameter, so the
 size limit holds while streaming and no error can echo the input. The note text is never logged and
 never appears in an error: every 400 is the fixed §6 invalid_request, with request_id null (§6).
@@ -16,9 +17,11 @@ from starlette.concurrency import run_in_threadpool
 from api.errors import HTTP_ERRORS, INTERNAL, ApiError
 from api.intake import note_body_limit
 from api.middleware import request_id_of
+from api.repository import ActiveSession
 from api.routers.analyses import REQUEST_ID, invalid_request
 from api.routers.status import utc_now_iso
 from api.schemas import Note, NoteRequest, NoteResponse
+from api.session_guard import STATE_KEY
 
 log = logging.getLogger("api")
 
@@ -53,10 +56,12 @@ async def put_note(request: Request, request_id: str) -> NoteResponse:
     if len(text) > config.note_max_chars:
         raise invalid_request()
 
+    session: ActiveSession = getattr(request.state, STATE_KEY)
     repository = request.app.state.repository
     try:
         if text:
-            stored = await run_in_threadpool(repository.save_note, request_id, text, utc_now_iso())
+            stored = await run_in_threadpool(repository.save_note, request_id, text, utc_now_iso(),
+                                             session.account_id)
             found = stored is not None
         else:
             stored = None
@@ -67,4 +72,5 @@ async def put_note(request: Request, request_id: str) -> NoteResponse:
         raise ApiError(500, *INTERNAL) from None
     if not found:
         raise ApiError(404, *HTTP_ERRORS[404])
-    return NoteResponse(note=None if stored is None else Note(text=stored.text, updated_at=stored.updated_at))
+    return NoteResponse(note=None if stored is None else Note(text=stored.text, updated_at=stored.updated_at,
+                                                              updated_by=stored.updated_by))

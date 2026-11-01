@@ -37,14 +37,22 @@ CREATE TABLE IF NOT EXISTS analysis_record (
 """
 
 # note_max_chars is config (§9), so the API enforces it; a CHECK here would need a migration per change.
+# updated_by_account_id is null for notes saved before sign-in existed (§7).
 NOTE_SCHEMA = """
 CREATE TABLE IF NOT EXISTS analysis_note (
     request_id TEXT NOT NULL PRIMARY KEY REFERENCES analysis_record (request_id),
     text       TEXT NOT NULL CHECK (length(trim(text)) > 0),
     updated_at TEXT NOT NULL
-               CHECK (updated_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]Z')
+               CHECK (updated_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]Z'),
+    updated_by_account_id INTEGER REFERENCES account (account_id)
 )
 """
+
+# Step 7b-2 migration: database files made before sign-in have analysis_note without its author. A NULL
+# default keeps the existing notes as they are, and lets SQLite add a REFERENCES column with foreign keys on.
+NOTE_AUTHOR_COLUMN = "updated_by_account_id"
+NOTE_AUTHOR_MIGRATION = (f"ALTER TABLE analysis_note ADD COLUMN {NOTE_AUTHOR_COLUMN} "
+                         "INTEGER REFERENCES account (account_id)")
 
 _UTC = "GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]Z'"
 _HEX64 = "length({0}) = 64 AND {0} NOT GLOB '*[^0-9a-f]*'"
@@ -106,9 +114,10 @@ COLUMNS = tuple(f.name for f in fields(AnalysisRecord))
 
 @dataclass(frozen=True)
 class StoredNote:
-    """One analysis_note row, without its key."""
+    """One analysis_note row, without its key; the author as a username."""
     text: str
     updated_at: str  # UTC, ISO 8601 with Z
+    updated_by: str | None  # None for notes saved before sign-in existed
 
 
 @dataclass(frozen=True)
@@ -146,13 +155,14 @@ AWAITING_VERDICTS = frozenset({"synthetic", "uncertain"})
 
 # Newest first; the same second keeps store order, last stored first (rowid grows with each insert).
 _ORDER = "ORDER BY r.created_at DESC, r.rowid DESC"
-_SELECT_STORED = (f"SELECT {', '.join('r.' + c for c in COLUMNS)}, n.text, n.updated_at "
-                  "FROM analysis_record AS r LEFT JOIN analysis_note AS n ON n.request_id = r.request_id")
+_SELECT_STORED = (f"SELECT {', '.join('r.' + c for c in COLUMNS)}, n.text, n.updated_at, u.username "
+                  "FROM analysis_record AS r LEFT JOIN analysis_note AS n ON n.request_id = r.request_id "
+                  "LEFT JOIN account AS u ON u.account_id = n.updated_by_account_id")
 
 
 def _stored_from_row(row) -> tuple[AnalysisRecord, StoredNote | None]:
-    *rest, is_mock, text, updated_at = row
-    note = None if text is None else StoredNote(text, updated_at)
+    *rest, is_mock, text, updated_at, updated_by = row
+    note = None if text is None else StoredNote(text, updated_at, updated_by)
     return AnalysisRecord(*rest, is_mock=bool(is_mock)), note
 
 
@@ -181,13 +191,18 @@ class AnalysisRepository:
         self.path = path
 
     def create_schema(self) -> None:
-        """Create the tables if they are missing; safe to run at every start."""
+        """Create the tables if they are missing and add the note author to an older analysis_note, in one
+        transaction: a failure leaves the file as it was. Safe to run at every start; no row is rewritten."""
         with closing(connect(self.path)) as conn, conn:
+            conn.execute("BEGIN IMMEDIATE")
             conn.execute(SCHEMA)
             conn.execute(NOTE_SCHEMA)
             conn.execute(ACCOUNT_SCHEMA)
             conn.execute(SESSION_SCHEMA)
             conn.execute(SIGN_IN_FAILURE_SCHEMA)
+            note_columns = {row[1] for row in conn.execute("PRAGMA table_info(analysis_note)")}
+            if NOTE_AUTHOR_COLUMN not in note_columns:
+                conn.execute(NOTE_AUTHOR_MIGRATION)
 
     def add(self, record: AnalysisRecord) -> None:
         """Insert one record; raises sqlite3.IntegrityError on a duplicate ID or an invalid value."""
@@ -263,18 +278,20 @@ class AnalysisRepository:
         return StatsFigures(total, counts, per_day, median, awaiting_total,
                             [_stored_from_row(row) for row in recent], today_total)
 
-    def save_note(self, request_id: str, text: str, updated_at: str) -> StoredNote | None:
-        """Store or replace the note of one record; None if the record is unknown. Checked in the same
-        transaction as the write; analysis_record is only read."""
+    def save_note(self, request_id: str, text: str, updated_at: str, account_id: int) -> StoredNote | None:
+        """Store or replace the note of one record, with account_id as its author (a replace also replaces
+        the author); None if the record is unknown. Checked in the same transaction as the write;
+        analysis_record is only read."""
         with closing(connect(self.path)) as conn, conn:
             conn.execute("BEGIN IMMEDIATE")
             if conn.execute("SELECT 1 FROM analysis_record WHERE request_id = ?", (request_id,)).fetchone() is None:
                 return None
-            conn.execute("INSERT INTO analysis_note (request_id, text, updated_at) VALUES (?, ?, ?) "
-                         "ON CONFLICT (request_id) DO UPDATE SET text = excluded.text, "
-                         "updated_at = excluded.updated_at",
-                         (request_id, text, updated_at))
-        return StoredNote(text, updated_at)
+            conn.execute("INSERT INTO analysis_note (request_id, text, updated_at, updated_by_account_id) "
+                         "VALUES (?, ?, ?, ?) ON CONFLICT (request_id) DO UPDATE SET text = excluded.text, "
+                         "updated_at = excluded.updated_at, updated_by_account_id = excluded.updated_by_account_id",
+                         (request_id, text, updated_at, account_id))
+            username = conn.execute("SELECT username FROM account WHERE account_id = ?", (account_id,)).fetchone()[0]
+        return StoredNote(text, updated_at, username)
 
     def delete_note(self, request_id: str) -> bool | None:
         """Remove the note of one record: True if one was removed, False if it had none, None if the

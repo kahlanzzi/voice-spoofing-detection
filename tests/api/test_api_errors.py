@@ -1,8 +1,8 @@
 import pytest
-from fastapi.testclient import TestClient
 
 from api.errors import ApiError
 from api.main import create_app
+from tests.api.conftest import signed_in_client
 
 VERDICT_FIELDS = {"prediction", "confidence", "risk_level"}
 SECRET = "secret-internal-detail /home/someone/api/model.py"
@@ -52,22 +52,23 @@ def test_wrong_method_is_405_invalid_request(client):
 
 
 def test_unhandled_exception_is_500_without_traceback(test_app):
-    client = TestClient(test_app, raise_server_exceptions=False)
-    response = client.get("/api/_boom")
+    with signed_in_client(test_app, raise_server_exceptions=False) as client:
+        response = client.get("/api/_boom")
     assert_error_shape(response, 500, "internal_error")
     for leak in ("Traceback", "RuntimeError", "secret-internal-detail", "/home/", ".py"):
         assert leak not in response.text
 
 
 def test_invalid_query_param_is_400_invalid_request(test_app):
-    client = TestClient(test_app)
-    assert_error_shape(client.get("/api/_typed?page=abc"), 400, "invalid_request")
-    assert_error_shape(client.get("/api/_typed"), 400, "invalid_request")
-    assert client.get("/api/_typed?page=2").json() == {"page": 2}
+    with signed_in_client(test_app) as client:
+        assert_error_shape(client.get("/api/_typed?page=abc"), 400, "invalid_request")
+        assert_error_shape(client.get("/api/_typed"), 400, "invalid_request")
+        assert client.get("/api/_typed?page=2").json() == {"page": 2}
 
 
 def test_api_error_keeps_its_status_code_and_request_id(test_app):
-    response = TestClient(test_app).get("/api/_api_error")
+    with signed_in_client(test_app) as client:
+        response = client.get("/api/_api_error")
     assert response.status_code == 503
     assert response.json() == {"error": {"code": "analysis_unavailable",
                                          "message": "The analysis service is not available.",

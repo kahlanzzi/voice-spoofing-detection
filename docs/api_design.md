@@ -80,6 +80,9 @@ Response `200`:
 - `versions`, `bundle_manifest_sha256`, `deferral_on_fit` and `mock` come from the analyzer
   (section 8). With the MockAnalyzer the manifest hash is `null`.
 - The endpoint reports problems in its body; it answers `200` even when `state` is `unavailable`.
+- Sessions use the same store, so if the store cannot be read, the session check answers
+  `500 internal_error` before `GET /status` runs; the app treats a `500` or no answer from `/status`
+  as Unavailable.
 - Needs a session (section 4.8).
 
 Status codes: `200`; `401`; `500 internal_error`.
@@ -349,7 +352,9 @@ and asks for no confirmation. The unsaved-note dialog (D1) belongs to the app.
 #### Which routes need a session
 
 Every route under `/api` needs a valid session except `POST /session` and `GET /health`. **This
-includes `GET /status` and `GET /limits`.** The sign-in screen (S1) calls only `GET /session` and
+includes `GET /status` and `GET /limits`.** It also includes unknown paths and methods under `/api`:
+without a session they answer `401 session_expired`, not `404` or `405`.
+The sign-in screen (S1) calls only `GET /session` and
 `POST /session`. Limits are needed from S2 on, and the status line and S10 from the rail, so both are
 read after sign-in. `/status` exposes the model versions and the bundle hash, and nothing calls it
 before sign-in. The container health check uses `GET /health`, which carries no data.

@@ -3,11 +3,12 @@ import re
 from pathlib import Path
 
 import pytest
-from fastapi.testclient import TestClient
 
 from api.analyzer import AnalyzerInfo
 from api.main import create_app
+from api.repository import AnalysisRepository
 from api.routers.status import derive_state
+from tests.api.conftest import signed_in_client
 
 
 def test_status_returns_the_section_4_1_shape(client, config):
@@ -27,8 +28,8 @@ def test_status_returns_the_section_4_1_shape(client, config):
 
 
 def test_deferral_on_fit_comes_from_config(config):
-    client = TestClient(create_app(dataclasses.replace(config, mock_deferral_on_fit=0.25)))
-    assert client.get("/api/status").json()["deferral_on_fit"] == 0.25
+    with signed_in_client(create_app(dataclasses.replace(config, mock_deferral_on_fit=0.25))) as client:
+        assert client.get("/api/status").json()["deferral_on_fit"] == 0.25
 
 
 class InfoOnly:
@@ -44,12 +45,14 @@ BUNDLE_INFO = AnalyzerInfo(ready=True, model_version="cnn-v3", profile_version="
                            mock=False)
 
 
-def status_of(config, analyzer=None, lifespan=True):
-    """GET /api/status; lifespan=True builds the database first, as at a real start."""
+def status_of(config, analyzer=None, probe_path=None):
+    """GET /api/status, signed in. The session lives in the started database; with probe_path, the
+    history_and_stats check reads that file instead, so a broken history store can be tested while the
+    session check still works (§4.8: a session check that cannot read the store is a 500)."""
     app = create_app(config, analyzer=analyzer)
-    if not lifespan:
-        return TestClient(app).get("/api/status")
-    with TestClient(app) as client:
+    with signed_in_client(app) as client:
+        if probe_path is not None:
+            app.state.repository = AnalysisRepository(Path(probe_path))
         return client.get("/api/status")
 
 
@@ -84,10 +87,9 @@ def assert_database_unavailable(response):
     assert body["versions"]["model_version"] == "mock"  # still the full §4.1 body
 
 
-def test_status_reports_a_missing_database_and_does_not_create_it(config):
-    response = status_of(config, lifespan=False)  # no lifespan: the database file was never made
-    assert_database_unavailable(response)
-    db_path = Path(config.database_path)
+def test_status_reports_a_missing_database_and_does_not_create_it(config, tmp_path):
+    db_path = tmp_path / "missing" / "api.sqlite"  # never made
+    assert_database_unavailable(status_of(config, probe_path=db_path))
     assert not db_path.exists()
     assert not db_path.parent.exists()
 
@@ -95,21 +97,35 @@ def test_status_reports_a_missing_database_and_does_not_create_it(config):
 def test_status_reports_a_file_that_is_not_a_database(config, tmp_path):
     garbage = tmp_path / "garbage.sqlite"
     garbage.write_bytes(b"not a database" * 100)
-    response = status_of(dataclasses.replace(config, database_path=str(garbage)), lifespan=False)
-    assert_database_unavailable(response)
+    assert_database_unavailable(status_of(config, probe_path=garbage))
     assert garbage.read_bytes() == b"not a database" * 100  # the probe never writes
 
 
-def test_status_reports_an_unreadable_database_after_start(config):
+def test_status_reports_an_unreadable_database_after_start(config, tmp_path):
+    history = AnalysisRepository(tmp_path / "history.sqlite")
+    history.create_schema()
     app = create_app(config)
-    with TestClient(app) as client:
-        app.state.repository.path.unlink()  # database gone while the service runs
+    with signed_in_client(app) as client:
+        app.state.repository = history
+        assert client.get("/api/status").json()["checks"]["history_and_stats"] == "available"
+        history.path.unlink()  # database gone while the service runs
         assert_database_unavailable(client.get("/api/status"))
 
 
-def test_status_is_unavailable_when_both_checks_fail(config):
+def test_status_is_500_when_the_session_store_is_gone(config):
+    # One SQLite file holds the sessions too: the session check fails first, before the status body (§4.8).
+    app = create_app(config)
+    with signed_in_client(app) as client:
+        app.state.repository.path.unlink()
+        response = client.get("/api/status")
+    assert response.status_code == 500
+    assert response.json() == {"error": {"code": "internal_error", "message": "An unexpected error occurred.",
+                                         "request_id": None}}
+
+
+def test_status_is_unavailable_when_both_checks_fail(config, tmp_path):
     info = dataclasses.replace(BUNDLE_INFO, ready=False)
-    body = status_of(config, InfoOnly(info), lifespan=False).json()
+    body = status_of(config, InfoOnly(info), probe_path=tmp_path / "missing.sqlite").json()
     assert body["state"] == "unavailable"
     assert body["checks"] == {"analysis": "unavailable", "history_and_stats": "unavailable"}
 
