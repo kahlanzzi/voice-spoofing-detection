@@ -9,6 +9,10 @@ Size protection in three layers:
 Layers 1 and 2 allow MULTIPART_OVERHEAD_BYTES above max_size_bytes for the multipart framing, so a
 file the browser accepts (File.size <= max_size_bytes) is never refused for its envelope.
 
+PUT /api/analyses/{request_id}/note (§4.6) has a much smaller limit, note_body_limit: the guard
+answers a larger Content-Length with a §6 400 before Starlette's plain-text 413 can, and the notes
+route counts streamed bytes against the same limit.
+
 The original file name is read only for its extension, then dropped: never logged, never stored.
 The temp file has a random name and is deleted when the request ends, on success and on every error.
 """
@@ -16,6 +20,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import tempfile
 from contextlib import asynccontextmanager
 from pathlib import Path, PurePath
@@ -30,13 +35,16 @@ from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from api.config import ApiConfig, resolve_path
-from api.errors import ApiError, error_body
+from api.errors import HTTP_ERRORS, ApiError, error_body
 from api.middleware import STATE_KEY
 
 log = logging.getLogger("api")
 
 ANALYSES_PATH = "/api/analyses"
+NOTE_PATH = re.compile(r"/api/analyses/[^/]+/note")
 MULTIPART_OVERHEAD_BYTES = 64 * 1024
+NOTE_JSON_OVERHEAD_BYTES = 1024
+NOTE_BYTES_PER_CHAR = 12  # worst case in JSON: one code point outside the BMP as \uXXXX\uXXXX
 CHUNK_BYTES = 64 * 1024
 DECODE_BLOCK_FRAMES = 65536
 
@@ -56,19 +64,32 @@ def body_limit(config: ApiConfig) -> int:
     return config.max_size_bytes + MULTIPART_OVERHEAD_BYTES
 
 
+def note_body_limit(config: ApiConfig) -> int:
+    """The whole-body limit for a note: the longest note fully escaped, plus the JSON framing."""
+    return NOTE_BYTES_PER_CHAR * config.note_max_chars + NOTE_JSON_OVERHEAD_BYTES
+
+
 def upload_error(code: str, request_id: str | None) -> ApiError:
     status, message = ERRORS[code]
     return ApiError(status, code, message, request_id=request_id)
 
 
 class ContentLengthGuard:
-    """Layer 1: a §6 413 for POST /api/analyses when Content-Length is above the limit."""
+    """Layer 1: a §6 413 for POST /api/analyses when Content-Length is above the limit, and a §6 400
+    (request_id null) for PUT on a note when Content-Length is above max_note_body_size or not a number."""
 
-    def __init__(self, app: ASGIApp, max_body_size: int):
+    def __init__(self, app: ASGIApp, max_body_size: int, max_note_body_size: int):
         self.app = app
         self.max_body_size = max_body_size
+        self.max_note_body_size = max_note_body_size
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "http" and scope["method"] == "PUT" and NOTE_PATH.fullmatch(scope["path"]):
+            value = Headers(scope=scope).get("content-length")
+            valid = value is None or (value.isascii() and value.isdigit() and int(value) <= self.max_note_body_size)
+            if not valid:
+                await JSONResponse(error_body(*HTTP_ERRORS[400]), status_code=400)(scope, receive, send)
+                return
         if scope["type"] == "http" and scope["method"] == "POST" and scope["path"] == ANALYSES_PATH:
             value = Headers(scope=scope).get("content-length")
             if value is not None:

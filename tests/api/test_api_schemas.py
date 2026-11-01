@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from api.schemas import AnalysisResponse, Error, StoredAnalysis
+from api.schemas import AnalysisResponse, Error, NoteRequest, NoteResponse, StoredAnalysis
 
 VALID = {
     "prediction": "uncertain",
@@ -57,3 +57,18 @@ def test_error_shape_allows_null_request_id_and_nothing_else():
     assert Error(**body).model_dump() == body
     with pytest.raises(ValidationError):
         Error(error={**body["error"], "prediction": "synthetic"})
+
+
+def test_note_request_is_exactly_one_string_text():
+    assert NoteRequest.model_validate_json('{"text": "ok"}').text == "ok"
+
+
+@pytest.mark.parametrize("body", ['{}', '{"text": 5}', '{"text": null}', '{"text": ["a"]}',
+                                  '{"text": "ok", "author": "x"}', '"ok"', 'not json'])
+def test_note_request_refuses_anything_else(body):
+    with pytest.raises(ValidationError):
+        NoteRequest.model_validate_json(body)
+
+
+def test_note_response_allows_a_null_note():
+    assert NoteResponse(note=None).model_dump() == {"note": None}

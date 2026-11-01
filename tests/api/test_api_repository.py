@@ -84,6 +84,47 @@ def test_get_stored_returns_the_record_with_its_note(repo):
     assert repo.get(RECORD.request_id) == RECORD  # the note does not change the record
 
 
+def record_row(repo, request_id):
+    """The raw analysis_record row with its rowid, so a delete-and-insert would show."""
+    conn = connect(repo.path)
+    try:
+        return conn.execute("SELECT rowid, * FROM analysis_record WHERE request_id = ?", (request_id,)).fetchone()
+    finally:
+        conn.close()
+
+
+def test_save_note_stores_then_replaces_without_changing_the_record(repo):
+    repo.add(RECORD)
+    before = record_row(repo, RECORD.request_id)
+    first, second = StoredNote("first", "2026-10-30T09:20:11Z"), StoredNote("second", "2026-10-30T09:21:00Z")
+    assert repo.save_note(RECORD.request_id, first.text, first.updated_at) == first
+    assert repo.save_note(RECORD.request_id, second.text, second.updated_at) == second
+    assert repo.get_stored(RECORD.request_id)[1] == second
+    assert record_row(repo, RECORD.request_id) == before
+
+
+def test_delete_note_reports_whether_a_note_was_removed(repo):
+    repo.add(RECORD)
+    before = record_row(repo, RECORD.request_id)
+    repo.save_note(RECORD.request_id, "first", "2026-10-30T09:20:11Z")
+    assert repo.delete_note(RECORD.request_id) is True
+    assert repo.delete_note(RECORD.request_id) is False
+    assert repo.get_stored(RECORD.request_id)[1] is None
+    assert record_row(repo, RECORD.request_id) == before
+
+
+def test_note_writes_for_an_unknown_record_return_none_and_store_nothing(repo):
+    unknown = "req_" + "b" * 32
+    assert repo.save_note(unknown, "x", "2026-10-30T09:20:11Z") is None
+    assert repo.delete_note(unknown) is None
+    conn = connect(repo.path)
+    try:
+        assert conn.execute("SELECT COUNT(*) FROM analysis_note").fetchone()[0] == 0
+    finally:
+        conn.close()
+    assert repo.count() == 0
+
+
 def _rec(n, created_at, prediction="authentic"):
     return dataclasses.replace(RECORD, request_id=f"req_{n:032x}", created_at=created_at, prediction=prediction,
                                risk_level="LOW")

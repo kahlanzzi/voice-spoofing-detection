@@ -2,12 +2,18 @@ import asyncio
 
 import pytest
 
-from api.intake import MULTIPART_OVERHEAD_BYTES, ContentLengthGuard, _Undecodable, body_limit, decoded_length
+from api.intake import (MULTIPART_OVERHEAD_BYTES, ContentLengthGuard, _Undecodable, body_limit, decoded_length,
+                        note_body_limit)
 from tests.api.conftest import audio_bytes
 
 
 def test_body_limit_adds_the_multipart_allowance(config):
     assert body_limit(config) == config.max_size_bytes + MULTIPART_OVERHEAD_BYTES == config.max_size_bytes + 65536
+
+
+def test_note_body_limit_fits_the_longest_note_fully_escaped(config):
+    assert note_body_limit(config) == 12 * config.note_max_chars + 1024
+    assert note_body_limit(config) == 25024  # note_max_chars 2000 in configs/api.yaml
 
 
 @pytest.mark.parametrize("fmt, ext", [("WAV", "wav"), ("FLAC", "flac")])
@@ -40,7 +46,7 @@ def run_guard(headers, method="POST", path="/api/analyses"):
 
     scope = {"type": "http", "method": method, "path": path, "headers": headers,
              "state": {"request_id": "req_" + "c" * 32}}
-    asyncio.run(ContentLengthGuard(app, max_body_size=100)(scope, receive, send))
+    asyncio.run(ContentLengthGuard(app, max_body_size=100, max_note_body_size=50)(scope, receive, send))
     status = sent[0]["status"] if sent else None
     return status, bool(reached), b"".join(m.get("body", b"") for m in sent)
 
@@ -57,11 +63,26 @@ def test_guard_rejects_a_malformed_content_length():
     assert b'"invalid_request"' in body
 
 
+NOTE = "/api/analyses/req_" + "d" * 32 + "/note"
+
+
+@pytest.mark.parametrize("value", [b"51", b"abc", b"-1", b"\xb2", b"99999999999999999999"])
+def test_guard_answers_a_note_body_over_its_limit_with_a_section_6_400(value):
+    status, reached, body = run_guard([(b"content-length", value)], "PUT", NOTE)
+    assert (status, reached) == (400, False)
+    assert body == (b'{"error":{"code":"invalid_request","message":"The request is not valid.",'
+                    b'"request_id":null}}')
+
+
 @pytest.mark.parametrize("headers, method, path", [
     ([(b"content-length", b"100")], "POST", "/api/analyses"),   # at the limit
     ([], "POST", "/api/analyses"),                              # no Content-Length: layer 2's job
     ([(b"content-length", b"999")], "POST", "/api/status"),     # other path
     ([(b"content-length", b"999")], "GET", "/api/analyses"),    # other method
+    ([(b"content-length", b"50")], "PUT", NOTE),                # note at its limit
+    ([], "PUT", NOTE),                                          # note without Content-Length: the route counts
+    ([(b"content-length", b"999")], "GET", NOTE),               # note path, other method
+    ([(b"content-length", b"999")], "PUT", NOTE + "/x"),        # not the note path
 ])
 def test_guard_lets_other_requests_through(headers, method, path):
     assert run_guard(headers, method, path)[:2] == (None, True)

@@ -14,10 +14,10 @@ from starlette.middleware.body_limit import RequestBodyLimitMiddleware
 from api.analyzer import Analyzer, MockAnalyzer
 from api.config import ApiConfig, load_api_config, resolve_path
 from api.errors import install_error_handlers
-from api.intake import ContentLengthGuard, body_limit
+from api.intake import ContentLengthGuard, body_limit, note_body_limit
 from api.middleware import RequestIdMiddleware
 from api.repository import AnalysisRepository
-from api.routers import analyses, limits, status
+from api.routers import analyses, limits, notes, status
 
 API_PREFIX = "/api"
 
@@ -44,12 +44,14 @@ def create_app(config: ApiConfig | None = None, analyzer: Analyzer | None = None
     app.state.repository = AnalysisRepository(resolve_path(config.database_path))
     # Added inner first: RequestId -> ContentLengthGuard -> RequestBodyLimit -> routes (intake.py).
     app.add_middleware(RequestBodyLimitMiddleware, max_body_size=body_limit(config))
-    app.add_middleware(ContentLengthGuard, max_body_size=body_limit(config))
+    app.add_middleware(ContentLengthGuard, max_body_size=body_limit(config),
+                       max_note_body_size=note_body_limit(config))
     app.add_middleware(RequestIdMiddleware)
     install_error_handlers(app)
     app.include_router(status.router, prefix=API_PREFIX)
     app.include_router(limits.router, prefix=API_PREFIX)
     app.include_router(analyses.router, prefix=API_PREFIX)
+    app.include_router(notes.router, prefix=API_PREFIX)
     return app
 
 

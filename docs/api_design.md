@@ -215,6 +215,15 @@ Response `200`: `{ "note": { "text": "…", "updated_at": "2026-10-30T09:20:11Z"
 - One note per analysis; a new `PUT` replaces it.
 - Empty text (after trimming spaces) removes the note; the response is `{ "note": null }`.
 - Text longer than `note_max_chars` → `400 invalid_request`.
+- Spaces and line breaks at the start and end are removed before the length check and before storing;
+  length is counted in characters (Unicode code points).
+- The body is exactly `{ "text": <string> }`, sent as `application/json` and at most
+  12 × `note_max_chars` + 1 KiB bytes; a missing or non-string `text`, any other field, or a larger body
+  → `400 invalid_request`.
+- `updated_at` is set by the server at every save. Removing a note that does not exist also answers
+  `{ "note": null }`.
+- The note has no author field: who wrote it waits for open decision 1 (section 4.8). The note text is
+  never logged.
 - The note is stored in its own table and never changes the analysis record (FR-11).
 
 Status codes: `200`; `400`; `404 not_found`; `401`/`403`; `500`.
