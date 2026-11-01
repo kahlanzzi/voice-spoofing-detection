@@ -25,6 +25,12 @@ HANDOFF §11 item 10 (endpoints beyond §11) into a concrete proposal. Items mar
 - **Base path:** every endpoint is under `/api` (for example `POST /api/analyses`). The web app
   reaches it on the same origin through nginx, which serves the app and proxies `/api` to the
   `api` container. No CORS is needed or enabled.
+- **Routing (nginx):** only `/api/` (proxied) and `/` (the app; a placeholder until Stage 18) are
+  routed. Every other path gets nginx's `404 not_found`, so FastAPI's `/docs`, `/redoc` and
+  `/openapi.json` are not reachable through nginx (`deploy/nginx.conf`).
+- **Transport:** plain HTTP on `http://localhost:8001` only. The `Secure` cookie works over plain HTTP
+  only on `localhost` (section 4.8). Any other host needs TLS terminated in nginx first; that is a
+  deployment step, not part of Stage 17.
 - **Format:** JSON, field names in `snake_case`. File upload is the only multipart request.
 - **Times:** UTC, ISO 8601 with `Z` (for example `2026-10-30T09:14:05Z`). **Dates** in queries:
   `YYYY-MM-DD`, read as days in the statistics time zone (section 9).
@@ -426,8 +432,9 @@ Sessions are stored in SQLite (`session` table, section 7).
   failing on purpose. nginx's per-IP limit only slows this down. The remedy is an admin `unlock`. The
   team accepts this knowingly (D47, ADR 0011).
 - **Rate limit (nginx):** nginx limits `POST /api/session` per client IP (`signin_rate_per_minute`,
-  `signin_burst`) and answers over-limit requests itself with `429 too_many_requests` in the
-  section 6 shape. The IP stays in nginx memory only; the API never sees or stores it (§1). nginx
+  `signin_burst`, with `nodelay`: requests within the burst are answered at once, not queued) and
+  answers over-limit requests itself with `429 too_many_requests` in the section 6 shape. `GET` and
+  `DELETE /api/session` are not limited. The IP stays in nginx memory only; the API never sees or stores it (§1). nginx
   stops floods before they reach argon2, and lockout stops slow guessing against one account. In
   production the API runs only behind nginx. In development there is no IP limit, and lockout
   still applies.
@@ -448,7 +455,7 @@ Sessions are stored in SQLite (`session` table, section 7).
 | Invalid credentials | `401 invalid_credentials`: same body for an unknown username and a wrong password |
 | Access denied | `403 access_denied`: correct password, account disabled |
 | Temporarily locked | `429 account_locked` |
-| Sign-in service unavailable | `503 sign_in_unavailable`. nginx's `429 too_many_requests` and a network failure also show this state. |
+| Sign-in service unavailable | `503 sign_in_unavailable`. nginx's `429 too_many_requests`, its `503 analysis_unavailable` (API not reachable) and a network failure also show this state. |
 | Expired session (notice) | `401 session_expired` from any other route |
 
 All of them use the section 6 shape with `request_id: null`, as do `401 session_expired` (no valid
@@ -459,6 +466,10 @@ session) and `403 access_denied` (signed in, not allowed; reserved earlier and k
 - Never logged, and never in a response body: passwords, session IDs, their hashes, the `Cookie`
   header and the request body of `POST /session`. The session ID leaves the server only in `Set-Cookie`. A failed sign-in is logged without the username, because a
   password is sometimes typed into that field. A successful one is logged with the account ID only.
+- nginx logs no client address: its access-log format has no address, request header or query string,
+  and its error log, whose lines carry a `client:` address field, runs at `crit` only. It clears
+  `X-Forwarded-For`, `X-Real-IP` and `Forwarded` towards the API. The address is used only as the
+  rate-limit key, in nginx memory.
 - The §1 and §7 rules do not change. The `session` table has no IP or user-agent column, and no
   audio, file name or IP is stored anywhere.
 
@@ -511,10 +522,13 @@ Rules:
   `code` (HANDOFF §8) and never displays raw server text.
 - FastAPI's default error bodies (validation `422`, `HTTPException`, unhandled `500`) are replaced
   by this shape. No stack trace or internal path ever reaches the client.
-- nginx must not answer with its own error pages for `/api`: its body-size limit is set above
-  `max_size_bytes` and its proxy timeout above `analysis_timeout_s`, so the API's codes reach the app.
-  The one answer nginx gives itself, its `429 too_many_requests` for `POST /api/session`, uses this
-  JSON shape with `request_id: null`.
+- nginx passes every API answer through unchanged (`proxy_intercept_errors` off), including the API's
+  own `413`, `503` and `504`. Its body-size limit is set above the API's (`max_size_bytes` + 64 KiB) and
+  its proxy timeouts above `analysis_timeout_s`, so the API's codes reach the app first. nginx answers
+  itself only in these cases, in this shape with `request_id: null` and no `X-Request-ID` header:
+  `413 file_too_large` (body above its own limit), `503 analysis_unavailable` (API not reachable or
+  silent past the proxy timeout), `429 too_many_requests` (`POST /api/session` rate limit) and
+  `404 not_found` (a path it does not route, section 2).
 
 ## 7. Storage
 
@@ -580,7 +594,7 @@ All values come from config (`configs/api.yaml`, written in Stage 17), never fro
 | `password_min_chars` | Shortest password | 15 | **Proposed, team to confirm in review** |
 | `password_max_chars` | Longest password | 128 | **Proposed, team to confirm in review** |
 | `allowed_origins` | Origins accepted on requests that change data | — | Deployment setting |
-| `signin_rate_per_minute` / `signin_burst` | nginx `limit_req` on `POST /api/session`, per client IP (nginx config, not `api.yaml`) | 10 / 5 | **Proposed, team to confirm in review** |
+| `signin_rate_per_minute` / `signin_burst` | nginx `limit_req` on `POST /api/session`, per client IP, `nodelay` (nginx config, not `api.yaml`) | 10 / 5 | **Proposed, team to confirm in review** |
 | session ID length | Random bytes per session ID (fixed in code, not a config key) | 32 | **Proposed, team to confirm in review** |
 
 `analysis_timeout_s` is not a latency target: **open decision 5** (latency target) stays open.

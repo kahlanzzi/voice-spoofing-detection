@@ -3736,6 +3736,76 @@ ran the checks. The team approved the plan with changes and reviews the diff. Co
 
 **Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
 
+### Entry 126 — Stage 17 step 8b: nginx web service, sign-in rate limit, no client IP (2026-11-01)
+
+**Numbering:** main ends at 125 (PR #86, `45bd4ad`); open PRs #67 and #68 carry Entries 101–102, so 126 is next.
+
+**What:** on `feat/stage17-nginx` (Iheb, Part E; from `main` at `45bd4ad`), the second half of Step 8 and the
+last Part E backend PR, following the approved delta plan (tmpfs for nginx's request buffers approved with it).
+Sources followed: `api_design.md` §1, §2, §4.8, §6, §9; ADR 0008 §2 (`web` container); ADR 0011 (rate limit in
+nginx). No API code change, no new `api.yaml` key.
+- `deploy/nginx.conf`: a complete main config mounted read-only over `/etc/nginx/nginx.conf`, with no `conf.d/`
+  include, so the image's default `main` log format (client address, Referer, User-Agent, X-Forwarded-For) is
+  never loaded. Routes: `location /api/` and `location = /api/session` → `proxy_pass http://api:8000`;
+  `location = /` → 200 placeholder (Stage 18); `location /` → 404. `/docs`, `/redoc` and `/openapi.json`
+  are therefore not routed.
+- Error pass-through: no `proxy_intercept_errors` (default off), so every API answer, including its 413, 503
+  and 504, reaches the client unchanged. `error_page` covers only nginx's own 404, 413
+  (`client_max_body_size 22m` > `body_limit()` 21,037,056), 429, and 502/504 → `=503` (proxy timeouts 60 s >
+  `analysis_timeout_s` 30; connect 5 s). Each answer is §6 JSON with `request_id: null`.
+- Rate limit: `map $request_method` → `$binary_remote_addr` for POST, `""` otherwise; `limit_req_zone ...
+  rate=10r/m`; `limit_req zone=signin burst=5 nodelay` only in `location = /api/session`;
+  `limit_req_status 429`.
+- No client IP: `log_format vsd` (time, method, `$uri`, status, bytes, duration); `error_log /dev/stderr crit`
+  (rejection and upstream lines carry `client:`); `X-Forwarded-For`, `X-Real-IP`, `Forwarded` set to `""` at
+  server level (no location overrides them); `server_tokens off`.
+- `docker-compose.yml`: `web` service `nginx:1.30.6-alpine@sha256:0e52bd05...97949` (index digest, equal to
+  `stable-alpine` on 2026-11-01), `ports: ["8001:80"]`, config `:ro`, `depends_on: api: service_healthy`,
+  tmpfs `/var/cache/nginx:size=96m` (nginx buffers each body over 16 KiB under `client_temp`, which would
+  otherwise be the container's disk layer; 22 MiB x `x-vsd-concurrent-uploads` 4 = 88 MiB),
+  `NGINX_ENTRYPOINT_QUIET_LOGS`.
+- Tests: `tests/deploy/test_nginx_conf.py` (12; a small directive/block/quote parser, since CI has no nginx):
+  no intercept; `error_page` codes exactly {404, 413, 429, 502, 504}; each nginx body has the §6 shape and a
+  code/status pair from the §6 table in `api_design.md`; body limit and timeouts above `configs/api.yaml`;
+  POST-only key, 10r/m, burst 5 `nodelay`, `limit_req` only on `/api/session`; no address or request-header
+  variable outside the map; `vsd` access log, `crit` error log, no `conf.d`; forwarded headers cleared;
+  only `/api` proxied; `/docs`, `/redoc`, `/openapi.json` reach only the 404 catch-all.
+  `test_deploy_compose.py` (+4): `web` pin, read-only mount and healthy dependency, published port equal to
+  `allowed_origins`, tmpfs >= `client_max_body_size` x concurrent uploads; the hex-secret check now ignores
+  `@sha256:` digests. Six one-line mutations of `nginx.conf` (intercept on, `$remote_addr` in the log, no
+  `nodelay`, `20m` limit, an `error_page 503`, one header not cleared) each failed one test.
+- Docs: `api_design.md` §2 (routing; transport: HTTPS outside `localhost`), §4.8 (`nodelay`, GET/DELETE not
+  limited, nginx 503 in the S1 table, nginx logging), §6 (pass-through rule and nginx's four own answers),
+  §9 row (`nodelay`). `docs/setup.md` nginx subsection and manual check; README API row; CHANGELOG.
+
+**Evidence [verified]:**
+- `.venv/bin/python -m pytest -q` (Python 3.14.6): `1245 passed, 9 skipped in 59.13s` (+16; baseline on this branch before the change:
+  `1229 passed, 9 skipped`). `tests/deploy` + `tests/governance`: `85 passed in 1.37s`.
+- Manual, Docker 28.5.2 / Compose 2.40.3, project name `vsd8b` (test volume only): `up -d --wait` → api
+  `(healthy)`, then web. `nginx -t` → `syntax is ok`, `test is successful`. Through `http://localhost:8001`:
+  `/` 200 placeholder; `/docs`, `/redoc`, `/openapi.json` and `--path-as-is /api/../docs` → 404 `not_found`,
+  `request_id: null`; `/api/health` `{"ok":true}`; sign-in with `Origin` → 200 and `vsd_session` (`HttpOnly;
+  Path=/api; SameSite=strict; Secure`). 21 MiB upload → `413 file_too_large` from the API with
+  `x-request-id: req_5c6e...` and the same ID in the body; 23 MiB → `413 file_too_large` from nginx, no
+  `X-Request-ID`, `request_id: null`. Sign-in burst with a different username per request, after the bucket
+  drained: 6 x `401 invalid_credentials`, then `429 too_many_requests` (nginx). (A first burst with one
+  username gave five 401s and then 429s: the 6th was the API's `account_locked`, so the run was repeated.)
+  8 x `GET /api/session` right after → 8 x 200 (not limited). `docker compose stop api` → `GET /api/status`
+  `503 analysis_unavailable` from nginx (after the 5 s connect timeout); `start api` → 200. `logs web api`
+  grepped for `client:|172\.|127\.0\.0\.1|192\.168\.|::1|x-forwarded` → 0 lines; web lines read like
+  `2026-11-01T15:43:16+00:00 "GET /api/status" 503 109 5.002`. `/var/cache/nginx` is tmpfs `size=98304k`.
+  `down -v` removed the test volume.
+- Not exercised by hand: the API's own 503/504 through nginx (the MockAnalyzer does not produce them); the
+  API's own 413 passing through shows the same `proxy_intercept_errors` behaviour, and the tests hold the
+  config.
+- No audio, dataset or DEEP-VOICE path touched; no key or secret in the diff (the test password stayed in the
+  shell).
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the delta plan, the files, the tests and this
+entry, and ran the checks. The team approved the plan and reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
 ---
 
 ## Open items
@@ -3984,11 +4054,11 @@ ran the checks. The team approved the plan with changes and reviews the diff. Co
 - [x] Step 7b-1a: sign-in tables, argon2id (`argon2-cffi` 25.1.0 on 3.13 and 3.14), `VSD_SIGNIN_HMAC_KEY` loading, admin command, §9 keys: on `feat/stage17-signin`, awaiting review (Entry 122).
 - [x] Step 7b-1b: `POST`/`GET`/`DELETE /session`, `GET /health`, session + Origin middleware on the `/session` routes, refuse to start without the key, `--env-file` run command and `python-dotenv` pin; add the two agreed §4.8 sentences (disabled + right password neither counts nor resets the failure count; store error on `/session` → 503, session check elsewhere → 500) (Entry 122). (merged in PR #84, `2e42e1b`; Entry 123)
 - [x] §4.8 wording: "before a request ID is assigned" vs the agreed RequestId → SessionGuard order (refusals carry `X-Request-ID`, body `request_id: null`); approve a rewording or keep it (Entry 123). (reworded in §4.8 and §4.3, approved by Iheb; Entry 123)
-- [ ] Lockout is checked before the password verify and counted after it, so parallel sign-in requests can pass the lock check together; nginx's per-IP limit (Step 8) bounds this. Do not expose the API without nginx (Entry 123).
+- [x] Lockout is checked before the password verify and counted after it, so parallel sign-in requests can pass the lock check together; nginx's per-IP limit (Step 8) bounds this. Do not expose the API without nginx (Entry 123). (nginx `limit_req` 10/min burst 5 `nodelay` on `POST /api/session`, the api publishes no port; Entry 126)
 - [x] Configure the `api` logger level under uvicorn so the INFO sign-in lines (failure without username, success with account ID) are written; with Step 8 logging (Entry 123). (`configs/api_logging.yaml` via `--log-config`; Entry 125)
 - [x] Step 7b-2: session + Origin middleware on every route, note `updated_by` with the migration of existing database files, existing tests signed in (Entry 122). (on `feat/stage17-protect-routes`, awaiting review; Entry 124)
-- [ ] FastAPI's `/docs`, `/redoc` and `/openapi.json` are outside `/api` and need no session (no data, but they list the routes); decide with Step 8 / nginx whether to turn them off (Entry 124).
-- [ ] Step 8b (new branch from `main` after 8a merges): nginx `web` service on `8001:80`, only `/api` proxied; body limit and proxy timeouts above `configs/api.yaml` (tested); `limit_req` 10/min burst 5 on `POST /api/session` with §6 JSON 429; no address in logs or forwarded headers (tested); `proxy_intercept_errors` off so the API's own 413/503/504 pass unchanged (tested), nginx's §6 JSON only for its own 413, 502/504 and 429; `/` placeholder; `api_design.md` gaps (nginx errors, error-log `client:` field, docs routes, HTTPS outside localhost, `nodelay`) (Entry 125).
+- [x] FastAPI's `/docs`, `/redoc` and `/openapi.json` are outside `/api` and need no session (no data, but they list the routes); decide with Step 8 / nginx whether to turn them off (Entry 124). (not routed by nginx, JSON 404; reachable only inside the container; Entry 126)
+- [x] Step 8b (new branch from `main` after 8a merges): nginx `web` service on `8001:80`, only `/api` proxied; body limit and proxy timeouts above `configs/api.yaml` (tested); `limit_req` 10/min burst 5 on `POST /api/session` with §6 JSON 429; no address in logs or forwarded headers (tested); `proxy_intercept_errors` off so the API's own 413/503/504 pass unchanged (tested), nginx's §6 JSON only for its own 413, 502/504 and 429; `/` placeholder; `api_design.md` gaps (nginx errors, error-log `client:` field, docs routes, HTTPS outside localhost, `nodelay`) (Entry 125). (on `feat/stage17-nginx`, awaiting review; Entry 126)
 - [x] Team confirms the §9 proposed sign-in values (idle 30 min, absolute 12 h, lockout 5 / 15 min, password 15–128, nginx 10/min burst 5, 32-byte session ID) (Entry 121). (confirmed unchanged, user-reported; Entry 122)
 - [ ] Accepted risk: anyone who knows a username can lock that analyst out for `lockout_minutes`; nginx's per-IP limit only slows this; the remedy is an admin unlock (D47, ADR 0011). Revisit if it happens in practice (Entry 121).
 - [x] Decide whether Step 7b adds the NIST SP 800-63B-4 §3.1.1.2 blocklist check of common or compromised passwords (Entry 121). (context check done in the admin command: no username, `vsd`, `voice`, `spoof`; Entry 122)
@@ -3997,6 +4067,8 @@ ran the checks. The team approved the plan with changes and reviews the diff. Co
 - [ ] Stage 18: Map a 500 or no answer from GET /status to Unavailable (relates to open decision 7) (Entry 124).
 - [ ] Stage 18: remove the S1 "open product decision" banner; avoid background polling that keeps sessions from going idle (Entry 121).
 - [ ] Threat model §10.1 / §11 item 5: update the "unmitigated until access control is decided" wording once sign-in is implemented (Entry 121).
+- [ ] HTTPS outside `localhost`: the `Secure` cookie works over plain HTTP only on `localhost`; any other host needs TLS terminated in nginx first. Documented (`api_design.md` §2, `docs/setup.md`), not built (Entry 126).
+- [ ] Stage 18: replace the nginx `/` placeholder in `deploy/nginx.conf` with the React build, keeping the routing and no-IP tests green (Entry 126).
 - [ ] Integration: before the real ModelBundle is served, the store starts empty (a fresh database file) or mock results and their notes are removed (`analysis_note` has a foreign key to `analysis_record`), so the figures never mix the two (§4.7 G6; Entry 120).
 - [ ] Routes other than `POST /api/analyses` and `PUT …/note` answer a Content-Length above `max_size_bytes` + 64 KiB with Starlette's plain-text 413, not the §6 shape (GET-only today) (Entry 119).
 - [ ] Shared helpers (utc_now_iso, REQUEST_ID, invalid_request) live in routers and are imported across routers; move to a shared module in a later refactor PR (Entry 119).
@@ -4027,7 +4099,7 @@ ran the checks. The team approved the plan with changes and reviews the diff. Co
 - [ ] Independently verify README setup and label mock versus real flows in the team demo; confirm final editorial acceptance and LMS submission.
 
 **Later stages (reminders)**
-- [ ] `configs/robustness.yaml` → Stage 14. `docker-compose.yml` → Stage 17. (`docker-compose.yml` added with the `api` service; `web` in Step 8b; Entry 125)
+- [ ] `configs/robustness.yaml` → Stage 14. `docker-compose.yml` → Stage 17. (`docker-compose.yml` added with the `api` service; `web` in Step 8b; Entry 125) (`web` added; Entry 126)
 - [ ] Stage 17: verify the ModelBundle checkpoint hash at load (threat model §10, tampering recommendation).
 - [ ] Stage 6: re-run the shortcut screen *after* preprocessing (silence, bandwidth).
 - [ ] Stage 6: decide the silence / voice-activity detector explicitly (energy-based vs `silero-vad`) and record it as a decision; D17 depends on it.
@@ -4044,7 +4116,7 @@ ran the checks. The team approved the plan with changes and reviews the diff. Co
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
 `GET /api/status`. `POST /api/analyses` with the
-MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service only, logging config) is on `feat/stage17-docker`, awaiting review (Entry 125); nginx is Step 8b. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; React `web/` and Compose are not yet present on main. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
+MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) is on `feat/stage17-nginx`, awaiting review (Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; React `web/` is not yet present; nginx serves a placeholder at `/`. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
 canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.

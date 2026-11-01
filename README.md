@@ -70,7 +70,7 @@ see [docs/setup.md](docs/setup.md) and [data/README.md](data/README.md).
 | Component | On merged `main` | How to inspect it |
 |---|---|---|
 | Research core | Preprocessing, baseline/CNN code, training, evaluation, risk policy, bundle loader and synthetic tests | [Setup](docs/setup.md), [stage briefs](docs/stages/), [recorded results](docs/results/) |
-| API | Stage 17 API with config, request IDs, error handling, schemas, history, notes, stats and sign-in (`/api/session`) | Put `VSD_SIGNIN_HMAC_KEY` in `.env`, run `python -m uvicorn api.main:app --port 8001 --env-file .env`, then open `http://127.0.0.1:8001/api/health`; or `docker compose up -d` (API only, no published port yet); see [setup](docs/setup.md) and the [approved contract](docs/api_design.md) |
+| API | Stage 17 API with config, request IDs, error handling, schemas, history, notes, stats and sign-in (`/api/session`) | Put `VSD_SIGNIN_HMAC_KEY` in `.env`, run `python -m uvicorn api.main:app --port 8001 --env-file .env`, then open `http://127.0.0.1:8001/api/health`; or `docker compose up -d` (nginx in front, http://localhost:8001); see [setup](docs/setup.md) and the [approved contract](docs/api_design.md) |
 | UI | Self-contained HTML design prototype with mock data, no backend/model connection | Open `docs/design/analyst-console-prototype.html` in a browser; follow the [prototype guide](docs/design/README.md) |
 | Production upload/inference flow | Not implemented end to end on this snapshot | Part E implementation remains in progress; the [backlog](docs/midterm/backlog.md) tracks its requirements |
 
