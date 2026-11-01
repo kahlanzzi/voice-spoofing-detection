@@ -71,6 +71,8 @@ Response `200`:
 - `state`: `ready`, `degraded` or `unavailable`. `unavailable` when analysis is unavailable.
   **Open decision 7:** the rule for `degraded` (prototype proposal: analysis works, History or
   statistics do not).
+- `checks.history_and_stats` is `available` when a read-only query on the §7 database succeeds
+  within a short timeout. The check never writes. A failure is reported here, never as an error.
 - The connection check on S10 is done by the browser: no answer means "cannot reach the service".
 - `versions`, `bundle_manifest_sha256`, `deferral_on_fit` and `mock` come from the analyzer
   (section 8). With the MockAnalyzer the manifest hash is `null`.

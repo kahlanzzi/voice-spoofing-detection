@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 17 `GET /api/limits` from `configs/api.yaml` (§4.2), plus a real `GET /api/status` `history_and_stats` check: a read-only SQLite probe with a 1 s timeout that never writes or raises. `state` comes from one provisional `derive_state()` (open decision 7): a database failure gives `unavailable`. `api_design.md` §4.1 gains one bullet on what the check means.
 - Stage 17 `POST /api/analyses` (Part E): `MockAnalyzer` behind the §8 analyzer seam (deterministic from the file SHA-256), the §4.3 upload checks with three size layers (Content-Length guard, Starlette body limit, counted file bytes; 64 KiB multipart allowance), temp files always deleted, SQLite `analysis_record` storage (`database_path`, `var/` gitignored), 201 + `Location` only after the record is stored, and `GET /api/status` read from `analyzer.info()`; `starlette==1.10.0` pinned.
 - Sectioned documentation index with quick navigation for setup, governance, implementation, design, evidence and course deliverables; all file locations and existing entries preserved.
 - Group documentation refresh: current README status and React stack, regenerated file tree, complete-test setup, documentation navigation, and clear merged/mock/pending delivery status; folder structure unchanged.

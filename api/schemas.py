@@ -1,4 +1,4 @@
-"""Response shapes (docs/api_design.md §4.1, §5, §6). Every model forbids extra fields.
+"""Response shapes (docs/api_design.md §4.1, §4.2, §5, §6). Every model forbids extra fields.
 
 AnalysisResponse is exactly the 8 Protocol §11 fields; the web app mirrors it (ADR 0008 §3), so a
 field is added or removed only through a contract change.
@@ -67,3 +67,10 @@ class StatusResponse(_Strict):
     bundle_manifest_sha256: str | None
     deferral_on_fit: float
     mock: bool
+
+
+class LimitsResponse(_Strict):
+    formats: list[str]
+    max_size_bytes: int
+    max_duration_s: int
+    audio_deletion: str
