@@ -3557,6 +3557,66 @@ diff. Context7 was not used.
 **Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
 
 ---
+### Entry 123 — Stage 17 step 7b-1b: sign-in endpoints, GET /health and the session guard (2026-11-01)
+
+**Numbering:** main ends at 122 (PR #83, `b067b8c`); recheck against open PRs (#67, #68) before merge.
+
+**What:** on `feat/stage17-session` (Iheb, Part E; branched from `main` at `b067b8c` after PR #83),
+second part of the sign-in code (`api_design.md` §4.8, D47, ADR 0011), following the approved 7b-1b
+delta plan. No existing route changes behaviour: the guard covers the `/session` routes only.
+- `api/session_guard.py` (new): `SessionGuard` ASGI middleware. Origin first (`403
+  origin_not_allowed` on `POST`/`DELETE /api/session`), then the session (`401 session_expired`, cookie
+  cleared, on `GET`/`DELETE`); a valid session updates `last_seen_at`. Store error → `503
+  sign_in_unavailable` on `/session`, `500 internal_error` elsewhere (used from 7b-2). Cookie
+  `vsd_session` with `HttpOnly; Secure; SameSite=Strict; Path=/api`, ID from `secrets.token_urlsafe(32)`,
+  stored as SHA-256 only.
+- `api/routers/session.py` (new): `POST /session` in the §4.8 order (locked → 429 without verify;
+  unknown user verified against a dummy hash → same 401 body as a wrong password; disabled → 403,
+  failures neither counted nor reset; success resets failures, rehashes an old hash, replaces the
+  cookie's session). `GET /session` (who am I), `DELETE /session` (204, cookie cleared). Body read by
+  hand: JSON only, 4 KiB, strict fields, password ≤ `password_max_chars`, every refusal the fixed `400`.
+  Logs: failures without the username, success with the account ID only.
+- `api/routers/health.py` (new): `GET /health` → `{"ok": true}`; no database, no analyzer, no log.
+- `api/repository.py`: `AccountRepository.is_locked`, `record_failure`, `rehash_password` (keeps
+  sessions and `password_changed_at`), `start_session`, `touch_session`, `end_session`; `ActiveSession`.
+- `api/intake.py`: `ContentLengthGuard` answers `POST /api/session` above 4 KiB with the §6 `400`.
+- `api/main.py`: middleware order RequestId → SessionGuard → ContentLengthGuard → BodyLimit; the
+  lifespan reads `VSD_SIGNIN_HMAC_KEY` (no key → the API does not start) and makes the dummy hash with
+  the app's hasher (no hash literal); `create_app(..., hasher=None)`.
+- `requirements.txt`: `python-dotenv==1.2.4` for `uvicorn --env-file .env`. `docs/setup.md` and
+  `README.md`: the run command. `docs/api_design.md` §4.8: the two agreed sentences (Q2, Q3).
+- Tests: `tests/api/conftest.py` gives every test a fresh random key (no literal) and a fast argon2id
+  hasher for the app (real hash ≈ 86 ms, verify ≈ 76 ms here); one test keeps the real hasher and checks
+  the dummy hash and a rehash have `m=65536,t=3,p=4`. New: `test_api_session.py`,
+  `test_api_session_guard.py`, `test_api_health.py`, plus repository, intake and main tests (canary
+  password typed as username; byte-identical 401 bodies; verify called with the dummy hash for an
+  unknown user and not called when locked; startup refused without the key).
+- §4.8 and §4.3 wording (approved by Iheb in review of the 7b-1b report): the guard checks run
+  "before the upload is given its request ID (`request_id: null` in the body)". With the agreed order a
+  refused request still gets an `X-Request-ID` header; the old "before a request ID is assigned" did
+  not say that.
+
+**Evidence [verified]:**
+- `.venv/bin/python -m pytest -q` (Python 3.14.6): `1162 passed, 9 skipped in 141.57s` (Entry 122:
+  1102 passed, 9 skipped; +60 new tests). `tests/api`: `418 passed in 24.14s` (was 358 in 17.93s);
+  `tests/governance`: `50 passed`.
+- `python-dotenv==1.2.4` installs in a fresh Python 3.13.2 venv.
+- Manual run on port 8001 with a scratch config and a scratch env file (`--env-file`, cookie jar,
+  `Origin: http://localhost:8001`): `/api/health` 200 `{"ok":true}`; sign-in 200 with the §4.8 cookie;
+  `GET /api/session` 200; `DELETE` without Origin 403 `origin_not_allowed`; `DELETE` 204 and cookie
+  cleared; then `GET` 401 `session_expired`; unknown user and wrong password give the same 401 body;
+  after 5 failures the right password gets 429; `/api/status` still 200 without a cookie. Without the
+  key, uvicorn stops at startup with `VSD_SIGNIN_HMAC_KEY is not set`.
+- Seen in the manual run: uvicorn's access log prints the `/api/health` line (open item below), and
+  the app's INFO sign-in lines do not appear under uvicorn because the `api` logger has no level set.
+- No audio, dataset or DEEP-VOICE path touched; no key or secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the delta plan, the code, the tests and this
+entry, and ran the checks. Iheb approved the plan and reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
 ## Open items
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
@@ -3801,7 +3861,10 @@ diff. Context7 was not used.
 - [x] `MockAnalyzer` and the analyzer seam (§8), `POST /analyses` with the §4.3 checks, storage (§7): on `feat/stage17-analyze`, awaiting review (Entry 116).
 - [x] Open decision 1 (authentication) decided: D47 / ADR 0011, contract in `api_design.md` §4.8 (Entry 121).
 - [x] Step 7b-1a: sign-in tables, argon2id (`argon2-cffi` 25.1.0 on 3.13 and 3.14), `VSD_SIGNIN_HMAC_KEY` loading, admin command, §9 keys: on `feat/stage17-signin`, awaiting review (Entry 122).
-- [ ] Step 7b-1b: `POST`/`GET`/`DELETE /session`, `GET /health`, session + Origin middleware on the `/session` routes, refuse to start without the key, `--env-file` run command and `python-dotenv` pin; add the two agreed §4.8 sentences (disabled + right password neither counts nor resets the failure count; store error on `/session` → 503, session check elsewhere → 500) (Entry 122).
+- [x] Step 7b-1b: `POST`/`GET`/`DELETE /session`, `GET /health`, session + Origin middleware on the `/session` routes, refuse to start without the key, `--env-file` run command and `python-dotenv` pin; add the two agreed §4.8 sentences (disabled + right password neither counts nor resets the failure count; store error on `/session` → 503, session check elsewhere → 500) (Entry 122). (on `feat/stage17-session`, awaiting review; Entry 123)
+- [x] §4.8 wording: "before a request ID is assigned" vs the agreed RequestId → SessionGuard order (refusals carry `X-Request-ID`, body `request_id: null`); approve a rewording or keep it (Entry 123). (reworded in §4.8 and §4.3, approved by Iheb; Entry 123)
+- [ ] Lockout is checked before the password verify and counted after it, so parallel sign-in requests can pass the lock check together; nginx's per-IP limit (Step 8) bounds this. Do not expose the API without nginx (Entry 123).
+- [ ] Configure the `api` logger level under uvicorn so the INFO sign-in lines (failure without username, success with account ID) are written; with Step 8 logging (Entry 123).
 - [ ] Step 7b-2: session + Origin middleware on every route, note `updated_by` with the migration of existing database files, existing tests signed in (Entry 122).
 - [x] Team confirms the §9 proposed sign-in values (idle 30 min, absolute 12 h, lockout 5 / 15 min, password 15–128, nginx 10/min burst 5, 32-byte session ID) (Entry 121). (confirmed unchanged, user-reported; Entry 122)
 - [ ] Accepted risk: anyone who knows a username can lock that analyst out for `lockout_minutes`; nginx's per-IP limit only slows this; the remedy is an admin unlock (D47, ADR 0011). Revisit if it happens in practice (Entry 121).
@@ -3857,7 +3920,7 @@ diff. Context7 was not used.
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
 `GET /api/status`. `POST /api/analyses` with the
-MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) is on `feat/stage17-signin`, awaiting review (Entry 122); 7b-1b (endpoints) and 7b-2 (all routes, note author) follow. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; React `web/` and Compose are not yet present on main. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
+MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) is on `feat/stage17-session`, awaiting review (Entry 123); 7b-2 (all routes, note author) follows. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; React `web/` and Compose are not yet present on main. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
 canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.

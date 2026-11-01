@@ -11,7 +11,8 @@ file the browser accepts (File.size <= max_size_bytes) is never refused for its 
 
 PUT /api/analyses/{request_id}/note (§4.6) has a much smaller limit, note_body_limit: the guard
 answers a larger Content-Length with a §6 400 before Starlette's plain-text 413 can, and the notes
-route counts streamed bytes against the same limit.
+route counts streamed bytes against the same limit. POST /api/session (§4.8) works the same way with
+its fixed 4 KiB limit, SESSION_BODY_LIMIT.
 
 The original file name is read only for its extension, then dropped: never logged, never stored.
 The temp file has a random name and is deleted when the request ends, on success and on every error.
@@ -37,6 +38,7 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 from api.config import ApiConfig, resolve_path
 from api.errors import HTTP_ERRORS, ApiError, error_body
 from api.middleware import STATE_KEY
+from api.session_guard import SESSION_PATH
 
 log = logging.getLogger("api")
 
@@ -45,6 +47,7 @@ NOTE_PATH = re.compile(r"/api/analyses/[^/]+/note")
 MULTIPART_OVERHEAD_BYTES = 64 * 1024
 NOTE_JSON_OVERHEAD_BYTES = 1024
 NOTE_BYTES_PER_CHAR = 12  # worst case in JSON: one code point outside the BMP as \uXXXX\uXXXX
+SESSION_BODY_LIMIT = 4 * 1024  # §4.8: a sign-in body over 4 KiB is 400 invalid_request
 CHUNK_BYTES = 64 * 1024
 DECODE_BLOCK_FRAMES = 65536
 
@@ -76,7 +79,8 @@ def upload_error(code: str, request_id: str | None) -> ApiError:
 
 class ContentLengthGuard:
     """Layer 1: a §6 413 for POST /api/analyses when Content-Length is above the limit, and a §6 400
-    (request_id null) for PUT on a note when Content-Length is above max_note_body_size or not a number."""
+    (request_id null) for PUT on a note or POST /api/session when Content-Length is above
+    max_note_body_size or SESSION_BODY_LIMIT, or not a number."""
 
     def __init__(self, app: ASGIApp, max_body_size: int, max_note_body_size: int):
         self.app = app
@@ -84,9 +88,14 @@ class ContentLengthGuard:
         self.max_note_body_size = max_note_body_size
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        small_limit = None
         if scope["type"] == "http" and scope["method"] == "PUT" and NOTE_PATH.fullmatch(scope["path"]):
+            small_limit = self.max_note_body_size
+        elif scope["type"] == "http" and scope["method"] == "POST" and scope["path"] == SESSION_PATH:
+            small_limit = SESSION_BODY_LIMIT
+        if small_limit is not None:
             value = Headers(scope=scope).get("content-length")
-            valid = value is None or (value.isascii() and value.isdigit() and int(value) <= self.max_note_body_size)
+            valid = value is None or (value.isascii() and value.isdigit() and int(value) <= small_limit)
             if not valid:
                 await JSONResponse(error_body(*HTTP_ERRORS[400]), status_code=400)(scope, receive, send)
                 return

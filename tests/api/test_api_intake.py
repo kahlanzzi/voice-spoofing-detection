@@ -74,6 +74,13 @@ def test_guard_answers_a_note_body_over_its_limit_with_a_section_6_400(value):
                     b'"request_id":null}}')
 
 
+@pytest.mark.parametrize("value", [b"4097", b"abc", b"-1"])
+def test_guard_answers_a_sign_in_body_over_4_kib_with_a_section_6_400(value):
+    status, reached, body = run_guard([(b"content-length", value)], "POST", "/api/session")
+    assert (status, reached) == (400, False)
+    assert b'"invalid_request"' in body and b'"request_id":null' in body
+
+
 @pytest.mark.parametrize("headers, method, path", [
     ([(b"content-length", b"100")], "POST", "/api/analyses"),   # at the limit
     ([], "POST", "/api/analyses"),                              # no Content-Length: layer 2's job
@@ -83,6 +90,8 @@ def test_guard_answers_a_note_body_over_its_limit_with_a_section_6_400(value):
     ([], "PUT", NOTE),                                          # note without Content-Length: the route counts
     ([(b"content-length", b"999")], "GET", NOTE),               # note path, other method
     ([(b"content-length", b"999")], "PUT", NOTE + "/x"),        # not the note path
+    ([(b"content-length", b"4096")], "POST", "/api/session"),   # sign-in at its limit
+    ([], "POST", "/api/session"),                               # sign-in without Content-Length: the route counts
 ])
 def test_guard_lets_other_requests_through(headers, method, path):
     assert run_guard(headers, method, path)[:2] == (None, True)

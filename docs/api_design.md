@@ -130,8 +130,8 @@ Response `201`, header `Location: /api/analyses/{request_id}`, body = **exactly 
 ```
 
 **Processing order.** The `Origin` and session checks (section 4.8) run first, before the body is
-read; their errors carry `request_id: null`. The request ID is assigned next, so every upload error
-below carries it.
+read; their errors carry `request_id: null` in the body. The upload is given its request ID next, so
+every upload error below carries it.
 
 | Step | Check | On failure |
 |---|---|---|
@@ -330,11 +330,13 @@ Response `200`, with `Set-Cookie` (see Cookie below):
   2. Unknown username or wrong password → `401 invalid_credentials`. For an unknown username,
      the password is still verified against a fixed dummy argon2id hash, so both cases take the
      same time. The response body is identical in both cases.
-  3. Correct password, but the account is disabled → `403 access_denied`.
+  3. Correct password, but the account is disabled → `403 access_denied`. This neither counts as a
+     failed sign-in nor resets the failure count.
   4. Success: the failure count for this username is reset, and a new session is created. A
      session cookie already sent with the request is deleted first, so the session ID is always
      new (no session fixation).
-- The account store cannot be read or written → `503 sign_in_unavailable`.
+- The account store cannot be read or written → `503 sign_in_unavailable` on the `/session` routes.
+  On any other route, a session check that cannot read the store → `500 internal_error`.
 - `expires_at` is the absolute end of the session. The idle limit can end it earlier.
 
 **`GET /session`.** Response `200`: the same shape as sign-in. The app calls it on load to see whether
@@ -353,8 +355,8 @@ read after sign-in. `/status` exposes the model versions and the bundle hash, an
 before sign-in. The container health check uses `GET /health`, which carries no data.
 
 Session and Origin checks run in middleware, before the route and before any request body is
-read. An upload without a session is therefore refused before it is parsed, and before a request
-ID is assigned (`request_id: null`).
+read. An upload without a session is therefore refused before it is parsed, and before the upload
+is given its request ID (`request_id: null` in the body).
 
 #### Cookie
 

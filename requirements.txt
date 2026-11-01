@@ -9,6 +9,7 @@ librosa==1.0.0
 numpy==2.5.3
 pandas==3.0.6
 pytest==9.1.1
+python-dotenv==1.2.4  # uvicorn --env-file .env (VSD_SIGNIN_HMAC_KEY, docs/api_design.md §4.8)
 python-multipart==0.0.32
 PyYAML==6.0.3
 scikit-learn==1.9.1
