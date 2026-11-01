@@ -74,11 +74,45 @@ The API refuses to start without `VSD_SIGNIN_HMAC_KEY`. Run it with `.env` loade
 pinned in `requirements.txt`):
 
 ```bash
-python -m uvicorn api.main:app --port 8001 --env-file .env
+python -m uvicorn api.main:app --port 8001 --env-file .env --no-access-log --log-config configs/api_logging.yaml
 ```
 
-`GET /api/health` needs nothing. Sign in with `POST /api/session` and an `Origin` header from
-`allowed_origins` (`http://localhost:8001` in `configs/api.yaml`); see `docs/api_design.md` §4.8.
+`--no-access-log` keeps client IPs out of the log (§1, §7); `configs/api_logging.yaml` shows the
+`api` logger's INFO sign-in lines. `GET /api/health` needs nothing. Sign in with `POST /api/session`
+and an `Origin` header from `allowed_origins` (`http://localhost:8001` in `configs/api.yaml`); see
+`docs/api_design.md` §4.8.
+
+## Running with Docker Compose (Stage 17)
+
+`docker-compose.yml` builds the API image from `deploy/api.Dockerfile` (Python 3.13.15 slim, pinned by
+digest; non-root; only `requirements-api.txt`, whose pins must equal `requirements.txt`). Step 8a has
+the `api` service only and publishes **no port**: nginx (the `web` service, http://localhost:8001)
+comes in Step 8b. Never expose the API without nginx (§4.8 rate limit). Needs Docker Compose v2.
+
+```bash
+docker compose build
+docker compose up -d
+docker compose ps                     # api: (healthy), from GET /api/health
+docker compose logs api               # INFO lines of the api logger; no request lines, no IPs
+docker compose exec api python -m api.admin create-account analyst01   # also unlock, disable, ...
+docker compose down                   # keeps the store; down -v deletes it
+```
+
+- **Key:** Compose reads `VSD_SIGNIN_HMAC_KEY` from `.env` and passes only that variable to the
+  container (not `env_file`: `.env` also holds the Kaggle, HF and W&B tokens). Empty or unset, Compose
+  refuses to start. `docker compose config` prints the key: do not paste its output anywhere.
+- **Store:** SQLite at `/app/var/api.sqlite` on the named volume `vsd-var` (`database_path:
+  var/api.sqlite` resolves there); it survives `down`/`up`. The tables and the note-author migration
+  run at every start.
+- **Uploads:** `temp_dir: null`, so they go to `/tmp`, a 192 MiB tmpfs: in memory, never on disk, gone
+  at restart. Each upload uses `/tmp` twice (Starlette's spooled part, then the API's temp copy), so
+  192 MiB holds `x-vsd-concurrent-uploads: 4` uploads at the `configs/api.yaml` limit; the deploy tests
+  fail if a larger `max_size_bytes` no longer fits. More at once fail until concurrency is limited
+  (Open items).
+- **Admin:** `docker compose exec` gives a TTY, so the hidden password prompt works; it uses the same
+  config, key and volume as the API.
+- The root filesystem is read-only, all capabilities are dropped, and FastAPI's `/docs` is reachable
+  only inside the container.
 
 ## Colab
 

@@ -1,0 +1,30 @@
+# Local run of the Stage 17 API (docs/setup.md "Running with Docker Compose"). Step 8a: the api service only.
+# It publishes no port: it is reached with docker compose exec until nginx (the web service, Step 8b) fronts
+# it on http://localhost:8001. Never expose the API without nginx (docs/api_design.md §4.8 rate limit).
+
+# Uploads that fit in /tmp at once. Each one uses /tmp twice (Starlette's spooled part, then the API's temp
+# copy), so the tmpfs must be at least 2 x (max_size_bytes + 64 KiB) x this; the deploy tests check it.
+# Nothing enforces this count yet: see the "limit concurrent analyses" Open item (Entry 116).
+x-vsd-concurrent-uploads: 4
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: deploy/api.Dockerfile
+    environment:
+      # Read from the gitignored .env by Compose; only this key enters the container. Empty or unset: no start.
+      VSD_SIGNIN_HMAC_KEY: ${VSD_SIGNIN_HMAC_KEY:?set VSD_SIGNIN_HMAC_KEY in .env (see .env.example)}
+    expose:
+      - "8000"
+    volumes:
+      - vsd-var:/app/var   # SQLite store (database_path: var/api.sqlite); survives restarts
+    tmpfs:
+      - /tmp:size=192m,mode=1777   # temp uploads (temp_dir: null); in memory, gone at restart (NFR-03)
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+
+volumes:
+  vsd-var:

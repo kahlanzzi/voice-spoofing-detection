@@ -123,7 +123,6 @@ Review rule (D26): the consumer reviews the producer.
 Update the status column when a stage passes its gate.
 
 Open reminders:
-- `docker-compose.yml` → Stage 17
 - `configs/robustness.yaml` → Stage 14
 
 ## Compute and data
