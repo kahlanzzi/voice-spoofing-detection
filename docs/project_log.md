@@ -3446,6 +3446,64 @@ the two existing clips) and reviews the diff. Context7 was not used.
 **Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
 
 ---
+
+### Entry 121 — Stage 17 step 7a: open decision 1 decided (D47) and the sign-in contract (2026-11-01)
+
+**Numbering:** main ends at 120 (PR #81, `8558f66`); recheck against open PRs before merge. D46 is used
+by open PR #67, so this decision is D47; ADR 0011 is the next free ADR.
+
+**What:** on `docs/stage17-signin-contract` (Iheb, Part E; branched from `main` at `8558f66`). Docs only:
+no code, tests or config changed.
+- **Decision [doc]:** the team took open decision 1 on 2026-11-01 (user-reported): Option A, username +
+  password with server-side sessions in a cookie. Recorded following AGENTS.md ("a new decision gets a
+  D-ID row in `docs/decisions/README.md`; major ones also get an ADR from `docs/decisions/TEMPLATE.md`
+  (D24)") as D47 + ADR 0011 (`docs/decisions/0011-analyst-sign-in-sessions.md`), with an ADR-index row.
+  It is marked decided in `api_design.md` §10 item 1, HANDOFF §11 item 1 and `architecture.md` §7.
+- **`api_design.md` §4.8** rewritten as the sign-in contract. It covers `POST`/`GET`/`DELETE /session`,
+  `GET /health` (`{"ok": true}`, no session, no data; used by the Step 8 Docker health check) and which
+  routes need a session (all others, including `/status` and `/limits`). It also covers the cookie
+  (`HttpOnly; Secure; SameSite=Strict; Path=/api`, 32-byte ID stored as SHA-256), sessions in SQLite
+  with idle and absolute limits, and admin-created accounts (argon2id, recovery via an admin). Lockout
+  is per username, keyed by HMAC-SHA-256 with `VSD_SIGNIN_HMAC_KEY` from the environment, plus an nginx
+  per-IP rate limit. The rest: an `Origin` check (CSRF), the S1 error codes and the privacy and logging
+  rules.
+- Also changed: §3 rows; §4.1/§4.2 `401`; §4.3 checks before the request ID; §4.6/§5/§7 note author
+  `updated_by` (replaces G13); §6 rows `invalid_credentials`, `account_locked`, `too_many_requests`,
+  `sign_in_unavailable` and `origin_not_allowed`; §7 tables `account`, `session` and `sign_in_failure`;
+  §9 keys with values **proposed, team to confirm in review**. `password_min_chars` = 15 per NIST
+  SP 800-63B-4 §3.1.1.2 (single-factor), and an idle-limit trade-off note is added.
+- **Accepted risk (ADR 0011):** anyone who knows a username can lock that analyst out for
+  `lockout_minutes`; nginx only slows this. The remedy is an admin unlock.
+
+**HANDOFF S1 check [doc]:** the contract covers default, field errors (browser + 400), loading, invalid
+credentials, access denied, temporarily locked, sign-in unavailable, expired session (S1 and S5) and
+rail sign-out with D1. Mismatches, listed and not fixed:
+1. The S1 banner "Open product decision … Nothing you type is checked or stored" must go in Stage 18.
+2. The UI label is "Analyst ID"; the contract field is `username`. The label can stay; the team confirms.
+3. nginx `429 too_many_requests` has no S1 state of its own; it shows as "sign-in unavailable".
+4. HANDOFF §11.1 recovery and sign-out confirmation: recovery = ask an admin (no "forgot password" link
+   needed); sign-out has no confirmation beyond D1.
+5. Prototype "access denied" means no console access; here it means a disabled account. The wording fits.
+6. If the app polls `/status` in the background (S10 "stale status"), the session never goes idle.
+7. Threat model §10.1 / §11 item 5 still say "unmitigated until access control is decided" (signed
+   Stage 2 doc, left unchanged).
+
+Not changed: the threat model, the SRS, code, tests, `configs/api.yaml` (keys come in Step 7b). ADR 0010
+is missing from the ADR index in `docs/decisions/README.md` (pre-existing; not fixed here).
+
+**Evidence [verified]:** `.venv/bin/python -m pytest -q` (Python 3.14.6): `1032 passed, 9 skipped in
+59.54s`; `tests/api`: `288 passed`. Same counts as Entry 120, so nothing else changed. No audio, dataset
+or DEEP-VOICE path touched.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the §4.8 contract, ADR 0011, D47 and
+this entry, and ran the checks. It checked NIST SP 800-63B-4 §3.1.1.2 on pages.nist.gov. Iheb approved the
+plan with four changes (`GET /health`, the lockout-DoS accepted risk, the NIST-based minimum and idle note,
+the HMAC key) and the architecture.md edit, and reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR, including the §9 proposed values. AI agents do not merge. **WAITING FOR
+HUMAN REVIEW.**
+
+---
 ## Open items
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
@@ -3688,7 +3746,13 @@ the two existing clips) and reviews the diff. Context7 was not used.
 - [ ] Decide whether the approved API contract needs a D-ID (HANDOFF.md §11 item 10).
 - [x] Review and merge the API skeleton, including the 405 `invalid_request` row added to §6. (PR #66, `d9e8c4a`; Entry 101)
 - [x] `MockAnalyzer` and the analyzer seam (§8), `POST /analyses` with the §4.3 checks, storage (§7): on `feat/stage17-analyze`, awaiting review (Entry 116).
-- [ ] Next API PRs: auth (Entry 116; `GET /limits` and real `/status` in Entry 117; history and details in Entry 118, notes in Entry 119, stats in Entry 120).
+- [x] Open decision 1 (authentication) decided: D47 / ADR 0011, contract in `api_design.md` §4.8 (Entry 121).
+- [ ] Next API PRs: sign-in code (Step 7b, `api_design.md` §4.8: session endpoints, `GET /health`, admin command, `account`/`session`/`sign_in_failure` tables, note author migration, argon2-cffi pinned on 3.13 and 3.14, `VSD_SIGNIN_HMAC_KEY` in `.env.example`) (Entry 121; earlier: Entries 116–120).
+- [ ] Team confirms the §9 proposed sign-in values (idle 30 min, absolute 12 h, lockout 5 / 15 min, password 15–128, nginx 10/min burst 5, 32-byte session ID) (Entry 121).
+- [ ] Accepted risk: anyone who knows a username can lock that analyst out for `lockout_minutes`; nginx's per-IP limit only slows this; the remedy is an admin unlock (D47, ADR 0011). Revisit if it happens in practice (Entry 121).
+- [ ] Decide whether Step 7b adds the NIST SP 800-63B-4 §3.1.1.2 blocklist check of common or compromised passwords (Entry 121).
+- [ ] Stage 18: remove the S1 "open product decision" banner; avoid background polling that keeps sessions from going idle (Entry 121).
+- [ ] Threat model §10.1 / §11 item 5: update the "unmitigated until access control is decided" wording once sign-in is implemented (Entry 121).
 - [ ] Integration: before the real ModelBundle is served, the store starts empty (a fresh database file) or mock results and their notes are removed (`analysis_note` has a foreign key to `analysis_record`), so the figures never mix the two (§4.7 G6; Entry 120).
 - [ ] Routes other than `POST /api/analyses` and `PUT …/note` answer a Content-Length above `max_size_bytes` + 64 KiB with Starlette's plain-text 413, not the §6 shape (GET-only today) (Entry 119).
 - [ ] Shared helpers (utc_now_iso, REQUEST_ID, invalid_request) live in routers and are imported across routers; move to a shared module in a later refactor PR (Entry 119).
@@ -3736,7 +3800,7 @@ the two existing clips) and reviews the diff. Context7 was not used.
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
 `GET /api/status`. `POST /api/analyses` with the
-MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) are on `feat/stage17-stats`, awaiting review (Entry 120). Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; React `web/` and Compose are not yet present on main. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
+MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) is on `docs/stage17-signin-contract`, awaiting review (Entry 121); the sign-in code is Step 7b. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; React `web/` and Compose are not yet present on main. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
 canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.

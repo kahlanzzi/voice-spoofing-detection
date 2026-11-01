@@ -46,7 +46,10 @@ Paths are relative to `/api`.
 | GET | `/analyses/{request_id}` | One stored result with its note | S8 Analysis details |
 | PUT | `/analyses/{request_id}/note` | Save or remove the analyst note | S6 and S8 note panel |
 | GET | `/stats` | Operational figures for a period | S9 Overview |
-| — | sign-in | Placeholder, see section 4.8 | S1 Sign in |
+| POST | `/session` | Sign in (section 4.8) | S1 Sign in |
+| GET | `/session` | Who am I | S1 on load |
+| DELETE | `/session` | Sign out | Rail sign-out, D1 |
+| GET | `/health` | Container liveness, no data | none |
 
 ## 4. Endpoints
 
@@ -77,8 +80,9 @@ Response `200`:
 - `versions`, `bundle_manifest_sha256`, `deferral_on_fit` and `mock` come from the analyzer
   (section 8). With the MockAnalyzer the manifest hash is `null`.
 - The endpoint reports problems in its body; it answers `200` even when `state` is `unavailable`.
+- Needs a session (section 4.8).
 
-Status codes: `200`; `500 internal_error`.
+Status codes: `200`; `401`; `500 internal_error`.
 
 ### 4.2 `GET /limits`
 
@@ -101,8 +105,9 @@ Response `200`:
   `max_size_mb`).
 - The browser runs the same checks before upload, using these values only (NFR-08). If this call
   fails, the app keeps analysis off (S2 "limits unavailable").
+- Needs a session (section 4.8).
 
-Status codes: `200`; `500 internal_error`.
+Status codes: `200`; `401`; `500 internal_error`.
 
 ### 4.3 `POST /analyses`
 
@@ -124,7 +129,9 @@ Response `201`, header `Location: /api/analyses/{request_id}`, body = **exactly 
 }
 ```
 
-**Processing order.** The request ID is assigned first, so every upload error carries it.
+**Processing order.** The `Origin` and session checks (section 4.8) run first, before the body is
+read; their errors carry `request_id: null`. The request ID is assigned next, so every upload error
+below carries it.
 
 | Step | Check | On failure |
 |---|---|---|
@@ -210,7 +217,7 @@ Status codes: `200`; `404 not_found` (unknown ID: S8 "unknown request ID"); `401
 
 Request body: `{ "text": "Called back on the known number; caller confirmed." }`
 
-Response `200`: `{ "note": { "text": "…", "updated_at": "2026-10-30T09:20:11Z" } }`
+Response `200`: `{ "note": { "text": "…", "updated_at": "2026-10-30T09:20:11Z", "updated_by": "analyst01" } }`
 
 - One note per analysis; a new `PUT` replaces it.
 - Empty text (after trimming spaces) removes the note; the response is `{ "note": null }`.
@@ -222,8 +229,9 @@ Response `200`: `{ "note": { "text": "…", "updated_at": "2026-10-30T09:20:11Z"
   → `400 invalid_request`.
 - `updated_at` is set by the server at every save. Removing a note that does not exist also answers
   `{ "note": null }`.
-- The note has no author field: who wrote it waits for open decision 1 (section 4.8). The note text is
-  never logged.
+- The note records the account that last saved it: `updated_by` is that account's username (section
+  4.8). A new `PUT` by another account replaces the text and the author. Removing the note keeps no
+  author. `updated_by` is `null` for notes saved before sign-in existed. The note text is never logged.
 - The note is stored in its own table and never changes the analysis record (FR-11).
 
 Status codes: `200`; `400`; `404 not_found`; `401`/`403`; `500`.
@@ -280,26 +288,179 @@ Response `200`:
 
 Status codes: `200`; `400`; `401`/`403`; `500`.
 
-### 4.8 Sign-in (placeholder)
+### 4.8 Sign-in and sessions
 
-**Open decision 1:** the production authentication and access-control mechanism (SRS §7.4; threat
-model §10.1). This note does not choose one. The decision must settle:
+**Decided (D47, [ADR 0011](decisions/0011-analyst-sign-in-sessions.md), team, 2026-11-01):** open
+decision 1, Option A: username + password, with a server-side session held in a cookie. Accounts are
+created by an administrator; there is no self-signup. Values marked *proposed* in section 9 are for
+the team to confirm in review.
 
-- the sign-in and sign-out endpoints and their request and response;
-- which of the endpoints above need a signed-in session (possibly not `GET /status`);
-- session lifetime, lockout ("temporarily locked" on S1) and password recovery;
-- the error codes for S1's invalid-credentials, locked and sign-in-unavailable states;
-- rate limits (threat model §10.1) are part of open decision 1.
+#### Endpoints
 
-Reserved now: `401 session_expired` (no valid session) and `403 access_denied` (signed in, not
-allowed). Both use the error shape in section 6, with `request_id: null`.
+| Method | Path | Purpose | Needs a session |
+|---|---|---|---|
+| POST | `/session` | Sign in | no |
+| GET | `/session` | Who am I | yes |
+| DELETE | `/session` | Sign out | yes |
+| GET | `/health` | Liveness for the container health check | no |
+
+**`GET /health`.** Response `200`, always exactly `{ "ok": true }` while the process is up. It needs no
+session and no `Origin`, reads no database, calls no analyzer, returns no version, hash or count, and
+writes no log line. It is liveness only: readiness stays in `GET /status`, which needs a session. The Step 8
+Docker health check calls it.
+
+**`POST /session`.** Request body, `application/json`, exactly:
+
+```json
+{ "username": "analyst01", "password": "correct horse battery staple" }
+```
+
+Response `200`, with `Set-Cookie` (see Cookie below):
+
+```json
+{ "username": "analyst01", "signed_in_at": "2026-11-01T09:00:00Z", "expires_at": "2026-11-01T21:00:00Z" }
+```
+
+- `username` is compared in lower case. `password` is never trimmed or changed.
+- A missing or non-string field, an empty field, any other field, a `password` longer than
+  `password_max_chars` or a body over 4 KiB → `400 invalid_request`. The app checks for empty
+  fields first (S1 field errors), so this is a second check.
+- Checks run in this order, and the first one that fails gives the answer:
+  1. The username is locked (Lockout below) → `429 account_locked`. The password is not checked.
+  2. Unknown username or wrong password → `401 invalid_credentials`. For an unknown username,
+     the password is still verified against a fixed dummy argon2id hash, so both cases take the
+     same time. The response body is identical in both cases.
+  3. Correct password, but the account is disabled → `403 access_denied`.
+  4. Success: the failure count for this username is reset, and a new session is created. A
+     session cookie already sent with the request is deleted first, so the session ID is always
+     new (no session fixation).
+- The account store cannot be read or written → `503 sign_in_unavailable`.
+- `expires_at` is the absolute end of the session. The idle limit can end it earlier.
+
+**`GET /session`.** Response `200`: the same shape as sign-in. The app calls it on load to see whether
+a session already exists. No session → `401 session_expired`.
+
+**`DELETE /session`.** Deletes the session row and clears the cookie. Response `204`, no body. No
+valid session → `401 session_expired`; the cookie is cleared anyway. Sign-out takes effect at once
+and asks for no confirmation. The unsaved-note dialog (D1) belongs to the app.
+
+#### Which routes need a session
+
+Every route under `/api` needs a valid session except `POST /session` and `GET /health`. **This
+includes `GET /status` and `GET /limits`.** The sign-in screen (S1) calls only `GET /session` and
+`POST /session`. Limits are needed from S2 on, and the status line and S10 from the rail, so both are
+read after sign-in. `/status` exposes the model versions and the bundle hash, and nothing calls it
+before sign-in. The container health check uses `GET /health`, which carries no data.
+
+Session and Origin checks run in middleware, before the route and before any request body is
+read. An upload without a session is therefore refused before it is parsed, and before a request
+ID is assigned (`request_id: null`).
+
+#### Cookie
+
+`Set-Cookie: vsd_session=<id>; HttpOnly; Secure; SameSite=Strict; Path=/api`, with no `Domain` and
+no `Max-Age` (it is a browser-session cookie; the server enforces the lifetimes).
+
+- The session ID is 32 random bytes from `secrets.token_urlsafe(32)` (43 URL-safe characters,
+  256 bits).
+- **Stored hashed:** the database keeps only the SHA-256 of the ID (hex). Anyone who reads the
+  database file, a backup or the volume gets no usable session. A fast hash is enough because the
+  ID is 256 random bits, not a password. Lookup by hash keeps an index.
+- The `__Host-` prefix is not used because it requires `Path=/`.
+- `Secure` stays on in every environment. Browsers accept it on `http://localhost`, and tests use
+  an `https://` base URL.
+
+#### Sessions
+
+Sessions are stored in SQLite (`session` table, section 7).
+
+- **Idle limit** `session_idle_minutes`: a session unused for longer than this is ended.
+  `last_seen_at` is updated on every request that has a valid session.
+- **Absolute limit** `session_absolute_hours`, counted from sign-in. It is never extended.
+- An ended session, an unknown ID or no cookie → `401 session_expired`, and the response clears
+  the cookie. Expired rows are deleted when they are found and at each sign-in.
+- Sign-out deletes the session row.
+- Setting a new password, or disabling an account, deletes **all** sessions of that account.
+- Several sessions per account are allowed (for example, two browsers).
+
+#### Accounts
+
+- Accounts are created only with an admin command on the server, `python -m api.admin`.
+  Subcommands: `create-account <username>`, `set-password <username>`, `disable <username>`,
+  `enable <username>` and `unlock <username>`. The password is typed twice at a hidden prompt
+  (`getpass`), never given on the command line or in a file. There is no signup endpoint and no
+  password-change endpoint in v1.
+- Usernames: 3 to 64 characters from `a–z 0–9 . _ -`, stored in lower case, unique, never renamed
+  or deleted. An account that is no longer needed is disabled.
+- Passwords: at least `password_min_chars` and at most `password_max_chars` characters (Unicode
+  code points), with no other composition rules. They are hashed with **argon2id** (`argon2-cffi`,
+  pinned in Step 7b; its RFC 9106 low-memory profile: t = 3, m = 64 MiB, p = 4, 16-byte salt). A
+  stored hash with older parameters is rehashed at the next successful sign-in.
+- **Recovery:** the analyst asks an administrator, who runs `set-password`. This ends all of the
+  account's sessions.
+
+#### Lockout and rate limit
+
+- **Lockout (API):** after `lockout_threshold` consecutive failed sign-ins for one username, that
+  username is locked for `lockout_minutes`. While it is locked, every sign-in for it answers
+  `429 account_locked`, even with the right password. The count resets on success, when a lock
+  ends, or when the last failure is more than `lockout_minutes` old. An admin `unlock` also resets it.
+- The count is kept per submitted username, known or not, under the **HMAC-SHA-256** of the
+  lower-case username, keyed with a server secret (`sign_in_failure`, section 7). An unknown
+  username therefore locks the same way, and lockout does not reveal whether a username exists.
+  The typed text is never stored. A plain hash would let anyone holding a leaked database file
+  guess offline any password that was typed into the username field. Without the key that is not
+  possible.
+- The key `VSD_SIGNIN_HMAC_KEY` (at least 32 random bytes, hex) is read from the environment: `.env`
+  locally (its name only in `.env.example`) and a secret in deployment. It is never in the repo,
+  `configs/` or a log. The API refuses to start without it. Changing the key only resets the failure
+  counts.
+- **Accepted risk:** anyone who knows a username can lock that analyst out for `lockout_minutes` by
+  failing on purpose. nginx's per-IP limit only slows this down. The remedy is an admin `unlock`. The
+  team accepts this knowingly (D47, ADR 0011).
+- **Rate limit (nginx):** nginx limits `POST /api/session` per client IP (`signin_rate_per_minute`,
+  `signin_burst`) and answers over-limit requests itself with `429 too_many_requests` in the
+  section 6 shape. The IP stays in nginx memory only; the API never sees or stores it (§1). nginx
+  stops floods before they reach argon2, and lockout stops slow guessing against one account. In
+  production the API runs only behind nginx. In development there is no IP limit, and lockout
+  still applies.
+
+#### CSRF
+
+- Every request that changes data must carry an `Origin` header equal to one of `allowed_origins`:
+  `POST /analyses`, `PUT /analyses/{request_id}/note`, `POST /session` and `DELETE /session`. A missing
+  or other `Origin` → `403 origin_not_allowed`, checked before the session.
+- `SameSite=Strict` is a second line of defence. GET routes change nothing (the `last_seen_at`
+  update is not a user action).
+- No CORS: the app is same-origin through nginx (section 2).
+
+#### Errors for S1
+
+| S1 state | Answer |
+|---|---|
+| Invalid credentials | `401 invalid_credentials`: same body for an unknown username and a wrong password |
+| Access denied | `403 access_denied`: correct password, account disabled |
+| Temporarily locked | `429 account_locked` |
+| Sign-in service unavailable | `503 sign_in_unavailable`. nginx's `429 too_many_requests` and a network failure also show this state. |
+| Expired session (notice) | `401 session_expired` from any other route |
+
+All of them use the section 6 shape with `request_id: null`, as do `401 session_expired` (no valid
+session) and `403 access_denied` (signed in, not allowed; reserved earlier and kept).
+
+#### Privacy and logging
+
+- Never logged, and never in a response body: passwords, session IDs, their hashes, the `Cookie`
+  header and the request body of `POST /session`. The session ID leaves the server only in `Set-Cookie`. A failed sign-in is logged without the username, because a
+  password is sometimes typed into that field. A successful one is logged with the account ID only.
+- The §1 and §7 rules do not change. The `session` table has no IP or user-agent column, and no
+  audio, file name or IP is stored anywhere.
 
 ## 5. Shapes
 
 | Shape | Fields | Notes |
 |---|---|---|
 | `AnalysisResponse` | `prediction`, `confidence`, `risk_level`, `model_version`, `profile_version`, `policy_version`, `request_id`, `notice` | Exactly §11. Mirrored by the web app's TypeScript type (ADR 0008 §3). |
-| `StoredAnalysis` | `analysis` (an `AnalysisResponse`), `created_at`, `note` (`{text, updated_at}` or `null`) | The §11 object stays whole; stored-only fields sit beside it. |
+| `StoredAnalysis` | `analysis` (an `AnalysisResponse`), `created_at`, `note` (`{text, updated_at, updated_by}` or `null`) | The §11 object stays whole; stored-only fields sit beside it. |
 | `Error` | `error.code`, `error.message`, `error.request_id` | Section 6. |
 
 `processing_ms` and the mock flag are stored but not returned per item; they feed `GET /stats`
@@ -322,8 +483,13 @@ Every error uses one shape:
 | `corrupt_audio` | 422 | `soundfile` cannot decode it | S5 Corrupt audio (input) |
 | `analysis_unavailable` | 503 | Analyzer not loaded or refusing work | S5 Analysis service unavailable |
 | `analysis_timeout` | 504 | Analyzer did not finish in `analysis_timeout_s` | S5 Request timeout |
-| `session_expired` | 401 | No valid session (section 4.8) | S5 / S1 Expired session |
-| `access_denied` | 403 | Session not allowed (section 4.8) | S1 Access denied |
+| `session_expired` | 401 | No cookie, unknown, idle or expired session (section 4.8) | S5 / S1 Expired session |
+| `access_denied` | 403 | Correct password but account disabled; or signed in, not allowed (section 4.8) | S1 Access denied |
+| `invalid_credentials` | 401 | Unknown username or wrong password, same body for both (section 4.8) | S1 Invalid credentials |
+| `account_locked` | 429 | Username locked after failed sign-ins (section 4.8) | S1 Temporarily locked |
+| `too_many_requests` | 429 | nginx per-IP rate limit on `POST /api/session` (section 4.8) | S1 Sign-in service unavailable |
+| `sign_in_unavailable` | 503 | Account store cannot be read or written | S1 Sign-in service unavailable |
+| `origin_not_allowed` | 403 | Missing or other `Origin` on a request that changes data (section 4.8) | none (the app is same-origin) |
 | `not_found` | 404 | Unknown request ID or route | S8 Unknown request ID |
 | `internal_error` | 500 | Anything unexpected, including a failed store | S5 Unexpected service error |
 | `invalid_request` | 400 | Bad query or body (**proposal beyond the agreed list**) | none (the app prevents these) |
@@ -340,20 +506,26 @@ Rules:
   by this shape. No stack trace or internal path ever reaches the client.
 - nginx must not answer with its own error pages for `/api`: its body-size limit is set above
   `max_size_bytes` and its proxy timeout above `analysis_timeout_s`, so the API's codes reach the app.
+  The one answer nginx gives itself, its `429 too_many_requests` for `POST /api/session`, uses this
+  JSON shape with `request_id: null`.
 
 ## 7. Storage
 
-Two tables (SQLite on a volume first; architecture §7, open):
+Five tables (SQLite on a volume first; architecture §7, open):
 
 | Table | Columns |
 |---|---|
 | `analysis_record` | `request_id` (key), `created_at` (UTC), `prediction`, `confidence`, `risk_level`, `model_version`, `profile_version`, `policy_version`, `notice`, `processing_ms`, `is_mock` |
-| `analysis_note` | `request_id` (key, refers to `analysis_record`), `text`, `updated_at` (UTC) |
+| `analysis_note` | `request_id` (key, refers to `analysis_record`), `text`, `updated_at` (UTC), `updated_by_account_id` (refers to `account`; `null` for notes saved before sign-in existed) |
+| `account` | `account_id` (key), `username` (unique, lower case), `password_hash` (argon2id PHC string), `disabled`, `created_at`, `password_changed_at` |
+| `session` | `session_hash` (key, SHA-256 hex of the session ID), `account_id` (refers to `account`), `created_at`, `last_seen_at`, `expires_at` (UTC) |
+| `sign_in_failure` | `username_hmac` (key, HMAC-SHA-256 hex of the lower-case username, key `VSD_SIGNIN_HMAC_KEY`), `failures`, `last_failure_at`, `locked_until` (UTC) |
 
 - `processing_ms`: from upload received to result ready.
 - `is_mock`: true for MockAnalyzer results, so they can be told apart from real ones.
-- **Never stored:** audio, the original file name, the client IP address. The file name is not
-  logged either.
+- **Never stored:** audio, the original file name, the client IP address, passwords in clear,
+  session IDs in clear, the typed username of a failed sign-in. The file name is not logged either.
+- Existing database files gain `analysis_note.updated_by_account_id` through a migration in Step 7b.
 - The operational log (FR-20, `service_log` in architecture §4) is not part of this contract.
 
 ## 8. Analyzer seam
@@ -394,14 +566,35 @@ All values come from config (`configs/api.yaml`, written in Stage 17), never fro
 | `mock_deferral_on_fit` | Monitoring marker for the MockAnalyzer only | 0.0993 | Mock; replaced by the bundle's value |
 | `temp_dir` | Folder for temp uploads | — | Deployment setting |
 | `database_path` | SQLite file holding the section 7 tables | `var/api.sqlite` | Deployment setting |
+| `session_idle_minutes` | Idle limit of a session | 30 | **Proposed, team to confirm in review** |
+| `session_absolute_hours` | Absolute limit, from sign-in | 12 | **Proposed, team to confirm in review** |
+| `lockout_threshold` | Consecutive failed sign-ins before a lock | 5 | **Proposed, team to confirm in review** |
+| `lockout_minutes` | Lock length, and how long a failure counts | 15 | **Proposed, team to confirm in review** |
+| `password_min_chars` | Shortest password | 15 | **Proposed, team to confirm in review** |
+| `password_max_chars` | Longest password | 128 | **Proposed, team to confirm in review** |
+| `allowed_origins` | Origins accepted on requests that change data | — | Deployment setting |
+| `signin_rate_per_minute` / `signin_burst` | nginx `limit_req` on `POST /api/session`, per client IP (nginx config, not `api.yaml`) | 10 / 5 | **Proposed, team to confirm in review** |
+| session ID length | Random bytes per session ID (fixed in code, not a config key) | 32 | **Proposed, team to confirm in review** |
 
 `analysis_timeout_s` is not a latency target: **open decision 5** (latency target) stays open.
+
+- `session_idle_minutes`: a shorter limit closes an unattended console sooner. But an analyst away on a call
+  for longer than the limit loses the session before saving a note, and must sign in again before the
+  save works. A longer limit avoids that and leaves an unattended signed-in console open longer.
+- `password_min_chars`: 15 follows NIST SP 800-63B-4 §3.1.1.2 (Password Verifiers): "Verifiers and
+  CSPs SHALL require passwords that are used as a single-factor authentication mechanism to be a
+  minimum of 15 characters in length". Here the password is the only factor. The same section asks for a
+  maximum of at least 64 (128 meets it) and no composition rules (none here). It also requires a
+  check against a blocklist of common or compromised passwords. That check is not in this contract;
+  it is an open item for the team.
+- `VSD_SIGNIN_HMAC_KEY` is a secret, not a config value: environment only (section 4.8).
 
 ## 10. Open decisions and questions
 
 From HANDOFF §11, as they touch the API:
 
-1. Authentication and access control (section 4.8).
+1. Authentication and access control: **decided** (D47,
+   [ADR 0011](decisions/0011-analyst-sign-in-sessions.md), 2026-11-01); see section 4.8.
 2. Real upload limits (section 9).
 3. Recordings longer than 2 s (inside the analyzer).
 4. Fallback if temp-file deletion fails.
