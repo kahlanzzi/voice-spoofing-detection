@@ -85,15 +85,19 @@ and an `Origin` header from `allowed_origins` (`http://localhost:8001` in `confi
 ## Running with Docker Compose (Stage 17)
 
 `docker-compose.yml` builds the API image from `deploy/api.Dockerfile` (Python 3.13.15 slim, pinned by
-digest; non-root; only `requirements-api.txt`, whose pins must equal `requirements.txt`). Step 8a has
-the `api` service only and publishes **no port**: nginx (the `web` service, http://localhost:8001)
-comes in Step 8b. Never expose the API without nginx (§4.8 rate limit). Needs Docker Compose v2.
+digest; non-root; only `requirements-api.txt`, whose pins must equal `requirements.txt`). The `api`
+service publishes **no port**; nginx (the `web` service, `nginx:1.30.6-alpine` pinned by digest, config
+`deploy/nginx.conf` mounted read-only) is the only way in, on http://localhost:8001. Never expose the API
+without nginx (§4.8 rate limit). Needs Docker Compose v2.
 
 ```bash
 docker compose build
 docker compose up -d
-docker compose ps                     # api: (healthy), from GET /api/health
+docker compose ps                     # api: (healthy), from GET /api/health; web starts after it
+docker compose exec web nginx -t      # config syntax check
+curl -s http://localhost:8001/api/health   # {"ok":true}, through nginx
 docker compose logs api               # INFO lines of the api logger; no request lines, no IPs
+docker compose logs web               # time, method, path, status, bytes, duration; no IPs
 docker compose exec api python -m api.admin create-account analyst01   # also unlock, disable, ...
 docker compose down                   # keeps the store; down -v deletes it
 ```
@@ -113,6 +117,49 @@ docker compose down                   # keeps the store; down -v deletes it
   config, key and volume as the API.
 - The root filesystem is read-only, all capabilities are dropped, and FastAPI's `/docs` is reachable
   only inside the container.
+
+### nginx (the `web` service)
+
+- **Routes:** `/api/` is proxied to `api:8000`; `/` is a placeholder page until Stage 18; every other
+  path, including `/docs`, `/redoc` and `/openapi.json`, gets a JSON `404 not_found`.
+- **Errors:** API answers pass through unchanged (`proxy_intercept_errors` off). nginx answers itself
+  only with `413 file_too_large` (body above `client_max_body_size 22m`, which sits above the API's own
+  limit), `503 analysis_unavailable` (API stopped or silent for 60 s), `429 too_many_requests` and
+  `404 not_found`, all in the §6 shape with `request_id: null`. An API answer carries `X-Request-ID`,
+  an nginx one does not.
+- **Rate limit:** `POST /api/session` 10 per minute per client IP, burst 5, `nodelay` (§4.8). `GET` and
+  `DELETE /api/session` are not limited.
+- **No client IP:** the access log has no address, header or query string; the error log is at `crit`
+  (its lines carry a `client:` field); `X-Forwarded-For`, `X-Real-IP` and `Forwarded` are cleared towards
+  the API. The IP is used only as the rate-limit key, in nginx memory.
+- **Uploads:** nginx buffers each request body before passing it on, under `/var/cache/nginx`, a 96 MiB
+  tmpfs (4 x 22 MiB): in memory, never on disk.
+- **Restart:** nginx resolves `api` once at start. If the `api` container is recreated (not just
+  stopped and started), run `docker compose restart web` too.
+- **HTTPS:** plain HTTP, `localhost` only. The `Secure` session cookie works over plain HTTP only on
+  `localhost`; any other host needs TLS terminated in nginx first (not part of Stage 17).
+
+Manual check through nginx (test account and password only; `-c`/`-b` keep the session cookie):
+
+```bash
+O='Origin: http://localhost:8001'; B=http://localhost:8001; J=$(mktemp)
+curl -si $B/docs                                         # 404 not_found from nginx
+curl -si -c $J -H "$O" -H 'Content-Type: application/json' \
+     -d '{"username":"analyst01","password":"..."}' $B/api/session   # 200, Set-Cookie vsd_session
+head -c 22020096 /dev/zero > /tmp/21m.wav                # 21 MiB: the API's 413 (X-Request-ID set)
+head -c 24117248 /dev/zero > /tmp/23m.wav                # 23 MiB: nginx's 413 (no X-Request-ID)
+curl -si -b $J -H "$O" -F file=@/tmp/21m.wav $B/api/analyses
+curl -si -b $J -H "$O" -F file=@/tmp/23m.wav $B/api/analyses
+for i in $(seq 1 8); do curl -s -o /dev/null -w '%{http_code} ' -H "$O" -H 'Content-Type: application/json' \
+  -d "{\"username\":\"burst$i\",\"password\":\"y\"}" $B/api/session; done   # 401s, then 429
+docker compose stop api; curl -si -b $J $B/api/status    # 503 analysis_unavailable from nginx
+docker compose start api
+docker compose logs web api | grep -Ei 'client:|172\.|127\.0\.0\.1|192\.168\.|::1|x-forwarded'   # nothing
+rm -f /tmp/21m.wav /tmp/23m.wav "$J"
+```
+
+The burst uses a different username per request so the API's lockout (5 failures per username) does not
+answer `429 account_locked` first.
 
 ## Colab
 

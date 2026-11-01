@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 17 Step 8b: nginx `web` service (`deploy/nginx.conf`, `nginx:1.30.6-alpine` by digest, `8001:80`, after a healthy `api`): only `/api/` proxied and a `/` placeholder, API errors passed through unchanged with §6 JSON only for nginx's own 404/413/429/503, `POST /api/session` limited to 10/min burst 5 per IP, no client IP in logs or forwarded headers, request bodies on a tmpfs; `api_design.md` §2/§4.8/§6/§9 updated.
 - Stage 17 Step 8a: API image (`deploy/api.Dockerfile`, Python 3.13.15 slim by digest, non-root, `requirements-api.txt`), `.dockerignore` allowlist, `docker-compose.yml` with the `api` service (no published port, key from `.env`, store on a named volume, uploads on a config-sized tmpfs), `configs/api_logging.yaml` (api logger at INFO, no access log).
 - Stage 17 sign-in, Step 7b-2: every `/api` route but `POST /session` and `GET /health` needs a session, `Origin` on `POST /analyses` and `PUT …/note` (refused before the body is read); notes record their author (`updated_by`), with a one-transaction migration of existing database files.
 - Stage 17 sign-in, Step 7b-1b: `POST`/`GET`/`DELETE /api/session` and `GET /api/health` (§4.8), the `SessionGuard` middleware (Origin then session, `/session` routes only for now), the 4 KiB sign-in body limit, lockout, rehash at sign-in, and a start-up refusal without `VSD_SIGNIN_HMAC_KEY`; `python-dotenv` 1.2.4 pinned for `uvicorn --env-file .env`.
