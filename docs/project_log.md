@@ -3808,6 +3808,74 @@ entry, and ran the checks. The team approved the plan and reviews the diff. Cont
 
 ---
 
+### Entry 127 — Stage 18 PR 1a: web/ scaffold, theme storage and the CI web job (2026-11-01)
+
+**Numbering:** main ends at 126 (PR #87, `7f5cd0b`); open PRs #67 and #68 carry Entries 101–102, so 127 is next.
+
+**What:** on `feat/stage18-scaffold` (Iheb, Part E; from `main` at `7f5cd0b`), the first Stage 18 PR, following
+the approved plan. PR 1 was split, not stacked: 1a (this PR) and 1b (`tokens.css`, `base.css`, fonts, token and
+contrast tests) on `feat/stage18-tokens` from `main` after 1a merges, with its own entry. No `src/`, `api/`,
+`configs/` or `deploy/` change.
+- `.gitignore` first (own commit, before any `npm install`): `node_modules/`, `web/dist/`, Playwright output.
+- `web/`: `package.json` (exact pins, `engines.node` 26.13.0), `package-lock.json`, `.nvmrc`, `.npmrc`
+  (`save-exact`, `engine-strict`), `tsconfig.json` → `tsconfig.app.json` (`src/`, `vite/client` types only) and
+  `tsconfig.node.json` (`vite.config.ts`, `eslint.config.js`, `node` types), same strict flags, `tsc -b`;
+  `vite.config.ts`, `eslint.config.js`, `index.html`, `src/main.tsx`, `src/App.tsx` (one `h1`, no API call),
+  `src/theme.ts`. Title and `h1` "Voice Check analyst console": prototype line 6 (HANDOFF names no product).
+- `theme.ts`: `system | light | dark` under localStorage `vsd-theme`, applied as `<html data-theme>` (`system`
+  removes it); every read and write in try/catch, failure → `system`. No UI control (PR 6).
+- CI: new `web` job (`npm ci`, typecheck, lint, `vitest --run`, build), Node from `web/.nvmrc`; actions pinned by
+  major tag like `checks` (`actions/checkout@v4`, `actions/setup-node@v4`). `checks` unchanged.
+- Tests: Vitest `theme.test.ts` (7) and `App.test.tsx` (1 h1, `fetch` never called); pytest
+  `tests/web/test_web_scaffold.py` (16, in `checks`): exact pins, lockfile root = `package.json`, `.nvmrc` =
+  `engines.node`, CI reads `.nvmrc`, `.npmrc` lines, `.gitignore` lines, each with a planted-failure case.
+
+**Decisions recorded (given with the plan before the build; user-reported):**
+- A25 Node `26.13.0` in `web/.nvmrc` (Node 26 entered Active LTS 2026-10-28); exact pin per the exact-pins rule.
+- A11 separate `web` CI job; Iheb adds `web` as a required check. A12 dev server proxies `/api` to
+  `http://localhost:8001` and rewrites Origin to it, dev server only; `configs/api.yaml` and `allowed_origins`
+  unchanged. A14 IBM Plex self-hosted via `@fontsource` (exact pins), no Google Fonts: built in 1b.
+- ADR 0008 §1 stack: Vite, React, TypeScript strict, ESLint, Vitest + React Testing Library, plain CSS + tokens,
+  no UI framework. **TypeScript 6.0.3, not 7.0.2:** `npm view typescript-eslint@8.72.1 peerDependencies` →
+  `typescript: '>=4.8.4 <6.1.0'`; 6.0.3 is the newest in range.
+- Team decisions agreed 2026-11-01 (only theme storage is implemented here): S1 banner removed; "Analyst ID"
+  label ↔ username; `/status` 500 or no answer → Unavailable, degraded → Ready plus a notice; no polling; theme
+  System/Light/Dark in localStorage; routes `/signin`, `/analyze`, `/history`, `/history/<id>`, `/overview`,
+  `/status`, `/` → `/analyze`; Cancel analysis out of Stage 18; note author shown; "Forgot your password? Ask your
+  administrator."; Mock values tag from `/status.mock`; mobile inputs 16 px.
+- For 1b: HANDOFF §4 gaps (`--ok/warn/err-*`, `--elev-*`, `--r-pill`, and `--accent-ink`, `--nav-ink-strong`,
+  `--nav-muted`, `--nav-line`, `--scrim`) take the prototype's values (lines 14–69), cited.
+
+**Planning findings for 1b [verified: computed, WCAG 2.x formula]:** all 34 HANDOFF text/background pairs reach
+4.5:1 in both themes (lowest: light `--muted`/`--bg` 5.46, dark `--accent-ink`/`--accent` 5.54). Non-text 3:1
+questions, values unchanged: `--line-strong` on `--surface` 1.86 light / 1.99 dark; light `--unc-mark` on surface
+2.87. ui-ux-pro-max (read-only, `--domain ux`, `--stack react`) conflicts, HANDOFF kept: 16 px mobile body vs
+`--fs-base 15`; toast 3–5 s vs 9 s.
+
+**Evidence [verified]:**
+- `node --version` `v26.13.0`, `npm --version` `11.20.0`. Governance test after the `.gitignore` commit:
+  `3 passed in 0.36s`. First `npm install` failed with `EIDLETIMEOUT` (slow registry); the retry with
+  `--fetch-timeout=600000` (CLI flag only) added 224 packages. `rm -rf node_modules && npm ci` with
+  `engine-strict=true` on 26.13.0: success (every installed package accepts Node 26).
+- `npm run typecheck && npm run lint && npm test -- --run && npm run build` → exit 0; Vitest `Test Files 2 passed
+  (2)`, `Tests 9 passed (9)`; build `dist/assets/index-*.js 220.04 kB │ gzip: 68.82 kB`. `tsc -b --verbose`
+  builds both projects; a probe using `process` in `src/` failed with TS2591 (removed).
+- `.venv/bin/python -m pytest -q` (Python 3.14.6): `1261 passed, 9 skipped in 70.42s` (+16; baseline `1245
+  passed, 9 skipped`). `node_modules`/`web/dist` in `git ls-files --others --exclude-standard`: 0.
+- `npm audit`: 12 moderate, all GHSA-g3hv-75wg-m249 in `minimatch` 10.2.6 under `eslint` and `typescript-eslint`
+  (dev tooling only); `npm audit --omit=dev`: `found 0 vulnerabilities`. Not fixed: npm's fix downgrades
+  typescript-eslint to 8.14.0 (open item).
+- No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
+the checks; the ui-ux-pro-max skill was used read-only as a checklist. The plan was approved before the build;
+the team reviews the diff.
+Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
 ## Open items
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
@@ -4058,7 +4126,7 @@ entry, and ran the checks. The team approved the plan and reviews the diff. Cont
 - [x] Configure the `api` logger level under uvicorn so the INFO sign-in lines (failure without username, success with account ID) are written; with Step 8 logging (Entry 123). (`configs/api_logging.yaml` via `--log-config`; Entry 125)
 - [x] Step 7b-2: session + Origin middleware on every route, note `updated_by` with the migration of existing database files, existing tests signed in (Entry 122). (on `feat/stage17-protect-routes`, awaiting review; Entry 124)
 - [x] FastAPI's `/docs`, `/redoc` and `/openapi.json` are outside `/api` and need no session (no data, but they list the routes); decide with Step 8 / nginx whether to turn them off (Entry 124). (not routed by nginx, JSON 404; reachable only inside the container; Entry 126)
-- [x] Step 8b (new branch from `main` after 8a merges): nginx `web` service on `8001:80`, only `/api` proxied; body limit and proxy timeouts above `configs/api.yaml` (tested); `limit_req` 10/min burst 5 on `POST /api/session` with §6 JSON 429; no address in logs or forwarded headers (tested); `proxy_intercept_errors` off so the API's own 413/503/504 pass unchanged (tested), nginx's §6 JSON only for its own 413, 502/504 and 429; `/` placeholder; `api_design.md` gaps (nginx errors, error-log `client:` field, docs routes, HTTPS outside localhost, `nodelay`) (Entry 125). (on `feat/stage17-nginx`, awaiting review; Entry 126)
+- [x] Step 8b (new branch from `main` after 8a merges): nginx `web` service on `8001:80`, only `/api` proxied; body limit and proxy timeouts above `configs/api.yaml` (tested); `limit_req` 10/min burst 5 on `POST /api/session` with §6 JSON 429; no address in logs or forwarded headers (tested); `proxy_intercept_errors` off so the API's own 413/503/504 pass unchanged (tested), nginx's §6 JSON only for its own 413, 502/504 and 429; `/` placeholder; `api_design.md` gaps (nginx errors, error-log `client:` field, docs routes, HTTPS outside localhost, `nodelay`) (Entry 125). (merged in PR #87, `7f5cd0b`; Entry 126)
 - [x] Team confirms the §9 proposed sign-in values (idle 30 min, absolute 12 h, lockout 5 / 15 min, password 15–128, nginx 10/min burst 5, 32-byte session ID) (Entry 121). (confirmed unchanged, user-reported; Entry 122)
 - [ ] Accepted risk: anyone who knows a username can lock that analyst out for `lockout_minutes`; nginx's per-IP limit only slows this; the remedy is an admin unlock (D47, ADR 0011). Revisit if it happens in practice (Entry 121).
 - [x] Decide whether Step 7b adds the NIST SP 800-63B-4 §3.1.1.2 blocklist check of common or compromised passwords (Entry 121). (context check done in the admin command: no username, `vsd`, `voice`, `spoof`; Entry 122)
@@ -4075,6 +4143,12 @@ entry, and ran the checks. The team approved the plan and reviews the diff. Cont
 - [ ] Integration: limit concurrent analyses; a timed-out analyzer thread keeps running (cannot be killed), so repeated timeouts with the real model could pile up (Entry 116). The container's `/tmp` tmpfs is sized for `x-vsd-concurrent-uploads: 4` (2 × body limit each); the limit should match that number (Entry 125).
 - [x] uvicorn's default access log prints the client IP; §1/§7 say no IP is stored. Decide for Stage 19 (e.g. `--no-access-log` or a log filter) (Entry 116). (`--no-access-log --no-proxy-headers` in the image and the documented local command; Entry 125)
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
+
+**Stage 18 web (Part E, Entry 127)**
+- [x] PR 1a: `web/` scaffold, theme storage, CI `web` job, pytest pin guards (on `feat/stage18-scaffold`, awaiting review; Entry 127).
+- [ ] Add `web` as a required check on `main` after PR 1a merges (Iheb; Entry 127).
+- [ ] PR 1b on `feat/stage18-tokens` from `main` after 1a merges: `tokens.css`, `base.css`, fontsource fonts, token and contrast tests; decide `--rail-w` 248/232, the non-text 3:1 pairs (`--line-strong` 1.86/1.99, light `--unc-mark` 2.87) and the 16 px mobile body / 9 s toast conflicts (Entry 127).
+- [ ] `npm audit`: 12 moderate (GHSA-g3hv-75wg-m249, `minimatch` 10.2.6 under eslint and typescript-eslint, dev only; production 0). Decide: wait for upstream, or an `overrides` pin to `minimatch` ≥ 11.0.1 by approval (Entry 127).
 
 **Midterm documentation (Entries 102–110)**
 - [ ] Review Khalil's initial refactor audit (Entry 108); agree on scope before any cache-helper implementation.
@@ -4116,7 +4190,7 @@ entry, and ran the checks. The team approved the plan and reviews the diff. Cont
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
 `GET /api/status`. `POST /api/analyses` with the
-MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) is on `feat/stage17-nginx`, awaiting review (Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; React `web/` is not yet present; nginx serves a placeholder at `/`. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
+MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) is on `feat/stage18-scaffold`, awaiting review (Entry 127); no page, token CSS or API call yet; nginx serves a placeholder at `/`. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
 canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.
