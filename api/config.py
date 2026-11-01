@@ -13,7 +13,8 @@ from pathlib import Path
 import yaml
 
 ENV_VAR = "VSD_API_CONFIG"
-DEFAULT_PATH = Path(__file__).resolve().parents[1] / "configs" / "api.yaml"
+REPO_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_PATH = REPO_ROOT / "configs" / "api.yaml"
 
 # §9 key -> accepted type (a tuple accepts several; NoneType allows null).
 TYPES = {
@@ -28,6 +29,7 @@ TYPES = {
     "notice_text": str,
     "mock_deferral_on_fit": float,
     "temp_dir": (str, type(None)),
+    "database_path": str,
 }
 POSITIVE = ("max_size_bytes", "max_duration_s", "analysis_timeout_s", "page_size_max", "note_max_chars")
 
@@ -45,6 +47,7 @@ class ApiConfig:
     notice_text: str
     mock_deferral_on_fit: float
     temp_dir: str | None
+    database_path: str
 
 
 def config_path() -> Path:
@@ -85,4 +88,12 @@ def load_api_config(path=None) -> ApiConfig:
         raise ValueError(f"{path}: mock_deferral_on_fit must be in [0, 1], got {cfg['mock_deferral_on_fit']!r}")
     if not cfg["notice_text"].strip():
         raise ValueError(f"{path}: notice_text must not be empty")
+    if not cfg["database_path"].strip():
+        raise ValueError(f"{path}: database_path must not be empty")
     return ApiConfig(**{**cfg, "formats": tuple(formats)})
+
+
+def resolve_path(value: str) -> Path:
+    """A path from config: absolute as given, relative to the repo root otherwise (not the cwd)."""
+    path = Path(value)
+    return path if path.is_absolute() else REPO_ROOT / path

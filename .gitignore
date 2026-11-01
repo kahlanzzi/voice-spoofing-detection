@@ -32,6 +32,8 @@ AGENTS.override.md
 *.log
 logs/
 tmp/
+# runtime API database (configs/api.yaml database_path)
+var/
 .cache/
 coverage/
 .coverage

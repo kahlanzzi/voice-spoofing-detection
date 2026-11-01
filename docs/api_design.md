@@ -137,7 +137,9 @@ Response `201`, header `Location: /api/analyses/{request_id}`, body = **exactly 
 - **Size protection (step 2):** Starlette reads the whole multipart body before the handler runs,
   so the handler's streamed check cannot stop a large upload on its own. The real protection is
   nginx's body-size limit plus a `Content-Length` check before the body is parsed. The streamed
-  check in the handler is the second line of defence.
+  check in the handler is the second line of defence. `Content-Length` counts the whole multipart
+  body, so the `Content-Length` check and the body limit allow 64 KiB of multipart framing above
+  `max_size_bytes`; the streamed check enforces the exact cap on the file bytes.
 - The temp file has a random name in the configured temp folder. It is deleted when the request
   ends, on success and on every error (NFR-03). **Open decision 4:** what happens if deletion fails.
 - No record is stored when any step fails. A verdict is returned only after the record is stored,
@@ -356,6 +358,7 @@ All values come from config (`configs/api.yaml`, written in Stage 17), never fro
 | `notice_text` | The §11 `notice` text | prototype wording | Proposal |
 | `mock_deferral_on_fit` | Monitoring marker for the MockAnalyzer only | 0.0993 | Mock; replaced by the bundle's value |
 | `temp_dir` | Folder for temp uploads | — | Deployment setting |
+| `database_path` | SQLite file holding the section 7 tables | `var/api.sqlite` | Deployment setting |
 
 `analysis_timeout_s` is not a latency target: **open decision 5** (latency target) stays open.
 

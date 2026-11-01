@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from api.config import DEFAULT_PATH, ENV_VAR, ApiConfig, config_path, load_api_config
+from api.config import DEFAULT_PATH, ENV_VAR, REPO_ROOT, ApiConfig, config_path, load_api_config, resolve_path
 
 SECTION_9 = {
     "formats": ("wav", "flac", "mp3"),
@@ -18,6 +18,7 @@ SECTION_9 = {
                    "It does not prove fraud and does not verify identity.",
     "mock_deferral_on_fit": 0.0993,
     "temp_dir": None,
+    "database_path": "var/api.sqlite",
 }
 
 
@@ -63,6 +64,8 @@ def test_default_path_without_env_var(monkeypatch):
     {"formats": ["WAV"]},                 # not lower case
     {"notice_text": "  "},                # empty notice
     {"temp_dir": 5},                      # neither str nor null
+    {"database_path": None},              # required string
+    {"database_path": " "},               # empty path
 ], ids=lambda c: next(iter(c)) + "=" + repr(next(iter(c.values()))))
 def test_invalid_config_raises(tmp_path, changes):
     with pytest.raises(ValueError):
@@ -76,3 +79,8 @@ def test_unreadable_or_non_mapping_config_raises(tmp_path):
     path.write_text("- a\n- b\n", encoding="utf-8")
     with pytest.raises(ValueError, match="mapping"):
         load_api_config(path)
+
+
+def test_resolve_path_is_relative_to_the_repo_root(tmp_path):
+    assert resolve_path("var/api.sqlite") == REPO_ROOT / "var" / "api.sqlite"
+    assert resolve_path(str(tmp_path / "x.sqlite")) == tmp_path / "x.sqlite"

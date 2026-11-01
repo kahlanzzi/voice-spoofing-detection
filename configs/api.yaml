@@ -14,3 +14,4 @@ notice_text: >-
   It does not prove fraud and does not verify identity.
 mock_deferral_on_fit: 0.0993                   # MockAnalyzer only; replaced by the bundle's value
 temp_dir: null                                 # deployment setting; null = the system temp folder
+database_path: var/api.sqlite                  # deployment setting; SQLite file (§7); relative = to the repo root
