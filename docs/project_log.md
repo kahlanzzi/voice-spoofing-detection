@@ -4044,6 +4044,77 @@ reviews the diff. Context7 was not used.
 
 ---
 
+### Entry 130 — Stage 18 PR 3a: API client, error type and API types (2026-11-01)
+
+**What:** on `feat/stage18-api-client` (Iheb, Part E; from `main` at `d352bad`, not stacked), following the approved
+plan. The plan's PR 3 (API layer, session state, 401 handler, route guard) is about 1,300 lines without the lockfile,
+so it is split into three PRs, each from `main` after the previous one merges: **3a** (this one: client, errors,
+types, lint rule), **3b** (session state, the handler registration, `checkSession` on load) and **3c** (react-router,
+route list, `next` check, guard, stub pages). Only `web/` and docs change; no `api/`, `src/`, `configs/` or `deploy/`
+change; no new dependency (`package.json` and `web/package-lock.json` unchanged).
+- `web/src/api/client.ts`: `apiFetch<T>(path, { method, json | body })`. Only relative paths starting with `/api/`;
+  refused before sending: absolute or protocol-relative URLs, `//`, `\`, `.`/`..` segments (also `%2e`), `#`,
+  whitespace and control characters. `credentials: 'same-origin'`, `Accept: application/json`; `Content-Type:
+  application/json` only for a `json` body; a `FormData` body is passed as is (the browser sets the boundary). No
+  Origin, Cookie or auth header is set: the browser sends Origin on same-origin POST, PUT and DELETE, which the CSRF
+  check needs. A 204 returns `undefined`; a 2xx that is not JSON is `internal_error`; a fetch `TypeError` is a network
+  error; anything else (e.g. `AbortError`) is rethrown.
+- Expired session: `setSessionExpiredHandler` (registered by session state in 3b) is called on `session_expired`
+  except for the `/api/session` calls, which handle their own 401, and `POST /api/analyses`, whose expired session is
+  the HANDOFF S5 error state with "Sign in again" (`HANDOFF.md` l.27, flow l.55); that button will call
+  `session.expire()` (PR 10). Any other call, `GET /api/analyses` included, calls the handler.
+- `web/src/api/errors.ts`: `ApiError` with `kind` (`http` | `network`), `status`, `code` (§6 union; `null` for a
+  network error) and `requestId` (from the body, `req_` form or `null`; `undefined` when there was no response).
+  The guards `isHttpError` / `isNetworkError` narrow all four fields together (`code` is `ErrorCode` or `null`),
+  because checking `kind` alone does not. The server `message` is never kept; `.message` is a fixed `API error
+  <status> <code>` or `Network error`. A body
+  that is not JSON, not the §6 shape, or has an unknown code or a malformed `request_id` → `internal_error`, `null`.
+- `web/src/api/types.ts`: §2/§4/§5/§6 request and response types; `AnalysisResponse` = the 8 §11 fields; the
+  17-code `ErrorCode` union. Types follow the §4 examples, checked field by field against `api/schemas.py`
+  (all match; differences in the contract text are open items below).
+- `web/eslint.config.js`: `no-restricted-syntax` on `setTimeout`/`setInterval` in `src/api/**` (no polling, team
+  decision 2026-11-01); `src/routing/**` joins in 3c.
+- `web/vite.config.ts`: under Vitest only, `server.fs.allow` admits `../api` and `../docs` so the contract test can
+  read `api/schemas.py` and `docs/api_design.md` with `?raw` (a file entry does not admit a `?raw` import). The dev
+  server keeps Vite's default: `GET /@fs/…/api/schemas.py?raw` → 403. `tsconfig.node.json` includes the lint test.
+
+**Decisions recorded (Iheb's Part E decisions, 2026-11-01; user-reported):**
+- A15 routing with `react-router` (exact pin; `npm view react-router version` → `8.5.1`, published 2026-10-27,
+  peers met), data router so that `useBlocker` is available for D1; installed in 3c.
+- A19 applied to `GET /api/session`: 500, 503 or no answer → Unavailable, never signed-out (3b).
+- A23 an expired session returns to the same place with the file and the note draft kept in memory: navigation
+  goes through the router (no reload); the `File` (PR 8, upload) and the note draft (PR 11, note) live in a module
+  store, not in component state, so they survive the guarded page unmounting.
+
+**Tests (Vitest, 4 new files, 84 tests):** `client.test.ts` (accepted and refused paths, headers per body kind,
+no Origin/Cookie/Authorization for GET/POST/PUT/DELETE, 204, non-JSON 2xx, network and abort errors, the handler
+called for 6 routes and not for the 3 `/api/session` calls, `POST /api/analyses`, `invalid_credentials` or a
+malformed 401); `errors.test.ts` (API body, the 4 nginx bodies verbatim from `deploy/nginx.conf`, 10 malformed
+shapes, HTML/empty/truncated bodies, server message absent from `.message`, `JSON.stringify`, values and
+`String()`); `types.test.ts` (field list = Pydantic `AnalysisResponse`, in order; codes = the §6 table, 17;
+`expectTypeOf` exact keys); `web/eslint.config.test.ts` (timer bare, via `window` and `globalThis` → error in
+`src/api`; allowed in `src/theme.ts`).
+
+**Planted failures (not committed):** `window.setTimeout` in `src/api/planted.ts` → `npm run lint` `✖ 1 problem (1
+error)`, `No timers in src/api (no polling)`; `notice` dropped from `ANALYSIS_RESPONSE_FIELDS` → `types.test.ts`
+`Tests 1 failed | 3 passed`, and `tsc -b` error TS2344 on the `expectTypeOf` line. Restored: all pass.
+
+**Evidence [verified]:**
+- Baseline: `node --version` `v26.13.0`; `git log --oneline -1 main` `d352bad Merge pull request #90 …`;
+  `python -m pytest -q` `1272 passed, 9 skipped`.
+- `web/`: `npm run typecheck`, `npm run lint`, `npm test -- --run` (`Test Files 8 passed (8)`, `Tests 266 passed
+  (266)`), all exit 0. `npm audit`: 12 moderate, the known dev-only `minimatch` item (Entry 127); `npm audit
+  --omit=dev`: `found 0 vulnerabilities`.
+- No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
+the checks. The plan was approved before the build, with the user's changes (S5 exception for uploads, the split,
+PR references); the team reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
 ## Open items
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
@@ -4304,7 +4375,7 @@ reviews the diff. Context7 was not used.
 - [ ] Stage 18: remove the S1 "open product decision" banner; avoid background polling that keeps sessions from going idle (Entry 121).
 - [ ] Threat model §10.1 / §11 item 5: update the "unmitigated until access control is decided" wording once sign-in is implemented (Entry 121).
 - [ ] HTTPS outside `localhost`: the `Secure` cookie works over plain HTTP only on `localhost`; any other host needs TLS terminated in nginx first. Documented (`api_design.md` §2, `docs/setup.md`), not built (Entry 126).
-- [ ] Stage 18: replace the nginx `/` placeholder in `deploy/nginx.conf` with the React build, keeping the routing and no-IP tests green (Entry 126).
+- [x] Stage 18: replace the nginx `/` placeholder in `deploy/nginx.conf` with the React build, keeping the routing and no-IP tests green (Entry 126). (merged in PR #90, `d352bad`; Entry 129)
 - [ ] Integration: before the real ModelBundle is served, the store starts empty (a fresh database file) or mock results and their notes are removed (`analysis_note` has a foreign key to `analysis_record`), so the figures never mix the two (§4.7 G6; Entry 120).
 - [ ] Routes other than `POST /api/analyses` and `PUT …/note` answer a Content-Length above `max_size_bytes` + 64 KiB with Starlette's plain-text 413, not the §6 shape (GET-only today) (Entry 119).
 - [ ] Shared helpers (utc_now_iso, REQUEST_ID, invalid_request) live in routers and are imported across routers; move to a shared module in a later refactor PR (Entry 119).
@@ -4312,12 +4383,21 @@ reviews the diff. Context7 was not used.
 - [x] uvicorn's default access log prints the client IP; §1/§7 say no IP is stored. Decide for Stage 19 (e.g. `--no-access-log` or a log filter) (Entry 116). (`--no-access-log --no-proxy-headers` in the image and the documented local command; Entry 125)
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
 
-**Stage 18 web (Part E, Entries 127–129)**
+**Stage 18 web (Part E, Entries 127–130)**
 - [x] PR 1a: `web/` scaffold, theme storage, CI `web` job, pytest pin guards (merged in PR #88, `86cc77d`; Entry 127).
 - [ ] Add `web` as a required check on `main` after PR 1a merges (Iheb; Entry 127).
 - [x] PR 1b: `tokens.css`, `base.css`, fontsource fonts, token, contrast and no-raw-colour tests (merged in PR #89, `9a119d2`; Entry 128).
 - [ ] Still open from Entry 127: the 9 s toast vs ui-ux-pro-max 3–5 s conflict.
-- [ ] PR 2: `web` image (`deploy/web.Dockerfile`), A2 routes, A13 security headers, JSON 404 type fix (on `feat/stage18-web-image`, awaiting review; Entry 129).
+- [x] PR 2: `web` image (`deploy/web.Dockerfile`), A2 routes, A13 security headers, JSON 404 type fix (merged in PR #90, `d352bad`; Entry 129).
+- [ ] PR 3a: API client, `ApiError`, API types, no-timer lint rule (on `feat/stage18-api-client`, awaiting review; Entry 130).
+- [ ] PR 3b (from `main` after 3a merges): session state, handler registration, `checkSession` on load, A19 on `GET /api/session` (Entry 130).
+- [ ] PR 3c (from `main` after 3b merges): `react-router` 8.5.1 (A15), route list synced with `deploy/nginx.conf`, `next` check, guard, stub pages, `npm audit` after the install, live check (Entry 130).
+- [ ] A23: keep the `File` (PR 8, upload) and the note draft (PR 11, note) in a module store, not component state; PR 10's S5 "Sign in again" calls `session.expire()` (Entry 130).
+- [ ] Contract: `api_design.md` §5 does not list the Status, Limits, History, Stats, Session and Note responses (the web types follow §4 and `api/schemas.py`) (Entry 130).
+- [ ] Contract: `ErrorDetail.code` is `str` in `api/schemas.py`; §6 is a closed list. Use a `Literal`? The app maps an unknown code to `internal_error` (Entry 130).
+- [ ] Contract: an unhandled exception in `POST /api/analyses` after the ID is assigned (e.g. `analyzer.info()`) answers 500 with body `request_id: null` (`api/errors.py` `_unhandled_error`); §6 expects the upload's ID (Entry 130).
+- [ ] Contract: constraints in Pydantic but not in the doc: `confidence` 0..1, the `request_id` pattern, `StatusChecks` value `unavailable` (Entry 130).
+- [ ] Contract: `deferral_on_fit` is not nullable (Status, MonitoringMarker) while §4.7 says a figure that cannot be computed is `null`; ask Donia (Entry 130).
 - [ ] Non-text contrast below 3:1, values unchanged, team answer pending: light `--line-strong`/`--surface` 1.86, dark 1.99, light `--unc-mark`/`--surface` 2.87, light `--warn-mark`/`--surface` 2.87; named exceptions in `web/src/styles/tokens.test.ts` (Entry 128).
 - [ ] `npm audit`: 12 moderate (GHSA-g3hv-75wg-m249, `minimatch` 10.2.6 under eslint and typescript-eslint, dev only; production 0). Decide: wait for upstream, or an `overrides` pin to `minimatch` ≥ 11.0.1 by approval (Entry 127).
 
@@ -4361,7 +4441,7 @@ reviews the diff. Context7 was not used.
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
 `GET /api/status`. `POST /api/analyses` with the
-MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) merged in PR #88 (`86cc77d`; Entry 127); PR 1b (design tokens, base styles, IBM Plex fonts, token and contrast tests) merged in PR #89 (`9a119d2`; Entry 128), with 4 non-text contrast pairs below 3:1 left open for the team. PR 2 (the `web` image: the built app served by nginx on the A2 routes, `/` → `/analyze`, A13 security headers on every answer) is on `feat/stage18-web-image`, awaiting review (Entry 129); no page beyond the placeholder and no API call yet. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
+MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) merged in PR #88 (`86cc77d`; Entry 127); PR 1b (design tokens, base styles, IBM Plex fonts, token and contrast tests) merged in PR #89 (`9a119d2`; Entry 128), with 4 non-text contrast pairs below 3:1 left open for the team. PR 2 (the `web` image: the built app served by nginx on the A2 routes, `/` → `/analyze`, A13 security headers on every answer) merged in PR #90 (`d352bad`; Entry 129). PR 3 is split in three (Entry 130): PR 3a (API client, `ApiError`, API types, no-timer lint rule) is on `feat/stage18-api-client`, awaiting review; 3b (session state) and 3c (routing and guard) follow from `main`; no page beyond the placeholder and no API call from a page yet. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
 canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.

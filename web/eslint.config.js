@@ -16,4 +16,18 @@ export default tseslint.config(
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },
+  // No polling (team decision 2026-11-01): no timers in the API layer, whether called bare or through
+  // window or globalThis.
+  {
+    files: ['src/api/**'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Identifier[name=/^(setTimeout|setInterval)$/]',
+          message: 'No timers in src/api (no polling).',
+        },
+      ],
+    },
+  },
 )
