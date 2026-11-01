@@ -3394,6 +3394,58 @@ not used.
 **Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
 
 ---
+
+### Entry 120 — Stage 17 step 6: GET /api/stats (2026-11-01)
+
+**Numbering:** main ends at 119 (PR #80, `76943f7`); recheck against open PRs before merge.
+
+**What:** on `feat/stage17-stats` (Iheb, Part E; branched from `main` at `76943f7` after PR #80), following
+`docs/api_design.md` §4.7, §2, §5, §6 and §9 and the reviewed Step 6 plan (one PR, no split).
+- `GET /api/stats` (`api/routers/stats.py`): `from`/`to` use the §4.4 date rules. The default is the last 7 UTC
+  days including today. Only `from` given runs to today; only `to` given starts 6 days before it. `from` after
+  `to`, more than 366 days or a start before 0001-01-01 → 400 `invalid_request`, `request_id: null`. Every day is
+  listed, with zeros for empty days. `uncertain_share` is rounded to 4 places and is `null` at 0. `today` is the
+  day of `generated_at`, which comes from one clock read. `time_zone` is `stats_time_zone`. `monitoring_marker`
+  (`deferral_on_fit`, `policy_version`, `mock`) comes from `analyzer.info()`, as §4.7 and ADR 0008 §8 require.
+  The route logs nothing.
+- `api/repository.py`: `stats()` reads every figure in one `BEGIN` snapshot, with `?` parameters only. It reuses
+  history's `_where`, so total and counts equal `GET /api/analyses` for the same days. The median runs as an
+  `ORDER BY … LIMIT/OFFSET` on the middle one or two values, with halves rounded up in integer math.
+  `awaiting_note` covers synthetic and uncertain results with no note, using history's ordering.
+- Mock rows: stats and history both count every result, and `is_mock` is not a filter (G6).
+- Not changed: `analysis_record`, `analysis_note`, POST/PUT routes, config keys, the UTC startup guard.
+
+**Contract change [doc]:** §4.7 gains the seven reviewed gap bullets (G1–G7). G6 is in Iheb's wording: before the
+real ModelBundle is served, the store starts empty or mock results and their notes are removed.
+
+**Evidence [verified]:** `python -m pytest -q` (3.14): 1032 passed, 9 skipped (torch tests). `tests/api`: 288 passed
+(242 at Entry 119). The new tests cover:
+- an empty store for the default and an explicit period; a single day; empty days set to zero; the verdict mix and
+  the share rounding; inclusive bounds at 00:00:00 and 23:59:59; defaults when only one bound is given
+- `today` outside the period; a future period
+- `awaiting_note`: 6 newest, same-second ties, noted and authentic results excluded, period-scoped
+- `monitoring_marker` from a non-mock fake analyzer
+- 15 cases of 400 with the exact §6 body, and 366 days accepted
+- stats total and counts equal to history over 4 ranges (with one `is_mock = 0` row)
+- the median: odd, even, and halves up
+- a failed read → 500 with `request_id: null`
+- the file name, note text and IP absent from responses and `caplog`
+
+Manual `uvicorn` on port 8001 (scratch config and database) with `/tmp/test_clip.wav` and `/tmp/ZZSECRETNAME_q7.wav`:
+- an empty store gave 7 zero days
+- after 2 × 201, stats and history for today both gave total 2 with counts `{0, 0, 2}`
+- the 400 bodies matched §6
+- the server log had 0 hits for either file name
+
+Ruff is not installed in the venv, so it was not run. No audio committed; no dataset access; no DEEP-VOICE path.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, code, tests and this entry, and ran the checks.
+Iheb approved the plan as one PR with two changes (the G6 wording and Open item, and manual checks on port 8001 with
+the two existing clips) and reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
 ## Open items
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
@@ -3636,7 +3688,8 @@ not used.
 - [ ] Decide whether the approved API contract needs a D-ID (HANDOFF.md §11 item 10).
 - [x] Review and merge the API skeleton, including the 405 `invalid_request` row added to §6. (PR #66, `d9e8c4a`; Entry 101)
 - [x] `MockAnalyzer` and the analyzer seam (§8), `POST /analyses` with the §4.3 checks, storage (§7): on `feat/stage17-analyze`, awaiting review (Entry 116).
-- [ ] Next API PRs: stats, auth (Entry 116; `GET /limits` and real `/status` in Entry 117; history and details in Entry 118, notes in Entry 119).
+- [ ] Next API PRs: auth (Entry 116; `GET /limits` and real `/status` in Entry 117; history and details in Entry 118, notes in Entry 119, stats in Entry 120).
+- [ ] Integration: before the real ModelBundle is served, the store starts empty (a fresh database file) or mock results and their notes are removed (`analysis_note` has a foreign key to `analysis_record`), so the figures never mix the two (§4.7 G6; Entry 120).
 - [ ] Routes other than `POST /api/analyses` and `PUT …/note` answer a Content-Length above `max_size_bytes` + 64 KiB with Starlette's plain-text 413, not the §6 shape (GET-only today) (Entry 119).
 - [ ] Shared helpers (utc_now_iso, REQUEST_ID, invalid_request) live in routers and are imported across routers; move to a shared module in a later refactor PR (Entry 119).
 - [ ] Integration: limit concurrent analyses; a timed-out analyzer thread keeps running (cannot be killed), so repeated timeouts with the real model could pile up (Entry 116).
@@ -3683,7 +3736,7 @@ not used.
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
 `GET /api/status`. `POST /api/analyses` with the
-MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) are on `feat/stage17-notes`, awaiting review (Entry 119). Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; React `web/` and Compose are not yet present on main. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
+MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) are on `feat/stage17-stats`, awaiting review (Entry 120). Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; React `web/` and Compose are not yet present on main. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
 canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.
