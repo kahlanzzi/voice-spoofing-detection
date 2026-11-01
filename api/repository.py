@@ -2,7 +2,8 @@
 the sign-in tables account, session and sign_in_failure (§4.8).
 probe() is the read-only check behind GET /api/status; get_stored() and history() serve §4.5 and
 §4.4; save_note() and delete_note() serve §4.6; stats() serves §4.7. Notes live in their own table
-and never change analysis_record (FR-11). AccountRepository serves the admin command (api/admin.py).
+and never change analysis_record (FR-11). AccountRepository serves the admin command (api/admin.py), sign-in
+(api/routers/session.py) and the session check (api/session_guard.py).
 
 Never stored: audio, the original file name, the client IP address, passwords in clear (only the
 argon2id hash), session IDs in clear (only their SHA-256), the typed username of a failed sign-in
@@ -319,6 +320,16 @@ class Account:
 ACCOUNT_COLUMNS = tuple(f.name for f in fields(Account))
 
 
+@dataclass(frozen=True)
+class ActiveSession:
+    """A valid session, as the guard hands it to the routes. The session ID itself is never kept."""
+    session_hash: str
+    account_id: int
+    username: str
+    created_at: str  # UTC, ISO 8601 with Z: the sign-in time
+    expires_at: str  # absolute end
+
+
 class AccountRepository:
     """The sign-in tables (§4.8, §7). Usernames are given in their stored, lower-case form."""
 
@@ -377,3 +388,71 @@ class AccountRepository:
         with closing(connect(self.path)) as conn, conn:
             return conn.execute("DELETE FROM sign_in_failure WHERE username_hmac = ?",
                                 (username_hmac,)).rowcount > 0
+
+    def is_locked(self, username_hmac: str, now: str) -> bool:
+        """True while a lock on this typed username has not ended (§4.8 lockout)."""
+        with closing(connect(self.path)) as conn:
+            row = conn.execute("SELECT locked_until FROM sign_in_failure WHERE username_hmac = ?",
+                               (username_hmac,)).fetchone()
+        return row is not None and row[0] is not None and row[0] > now
+
+    def record_failure(self, username_hmac: str, now: str, stale_before: str, threshold: int,
+                       locked_until: str) -> int:
+        """Count one failed sign-in and return the count. It restarts at 1 when a lock has ended or the
+        last failure is older than stale_before; at threshold the username is locked until locked_until.
+        A lock still running is left as it is."""
+        with closing(connect(self.path)) as conn, conn:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute("SELECT failures, last_failure_at, locked_until FROM sign_in_failure "
+                               "WHERE username_hmac = ?", (username_hmac,)).fetchone()
+            if row is not None and row[2] is not None and row[2] > now:
+                return row[0]
+            restart = row is None or row[2] is not None or row[1] < stale_before
+            failures = 1 if restart else row[0] + 1
+            conn.execute("INSERT INTO sign_in_failure (username_hmac, failures, last_failure_at, locked_until) "
+                         "VALUES (?, ?, ?, ?) ON CONFLICT (username_hmac) DO UPDATE SET "
+                         "failures = excluded.failures, last_failure_at = excluded.last_failure_at, "
+                         "locked_until = excluded.locked_until",
+                         (username_hmac, failures, now, locked_until if failures >= threshold else None))
+        return failures
+
+    def rehash_password(self, account_id: int, old_hash: str, new_hash: str) -> bool:
+        """Store a hash with the current parameters (§4.8 rehash). Only if the stored hash is still
+        old_hash; sessions and password_changed_at are kept, unlike set_password(). True if replaced."""
+        with closing(connect(self.path)) as conn, conn:
+            return conn.execute("UPDATE account SET password_hash = ? WHERE account_id = ? AND password_hash = ?",
+                                (new_hash, account_id, old_hash)).rowcount > 0
+
+    def start_session(self, session_hash: str, account_id: int, now: str, expires_at: str, idle_before: str,
+                      old_session_hash: str | None = None) -> None:
+        """Create a session in one transaction, after deleting the session of the cookie sent with the
+        sign-in (no session fixation) and every ended session (§4.8)."""
+        with closing(connect(self.path)) as conn, conn:
+            conn.execute("BEGIN IMMEDIATE")
+            if old_session_hash is not None:
+                conn.execute("DELETE FROM session WHERE session_hash = ?", (old_session_hash,))
+            conn.execute("DELETE FROM session WHERE expires_at <= ? OR last_seen_at < ?", (now, idle_before))
+            conn.execute("INSERT INTO session (session_hash, account_id, created_at, last_seen_at, expires_at) "
+                         "VALUES (?, ?, ?, ?, ?)", (session_hash, account_id, now, now, expires_at))
+
+    def touch_session(self, session_hash: str, now: str, idle_before: str) -> ActiveSession | None:
+        """The session with this hash, its last_seen_at set to now; None if unknown or ended. An ended
+        session (expires_at reached, or unused since before idle_before) is deleted."""
+        with closing(connect(self.path)) as conn, conn:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute("SELECT s.account_id, a.username, s.created_at, s.last_seen_at, s.expires_at "
+                               "FROM session AS s JOIN account AS a ON a.account_id = s.account_id "
+                               "WHERE s.session_hash = ?", (session_hash,)).fetchone()
+            if row is None:
+                return None
+            account_id, username, created_at, last_seen_at, expires_at = row
+            if expires_at <= now or last_seen_at < idle_before:
+                conn.execute("DELETE FROM session WHERE session_hash = ?", (session_hash,))
+                return None
+            conn.execute("UPDATE session SET last_seen_at = ? WHERE session_hash = ?", (now, session_hash))
+        return ActiveSession(session_hash, account_id, username, created_at, expires_at)
+
+    def end_session(self, session_hash: str) -> bool:
+        """Delete one session (sign-out). True if it existed."""
+        with closing(connect(self.path)) as conn, conn:
+            return conn.execute("DELETE FROM session WHERE session_hash = ?", (session_hash,)).rowcount > 0

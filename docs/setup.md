@@ -68,6 +68,18 @@ set -a; . ./.env; set +a
 python -m api.admin unlock analyst01
 ```
 
+## Running the API (Stage 17)
+
+The API refuses to start without `VSD_SIGNIN_HMAC_KEY`. Run it with `.env` loaded (`python-dotenv`,
+pinned in `requirements.txt`):
+
+```bash
+python -m uvicorn api.main:app --port 8001 --env-file .env
+```
+
+`GET /api/health` needs nothing. Sign in with `POST /api/session` and an `Origin` header from
+`allowed_origins` (`http://localhost:8001` in `configs/api.yaml`); see `docs/api_design.md` §4.8.
+
 ## Colab
 
 1. Open a notebook from `notebooks/` in Colab (Python 3.13 runtime, GPU when training).

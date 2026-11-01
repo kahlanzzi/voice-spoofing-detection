@@ -1,4 +1,4 @@
-"""Request and response shapes (docs/api_design.md §4.1, §4.2, §4.4, §4.6, §4.7, §5, §6). Every model
+"""Request and response shapes (docs/api_design.md §4.1, §4.2, §4.4, §4.6, §4.7, §4.8, §5, §6). Every model
 forbids extra fields.
 
 AnalysisResponse is exactly the 8 Protocol §11 fields; the web app mirrors it (ADR 0008 §3), so a
@@ -138,3 +138,19 @@ class LimitsResponse(_Strict):
     max_size_bytes: int
     max_duration_s: int
     audio_deletion: str
+
+
+class SignInRequest(_Strict):
+    # §4.8 body; the password length limit is config, checked by the route. Never trimmed.
+    username: StrictStr = Field(min_length=1)
+    password: StrictStr = Field(min_length=1)
+
+
+class SessionResponse(_Strict):
+    username: str
+    signed_in_at: str
+    expires_at: str
+
+
+class HealthResponse(_Strict):
+    ok: Literal[True]

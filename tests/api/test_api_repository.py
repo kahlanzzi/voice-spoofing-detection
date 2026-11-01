@@ -402,3 +402,88 @@ def test_clear_failures(repo, accounts):
         conn.close()
     assert accounts.clear_failures(digest) is True
     assert accounts.clear_failures(digest) is False
+
+
+DIGEST = "ef" * 32
+LATER = "2026-11-01T09:01:00Z"
+
+
+def failure_row(repo):
+    conn = connect(repo.path)
+    try:
+        return conn.execute("SELECT failures, last_failure_at, locked_until FROM sign_in_failure").fetchall()
+    finally:
+        conn.close()
+
+
+def test_record_failure_counts_then_locks_at_the_threshold(repo, accounts):
+    for n in (1, 2):
+        assert accounts.record_failure(DIGEST, NOW, "2026-11-01T08:45:00Z", 3, "2026-11-01T09:15:00Z") == n
+    assert not accounts.is_locked(DIGEST, NOW)
+    assert accounts.record_failure(DIGEST, NOW, "2026-11-01T08:45:00Z", 3, "2026-11-01T09:15:00Z") == 3
+    assert failure_row(repo) == [(3, NOW, "2026-11-01T09:15:00Z")]
+    assert accounts.is_locked(DIGEST, LATER)
+    assert not accounts.is_locked(DIGEST, "2026-11-01T09:15:00Z")
+    assert not accounts.is_locked("00" * 32, NOW)
+
+
+def test_record_failure_keeps_a_running_lock(repo, accounts):
+    for _ in range(3):
+        accounts.record_failure(DIGEST, NOW, "2026-11-01T08:45:00Z", 3, "2026-11-01T09:15:00Z")
+    assert accounts.record_failure(DIGEST, LATER, "2026-11-01T08:46:00Z", 3, "2026-11-01T09:16:00Z") == 3
+    assert failure_row(repo) == [(3, NOW, "2026-11-01T09:15:00Z")]
+
+
+def test_record_failure_restarts_after_a_lock_ends_or_an_old_failure(repo, accounts):
+    for _ in range(3):
+        accounts.record_failure(DIGEST, NOW, "2026-11-01T08:45:00Z", 3, "2026-11-01T09:15:00Z")
+    assert accounts.record_failure(DIGEST, "2026-11-01T09:20:00Z", "2026-11-01T09:05:00Z", 3,
+                                   "2026-11-01T09:35:00Z") == 1
+    assert failure_row(repo) == [(1, "2026-11-01T09:20:00Z", None)]
+    assert accounts.record_failure(DIGEST, "2026-11-01T10:00:00Z", "2026-11-01T09:45:00Z", 3,
+                                   "2026-11-01T10:15:00Z") == 1
+
+
+def test_rehash_password_replaces_only_the_expected_hash_and_keeps_sessions(repo, accounts):
+    account_id = accounts.create_account("analyst01", HASH, "2026-11-01T08:00:00Z")
+    add_session(repo, account_id, 1)
+    new_hash = HASH.replace("c2FsdH", "bmV3c2")
+    assert not accounts.rehash_password(account_id, new_hash, HASH)
+    assert accounts.rehash_password(account_id, HASH, new_hash)
+    account = accounts.get_account("analyst01")
+    assert (account.password_hash, account.password_changed_at) == (new_hash, "2026-11-01T08:00:00Z")
+    assert sessions_of(repo, account_id) == 1
+
+
+def test_start_session_replaces_the_old_one_and_deletes_ended_ones(repo, accounts):
+    account_id = accounts.create_account("analyst01", HASH, NOW)
+    accounts.start_session("01" * 32, account_id, NOW, "2026-11-01T21:00:00Z", "2026-11-01T08:30:00Z")
+    accounts.start_session("02" * 32, account_id, NOW, "2026-11-01T21:00:00Z", "2026-11-01T08:30:00Z")
+    accounts.start_session("03" * 32, account_id, LATER, "2026-11-01T21:01:00Z", "2026-11-01T08:31:00Z",
+                           old_session_hash="01" * 32)
+    assert sessions_of(repo, account_id) == 2
+    # Two hours later, 02 and 03 are idle (last seen before the cutoff) and are deleted.
+    accounts.start_session("04" * 32, account_id, "2026-11-01T11:00:00Z", "2026-11-01T23:00:00Z",
+                           "2026-11-01T10:30:00Z")
+    assert sessions_of(repo, account_id) == 1
+
+
+def test_touch_session_updates_or_deletes(repo, accounts):
+    account_id = accounts.create_account("analyst01", HASH, NOW)
+    accounts.start_session("01" * 32, account_id, NOW, "2026-11-01T21:00:00Z", "2026-11-01T08:30:00Z")
+    session = accounts.touch_session("01" * 32, LATER, "2026-11-01T08:31:00Z")
+    assert (session.account_id, session.username, session.created_at, session.expires_at) == \
+        (account_id, "analyst01", NOW, "2026-11-01T21:00:00Z")
+    assert accounts.touch_session("02" * 32, LATER, "2026-11-01T08:31:00Z") is None
+    # Idle: last seen at LATER, cutoff after it.
+    assert accounts.touch_session("01" * 32, "2026-11-01T09:40:00Z", "2026-11-01T09:10:00Z") is None
+    assert sessions_of(repo, account_id) == 0
+    accounts.start_session("01" * 32, account_id, NOW, "2026-11-01T21:00:00Z", "2026-11-01T08:30:00Z")
+    assert accounts.touch_session("01" * 32, "2026-11-01T21:00:00Z", "2026-11-01T20:30:00Z") is None  # absolute
+
+
+def test_end_session(repo, accounts):
+    account_id = accounts.create_account("analyst01", HASH, NOW)
+    accounts.start_session("01" * 32, account_id, NOW, "2026-11-01T21:00:00Z", "2026-11-01T08:30:00Z")
+    assert accounts.end_session("01" * 32)
+    assert not accounts.end_session("01" * 32)
