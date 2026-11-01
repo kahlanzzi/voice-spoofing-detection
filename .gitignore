@@ -60,6 +60,14 @@ audit_out/
 wandb/
 docs/audit_evidence/stage4_split/for2sec_split_assignments.csv
 
+# --- Node / web (Stage 18) ---------------------------------------------------
+node_modules/
+web/dist/
+web/test-results/
+web/playwright-report/
+web/blob-report/
+web/playwright/.cache/
+
 # --- Python ------------------------------------------------------------------
 __pycache__/
 *.py[cod]

@@ -42,3 +42,35 @@ jobs:
       # --- Docs reminder (always runs, never fails the build) -----------------
       - name: Docs reminder
         run: bash scripts/check-docs.sh
+
+  # Analyst web app (Stage 18, ADR 0008 §5). Node comes from web/.nvmrc (exact pin).
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: web/.nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web deps (lockfile only)
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test -- --run
+
+      - name: Build
+        run: npm run build

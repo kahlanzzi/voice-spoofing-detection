@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 18 PR 1a: `web/` scaffold (Vite 8, React 19, TypeScript 6.0.3 strict, ESLint 10, Vitest + React Testing Library), Node 26.13.0 in `web/.nvmrc`, `web/.npmrc` (exact saves, strict engines), theme storage (`vsd-theme`, `<html data-theme>`), placeholder page, CI `web` job, pytest guards for exact pins, `.nvmrc` and the `node_modules/` ignore.
 - Stage 17 Step 8b: nginx `web` service (`deploy/nginx.conf`, `nginx:1.30.6-alpine` by digest, `8001:80`, after a healthy `api`): only `/api/` proxied and a `/` placeholder, API errors passed through unchanged with §6 JSON only for nginx's own 404/413/429/503, `POST /api/session` limited to 10/min burst 5 per IP, no client IP in logs or forwarded headers, request bodies on a tmpfs; `api_design.md` §2/§4.8/§6/§9 updated.
 - Stage 17 Step 8a: API image (`deploy/api.Dockerfile`, Python 3.13.15 slim by digest, non-root, `requirements-api.txt`), `.dockerignore` allowlist, `docker-compose.yml` with the `api` service (no published port, key from `.env`, store on a named volume, uploads on a config-sized tmpfs), `configs/api_logging.yaml` (api logger at INFO, no access log).
 - Stage 17 sign-in, Step 7b-2: every `/api` route but `POST /session` and `GET /health` needs a session, `Origin` on `POST /analyses` and `PUT …/note` (refused before the body is read); notes record their author (`updated_by`), with a one-transaction migration of existing database files.
