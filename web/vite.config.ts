@@ -11,9 +11,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     // Under Vitest only, the contract tests read api/schemas.py and docs/api_design.md
-    // (src/api/types.test.ts); `.` keeps Vite's default. Folders, because a file entry does not admit
-    // a `?raw` import. The dev server serves web/ only, as before.
-    ...(process.env.VITEST ? { fs: { allow: ['.', '../api', '../docs'] } } : {}),
+    // (src/api/types.test.ts) and deploy/nginx.conf (src/routing/routes.test.ts); `.` keeps Vite's default.
+    // Folders, because a file entry does not admit a `?raw` import. The dev server serves web/ only, as before.
+    ...(process.env.VITEST ? { fs: { allow: ['.', '../api', '../deploy', '../docs'] } } : {}),
     proxy: {
       '/api': {
         target: API_ORIGIN,
