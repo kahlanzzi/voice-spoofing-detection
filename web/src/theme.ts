@@ -1,7 +1,7 @@
 // Theme choice (team decision 2026-11-01): System, Light or Dark, kept in localStorage and applied
 // as <html data-theme>. "system" removes the attribute so prefers-color-scheme decides (prototype
 // applyTheme). Storage can be missing or throw (private mode, blocked site data): every access is
-// guarded and falls back to "system". No UI control yet (Stage 18 PR 6).
+// guarded and falls back to "system". The control is the rail footer's <select> (Stage 18 PR 6b).
 
 export type ThemeChoice = 'system' | 'light' | 'dark'
 

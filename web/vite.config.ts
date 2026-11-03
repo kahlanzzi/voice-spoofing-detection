@@ -29,6 +29,8 @@ export default defineConfig({
     environment: 'jsdom',
     // e2e/ belongs to Playwright (playwright.config.ts), never to Vitest.
     exclude: [...configDefaults.exclude, 'e2e/**'],
+    // A window.scrollTo spy before each test: jsdom does not implement it (src/test/setup.ts).
+    setupFiles: ['./src/test/setup.ts'],
     // Process CSS in tests: without it Vitest returns '' for CSS, `?raw` included, and the token and
     // colour tests would read empty files.
     css: true,

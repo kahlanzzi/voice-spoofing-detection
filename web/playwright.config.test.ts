@@ -37,7 +37,7 @@ describe('playwright.config.ts', () => {
     ])
   })
 
-  it('runs every spec file in exactly one project per browser; lockout and outage last', () => {
+  it('runs every spec file in exactly one project per browser; lockout, outage and the failed sign-out last', () => {
     const specs = readdirSync(new URL('./e2e', import.meta.url)).filter((name) => name.endsWith('.spec.ts'))
     const list = (value: unknown) => (value === undefined ? undefined : [value].flat())
     const runs = (project: NonNullable<typeof config.projects>[number], file: string) =>
@@ -47,7 +47,7 @@ describe('playwright.config.ts', () => {
       for (const file of specs) expect(projects.filter((project) => runs(project, file)).length, file).toBe(1)
       expect(specs.filter((file) => runs(projects.find((p) => p.name === `${browser}-last`)!, file))).toEqual(LAST)
     }
-    expect(LAST).toEqual(['locked.spec.ts', 'outage.spec.ts'])
+    expect(LAST).toEqual(['locked.spec.ts', 'outage.spec.ts', 'signout-failed.spec.ts'])
   })
 
   it('never bypasses the CSP (a CSP block of axe is reported)', () => {
@@ -85,32 +85,32 @@ describe('the sign-in POST budget', () => {
   const line = (method: string, path: string, status: number) =>
     `2026-11-03T10:00:00+00:00 "${method} ${path}" ${status} 98 0.012`
   const post = (status: number) => line('POST', '/api/session', status)
-  // A: setup 200, invalid 401, denied 403, http.spec 403 ×2. B: 401 ×5, then 429 account_locked.
-  const green = [post(200), post(401), post(403), post(403), post(403), ...Array(5).fill(post(401)), post(429)]
+  // A: setup 200, invalid 401, denied 403, http.spec 403 ×2, signout.spec 200. B: 401 ×5, then 429 account_locked.
+  const green = [post(200), post(401), post(403), post(403), post(403), post(200), ...Array(5).fill(post(401)), post(429)]
   const noise = [line('GET', '/api/session', 401), line('GET', '/signin', 200), line('DELETE', '/api/session', 403), line('POST', '/api/analyses', 403), '']
 
-  it('plans two segments, each within a fresh zone, 11 POSTs and one 429 in all', () => {
-    expect(SEGMENTS).toEqual({ A: 5, B: 6 })
+  it('plans two segments, each within a fresh zone (both full), 12 POSTs and one 429 in all', () => {
+    expect(SEGMENTS).toEqual({ A: 6, B: 6 })
     for (const posts of Object.values(SEGMENTS)) expect(posts).toBeLessThanOrEqual(ZONE_CAPACITY)
-    expect(PLAN).toEqual({ posts: 11, limited: 1 })
+    expect(PLAN).toEqual({ posts: 12, limited: 1 })
   })
 
   it('counts only POST /api/session lines and their 429s', () => {
-    expect(countLoggedSignIns([...noise, ...green])).toEqual({ posts: 11, limited: 1 })
+    expect(countLoggedSignIns([...noise, ...green])).toEqual({ posts: 12, limited: 1 })
     expect(countLoggedSignIns([post(429), line('POST', '/api/analyses', 429)])).toEqual({ posts: 1, limited: 1 })
     expect(countLoggedSignIns([])).toEqual({ posts: 0, limited: 0 })
   })
 
-  it('a green run needs exactly 11 POSTs and exactly one 429', () => {
+  it('a green run needs exactly 12 POSTs and exactly one 429', () => {
     expect(budgetProblem(countLoggedSignIns([...noise, ...green]), true)).toBeNull()
-    expect(budgetProblem(countLoggedSignIns(green.slice(1)), true)).toMatch('must show 11')
-    expect(budgetProblem(countLoggedSignIns([...green, post(200)]), true)).toMatch('more than the planned 11')
-    expect(budgetProblem(countLoggedSignIns([...green.slice(0, 10), post(401)]), true)).toMatch('must show 1 × 429')
-    expect(budgetProblem(countLoggedSignIns([...green.slice(0, 9), post(429), post(429)]), true)).toMatch('2 sign-in POST(s) answered 429')
+    expect(budgetProblem(countLoggedSignIns(green.slice(1)), true)).toMatch('must show 12')
+    expect(budgetProblem(countLoggedSignIns([...green, post(200)]), true)).toMatch('more than the planned 12')
+    expect(budgetProblem(countLoggedSignIns([...green.slice(0, 11), post(401)]), true)).toMatch('must show 1 × 429')
+    expect(budgetProblem(countLoggedSignIns([...green.slice(0, 10), post(429), post(429)]), true)).toMatch('2 sign-in POST(s) answered 429')
   })
 
   it('a green run with no log line fails: the check would be reading nothing', () => {
-    expect(budgetProblem(countLoggedSignIns([]), true)).toMatch("must show 11 sign-in POSTs, nginx's log shows 0")
+    expect(budgetProblem(countLoggedSignIns([]), true)).toMatch("must show 12 sign-in POSTs, nginx's log shows 0")
     expect(budgetProblem(countLoggedSignIns(noise), true)).toMatch('shows 0')
   })
 

@@ -23,6 +23,7 @@ it('scans the source files', () => {
       '/src/shell/Shell.tsx',
       '/src/shell/Shell.css',
       '/src/shell/PageChange.tsx',
+      '/src/shell/RailFoot.tsx',
     ]),
   )
   // CSS is read as text only with test.css enabled (vite.config.ts); an empty file would pass silently.

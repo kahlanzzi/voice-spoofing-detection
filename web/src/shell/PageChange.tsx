@@ -17,6 +17,8 @@ import { useSession } from '../session/useSession'
 import { documentTitle, pageName } from './pageNames'
 
 const EXPIRED_MESSAGE = 'Your session expired. Sign in again to continue.'
+// Prototype line 1496, after the rail's Sign out (PR 6b).
+const SIGNED_OUT_MESSAGE = 'Signed out.'
 
 export default function PageChange() {
   const { key, pathname } = useLocation()
@@ -35,9 +37,10 @@ export default function PageChange() {
 
     if (!(navigationType === 'POP' && pathname === '/history')) window.scrollTo(0, 0)
     h1.focus({ preventScroll: true })
-    const expired = pathname === '/signin' && session.status === 'signedOut' && session.reason === 'expired'
+    const reason = pathname === '/signin' && session.status === 'signedOut' ? session.reason : 'none'
     const message = document.createElement('p')
-    message.textContent = expired ? EXPIRED_MESSAGE : `${pageName(pathname)} page`
+    message.textContent =
+      reason === 'expired' ? EXPIRED_MESSAGE : reason === 'signOut' ? SIGNED_OUT_MESSAGE : `${pageName(pathname)} page`
     live.current?.replaceChildren(message)
   }, [key, pathname, navigationType, session])
 

@@ -34,6 +34,7 @@ vi.mock('../session/session', () => ({
   expire: vi.fn(),
   markSignedIn: vi.fn(),
   markSignedOut: vi.fn(),
+  signOut: vi.fn(),
   startSession: vi.fn(),
 }))
 
@@ -42,6 +43,7 @@ const OTHER_ID = 'req_' + 'fedcba9876543210'.repeat(2)
 const SIGNED_IN: SessionState = { status: 'signedIn', username: 'analyst01' }
 const SIGNED_OUT: SessionState = { status: 'signedOut', reason: 'none' }
 const EXPIRED: SessionState = { status: 'signedOut', reason: 'expired' }
+const SIGNED_OUT_BY_ANALYST: SessionState = { status: 'signedOut', reason: 'signOut' }
 
 let scrollTo: ReturnType<typeof vi.spyOn>
 
@@ -224,5 +226,22 @@ describe('sign-in and expiry', () => {
     expect(document.activeElement).toBe(h1())
     expect(announced()).toBe('Your session expired. Sign in again to continue.')
     expect(document.title).toBe('Sign in · Voice Check analyst console')
+  })
+
+  it('sign-out mid-page: focus on the S1 h1, "Signed out." (prototype line 1496), scroll to the top', async () => {
+    renderAt(['/history'], SIGNED_IN)
+    scrollTo.mockClear()
+    await act(async () => store.set(SIGNED_OUT_BY_ANALYST))
+    expect(h1().textContent).toBe('Sign in to the analyst console')
+    expect(document.activeElement).toBe(h1())
+    expect(announced()).toBe('Signed out.')
+    expect(document.title).toBe('Sign in · Voice Check analyst console')
+    expect(scrollTo).toHaveBeenCalledWith(0, 0)
+  })
+
+  it('a first load of /signin after a sign-out says nothing', () => {
+    renderAt(['/analyze'], SIGNED_OUT_BY_ANALYST)
+    expect(h1().textContent).toBe('Sign in to the analyst console')
+    expect(announced()).toBe('')
   })
 })

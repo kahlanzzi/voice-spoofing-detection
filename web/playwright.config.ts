@@ -6,10 +6,10 @@ import { defineConfig, devices } from '@playwright/test'
 // No trace, video or screenshot: traces hold Set-Cookie headers, pictures can show the password field. Reporters
 // list and json only, so the secret scan reads plain text. No retries and one worker: the sign-in POSTs of a run
 // are counted against nginx's burst (run.ts checks nginx's log). Per browser: setup → main → last, ordered by
-// dependencies. The last project restarts nginx for its own burst (lockout) and stops the api (outage), so nothing
-// runs after it.
+// dependencies. The last project restarts nginx for its own burst (lockout) and stops the api (outage, then the failed
+// sign-out), so nothing runs after it.
 const SETUP = 'signin.setup.spec.ts'
-export const LAST = ['locked.spec.ts', 'outage.spec.ts']
+export const LAST = ['locked.spec.ts', 'outage.spec.ts', 'signout-failed.spec.ts']
 
 const browsers = [
   { name: 'chromium', use: devices['Desktop Chrome'] },

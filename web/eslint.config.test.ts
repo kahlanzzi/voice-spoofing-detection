@@ -114,6 +114,12 @@ describe('no timers, storage or console in src/shell', () => {
     expect(await ruleIds("console.log('x')\n", 'src/shell/planted.test.tsx')).toEqual([])
     expect(await ruleIds('setTimeout(() => undefined, 1)\n', 'src/shell/planted.test.tsx')).toContain('no-restricted-syntax')
   })
+
+  // PR 6b: the rail footer stores the theme through theme.ts only, and sign-out lives in session.ts.
+  it.each(['src/shell/RailFoot.tsx', 'src/session/session.ts'])('%s keeps the timer, storage and console bans', async (file) => {
+    const ids = await ruleIds("setTimeout(() => undefined, 1)\nlocalStorage.setItem('vsd-theme', 'dark')\nconsole.log('x')\n", file)
+    expect(ids).toEqual(expect.arrayContaining(['no-restricted-syntax', 'no-restricted-globals']))
+  })
 })
 
 // The sign-in screen (PR 4): the password and Analyst ID live in its state only, and no lockout countdown, so
