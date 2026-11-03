@@ -4694,6 +4694,100 @@ the checks. The plan was approved before the build; the open questions were take
 
 ---
 
+### Entry 137 — Stage 18 PR 6a: app shell, rail, drawer and page-change rules (2026-11-03)
+
+**What:** on `feat/stage18-shell` (Iheb, Part E; from `main` at `3963f5e`, PR #97, not stacked), following the
+approved plan. PR 6 is split (code over the ~330-line limit): **6a** (this PR) is the layout, rail, mobile top bar
+and drawer, skip link, landmarks and page-change rules; **6b** (rail footer: Analyst ID, theme control, sign-out, the
+`e2e-signout` account) gets its own plan and branches from `main` after 6a merges, never stacked. No `api/`,
+`deploy/`, `configs/` or CI change. Design sources: HANDOFF (H) and `analyst-console-prototype.html` (P) only.
+- `web/src/shell/Shell.tsx` + `Shell.css`, a layout route under `RequireSession` (the guard stays the only access
+  check; `/signin` and Checking never render it): skip link "Skip to main content", first focusable, focuses the h1
+  (H l.173, P l.450, l.1398); `header.topbar` (≤ 860 px: Menu with `aria-expanded`/`aria-controls="rail"`, New
+  analysis; H l.85, P l.805–806); `aside#rail "Main menu"` with the brand, New analysis (48 px, H l.245) and
+  `nav "Pages"`: Analyze, History, Overview, System status (H l.40, P l.811; `NavLink` sets `aria-current="page"`,
+  History stays current on details, P l.799; bar + bold, P l.137); an empty `rail-foot` (status line PR 7, footer
+  6b); `main#main > .wrap > Outlet` (H l.175). Drawer (H l.176, P l.403–411, 804–807, 1402–1403, 1480–1483): focus
+  to the first page link, top bar and main `inert`, Escape or scrim close and return focus to Menu; its open state is
+  the location key it was opened at, so any navigation, Back included, closes it (P l.757, 773); `useNarrow`
+  (`matchMedia('(max-width: 860px)')`, an event) keeps the page from being left inert when the window widens. New
+  analysis navigates to `/analyze`; the reset of the current analysis (P l.762) comes with PR 8.
+- `web/src/shell/PageChange.tsx`, rendered once in the root layout (`Root.tsx`), so the shell, S1 and Page not found
+  share one rule: a `useLayoutEffect` on `[location.key, pathname, navigationType, session]` (after the commit,
+  before paint, so the new page is never painted at the old scroll position). A page is on screen when an h1 is.
+
+| Trigger | Focus | Announcement (polite) | Title | Scroll |
+|---|---|---|---|---|
+| First page of a load, load-time redirects included | none | none | set | none |
+| Checking (no h1) | none | none | unchanged | none |
+| Another pathname by link, redirect (S1 → next) or Back/Forward | h1 (`preventScroll`) | "<Page> page" | set | top |
+| Back/Forward to `/history` | h1 | "History page" | set | untouched (PR 12) |
+| Query-only change, link to the current page | none | none | unchanged | none |
+| Expiry → `/signin` | S1 h1 | "Your session expired. Sign in again to continue." (P l.1385, polite: Q10) | set | top |
+
+  Names and titles `<name> · Voice Check analyst console` (P l.720, 789): Analyze a recording, History, Analysis
+  details, Overview, System status, Sign in, Page not found. The message goes into a new node of the live region
+  through a ref: the same text is announced again (details → details) with no timer (P l.659 used 40 ms) and no state
+  set in an effect.
+- Stubs: no `<main>` of their own (the shell owns it), `h1 tabIndex={-1}` (H l.70); Analyze's h1 is "Analyze a
+  recording" (P l.868). Checking and Page not found keep a plain `main` (`.plain`, the old placeholder rule).
+- Icons upload, plus, history, grid, server, menu (P l.663–672). ESLint: `src/shell/**` joins the timer ban and the
+  storage/console ban (the theme is stored by `theme.ts` only).
+
+**Decisions (Iheb, on the plan, 2026-11-03; user-reported):** Q1 **revision:** the earlier "theme control in the top
+bar" (2026-11-01) is revised to follow the design source. Analyst ID, theme control and sign-out go in the rail
+footer, inside the drawer on mobile: H l.85 and P l.150 have no desktop top bar (≤ 860 px: Menu and New analysis
+only, P l.805–806), P l.812–813 puts the analyst and Sign out in the rail footer, and api_design.md l.66 says "Rail
+sign-out". Q2 native `<select>` (P l.485). Q3 the rail status line, its "(mock)" tag from `/status.mock` and the
+degraded notice → PR 7 (one status store with S10). Q4 New analysis rendered, navigates to `/analyze`, reset in
+PR 8. Q5 no `next` after an explicit sign-out; expiry keeps it. Q6 a failed DELETE keeps the analyst signed in, with
+the plan's copy marked as a proposal. Q7 an Open item, below. Q8 username + "Analyst ID". Q9 "Analyze a recording"
+h1 and title, "System status" rail label. Q10 polite. Q11 6b from `main` after 6a merges, never stacked. Q5, Q6 and
+Q8 are built in 6b.
+
+**ui-ux-pro-max (review checklist only; no `--design-system`, no `--persist`):** skip link, focus on route change,
+`aria-current` + bar + bold, reduced motion (drawer transition off by `base.css`), no side scroll, decorative icons
+`aria-hidden`: applied. Focus ring in the rail and top bar `--nav-indicator`: 7.39 / 8.85:1 on `--nav`, 6.19 /
+7.01:1 on `--nav-2` (light / dark) [verified, WCAG 2.x formula]. `--nav-line` borders are 1.49 / 1.51:1, kept only
+on the text-labelled Menu button as in P l.409; 6b's select needs `--nav-muted` (7.33 / 7.53:1). "Confirm before
+logout" is not applied: §4.8 says sign-out asks for no confirmation, and D1 covers an unsaved note (PR 11).
+`100dvh` in place of the prototype's `100vh - 40px` (its own banner).
+
+**Size:** added lines (`git diff --numstat`): code +432, comments included (estimate 320, over by the comment density and the drawer edge cases); Vitest +492; e2e +114.
+
+**Tests [verified]:**
+- `cd web && npm run typecheck` → exit 0; `npm run lint` → 0 problems; `npx vitest --run` → `Test Files 17 passed
+  (17)`, `Tests 675 passed (675)` (was 628). New: `PageChange.test.tsx` 19 (first load ×5, StrictMode included;
+  links ×6, details → details in a new node, query-only, same page; Back/Forward, Back to History without scroll;
+  S1 → page; expiry), `Shell.test.tsx` 21 (landmarks, rail order and hrefs, empty footer, `aria-current` ×6, skip
+  link, wide Tab order, New analysis ×2, drawer ×8). `colours.test.ts` scans the three shell files; +6 lint tests.
+  jsdom applies `Shell.css` but not its media queries, so the narrow layout is checked in e2e.
+- `npm run build` → exit 0. `.venv/bin/python -m pytest -q` → `1278 passed, 9 skipped`.
+- Stack rebuilt from this branch: `npm run test:e2e` → `40 passed (2.6m)`, `sign-in POSTs through nginx: 11
+  (planned 11), 429: 1 (planned 1)`, `secret scan: 0 matches in 2 files`; `npm run test:e2e:firefox` → `40 passed
+  (5.2m)`, the same counts. New: `shell.spec.ts` 9 (first load; rail link, Back and Forward; New analysis; no side
+  scroll at 1440/1024/768/640/390; 390 px top bar, 44 px targets, drawer focus, `inert`, Escape, axe light and dark
+  with the drawer closed and open); `pages.spec.ts` now checks one `main`, the title and the current item. No sign-in
+  POST added: the budget stays 11 with one 429, as approved for 6a.
+- CI dry run: default stack stopped; `COMPOSE_PROJECT_NAME=vsd-ci`, a fresh `openssl rand -hex 32` key; `docker
+  compose -p vsd-ci up -d --build --wait --wait-timeout 240`; `npm ci`; `npx playwright install chromium`; `npm run
+  test:e2e` → `40 passed (3.4m)`, `11 (planned 11), 429: 1 (planned 1)`, scan clean (exit code not captured
+  separately); `down -v`; default stack started again. The GitHub job itself is not run (no push).
+- Planted failures (not committed, reverted): `h1.focus()` removed → 12 of 40 shell tests fail; `background: #13233A`
+  in `Shell.css` → `colours.test.ts` "/src/shell/Shell.css has no raw colour value" fails. Restored: 675 passed. The
+  sign-out plant belongs to 6b.
+- Live on :8001 through the e2e suite (real nginx, both browsers). **Not done:** a manual keyboard pass by a person
+  and a real screen-reader pass (H l.303), still required.
+- No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
+the checks; ui-ux-pro-max was used as a read-only checklist. The plan was approved before the build, with the
+answers above. The team reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
 ## Open items
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
@@ -4962,7 +5056,7 @@ the checks. The plan was approved before the build; the open questions were take
 - [x] uvicorn's default access log prints the client IP; §1/§7 say no IP is stored. Decide for Stage 19 (e.g. `--no-access-log` or a log filter) (Entry 116). (`--no-access-log --no-proxy-headers` in the image and the documented local command; Entry 125)
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
 
-**Stage 18 web (Part E, Entries 127–136)**
+**Stage 18 web (Part E, Entries 127–137)**
 - [x] PR 1a: `web/` scaffold, theme storage, CI `web` job, pytest pin guards (merged in PR #88, `86cc77d`; Entry 127).
 - [ ] Add `web` as a required check on `main` after PR 1a merges (Iheb; Entry 127).
 - [x] PR 1b: `tokens.css`, `base.css`, fontsource fonts, token, contrast and no-raw-colour tests (merged in PR #89, `9a119d2`; Entry 128).
@@ -4974,7 +5068,11 @@ the checks. The plan was approved before the build; the open questions were take
 - [x] PR 3c: `react-router` 8.5.1 (A15), route list synced with `deploy/nginx.conf`, `next` check, guard, stub pages (merged in PR #94, `b06df7b`; Entry 133).
 - [x] PR 4: S1 Sign in; `next` read by the guard with `safeNext` after `POST /api/session`, never stored or logged (merged in PR #95, `1d41512`; Entry 134).
 - [x] PR 5a: e2e harness and sign-in flows (merged in PR #96, `880ec2b`; Entry 135).
-- [ ] PR 5b: axe (light/dark, HANDOFF l.297 tags) on S1 variants and stubs, HTTP/Origin matrix, security headers and JSON 404, lockout with a second `restart web`, outage + Retry (on `chore/stage18-e2e-axe`, awaiting review; Entry 136).
+- [x] PR 5b: axe (light/dark, HANDOFF l.297 tags) on S1 variants and stubs, HTTP/Origin matrix, security headers and JSON 404, lockout with a second `restart web`, outage + Retry (merged in PR #97, `3963f5e`; Entry 136).
+- [ ] PR 6a: app shell, rail, drawer, page-change rules (on `feat/stage18-shell`, awaiting review; Entry 137).
+- [ ] PR 6b: rail footer (username + "Analyst ID", theme `<select>`, sign-out with no `next` after an explicit sign-out; a failed DELETE stays signed in), `e2e-signout` account, budget 12 with A = 6; own plan, from `main` after 6a merges (Entry 137).
+- [ ] PR 7: the rail status line (`GET /api/status` once, no polling; 500 or no answer → Unavailable), its "(mock)" tag from `/status.mock` and the degraded notice, in one status store with S10 (Entry 137).
+- [ ] PR 8/11 rule: an explicit sign-out clears the `File` and note-draft stores; expiry does not (prototype l.770, l.1494; Entry 137). D1 before sign-out with an unsaved note is PR 11.
 - [ ] Add `e2e` as a required check on `main` after 5 green PR runs in a row (Iheb; Entry 135).
 - [ ] nginx takes ~5 s to return 503 when the api is stopped (connect timeout); consider a lower proxy_connect_timeout in a deploy/ fix PR (Entry 136).
 - [ ] PR 8: extract `Button`, `TextField` and `Banner` (HANDOFF line 133) from S1 into `web/src/components/` (deferred on purpose in PR 4; Entry 134).
@@ -5028,7 +5126,7 @@ the checks. The plan was approved before the build; the open questions were take
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
 `GET /api/status`. `POST /api/analyses` with the
-MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) merged in PR #88 (`86cc77d`; Entry 127); PR 1b (design tokens, base styles, IBM Plex fonts, token and contrast tests) merged in PR #89 (`9a119d2`; Entry 128), its 4 non-text pairs below 3:1 fixed in PR #92 (`c8c047e`; Entry 131). PR 2 (the `web` image: the built app served by nginx on the A2 routes, `/` → `/analyze`, A13 security headers on every answer) merged in PR #90 (`d352bad`; Entry 129). PR 3 is split in three (Entry 130): PR 3a (API client, `ApiError`, API types, no-timer lint rule) merged in PR #91 (`b6f09d6`; Entry 130); 3b (session store, expiry handler, `checkSession` on load) merged in PR #93 (`ee5fd50`; Entry 132); 3c (`react-router` 8.5.1, the six app routes checked against `deploy/nginx.conf`, the session guard, the `next` check, stub pages) merged in PR #94 (`b06df7b`; Entry 133). PR 4 (S1 Sign in: the form, `POST /api/session`, every S1 variant, Retry) merged in PR #95 (`1d41512`; Entry 134); the other pages are stubs, and the only API calls are `GET /api/session` on load and S1's `POST /api/session`. PR 5a (Playwright e2e harness on the real stack via nginx, never Vite; Chromium in CI, Firefox locally; secret scan; sign-in flows) merged in PR #96 (`880ec2b`; Entry 135); 5b (axe in light and dark, Origin matrix, security headers, JSON 404, lockout, outage) is on `chore/stage18-e2e-axe`, awaiting review (Entry 136). The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
+MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) merged in PR #88 (`86cc77d`; Entry 127); PR 1b (design tokens, base styles, IBM Plex fonts, token and contrast tests) merged in PR #89 (`9a119d2`; Entry 128), its 4 non-text pairs below 3:1 fixed in PR #92 (`c8c047e`; Entry 131). PR 2 (the `web` image: the built app served by nginx on the A2 routes, `/` → `/analyze`, A13 security headers on every answer) merged in PR #90 (`d352bad`; Entry 129). PR 3 is split in three (Entry 130): PR 3a (API client, `ApiError`, API types, no-timer lint rule) merged in PR #91 (`b6f09d6`; Entry 130); 3b (session store, expiry handler, `checkSession` on load) merged in PR #93 (`ee5fd50`; Entry 132); 3c (`react-router` 8.5.1, the six app routes checked against `deploy/nginx.conf`, the session guard, the `next` check, stub pages) merged in PR #94 (`b06df7b`; Entry 133). PR 4 (S1 Sign in: the form, `POST /api/session`, every S1 variant, Retry) merged in PR #95 (`1d41512`; Entry 134); the other pages are stubs, and the only API calls are `GET /api/session` on load and S1's `POST /api/session`. PR 5a (Playwright e2e harness on the real stack via nginx, never Vite; Chromium in CI, Firefox locally; secret scan; sign-in flows) merged in PR #96 (`880ec2b`; Entry 135); 5b (axe in light and dark, Origin matrix, security headers, JSON 404, lockout, outage) merged in PR #97 (`3963f5e`; Entry 136). PR 6 is split: 6a (app shell, rail, drawer, page-change rules) is on `feat/stage18-shell`, awaiting review (Entry 137); 6b (rail footer, theme control, sign-out) follows from `main`. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
 canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.
