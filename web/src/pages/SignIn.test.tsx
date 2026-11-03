@@ -348,9 +348,9 @@ describe('one request at a time', () => {
 describe('landing after sign-in (the guard, not S1, reads next)', () => {
   it.each([
     ['a valid next', '/signin?next=%2Fhistory%3Fverdict%3Dsynthetic', '/history', '?verdict=synthetic', 'History'],
-    ['no next', '/signin', '/analyze', '', 'Analyze'],
-    ['an absolute next', '/signin?next=https%3A%2F%2Fevil.test%2Fanalyze', '/analyze', '', 'Analyze'],
-    ['next to sign-in', '/signin?next=%2Fsignin', '/analyze', '', 'Analyze'],
+    ['no next', '/signin', '/analyze', '', 'Analyze a recording'],
+    ['an absolute next', '/signin?next=https%3A%2F%2Fevil.test%2Fanalyze', '/analyze', '', 'Analyze a recording'],
+    ['next to sign-in', '/signin?next=%2Fsignin', '/analyze', '', 'Analyze a recording'],
   ])('%s', async (_label, entry, pathname, search, page) => {
     fetchMock.mockResolvedValue(signedIn())
     const { router, user } = renderAt(entry)

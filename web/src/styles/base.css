@@ -16,8 +16,8 @@ input, select, textarea { font-size: var(--fs-input); }
 ::selection { background: var(--accent-soft); color: var(--ink); }
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
-/* Placeholder page until the shell PR. */
-main { max-width: var(--content-max); padding: var(--sp-6); display: flex; flex-direction: column; gap: var(--sp-3); }
+/* The pages outside the shell and S1: Checking and Page not found. */
+.plain { max-width: var(--content-max); padding: var(--sp-6); display: flex; flex-direction: column; gap: var(--sp-3); }
 
 /* HANDOFF.md lines 126 and 185: all motion off under reduced motion (prototype line 445). */
 @media (prefers-reduced-motion: reduce) {

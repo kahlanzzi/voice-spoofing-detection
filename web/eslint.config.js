@@ -16,16 +16,17 @@ export default tseslint.config(
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },
-  // No polling (team decision 2026-11-01): no timers in the API layer, session state, routing or the sign-in
-  // screen (no lockout countdown, PR 4), whether called bare or through window or globalThis. Tests included.
+  // No polling (team decision 2026-11-01): no timers in the API layer, session state, routing, the sign-in
+  // screen (no lockout countdown, PR 4) or the shell (PR 6a), whether called bare or through window or
+  // globalThis. Tests included.
   {
-    files: ['src/api/**', 'src/session/**', 'src/routing/**', 'src/pages/SignIn*.{ts,tsx}', 'src/pages/signInOutcome*.{ts,tsx}'],
+    files: ['src/api/**', 'src/session/**', 'src/routing/**', 'src/shell/**', 'src/pages/SignIn*.{ts,tsx}', 'src/pages/signInOutcome*.{ts,tsx}'],
     rules: {
       'no-restricted-syntax': [
         'error',
         {
           selector: 'Identifier[name=/^(setTimeout|setInterval)$/]',
-          message: 'No timers in src/api, src/session, src/routing or the sign-in screen (no polling).',
+          message: 'No timers in src/api, src/session, src/routing, src/shell or the sign-in screen (no polling).',
         },
       ],
     },
@@ -34,9 +35,9 @@ export default tseslint.config(
   // sign-in `next` and any route state live only in the URL (PR 3c): no Web Storage, no document.cookie (the
   // session cookie is the server's HttpOnly cookie), no console. Tests are exempt, they spy on these. Do not
   // add no-restricted-syntax here: it would replace the timer rule above. The sign-in screen joins (PR 4): the
-  // password and Analyst ID live in its state only.
+  // password and Analyst ID live in its state only. The shell joins (PR 6a): the theme is stored by theme.ts only.
   {
-    files: ['src/session/**', 'src/routing/**', 'src/pages/SignIn*.{ts,tsx}', 'src/pages/signInOutcome*.{ts,tsx}'],
+    files: ['src/session/**', 'src/routing/**', 'src/shell/**', 'src/pages/SignIn*.{ts,tsx}', 'src/pages/signInOutcome*.{ts,tsx}'],
     ignores: ['src/**/*.test.{ts,tsx}'],
     rules: {
       'no-restricted-globals': [

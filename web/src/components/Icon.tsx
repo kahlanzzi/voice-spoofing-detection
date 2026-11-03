@@ -1,8 +1,8 @@
-// Stroke icons from the prototype (docs/design/analyst-console-prototype.html lines 668-684): only the ones a
+// Stroke icons from the prototype (docs/design/analyst-console-prototype.html lines 663-684): only the ones a
 // built screen uses. Always beside visible text, so hidden from assistive technology.
 import type { JSX } from 'react'
 
-export type IconName = 'wave' | 'alert' | 'clock' | 'lock'
+export type IconName = 'wave' | 'alert' | 'clock' | 'lock' | 'upload' | 'plus' | 'history' | 'grid' | 'server' | 'menu'
 
 const PATHS: Record<IconName, JSX.Element> = {
   wave: (
@@ -32,6 +32,49 @@ const PATHS: Record<IconName, JSX.Element> = {
     <>
       <rect x="4" y="11" width="16" height="10" rx="2" />
       <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </>
+  ),
+  upload: (
+    <>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d="m17 8-5-5-5 5" />
+      <path d="M12 3v12" />
+    </>
+  ),
+  plus: (
+    <>
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </>
+  ),
+  history: (
+    <>
+      <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+      <path d="M3 3v5h5" />
+      <path d="M12 7v5l3 2" />
+    </>
+  ),
+  grid: (
+    <>
+      <rect x="3" y="3" width="7" height="9" rx="1.5" />
+      <rect x="14" y="3" width="7" height="5" rx="1.5" />
+      <rect x="14" y="12" width="7" height="9" rx="1.5" />
+      <rect x="3" y="16" width="7" height="5" rx="1.5" />
+    </>
+  ),
+  server: (
+    <>
+      <rect x="3" y="4" width="18" height="7" rx="2" />
+      <rect x="3" y="13" width="18" height="7" rx="2" />
+      <path d="M7 7.5h.01" />
+      <path d="M7 16.5h.01" />
+    </>
+  ),
+  menu: (
+    <>
+      <path d="M4 6h16" />
+      <path d="M4 12h16" />
+      <path d="M4 18h16" />
     </>
   ),
 }
