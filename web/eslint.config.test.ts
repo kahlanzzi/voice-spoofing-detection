@@ -124,3 +124,32 @@ describe('no timers, storage, cookie or console in the sign-in screen', () => {
     expect(await ruleIds("setTimeout(() => undefined, 1)\nconsole.log('x')\n", 'src/pages/Analyze.tsx')).toEqual([])
   })
 })
+
+// End-to-end tests (PR 5a): no fixed waits; secrets never typed with Playwright input APIs nor given to expect;
+// Playwright's use() in a fixture is not a React hook.
+
+describe('e2e bans', () => {
+  it.each([
+    'await page.waitForTimeout(100)\n',
+    'setTimeout(() => undefined, 1)\n',
+    'await field.fill(accountPassword())\n',
+    'await field.pressSequentially(password)\n',
+    'expect(accountPassword()).toBe(x)\n',
+    'expect(cookieValue).toBe(x)\n',
+  ])('%s is an error in e2e/', async (code) => {
+    expect(await ruleIds(code, 'e2e/planted.spec.ts')).toContain('no-restricted-syntax')
+  })
+
+  it.each([
+    "await field.fill('e2e-main')\n",
+    'await field.fill(junk)\n',
+    'expect(html.includes(accountPassword())).toBe(false)\n',
+  ])('%s is allowed in e2e/', async (code) => {
+    expect(await ruleIds(code, 'e2e/planted.spec.ts')).not.toContain('no-restricted-syntax')
+  })
+
+  it('use() in a fixture is not flagged as a React hook', async () => {
+    const code = 'export const f = async ({ page }: { page: unknown }, use: (p: unknown) => Promise<void>) => { await use(page) }\n'
+    expect(await ruleIds(code, 'e2e/support/planted.ts')).toEqual([])
+  })
+})
