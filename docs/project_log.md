@@ -5138,7 +5138,12 @@ ceiling ~330); tests +329 / −4 (estimate ≈ 360). Docs as in this commit.
   height, padding, min-height and height (1280), width and rect; **no DOM difference**. A first run also showed ±1 px
   rects on rotating spinners (an angle effect); the spec now pauses animations at 0 before measuring.
   `check-css.mjs` → one CSS file, `.btn{` before `.btn-sm{`, `.btn-quiet{`, `.page-head{`, `.skip{`, `.signin{`;
-  `ALL OK`. **The run on :8001 (user-run, both builds) is pending.**
+  `ALL OK`.
+- Comparison on :8001 (user-run, 2026-11-03): snap 12/12 on main (image e70722b4) and branch (image b9935254);
+  diff.mjs → 258 keys, 20 differ, all S10 checkNow (rest/hover/focus/busy/spin × 375/1280 × light/dark): padding
+  16→12 px, font 15→13 px, border transparent → --line-strong (rgb(124,143,166) light / rgb(82,114,159) dark), height
+  44→36 px at 1280 and 44 px kept at 375; DOM diff empty. check-css.mjs → one CSS file (index-D2mJDoo7.css), all
+  order checks ok, ALL OK; @keyframes spin present.
 - Planted failures (not committed, reverted from a backup, full suite green after, 881): (1) `aria-busy` dropped from
   Button → 6 failed (Button busy; SignIn Retry ×2 and submit loading; Status.check busy; Status checking); (2)
   `.btn-sm` before `.btn` in Button.css → Button.css "`.btn` comes before…" fails; (3) `.btn-sm` 40px → Button.css
