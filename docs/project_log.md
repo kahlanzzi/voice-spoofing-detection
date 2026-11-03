@@ -4456,6 +4456,114 @@ Context7 was not used.
 
 ---
 
+### Entry 135 — Stage 18 PR 5a: e2e harness and sign-in flows on the real stack (2026-11-03)
+
+**What:** on `chore/stage18-e2e-harness` (Iheb, Part E; from `main` at `1d41512`, PR #95, not stacked), following the
+approved plan (user's revisions: JSON instead of HTML report, the 5a/5b split, answers Q1–Q7, the unquoted project
+filter, the budget rule below). D23 has no `test/` type, hence `chore/`. No `api/`, `src/`, `configs/` or app change.
+- **Target: the real stack only**, nginx on `http://localhost:8001` in front of the API (Compose). Never the Vite dev
+  server: its proxy rewrites `Origin` to 8001 (A12, Entry 127; `web/vite.config.ts` `proxyReq`), so it would hide
+  exactly the Origin and cookie bugs this suite exists to catch.
+- `@playwright/test` `1.64.1`, dev, exact (`npm view @playwright/test version` → `1.64.1`, published
+  2026-10-14T11:58Z, deps `playwright` 1.64.1 → `playwright-core` 1.64.1; nothing newer but `1.65.0-alpha`).
+  `@axe-core/playwright` is 5b.
+- `web/playwright.config.ts`: `testDir: e2e`, `baseURL` 8001, `timezoneId` Africa/Tunis; trace, video and screenshot
+  `off`; `retries: 0`, `workers: 1`; reporters `list` + `json` (`web/playwright-report/results.json`, a sibling of
+  `test-results/`, which Playwright empties at each start; already gitignored). Projects `<browser>-setup` →
+  `<browser>` for chromium and firefox.
+- `web/e2e/run.ts` (scripts `test:e2e` = chromium, `test:e2e:firefox`; plain Node 26 type stripping): one browser
+  per run; makes the password (48 hex, always valid under §4.8: hex holds no letter of `vsd`/`voice`/`spoof` and no
+  `-` of an `e2e-` username) or takes `VSD_E2E_PASSWORD`; a `mkdtemp` folder for the storage state; both only in
+  the child's env. Spawns Playwright without a shell with `['test', '--project=<browser>*']` (`support/args.ts`; a
+  quote would reach Playwright literally). Redacts the child's output line by line; after the run, a plain-text scan
+  of every file under `test-results/` and `playwright-report/` for the password, the saved cookie values and any
+  `vsd_session=<43 chars>` → exit 3 naming the file, never the value; `scan=clean` to `$GITHUB_OUTPUT`. Deletes the
+  state folder in every case.
+- **Sign-in budget (nginx 10/min, burst 5 → 6 at once from a fresh zone):** global setup restarts `web` (a new nginx
+  process, a new zone); a run makes 3 sign-in POSTs (setup, invalid, denied). `run.ts` records the `--since` time
+  itself before spawning Playwright, reads `docker compose logs web` after it and applies `support/budget.ts`: a
+  green run must show **exactly** 3 `"POST /api/session"` lines and 0 × 429 (0 lines fails: the check would be
+  reading nothing); a failed run at most 3 and 0 × 429; a broken budget turns a green run into exit 1 (user's rule).
+- Seeding (`support/stack.ts`, global setup): `e2e-main`, `e2e-invalid`, `e2e-denied` (one per mutating scenario;
+  `analyst01` never touched): `docker compose exec -T api python -m api.admin create-account` with the password twice
+  on stdin (`api/admin.py` l.38–39 call `getpass` twice; without a TTY it falls back to stdin without echo; verified
+  with a piped `printf … | python3 -c 'getpass×2'` and in Entry 125); "already exists" → `set-password`; then
+  `enable`, `unlock`. Teardown, also after failures: `enable`, `unlock`, `disable` each (disable ends its sessions).
+- **Finding [verified]: Playwright's step titles render typed text** (`playwright-core@1.64.1` `coreBundle.js`:
+  `Fill "{value}"` l.4275, `Type "{text}"` l.4303, `Insert "{text}"` l.4410–4411; `Evaluate` l.4273 renders no
+  argument), and the JSON report keeps them. The password is therefore typed with `typeSecret()` (`execCommand
+  ('insertText')` inside `locator.evaluate`, the paste path React sees); assertions on secrets are booleans (a failing
+  expect prints its arguments); cookies are compared without their value.
+- `support/secret-guard.ts` (not `secrets.ts`: `.gitignore` l.12 `secrets.*` would have dropped it from git).
+  `deploy/web.Dockerfile.dockerignore` excludes `web/test-results` and `web/playwright-report` from the web image's
+  build context (its deploy test lists them).
+- `vite.config.ts`: Vitest excludes `e2e/**` (`configDefaults.exclude`); the `/// <reference types="vitest/config">`
+  line became the `vitest/config` import. `tsconfig.e2e.json` (same strict flags, `erasableSyntaxOnly`) joins `tsc -b`.
+- ESLint block for `e2e/**`: no `setTimeout`/`setInterval`/`waitForTimeout`; `accountPassword()` or an identifier
+  `password*`/`cookie*` refused as an argument of `fill`/`type`/`pressSequentially`/`insertText`/`expect`;
+  `react-hooks/rules-of-hooks` off (fixtures call Playwright's `use()`; not React code).
+- CI: new `e2e` job (Chromium only): Node from `web/.nvmrc`, `npm ci`, a per-run key `openssl rand -hex 32`
+  (masked, `$GITHUB_ENV`; no repo secret), `docker compose up -d --build --wait`, `npx playwright install
+  --with-deps chromium` (not cached: OS packages cannot be, and restoring the browser costs about the download),
+  `npm run test:e2e`, upload of `results.json` only `if: failure() && steps.e2e.outputs.scan == 'clean'`, logs on
+  failure, `down -v` always. Not required on `main` yet (Open item).
+
+**Decisions recorded:** Chromium in CI, Firefox locally (user-reported Part E decision, agreed 2026-11-01; no earlier
+record). PR 5 split into 5a (this) and 5b (axe, HTTP/Origin matrix, lockout, outage). Two `restart web` per run in
+5b (accepted). `e2e` required after 5 green PR runs in a row. Teardown disables the e2e accounts. In 5b no
+`bypassCSP`: a CSP block of axe is reported.
+
+**Specs (6 tests per browser):** `signin.setup.spec.ts` (from `/history?verdict=a&verdict=b` → S1 → form sign-in →
+lands on next; the POST carries `Origin: http://localhost:8001` and answers 200; Set-Cookie attributes HttpOnly,
+Secure, SameSite=strict, Path=/api, no Domain/Max-Age/Expires; `context.cookies()` the same; `document.cookie` on
+`/api/session` (inside Path=/api) without `vsd_session`; reload stays signed in; localStorage empty, sessionStorage
+only `remix-router-transitions`; password not in the page; state saved). `signed-out.spec.ts` (exact
+`/signin?next=%2Fhistory%3Fverdict%3Da%26verdict%3Db`, S1 default; signed in on that URL → next). `signin-errors.spec.ts`
+(field errors with aria-invalid and focus, no POST; invalid: banner, password cleared, ID kept and focused; denied:
+`disable` → 403 banner, focus h1, `enable` in `finally`). Sources: Entry 133 and 134 live checks, §4.8.
+
+**Guards:** `web/playwright.config.test.ts` (Vitest, 13: reporters, artifacts off, retries/workers, baseURL, projects;
+`playwrightArgs` exact for both browsers, no quote, webkit refused; the budget: green exact, green 0 lines fails,
+failed ≤ 3, 429). `eslint.config.test.ts` +10. `tests/web/test_web_scaffold.py` +6 (the `e2e` job: `.nvmrc`, Chromium
+only, upload only the JSON on failure with a clean scan, no html; 5 planted cases).
+
+**Planted failures (not committed):** guard redirect without the query → `[chromium-setup] … ✘` `Expected:
+"…/signin?next=%2Fhistory%3Fverdict%3Da%26verdict%3Db"`, `Received: "…/signin?next=%2Fhistory"`, `1 failed, 5 did not
+run`, `sign-in POSTs through nginx: 0 (planned 3)` on a failed run, exit 1; Vitest `guard.test.tsx` `5 failed | 30
+passed (35)`. `console.log(accountPassword())` in the setup spec → `[redacted: a line held a password]`, `secret scan:
+password found in …/playwright-report/results.json`, exit 3, 0 copies of the password in the console log. Global
+setup refusing (`COMPOSE_PROJECT_NAME=vsd-nonexistent`) → `The api container is not healthy`, exit 1. Restored
+(web image rebuilt): all green.
+
+**Size (lines added):** config and deploy +99 (`playwright.config.ts`, `tsconfig.e2e.json`, ESLint, Vite, `package.json`,
+`tsconfig.json`, the dockerignore); harness and specs (`web/e2e/`) +628; guards +170; CI +57; docs +154; lockfile +46.
+Total without the lockfile 1,108, with it 1,154; over the plan's ≈ 971 by the budget function and its tests (user's
+revision) and the denser harness.
+
+**Evidence [verified]:**
+- Baseline: `node --version` `v26.13.0`; `git log --oneline -1 origin/main` `1d41512 Merge pull request #95 …`.
+- `python -m pytest -q` `1278 passed, 9 skipped` (+6).
+- `web/`: `npm run typecheck`, `npm run lint`, `npm test -- --run` (`Test Files 15 passed (15)`, `Tests 610 passed
+  (610)`), `npm run build`, exit 0; `npm audit --omit=dev` `found 0 vulnerabilities` (full `npm audit` 12 moderate,
+  the known dev-only `minimatch`, unchanged).
+- Live, local stack (Docker 28.5.2, Compose 2.40.3): `npm run test:e2e` → `6 passed (1.8m)`, `sign-in POSTs through
+  nginx: 3 (planned 3), 429: 0`, `secret scan: 0 matches in 2 files`, exit 0; `npm run test:e2e:firefox` → `6 passed
+  (2.2m)`, the same counts, exit 0. Chromium 156 / Firefox 157 (Playwright builds; Firefox from the ubuntu24.04
+  fallback). **Secure on http://localhost: accepted by both** (`secure: true` in the jar, reload stays signed in).
+- Independent grep with a chosen `VSD_E2E_PASSWORD`: `grep -rlF` over `test-results` and `playwright-report` → no
+  file; the run's console log → 0; `grep -rlE 'vsd_session=[A-Za-z0-9_-]{43}'` → no file; no `vsd-e2e-` temp folder
+  left.
+- CI job not run (no push; `act` not installed).
+- No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
+the checks. The plan was approved before the build, with the user's revisions; the team reviews the diff. Context7
+was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
 ## Open items
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
@@ -4724,7 +4832,7 @@ Context7 was not used.
 - [x] uvicorn's default access log prints the client IP; §1/§7 say no IP is stored. Decide for Stage 19 (e.g. `--no-access-log` or a log filter) (Entry 116). (`--no-access-log --no-proxy-headers` in the image and the documented local command; Entry 125)
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
 
-**Stage 18 web (Part E, Entries 127–134)**
+**Stage 18 web (Part E, Entries 127–135)**
 - [x] PR 1a: `web/` scaffold, theme storage, CI `web` job, pytest pin guards (merged in PR #88, `86cc77d`; Entry 127).
 - [ ] Add `web` as a required check on `main` after PR 1a merges (Iheb; Entry 127).
 - [x] PR 1b: `tokens.css`, `base.css`, fontsource fonts, token, contrast and no-raw-colour tests (merged in PR #89, `9a119d2`; Entry 128).
@@ -4734,7 +4842,10 @@ Context7 was not used.
 - [x] PR 3b: session store, expiry handler, `checkSession` on load, A19 on `GET /api/session`, storage and console lint ban in `src/session` (merged in PR #93, `ee5fd50`; Entry 132).
 - [ ] Map `GET /session` 403 when `access_denied` is implemented (now `unavailable`; Entry 132).
 - [x] PR 3c: `react-router` 8.5.1 (A15), route list synced with `deploy/nginx.conf`, `next` check, guard, stub pages (merged in PR #94, `b06df7b`; Entry 133).
-- [x] PR 4: S1 Sign in; `next` read by the guard with `safeNext` after `POST /api/session`, never stored or logged (on `feat/stage18-sign-in`, awaiting review; Entry 134).
+- [x] PR 4: S1 Sign in; `next` read by the guard with `safeNext` after `POST /api/session`, never stored or logged (merged in PR #95, `1d41512`; Entry 134).
+- [ ] PR 5a: e2e harness and sign-in flows (on `chore/stage18-e2e-harness`, awaiting review; Entry 135).
+- [ ] PR 5b: axe (light/dark, HANDOFF l.297 tags) on S1 variants and stubs, HTTP/Origin matrix, security headers and JSON 404, lockout with a second `restart web`, outage + Retry (Entry 135).
+- [ ] Add `e2e` as a required check on `main` after 5 green PR runs in a row (Iheb; Entry 135).
 - [ ] PR 8: extract `Button`, `TextField` and `Banner` (HANDOFF line 133) from S1 into `web/src/components/` (deferred on purpose in PR 4; Entry 134).
 - [ ] PR 12: translate HANDOFF `?v=a,b` to repeated `verdict=` (Part E decision recorded in Entry 133).
 - [ ] A23: keep the `File` (PR 8, upload) and the note draft (PR 11, note) in a module store, not component state; PR 10's S5 "Sign in again" calls `session.expire()` (Entry 130).
@@ -4786,7 +4897,7 @@ Context7 was not used.
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
 `GET /api/status`. `POST /api/analyses` with the
-MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) merged in PR #88 (`86cc77d`; Entry 127); PR 1b (design tokens, base styles, IBM Plex fonts, token and contrast tests) merged in PR #89 (`9a119d2`; Entry 128), its 4 non-text pairs below 3:1 fixed in PR #92 (`c8c047e`; Entry 131). PR 2 (the `web` image: the built app served by nginx on the A2 routes, `/` → `/analyze`, A13 security headers on every answer) merged in PR #90 (`d352bad`; Entry 129). PR 3 is split in three (Entry 130): PR 3a (API client, `ApiError`, API types, no-timer lint rule) merged in PR #91 (`b6f09d6`; Entry 130); 3b (session store, expiry handler, `checkSession` on load) merged in PR #93 (`ee5fd50`; Entry 132); 3c (`react-router` 8.5.1, the six app routes checked against `deploy/nginx.conf`, the session guard, the `next` check, stub pages) merged in PR #94 (`b06df7b`; Entry 133). PR 4 (S1 Sign in: the form, `POST /api/session`, every S1 variant, Retry) is on `feat/stage18-sign-in`, awaiting review (Entry 134); the other pages are stubs, and the only API calls are `GET /api/session` on load and S1's `POST /api/session`. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
+MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) merged in PR #88 (`86cc77d`; Entry 127); PR 1b (design tokens, base styles, IBM Plex fonts, token and contrast tests) merged in PR #89 (`9a119d2`; Entry 128), its 4 non-text pairs below 3:1 fixed in PR #92 (`c8c047e`; Entry 131). PR 2 (the `web` image: the built app served by nginx on the A2 routes, `/` → `/analyze`, A13 security headers on every answer) merged in PR #90 (`d352bad`; Entry 129). PR 3 is split in three (Entry 130): PR 3a (API client, `ApiError`, API types, no-timer lint rule) merged in PR #91 (`b6f09d6`; Entry 130); 3b (session store, expiry handler, `checkSession` on load) merged in PR #93 (`ee5fd50`; Entry 132); 3c (`react-router` 8.5.1, the six app routes checked against `deploy/nginx.conf`, the session guard, the `next` check, stub pages) merged in PR #94 (`b06df7b`; Entry 133). PR 4 (S1 Sign in: the form, `POST /api/session`, every S1 variant, Retry) merged in PR #95 (`1d41512`; Entry 134); the other pages are stubs, and the only API calls are `GET /api/session` on load and S1's `POST /api/session`. PR 5a (Playwright e2e harness on the real stack via nginx, never Vite; Chromium in CI, Firefox locally; secret scan; sign-in flows) is on `chore/stage18-e2e-harness`, awaiting review (Entry 135); 5b (axe, Origin matrix, lockout, outage) is next. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
 canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.
