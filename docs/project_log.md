@@ -5159,6 +5159,16 @@ diff. Context7 was not used.
 
 ---
 
+### Entry 142 — Execution Plan v2.2 draft for team review (2026-11-03)
+
+- **Owner:** Khalil Dridi.
+- **Change:** Added editable Markdown and PDF under `docs/reference/`. The draft summarizes approved decisions and Stage 17/18 progress through PR #102. Team adoption is pending.
+- **Verification:** Visually reviewed the regenerated 12-page PDF and matched its embedded Markdown SHA-256.
+- **AI assistance:** Codex helped draft the plan and verify the PDF. Team review is tracked in [PR #103](https://github.com/kahlanzzi/voice-spoofing-detection/pull/103).
+
+---
+
+
 ## Open items
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
