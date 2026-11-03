@@ -139,9 +139,23 @@ describe('no timers, storage or console in src/status', () => {
     expect(await ruleIds('setTimeout(() => undefined, 1)\n', 'src/status/planted.test.ts')).toContain('no-restricted-syntax')
   })
 
-  it.each(['src/status/status.ts', 'src/shell/RailStatus.tsx'])('%s keeps the timer, storage and console bans', async (file) => {
+  it.each(['src/status/status.ts', 'src/status/checkedAt.ts', 'src/shell/RailStatus.tsx'])('%s keeps the timer, storage and console bans', async (file) => {
     const ids = await ruleIds("setTimeout(() => undefined, 1)\nlocalStorage.setItem('k', 'v')\nconsole.log('x')\n", file)
     expect(ids).toEqual(expect.arrayContaining(['no-restricted-syntax', 'no-restricted-globals']))
+  })
+})
+
+// S10 (PR 7b): no polling and no relative time, so no timer; it shows the store, never stores or logs it.
+
+describe('no timers, storage or console in S10', () => {
+  it.each(['src/pages/Status.tsx', 'src/pages/statusView.ts'])('%s keeps the timer, storage and console bans', async (file) => {
+    const ids = await ruleIds("setInterval(() => undefined, 60_000)\nsessionStorage.setItem('status', 'x')\nconsole.log('x')\n", file)
+    expect(ids).toEqual(expect.arrayContaining(['no-restricted-syntax', 'no-restricted-globals']))
+  })
+
+  it('console in an S10 test file is allowed, a timer is not', async () => {
+    expect(await ruleIds("console.log('x')\n", 'src/pages/Status.test.tsx')).toEqual([])
+    expect(await ruleIds('setTimeout(() => undefined, 1)\n', 'src/pages/Status.check.test.tsx')).toContain('no-restricted-syntax')
   })
 })
 

@@ -4985,6 +4985,98 @@ used.
 
 ---
 
+### Entry 140 — Stage 18 PR 7b: S10 System status page (2026-11-03)
+
+**What:** on `feat/stage18-status-page` (Iheb, Part E; from `main` at `f6324fb`, PR #100 merged, not stacked). The
+second half of PR 7 (Entry 139): S10 replaces the `/status` stub. No `api/`, `deploy/`, `configs/` or CI change.
+Design sources: HANDOFF (H) and `analyst-console-prototype.html` (P) only. Built from the approved plan; its five
+open questions were approved with the plan's recommendations (below), not answered one by one.
+- `web/src/pages/statusView.ts` (new): the copy for each store state, pure (the `signInOutcome.ts` pattern).
+  Checking… (P l.1190; "The previous status stays valid…" only when there is one); Ready for analysis; Ready with a
+  notice (degraded, team decision 2026-11-01): the warn summary and a `.banner-warn` notice with no role (H l.143)
+  naming the failing checks, plus the open-decision-7 line; Unavailable from the service, its text naming the
+  failing checks; Unavailable with no answer (P l.691). Items Connection / Analysis / History and statistics from
+  the body's checks (the browser derives nothing); the Analysis item ignores upload limits (`/limits` is PR 8).
+- `web/src/pages/Status.tsx`: head (h1, sub, "Mock status values" tag when the result says mock; none without an
+  answer), the time and Check now, summary (no `role`, `aria-busy` while checking), "What is checked" (icon + pill
+  text, icons `aria-hidden`), Technical details in a closed `<details>` (versions, `deferral_on_fit`, manifest
+  SHA-256 or "Not available until the bundle is frozen."), not rendered without an answer.
+- `web/src/status/checkedAt.ts` (new): `formatCheckedAt`, P l.644's options, browser zone, absolute; a non-date is
+  shown as given (P l.649). "Last checked" only when `timeSource` is `api` (a valid 200, unavailable from the
+  service included); "Last attempt" for `browser` (no answer).
+- Check now: refresh icon; busy keeps the label "Check now" (H l.137) with the spinner, `disabled`, `aria-busy`;
+  44 px at ≤ 640 px. One request: the button is disabled while the store checks, and the store shares its in-flight
+  request. Entering `/status` does not check (P l.1180): the shell's mount check is the only other one.
+- Announcement: "Status checked: <label>." (", with a notice" when degraded, like the rail's sr text) in a second
+  polite region local to S10 (`#status-announcer`), as a new node, no timer. **Change from the plan:** the plan had
+  the click handler write it after `await checkStatus()`; built, the press arms a ref and an effect writes it after
+  React's commit, because the store's notify and React's re-render are not ordered for the handler (the button
+  could still be disabled when focus returns). Only a press arms it, so a mount, a re-render or the shell's check
+  never announce (tests below). Focus returns to the button when it is on the button or `body` (Chromium drops focus
+  from a disabled button), never from elsewhere.
+- `Status.css` (new): P's status, panel, tag, quiet/small button, disclosure, key-value, warning and decision styles,
+  tokens only; `.check-*` where P says `.svc-*` (Shell.css owns `.svc-*`). `.btn`/`.spin` come from `SignIn.css`
+  (one bundle), as in 7a. Icons `check`, `refresh`, `decision` added (P l.670, 676, 681).
+- Lint: `src/pages/Status*` and `statusView*` join the timer and storage/console bans (tests exempt), with lint tests.
+- Plan questions, approved with the plan: (1) Technical details omit P's "Verified at startup (mock)" and "Bundle"
+  row: `/api/status` reports neither. (2) Connection on no answer: "Unreachable", "This console cannot reach the
+  analysis service." (P's "Check your network connection." is wrong for nginx's 503). (3) A failing check is
+  "Unavailable" (err), not P's "Partly unavailable": the checks are binary. (4) Degraded announcement as above.
+  (5) First-load Checking copy as above. The open-decision line keeps P l.1192's first sentence; its second ("The
+  prototype shows it when…") becomes "The service reports it; this console shows it as Ready for analysis with a
+  notice." (proposal).
+- Not built (named): the "Audio and stored data" panel (P l.1202–1205, `/limits.audio_deletion`, PR 8); the Analyze
+  limits Mock tag (PR 8); the stale-status banner (Open item); open decision 7; polling; toasts.
+- e2e: `status.spec.ts` (main project) gains S10 Ready (mock tag exactly when `mock`, the three pills, "Last checked"
+  equal to the body's `checked_at` formatted in Africa/Tunis, details closed then open with the body's values, axe
+  light/dark both ways), Check now with a held route (label kept, disabled, `aria-busy`, spinner, Checking… → Ready,
+  focus back, the announcement, 2 GETs in all) and a double click (one more GET; ≥ 44 px at 390 px).
+  `status-outage.spec.ts` (new, last project, after locked → outage → signout-failed, each restoring the api in
+  `finally`): load `/status` → Ready; api stopped → Check now → nginx 503 → Unavailable, Unreachable / Unavailable /
+  Unavailable, "Last attempt … GMT+1", no "Last checked", no details, no mock tag, announced, focus back, the rail
+  line "Service status: Unavailable", still `/status` in the shell; axe; api started in `finally` → Check now → 200
+  → Ready, "Last checked". 0 sign-in POSTs; budget unchanged: 12, one 429.
+
+**Size:** added lines (`git diff --numstat` and new files, comments included): code +407 (estimate ≈ 283, ceiling
+~330; over: `Status.css` 97 (est. 60), the prototype's panel, tag, button, disclosure and key-value styles not yet
+shared, and the 640 px block; `Status.tsx` 146 (est. 110) and `statusView.ts` 126 (est. 85), header comments and the
+proposal notes). Vitest +594 (estimate 495). e2e +171 (estimate 142). Docs as in this commit.
+
+**Tests [verified]:**
+- `cd web && npm run typecheck` → exit 0. `npm run lint` → 0 problems. `npx vitest run` → `Test Files 24 passed (24)`,
+  `Tests 836 passed (836)` (was 790). `npm run build` → exit 0. `.venv/bin/pytest -q` → `1278 passed, 9 skipped`.
+- Stack rebuilt from this branch (`docker compose up -d --build --wait`):
+  - `npm run test:e2e` → `52 passed (6.0m)`, `sign-in POSTs through nginx: 12 (planned 12), 429: 1 (planned 1)`,
+    `secret scan: 0 matches in 2 files`, exit 0.
+  - `npm run test:e2e:firefox` → `52 passed (7.8m)`, the same counts, exit 0.
+- CI dry run: the default stack stopped, `COMPOSE_PROJECT_NAME=vsd-ci`, a fresh `openssl rand -hex 32` key, `up -d
+  --build --wait --wait-timeout 240`, `npm ci`, `npx playwright install chromium`, `npm run test:e2e` → `52 passed
+  (6.2m)`, `12 (planned 12), 429: 1`, scan clean, `exit 0`. Then `down -v` and the default stack rebuilt from the
+  reverted source. The GitHub job itself is not run (no push).
+- Planted failures (not committed, reverted from a backup, full suite green after):
+  1. `armed = useRef(true)` (announce on mount) → Status.check "only after Check now finishes…" and "a check started
+     elsewhere does not announce" and Status "mounting starts no check…" and "a store change from elsewhere…" fail
+     (4 failed, 32 passed).
+  2. `timeLabel` gives "Last checked" for `timeSource: 'browser'` → 6 Vitest tests fail (statusView `timeLabel`,
+     Status "no answer: … Last attempt", "a re-check … keeps the previous time label", Status.check "no answer →
+     Unavailable with Last attempt" and two that find "Last attempt"); with the web image rebuilt, `npm run test:e2e`
+     → `status-outage.spec.ts` fails (`Received string: "Last checked 3 Nov 2026, 18:33 GMT+1"`), 51 passed, exit 1.
+  3. `.sp-ok { color: #1F7A45; }` in `Status.css` → `colours.test.ts` "/src/pages/Status.css has no raw colour
+     value" fails (1 failed, 37 passed).
+- Live check on localhost:8001 (user-run, signed in as analyst01, this branch's build): S10 Ready with 'Mock status
+  values' and 'Last checked'; Technical details opens and closes; Check now keeps its label, shows a spinner, is
+  disabled, then focus returns to it; api stopped → Check now → after ~5 s Unavailable, Connection 'Unreachable',
+  'Last attempt', rail line Unavailable, still in the shell; api started → Check now → Ready and 'Last checked'.
+- **Not done:** a real screen-reader pass (Orca, PR 15). No DEEP-VOICE path, audio or dataset touched; no secret in
+  the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
+the checks. The plan was approved before the build. The team reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
 ## Open items
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
@@ -5268,8 +5360,8 @@ used.
 - [x] PR 5b: axe (light/dark, HANDOFF l.297 tags) on S1 variants and stubs, HTTP/Origin matrix, security headers and JSON 404, lockout with a second `restart web`, outage + Retry (merged in PR #97, `3963f5e`; Entry 136).
 - [x] PR 6: 6a merged #98; 6b merged #99, `fd034dd` (app shell, rail, drawer, page-change rules: Entry 137; rail footer, theme control, sign-out: Entry 138).
 - [ ] Review the sign-out failure copy "Sign-out did not complete. You are still signed in. Try again." (proposal; Entry 138).
-- [ ] PR 7: the rail status line (`GET /api/status` once, no polling; 500 or no answer → Unavailable), its "(mock)" tag from `/status.mock` and the degraded notice, in one status store with S10 (Entry 137). Split (Entry 139): 7a (store, rail line) on `feat/stage18-status`, awaiting review; 7b (S10: Check now, its polite region, "Last checked" / "Last attempt", status outage e2e) planned from `main` after 7a merges.
-- [ ] PR 7b copy proposals, for review: unavailable from the service naming the failing checks; the degraded fallback "Some parts of the service are not fully available."; the Connection item's "Unreachable" when nginx answers 503 (Entry 139).
+- [x] PR 7: 7a merged #100 (`f6324fb`; status store, rail line: Entry 139); 7b on branch `feat/stage18-status-page`, awaiting review (S10: Check now, its polite region, "Last checked" / "Last attempt", status outage e2e: Entry 140).
+- [ ] PR 7b copy proposals, for review: unavailable from the service naming the failing checks; the degraded fallback "Some parts of the service are not fully available."; the Connection item's "Unreachable" when nginx answers 503 (Entry 139). Built in 7b with: "This console cannot reach the analysis service." for Unreachable; a failing check "Unavailable" with "Stored results and Overview figures cannot be loaded right now. Analysis is not affected." for History; the degraded notice "<checks> is/are not fully available."; the open-decision line's second sentence; "Status checked: Ready for analysis, with a notice." (Entry 140).
 - [ ] S10 stale-status banner (H l.32, l.166; P l.1194) not built: an honest one needs a clock tick, which the no-polling decision and the timer lint ban rule out (Q4, Entry 139).
 - [ ] Review the rail status tokens `--nav-ok` / `--nav-warn` / `--nav-err` (P l.143's values, the same in both themes; Entry 139).
 - [ ] PR 8/11 rule: an explicit sign-out clears the `File` and note-draft stores; expiry does not (prototype l.770, l.1494; Entry 137). D1 before sign-out with an unsaved note is PR 11.
@@ -5327,7 +5419,7 @@ used.
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
 `GET /api/status`. `POST /api/analyses` with the
-MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) merged in PR #88 (`86cc77d`; Entry 127); PR 1b (design tokens, base styles, IBM Plex fonts, token and contrast tests) merged in PR #89 (`9a119d2`; Entry 128), its 4 non-text pairs below 3:1 fixed in PR #92 (`c8c047e`; Entry 131). PR 2 (the `web` image: the built app served by nginx on the A2 routes, `/` → `/analyze`, A13 security headers on every answer) merged in PR #90 (`d352bad`; Entry 129). PR 3 is split in three (Entry 130): PR 3a (API client, `ApiError`, API types, no-timer lint rule) merged in PR #91 (`b6f09d6`; Entry 130); 3b (session store, expiry handler, `checkSession` on load) merged in PR #93 (`ee5fd50`; Entry 132); 3c (`react-router` 8.5.1, the six app routes checked against `deploy/nginx.conf`, the session guard, the `next` check, stub pages) merged in PR #94 (`b06df7b`; Entry 133). PR 4 (S1 Sign in: the form, `POST /api/session`, every S1 variant, Retry) merged in PR #95 (`1d41512`; Entry 134); the other pages are stubs, and the only API calls are `GET /api/session` on load and S1's `POST /api/session`. PR 5a (Playwright e2e harness on the real stack via nginx, never Vite; Chromium in CI, Firefox locally; secret scan; sign-in flows) merged in PR #96 (`880ec2b`; Entry 135); 5b (axe in light and dark, Origin matrix, security headers, JSON 404, lockout, outage) merged in PR #97 (`3963f5e`; Entry 136). PR 6 is split: 6a (app shell, rail, drawer, page-change rules) merged in PR #98 (`a16d8ef`; Entry 137); 6b (rail footer: Analyst ID, theme control, sign-out without `next`; e2e sign-in POST budget 12, both segments full) merged in PR #99 (`fd034dd`; Entry 138). `checks`, `web` and `e2e` are required on `main` since 2026-11-03 (Iheb; Entry 139). PR 7 is split: 7a (status store, rail status line) is on `feat/stage18-status`, awaiting review (Entry 139); 7b (S10) follows from `main`. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
+MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) merged in PR #88 (`86cc77d`; Entry 127); PR 1b (design tokens, base styles, IBM Plex fonts, token and contrast tests) merged in PR #89 (`9a119d2`; Entry 128), its 4 non-text pairs below 3:1 fixed in PR #92 (`c8c047e`; Entry 131). PR 2 (the `web` image: the built app served by nginx on the A2 routes, `/` → `/analyze`, A13 security headers on every answer) merged in PR #90 (`d352bad`; Entry 129). PR 3 is split in three (Entry 130): PR 3a (API client, `ApiError`, API types, no-timer lint rule) merged in PR #91 (`b6f09d6`; Entry 130); 3b (session store, expiry handler, `checkSession` on load) merged in PR #93 (`ee5fd50`; Entry 132); 3c (`react-router` 8.5.1, the six app routes checked against `deploy/nginx.conf`, the session guard, the `next` check, stub pages) merged in PR #94 (`b06df7b`; Entry 133). PR 4 (S1 Sign in: the form, `POST /api/session`, every S1 variant, Retry) merged in PR #95 (`1d41512`; Entry 134); the other pages are stubs, and the only API calls are `GET /api/session` on load and S1's `POST /api/session`. PR 5a (Playwright e2e harness on the real stack via nginx, never Vite; Chromium in CI, Firefox locally; secret scan; sign-in flows) merged in PR #96 (`880ec2b`; Entry 135); 5b (axe in light and dark, Origin matrix, security headers, JSON 404, lockout, outage) merged in PR #97 (`3963f5e`; Entry 136). PR 6 is split: 6a (app shell, rail, drawer, page-change rules) merged in PR #98 (`a16d8ef`; Entry 137); 6b (rail footer: Analyst ID, theme control, sign-out without `next`; e2e sign-in POST budget 12, both segments full) merged in PR #99 (`fd034dd`; Entry 138). `checks`, `web` and `e2e` are required on `main` since 2026-11-03 (Iheb; Entry 139). PR 7 is split: 7a (status store, rail status line) merged in PR #100 (`f6324fb`; Entry 139); 7b (S10 System status with Check now) is on `feat/stage18-status-page`, awaiting review (Entry 140). The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
 canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.

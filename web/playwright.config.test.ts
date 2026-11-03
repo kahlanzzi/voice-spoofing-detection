@@ -37,7 +37,7 @@ describe('playwright.config.ts', () => {
     ])
   })
 
-  it('runs every spec file in exactly one project per browser; lockout, outage and the failed sign-out last', () => {
+  it('runs every spec file in exactly one project per browser; lockout, outage, the failed sign-out and the S10 outage last', () => {
     const specs = readdirSync(new URL('./e2e', import.meta.url)).filter((name) => name.endsWith('.spec.ts'))
     const list = (value: unknown) => (value === undefined ? undefined : [value].flat())
     const runs = (project: NonNullable<typeof config.projects>[number], file: string) =>
@@ -47,7 +47,7 @@ describe('playwright.config.ts', () => {
       for (const file of specs) expect(projects.filter((project) => runs(project, file)).length, file).toBe(1)
       expect(specs.filter((file) => runs(projects.find((p) => p.name === `${browser}-last`)!, file))).toEqual(LAST)
     }
-    expect(LAST).toEqual(['locked.spec.ts', 'outage.spec.ts', 'signout-failed.spec.ts'])
+    expect(LAST).toEqual(['locked.spec.ts', 'outage.spec.ts', 'signout-failed.spec.ts', 'status-outage.spec.ts'])
   })
 
   it('never bypasses the CSP (a CSP block of axe is reported)', () => {
