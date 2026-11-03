@@ -4564,6 +4564,120 @@ was not used.
 
 ---
 
+### Entry 136 — Stage 18 PR 5b: axe, HTTP/Origin matrix, lockout and outage in e2e (2026-11-03)
+
+**What:** on `chore/stage18-e2e-axe` (Iheb, Part E; from `main` at `880ec2b`, PR #96, not stacked), following the
+approved plan. The scope is Entry 135's "next PR (5b)" list, unchanged. No `api/`, `src/`, `configs/`, `deploy/` or CI
+change; only `web/e2e/`, the Playwright and ESLint configs, their guards and docs.
+- `@axe-core/playwright` `4.14.0`, dev, exact (`npm view` → latest `4.14.0`, published 2026-10-15T13:33Z, dependency
+  `axe-core ~4.14.0` → 4.14.0 in the lockfile, published 2026-10-05; MPL-2.0; peer `playwright-core >= 1.0.0`).
+- `e2e/support/axe.ts`: `expectNoAxeViolations(page, state, exclusions)` scans in light then dark (`emulateMedia`
+  `colorScheme`; the app's default theme is "system") with `reducedMotion: 'reduce'`, so `SignIn.css`'s button colour
+  transition is off (`base.css` l.24) and no colour is read mid-transition; tags `WCAG_TAGS` = `wcag2a`, `wcag2aa`,
+  `wcag21a`, `wcag21aa`, `wcag22a`, `wcag22aa` (HANDOFF l.297); 0 violations expected. A failure shows only `{ id,
+  impact, target }` per node, never `html` or `failureSummary` (a node could hold typed text). Exclusions: exact `{ rule,
+  target, reason }` passed in the spec, filtered after the scan; one that matches nothing fails. **Exclusions in this
+  PR: none.** ESLint (`e2e/**`) refuses `disableRules`, `exclude`, `include`, `withRules`, `options`, `withTags` without
+  `WCAG_TAGS`, and `bypassCSP`.
+- Projects `<b>-setup` → `<b>` → `<b>-last` per browser, by `dependencies` (`LAST` = `locked.spec.ts`, `outage.spec.ts`);
+  `--project=<b>*` already matched the new one. CI still runs Chromium only (job unchanged).
+- `e2e-locked` joins `ACCOUNTS` (seeded, unlocked and disabled by the existing loops). `stack.ts`: `stopApi()`,
+  `ensureApiUp()` (start if not healthy, then `waitHealthy()` through nginx, `expect.poll`); the global teardown calls
+  `ensureApiUp()` first, since its `api.admin` calls need the api.
+- `e2e/support/nginx-headers.ts`: the expected security headers are read from `deploy/nginx_security_headers.conf`;
+  an `add_header` line it cannot read throws.
+
+**Sign-in POST budget** (nginx 10/min, burst 5 → 6 at once per fresh zone; every POST to `location = /api/session`
+counts, whatever the API answers):
+
+| Segment | Zone opened by | POSTs | Answers |
+|---|---|---|---|
+| A: setup + main | global setup `restart web` | setup 1, invalid 1, denied 1, http.spec no Origin 1, foreign 1 = 5 | 200, 401, 403, 403, 403 |
+| B: last | `locked.spec` `beforeAll` `restart web` | 5 wrong + the right password = 6 | 401 ×5, 429 `account_locked` |
+| Total | | 11 | one 429 |
+
+`budgetProblem`: green run = exactly 11 POSTs and exactly one 429; failed run ≤ 11 and ≤ one 429. nginx's log cannot
+tell its 429 from the API's, so `locked.spec` also checks the body code `account_locked` and the locked banner (nginx's
+`too_many_requests` shows the unavailable one). POST /api/session gets no `Origin: null` case (segment A would be 6);
+the three other routes cover `null`.
+
+**Specs (31 tests per browser, was 6):** `http.spec.ts` 18 (request context, no cookie: POST /api/session without and
+with a foreign Origin → 403 `origin_not_allowed`; DELETE /api/session, POST /api/analyses, PUT
+/api/analyses/req_<32 hex>/note × none / foreign / `null` → 403; **control** the same three with `Origin:
+http://localhost:8001` → 401 `session_expired`, so the 403s come from the Origin check; the 6 app routes 200 `text/html`
+with the conf's headers; `/nope`, `/index.html`, `/docs` → 404 `application/json` `not_found`, `request_id: null`, with
+the headers). `pages.spec.ts` 5 (signed in: Analyze, History, Analysis details, Overview, System status: one h1 each,
+axe). axe added to `signed-out` (default) and `signin-errors` (field errors, invalid, denied). `locked.spec.ts` 1
+(5 wrong → 401 and the invalid banner each, ID kept, password cleared; 6th with `typeSecret()` → 429 `account_locked`,
+locked banner, no digit in it, focus on the h1, axe; `unlock` in `finally`). `outage.spec.ts` 1 (`stop api` → GET
+/api/session 503 `analysis_unavailable`, unavailable banner + Retry, axe; `ensureApiUp()` → Retry → 401, no alert,
+no Retry, form enabled; `ensureApiUp()` in `finally`). Sources: §4.8 CSRF and Lockout, §6, `api/session_guard.py`
+l.93–148, `deploy/nginx.conf`, Entry 134 live checks, HANDOFF l.186 and l.297.
+
+**Findings [verified]:**
+- **The outage takes 5 s to show.** With `api` stopped, nginx answers GET /api/session with 503 only after
+  `proxy_connect_timeout` (log: `"GET /api/session" 503 109 5.005`): the stopped container's address is silent, not
+  refused. Until then S1 shows "Checking your session…". The first run failed on the 5 s default expect timeout; the
+  spec now waits for that response (an event, no sleep). Not changed in `deploy/`: users see the same 5 s.
+- **nginx found the api again after `stop`/`start api`** in every run (Chromium, Firefox, CI dry run): the plan's
+  static-upstream risk (plan Q2) did not occur here.
+- **`wcag22a` tags no rule in axe-core 4.14.0** (node count of quoted tags in `axe.js`: `wcag2a` 62, `wcag2aa` 3,
+  `wcag21a` 1, `wcag21aa` 3, `wcag22a` 0, `wcag22aa` 1). Kept so the list matches HANDOFF l.297 (plan Q1).
+- **axe runs under the A13 CSP** in Chromium and Firefox (no `bypassCSP`; no CSP error).
+- **axe found no violation** in any S1 state or stub page, light or dark: no app change.
+- **The second restart guards a zero margin.** In the planted run without it, segment A's last POST was at 11:55:29
+  and B's six ran 11:55:39–41; the 10 s drained the bucket and the six fit the burst exactly, so the run stayed green.
+  One more POST, or a faster run, would trip nginx's limit; the restart keeps B independent of A's pace.
+
+**Guards:** `playwright.config.test.ts` 21 (was 13): the 6 projects and dependencies; every `e2e/*.spec.ts` in exactly
+one project per browser, `LAST` exact; no `bypassCSP` in `use` or any project; the filter matches 3 projects; budget:
+segments ≤ 6, plan 11/1, green exact (fewer, more, no 429, two 429s), green with 0 lines, failed ≤; axe findings keep
+only id/impact/target (a planted node HTML never appears), exact exclusion and stale exclusion; the tags; the header
+parser reads every `add_header` line and throws on an unreadable one. `eslint.config.test.ts` +5 (4 refused, 1
+allowed). `tests/web/test_web_scaffold.py` unchanged (CI unchanged; exact pins and lockfile root already guarded).
+
+**Planted failures (not committed):**
+1. Light `--muted` `#576476` → `#9AA9BC` (web image rebuilt): `[chromium]` 4 ✘ (`S1 default (light)`, `S1 field errors
+   (light)`, `S1 invalid (light)`, `S1 denied (light)`), each `"id": "color-contrast"`, `"impact": "serious"`, targets
+   `.signin-sub` and `.signin-help`; `4 failed, 2 did not run, 25 passed`; `sign-in POSTs through nginx: 5 (planned 11),
+   429: 0 (planned 1)`; exit 1. Vitest `tokens.test.ts` also: `× light: text --muted on --bg is at least 4.5:1` (+2),
+   `Tests 3 failed | 229 passed (232)`.
+2. The control expecting `403` with the allowed Origin: 3 ✘ (`DELETE /api/session`, `POST /api/analyses`, `PUT …/note`,
+   `Expected: 403`, `Received: 401`); `3 failed, 2 did not run, 26 passed`; exit 1.
+3. `beforeAll(restartWeb)` commented out in `locked.spec.ts`: **did not fail**: `31 passed (3.0m)`, `11 (planned 11),
+   429: 1 (planned 1)`, exit 0 (see the zero-margin finding). The rule itself is proven by the unit tests (`2 sign-in
+   POST(s) answered 429, more than the planned 1`).
+Restored (web image rebuilt after 1): all green.
+
+**Size (lines added / removed):** harness and config (`web/e2e/support`, `run.ts`, teardown, `playwright.config.ts`,
+`eslint.config.js`, `package.json`) +147 / −24; specs +184 / −4; guards +102 / −22; CI 0; docs +136 / −9; lockfile +27.
+Total added without the lockfile 569, with it 596 (plan ≈ 520 / 545: denser guards and a longer entry).
+
+**Evidence [verified]:**
+- Baseline: `node --version` `v26.13.0`; `git log --oneline -1 origin/main` `880ec2b Merge pull request #96 …`.
+- `.venv/bin/python -m pytest -q` `1278 passed, 9 skipped` (unchanged).
+- `web/`: `npm run typecheck`, `npm run lint`, `npm test -- --run` (`Test Files 15 passed (15)`, `Tests 623 passed
+  (623)`, +13), `npm run build`, exit 0; `npm audit --omit=dev` `found 0 vulnerabilities`.
+- Live, local stack (Docker 28.5.2, Compose 2.40.3, images rebuilt from this branch): `npm run test:e2e` → `31 passed
+  (2.6m)`, `sign-in POSTs through nginx: 11 (planned 11), 429: 1 (planned 1)`, `secret scan: 0 matches in 2 files`, exit
+  0; `npm run test:e2e:firefox` → `31 passed (4.7m)`, the same counts, exit 0.
+- Independent grep with a chosen `VSD_E2E_PASSWORD` (Chromium, `31 passed (2.9m)`, exit 0): `grep -rlF` over
+  `test-results` and `playwright-report` → 0 files; the run's console log → 0; `grep -rlE 'vsd_session=[A-Za-z0-9_-]{43}'`
+  → 0 files; `vsd-e2e-` temp folders left → 0.
+- CI dry run on a fresh project: default stack stopped; `COMPOSE_PROJECT_NAME=vsd-ci`, a fresh `openssl rand -hex 32`
+  key; `docker compose -p vsd-ci up -d --build --wait --wait-timeout 240`; `npm ci`; `npx playwright install chromium`;
+  `npm run test:e2e` → `31 passed (2.9m)`, `11 (planned 11), 429: 1 (planned 1)`, scan clean, exit 0; `down -v`; default
+  stack started again. The GitHub job itself is not run (no push).
+- No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
+the checks. The plan was approved before the build; the open questions were taken at the plan's recommendations
+(Q1 keep `wcag22a`, Q5 tick 5a and list 5b as awaiting review). The team reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
 ## Open items
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
@@ -4832,7 +4946,7 @@ was not used.
 - [x] uvicorn's default access log prints the client IP; §1/§7 say no IP is stored. Decide for Stage 19 (e.g. `--no-access-log` or a log filter) (Entry 116). (`--no-access-log --no-proxy-headers` in the image and the documented local command; Entry 125)
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
 
-**Stage 18 web (Part E, Entries 127–135)**
+**Stage 18 web (Part E, Entries 127–136)**
 - [x] PR 1a: `web/` scaffold, theme storage, CI `web` job, pytest pin guards (merged in PR #88, `86cc77d`; Entry 127).
 - [ ] Add `web` as a required check on `main` after PR 1a merges (Iheb; Entry 127).
 - [x] PR 1b: `tokens.css`, `base.css`, fontsource fonts, token, contrast and no-raw-colour tests (merged in PR #89, `9a119d2`; Entry 128).
@@ -4843,8 +4957,8 @@ was not used.
 - [ ] Map `GET /session` 403 when `access_denied` is implemented (now `unavailable`; Entry 132).
 - [x] PR 3c: `react-router` 8.5.1 (A15), route list synced with `deploy/nginx.conf`, `next` check, guard, stub pages (merged in PR #94, `b06df7b`; Entry 133).
 - [x] PR 4: S1 Sign in; `next` read by the guard with `safeNext` after `POST /api/session`, never stored or logged (merged in PR #95, `1d41512`; Entry 134).
-- [ ] PR 5a: e2e harness and sign-in flows (on `chore/stage18-e2e-harness`, awaiting review; Entry 135).
-- [ ] PR 5b: axe (light/dark, HANDOFF l.297 tags) on S1 variants and stubs, HTTP/Origin matrix, security headers and JSON 404, lockout with a second `restart web`, outage + Retry (Entry 135).
+- [x] PR 5a: e2e harness and sign-in flows (merged in PR #96, `880ec2b`; Entry 135).
+- [ ] PR 5b: axe (light/dark, HANDOFF l.297 tags) on S1 variants and stubs, HTTP/Origin matrix, security headers and JSON 404, lockout with a second `restart web`, outage + Retry (on `chore/stage18-e2e-axe`, awaiting review; Entry 136).
 - [ ] Add `e2e` as a required check on `main` after 5 green PR runs in a row (Iheb; Entry 135).
 - [ ] PR 8: extract `Button`, `TextField` and `Banner` (HANDOFF line 133) from S1 into `web/src/components/` (deferred on purpose in PR 4; Entry 134).
 - [ ] PR 12: translate HANDOFF `?v=a,b` to repeated `verdict=` (Part E decision recorded in Entry 133).
@@ -4897,7 +5011,7 @@ was not used.
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
 `GET /api/status`. `POST /api/analyses` with the
-MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) merged in PR #88 (`86cc77d`; Entry 127); PR 1b (design tokens, base styles, IBM Plex fonts, token and contrast tests) merged in PR #89 (`9a119d2`; Entry 128), its 4 non-text pairs below 3:1 fixed in PR #92 (`c8c047e`; Entry 131). PR 2 (the `web` image: the built app served by nginx on the A2 routes, `/` → `/analyze`, A13 security headers on every answer) merged in PR #90 (`d352bad`; Entry 129). PR 3 is split in three (Entry 130): PR 3a (API client, `ApiError`, API types, no-timer lint rule) merged in PR #91 (`b6f09d6`; Entry 130); 3b (session store, expiry handler, `checkSession` on load) merged in PR #93 (`ee5fd50`; Entry 132); 3c (`react-router` 8.5.1, the six app routes checked against `deploy/nginx.conf`, the session guard, the `next` check, stub pages) merged in PR #94 (`b06df7b`; Entry 133). PR 4 (S1 Sign in: the form, `POST /api/session`, every S1 variant, Retry) merged in PR #95 (`1d41512`; Entry 134); the other pages are stubs, and the only API calls are `GET /api/session` on load and S1's `POST /api/session`. PR 5a (Playwright e2e harness on the real stack via nginx, never Vite; Chromium in CI, Firefox locally; secret scan; sign-in flows) is on `chore/stage18-e2e-harness`, awaiting review (Entry 135); 5b (axe, Origin matrix, lockout, outage) is next. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
+MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) merged in PR #88 (`86cc77d`; Entry 127); PR 1b (design tokens, base styles, IBM Plex fonts, token and contrast tests) merged in PR #89 (`9a119d2`; Entry 128), its 4 non-text pairs below 3:1 fixed in PR #92 (`c8c047e`; Entry 131). PR 2 (the `web` image: the built app served by nginx on the A2 routes, `/` → `/analyze`, A13 security headers on every answer) merged in PR #90 (`d352bad`; Entry 129). PR 3 is split in three (Entry 130): PR 3a (API client, `ApiError`, API types, no-timer lint rule) merged in PR #91 (`b6f09d6`; Entry 130); 3b (session store, expiry handler, `checkSession` on load) merged in PR #93 (`ee5fd50`; Entry 132); 3c (`react-router` 8.5.1, the six app routes checked against `deploy/nginx.conf`, the session guard, the `next` check, stub pages) merged in PR #94 (`b06df7b`; Entry 133). PR 4 (S1 Sign in: the form, `POST /api/session`, every S1 variant, Retry) merged in PR #95 (`1d41512`; Entry 134); the other pages are stubs, and the only API calls are `GET /api/session` on load and S1's `POST /api/session`. PR 5a (Playwright e2e harness on the real stack via nginx, never Vite; Chromium in CI, Firefox locally; secret scan; sign-in flows) merged in PR #96 (`880ec2b`; Entry 135); 5b (axe in light and dark, Origin matrix, security headers, JSON 404, lockout, outage) is on `chore/stage18-e2e-axe`, awaiting review (Entry 136). The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
 canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.
