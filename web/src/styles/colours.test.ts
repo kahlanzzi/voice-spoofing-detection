@@ -27,6 +27,10 @@ it('scans the source files', () => {
       '/src/shell/RailStatus.tsx',
       '/src/status/status.ts',
       '/src/status/useStatus.ts',
+      '/src/status/checkedAt.ts',
+      '/src/pages/Status.tsx',
+      '/src/pages/Status.css',
+      '/src/pages/statusView.ts',
     ]),
   )
   // CSS is read as text only with test.css enabled (vite.config.ts); an empty file would pass silently.
@@ -34,6 +38,7 @@ it('scans the source files', () => {
   expect(files['/src/pages/SignIn.css']).toContain('var(--err-bg)')
   expect(files['/src/shell/Shell.css']).toContain('var(--nav)')
   expect(files['/src/shell/Shell.css']).toContain('var(--nav-ok)')
+  expect(files['/src/pages/Status.css']).toContain('var(--ok-bg)')
 })
 
 it.each(Object.keys(files))('%s has no raw colour value', (path) => {

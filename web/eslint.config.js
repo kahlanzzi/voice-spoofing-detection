@@ -17,10 +17,10 @@ export default tseslint.config(
     },
   },
   // No polling (team decision 2026-11-01): no timers in the API layer, session state, routing, the sign-in
-  // screen (no lockout countdown, PR 4), the shell (PR 6a) or the status store (PR 7a), whether called bare or
-  // through window or globalThis. Tests included.
+  // screen (no lockout countdown, PR 4), the shell (PR 6a), the status store (PR 7a) or S10 (PR 7b: no polling, no
+  // relative time), whether called bare or through window or globalThis. Tests included.
   {
-    files: ['src/api/**', 'src/session/**', 'src/status/**', 'src/routing/**', 'src/shell/**', 'src/pages/SignIn*.{ts,tsx}', 'src/pages/signInOutcome*.{ts,tsx}'],
+    files: ['src/api/**', 'src/session/**', 'src/status/**', 'src/routing/**', 'src/shell/**', 'src/pages/SignIn*.{ts,tsx}', 'src/pages/signInOutcome*.{ts,tsx}', 'src/pages/Status*.{ts,tsx}', 'src/pages/statusView*.{ts,tsx}'],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -36,9 +36,9 @@ export default tseslint.config(
   // session cookie is the server's HttpOnly cookie), no console. Tests are exempt, they spy on these. Do not
   // add no-restricted-syntax here: it would replace the timer rule above. The sign-in screen joins (PR 4): the
   // password and Analyst ID live in its state only. The shell joins (PR 6a): the theme is stored by theme.ts only.
-  // The status store joins (PR 7a): in memory only.
+  // The status store joins (PR 7a): in memory only. S10 joins (PR 7b): it shows the store, never stores or logs it.
   {
-    files: ['src/session/**', 'src/status/**', 'src/routing/**', 'src/shell/**', 'src/pages/SignIn*.{ts,tsx}', 'src/pages/signInOutcome*.{ts,tsx}'],
+    files: ['src/session/**', 'src/status/**', 'src/routing/**', 'src/shell/**', 'src/pages/SignIn*.{ts,tsx}', 'src/pages/signInOutcome*.{ts,tsx}', 'src/pages/Status*.{ts,tsx}', 'src/pages/statusView*.{ts,tsx}'],
     ignores: ['src/**/*.test.{ts,tsx}'],
     rules: {
       'no-restricted-globals': [
