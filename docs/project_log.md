@@ -5063,8 +5063,12 @@ proposal notes). Vitest +594 (estimate 495). e2e +171 (estimate 142). Docs as in
      → `status-outage.spec.ts` fails (`Received string: "Last checked 3 Nov 2026, 18:33 GMT+1"`), 51 passed, exit 1.
   3. `.sp-ok { color: #1F7A45; }` in `Status.css` → `colours.test.ts` "/src/pages/Status.css has no raw colour
      value" fails (1 failed, 37 passed).
-- **Not done:** the live check on localhost:8001 (user-run, pending); a real screen-reader pass (Orca, PR 15). No
-  DEEP-VOICE path, audio or dataset touched; no secret in the diff.
+- Live check on localhost:8001 (user-run, signed in as analyst01, this branch's build): S10 Ready with 'Mock status
+  values' and 'Last checked'; Technical details opens and closes; Check now keeps its label, shows a spinner, is
+  disabled, then focus returns to it; api stopped → Check now → after ~5 s Unavailable, Connection 'Unreachable',
+  'Last attempt', rail line Unavailable, still in the shell; api started → Check now → Ready and 'Last checked'.
+- **Not done:** a real screen-reader pass (Orca, PR 15). No DEEP-VOICE path, audio or dataset touched; no secret in
+  the diff.
 
 **AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
 the checks. The plan was approved before the build. The team reviews the diff. Context7 was not used.
