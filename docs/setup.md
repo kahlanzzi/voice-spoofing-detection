@@ -235,17 +235,19 @@ npm run test:e2e:firefox                   # Firefox
 - **Always through the scripts** (`web/e2e/run.ts`); a plain `npx playwright test` refuses to start. One
   browser per run.
 - **What a run does to the stack:** it restarts the `web` container (nginx's sign-in rate limit starts empty),
-  then creates or resets the accounts `e2e-main`, `e2e-invalid`, `e2e-denied` and `e2e-locked` (`api.admin`
+  then creates or resets the accounts `e2e-main`, `e2e-invalid`, `e2e-denied`, `e2e-locked` and `e2e-signout` (`api.admin`
   through `docker compose exec -T`, password on stdin). At the end it disables them, which ends their sessions.
   `analyst01` and other accounts are never touched.
 - **Projects, per browser:** `<browser>-setup` (sign in, save the session) → `<browser>` (sign-in flows, stub
-  pages, the shell and its page-change rules, the HTTP/Origin matrix, security headers, the JSON 404) → `<browser>-last`, ordered by dependencies. The
+  pages, the shell and its page-change rules, the HTTP/Origin matrix, security headers, the JSON 404, sign-out as
+  `e2e-signout` in its own context, the theme control) → `<browser>-last`, ordered by dependencies. The
   last project restarts `web` a second time and locks `e2e-locked` through the form (unlocked at the end), then
-  **stops the `api` container** and starts it again (outage and Retry). If a run is interrupted, the global
+  **stops the `api` container** and starts it again, twice (outage and Retry; a sign-out that gets nginx's 503 and
+  keeps `e2e-main` signed in). If a run is interrupted, the global
   teardown starts `api` again; otherwise run `docker compose start api`. If an earlier project fails, the last
   one does not run.
 - **Accessibility:** axe-core (`@axe-core/playwright`) scans every S1 state the suite reaches, the stub pages
-  inside the shell and the shell at 390 px with the drawer closed and open, in light and dark, with the WCAG 2.0/2.1/2.2 A and AA tags (HANDOFF section 13); 0 violations expected. A
+  inside the shell, the shell at 390 px with the drawer closed and open, the rail footer and S1 after sign-out, in light and dark, with the WCAG 2.0/2.1/2.2 A and AA tags (HANDOFF section 13); 0 violations expected. A
   failure lists only rule, impact and selector, never the page's HTML. No rule is disabled; an exclusion is one
   exact rule and selector with its reason, in the spec and the project log.
 - **Password:** made for the run (48 hex characters, which always pass the §4.8 rules) and held only in the
@@ -253,10 +255,12 @@ npm run test:e2e:firefox                   # Firefox
   afterwards). It is never printed or written: Playwright puts typed text in its step titles, so the tests
   type it through `typeSecret()`, and assertions on it are booleans.
 - **Sign-in rate limit:** nginx allows 6 sign-in POSTs at once from a fresh limit and counts every POST to
-  `/api/session`, whatever the API answers. A run makes 11 in two segments, each after a `restart web`: 5 (setup,
-  invalid, denied, two refused for their Origin) and 6 (the lockout: 5 wrong passwords, then the right one,
-  answered `429 account_locked`). Afterwards `run.ts` counts them in nginx's log: a passing run must show exactly
-  11 and exactly one 429 (0 POSTs means the check read nothing); a failed run at most 11 and at most one 429.
+  `/api/session`, whatever the API answers (`DELETE /api/session` is not limited). A run makes 12 in two segments,
+  each after a `restart web`: 6 (setup, invalid, denied, two refused for their Origin, sign-out) and 6 (the lockout:
+  5 wrong passwords, then the right one, answered `429 account_locked`). **Both segments are full:** a new sign-in
+  POST needs its own segment, opened by another `restart web`. Afterwards `run.ts` counts them in nginx's log: a
+  passing run must show exactly 12 and exactly one 429 (0 POSTs means the check read nothing); a failed run at most
+  12 and at most one 429.
 - **Outputs:** no trace, video or screenshot; the `list` reporter and a JSON report at
   `web/playwright-report/results.json` (plain text). `web/test-results/` and `web/playwright-report/` are
   gitignored and kept out of the web image's build context. The signed-in storage state lives in a private
