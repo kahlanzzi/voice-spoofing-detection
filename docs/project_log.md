@@ -4327,6 +4327,121 @@ Context7 was not used.
 
 ---
 
+### Entry 134 — Stage 18 PR 4: S1 Sign in (2026-11-03)
+
+**What:** on `feat/stage18-sign-in` (Iheb, Part E; from `main` at `b06df7b`, PR #94, not stacked), following the
+approved plan (user's revisions: the API checks below, answers Q1–Q6, `chore(web)` for the dependency, one PR).
+Only `web/` and docs change; no `api/`, `src/`, `configs/` or `deploy/` change.
+- Design sources: `docs/design/HANDOFF.md` and the prototype v4 `docs/design/analyst-console-prototype.html`
+  (v4 per `docs/design/README.md` line 9); the plan maps each element to its lines. ui-ux-pro-max was a review
+  checklist only (`--domain ux`, `--stack react`; no `--design-system`, no `--persist`, no files written).
+- `web/src/pages/SignIn.tsx` replaces the 3c stub: brand, `h1` "Sign in to the analyst console" (`tabindex=-1`),
+  Analyst ID (`name=username`, `autocomplete=username`; log lines 3482, 3842), Password (`type=password`,
+  `autocomplete=current-password`, Show/Hide with `aria-pressed`), field errors "Enter your analyst ID." / "Enter
+  your password." with `aria-invalid` + `aria-describedby`, "Sign in" / "Signing in…" (spinner, `disabled`,
+  `aria-busy`), the four error banners (`role="alert"`, HANDOFF line 143), the expired notice (`role="status"`),
+  Retry, and "Forgot your password? Ask your administrator." (log line 3844). Removed from the prototype: the
+  open-decision banner (log line 3481) and the demo button (prototype only).
+- `POST /api/session` through `apiFetch`; on 200, `markSignedIn(<the server's username>)`; the guard
+  (`SignInGate`) then lands on `safeNext(next)` or `/analyze`. S1 has no navigation code and never reads `next`.
+- `web/src/pages/signInOutcome.ts`: exact status + code → `401 invalid_credentials` and `400 invalid_request`
+  → invalid; `403 access_denied` → denied; `429 account_locked` → locked; everything else (nginx 429/503, API
+  503, network error, 500, 403 `origin_not_allowed`, malformed bodies, any other status or code, a 200 without a
+  username) → unavailable, so no unknown answer reads as a wrong password. 400 `invalid_request` is answered
+  before the account lookup and is the same for every username (`api/routers/session.py` lines 87–96): a
+  password the server refuses to check cannot be correct, and nothing about the account is revealed. Copy:
+  prototype lines 834–837; the server's message is never shown.
+- Password lifecycle: component state only; sent only in the POST body; `<form method="post" noValidate>`, so a
+  native submit could never put it in a query string. Cleared (and Show reset) after every failed answer, as the
+  prototype keeps only the Analyst ID (line 1444). Gone on unmount (success unmounts S1). One request at a time:
+  a ref set before any await, plus disabled buttons.
+- Focus: field errors → first empty field (prototype line 1439); invalid → Analyst ID; denied, locked,
+  unavailable → `h1` (line 1444, Q5). A repeated failure re-mounts the alert so it is announced again.
+- Retry (Q1): only for the store's `unavailable` (the check on load failed); calls `checkSession()`; the store
+  stays `unavailable` until the answer, so the button shows "Checking…" (HANDOFF line 166), disabled, `aria-busy`,
+  and the form is blocked too. Signed out after Retry → the same S1 instance, Analyst ID kept and focused.
+- `web/src/pages/SignIn.css` (prototype lines 103–120, 206–207, 261–286, 443), tokens only for colour, type,
+  radius, space and motion. `web/src/components/Icon.tsx`: 4 icons from prototype lines 668–684. `base.css`:
+  `.sr` (prototype line 84).
+- `web/eslint.config.js`: `src/pages/SignIn*.{ts,tsx}` and `src/pages/signInOutcome*.{ts,tsx}` join the timer
+  ban (tests included; no lockout countdown) and the storage / `document.cookie` / console ban (tests exempt).
+  Other pages stay unbanned (later ones may need a timer, e.g. the toast).
+- `@testing-library/user-event` `14.6.8`, dev, exact (`npm view` → `14.6.8`, published 2026-10-13, peer
+  `@testing-library/dom >=7.21.4`, no dependencies): Tab order, Enter submission and double click in tests.
+
+**Decisions recorded (user answers to the plan, 2026-11-03):** Q1 Retry only for the store's unavailable, label
+"Retry", loading "Checking…". Q2 400 `invalid_request` → invalid. Q3 the password is **kept** on a client field
+error (nothing was sent); this deliberately differs from prototype line 1439, which empties it. Q4a the
+prototype's raw 22 px `h1` and 18 px brand name use the nearest tokens `--fs-lg` and `--fs-md` (HANDOFF line 93);
+the banners' raw 14 px likewise uses `--fs-sm`. Q4b "Signing in…" (HANDOFF line 161, prototype line 850) over
+HANDOFF line 137 "Loading keeps the label". Q5 focus the `h1`. **Q6, deliberate deferral:** HANDOFF line 133
+asks for `Button`, `TextField` and `Banner` components in `web/src/components/`; S1's markup stays inline in
+`SignIn.tsx` / `SignIn.css` (class names as in the prototype) and is extracted in PR 8, when a second screen
+needs them (Open item).
+
+**Findings, not changed:**
+- Lockout count [verified]: the brief expected the 5th wrong attempt to answer 429. The code checks the lock
+  before the password (`api/routers/session.py` lines 57–66) and answers the failure that reaches the threshold
+  with 401 while setting the lock (`api/repository.py` lines 428–433), so a fresh count gives 401 ×5, then 429 —
+  confirmed live below, and as in Entries 123 and 126. An earlier "401 401 401 429" run fits a count that already
+  held failures (Entry 133: attempts made before analyst01 existed).
+- A burst with one unknown username mixes the API's lockout into nginx's limit (the 6th 429 is the API's
+  `account_locked`, as in Entry 126); distinct usernames show nginx's own 429.
+- The Show/Hide toggle is 36 px high (prototype line 277); HANDOFF line 86 asks for 44 px targets at ≤ 640 px.
+  Kept as the prototype; for the team (PR 5's axe run will report it if it fails 2.5.8).
+
+**ui-ux-pro-max (review checklist):** met: accessible authentication (paste and password managers, autocomplete),
+password toggle, `role="alert"` errors, errors below fields with `aria-describedby`, loading button, `<form
+onSubmit>`. Kept HANDOFF/prototype over the checklist: focus to the field / `h1` rather than an error summary,
+no error summary (two fields), no required asterisks, validation on submit not on blur, body text 15 px (16 px
+inputs only, B4).
+
+**Tests (Vitest):** `signInOutcome.test.ts` 31 (the whole path through `apiFetch`: the 4 errors, 400, nginx
+429/503/404 verbatim from `deploy/nginx.conf`, network, 12 other status/code pairs, 4 malformed 401 bodies, 2xx
+non-JSON, non-ApiError throws, the copy); `SignIn.test.tsx` 32 (default attributes and the recovery line, Tab
+order, Show/Hide, field errors and focus, loading, the exact request body and the server username, a 200 without a
+username, 9 failure answers with alert / cleared password / kept ID / focus / aria, network, re-announcement,
+expired notice, unavailable with Retry pending / signed out / still unavailable, no double submit by double click
+and by two submit events, landing on a valid next and on `/analyze` for 3 rejected ones, the password absent from
+console, storage, cookies, history, the router location and the page text); `guard.test.tsx` reads the real S1
+instead of the stub text; `eslint.config.test.ts` +3 (S1 bans; Analyze not banned); `colours.test.ts` must-scan
+list + `SignIn.css`, `signInOutcome.ts`, `Icon.tsx`.
+
+**Planted failures (not committed):** unknown answers mapped to `invalid` (`?? 'invalid'` in `signInOutcome.ts`)
+→ `Test Files 2 failed (2)`, `Tests 26 failed | 37 passed (63)`; the in-flight ref and the submit button's
+`disabled` removed → `× double click sends one request`, `× two submit events in a row send one request`, `Tests
+2 failed | 30 skipped (32)`. Restored: `Tests 63 passed (63)`.
+
+**Size:** `web/` code and config +380 / −20, tests +543 / −8; lockfile +15; docs +122 / −4. Code is over the
+plan's ~330 split line because of JSX layout (one attribute or SVG path per line), not scope; the user chose
+one PR.
+
+**Evidence [verified]:**
+- Baseline: `node --version` `v26.13.0`; `git log --oneline -1 origin/main` `b06df7b Merge pull request #94 …`.
+- `python -m pytest -q` `1272 passed, 9 skipped`.
+- `web/`: `npm run typecheck`, `npm run lint`, `npm test -- --run` (`Test Files 13 passed (13)`, `Tests 585 passed
+  (585)`), `npm run build`, all exit 0; `npm audit --omit=dev` `found 0 vulnerabilities` (the full `npm audit`
+  shows 12 moderate in dev dependencies, `minimatch`, the same before this change).
+- Live, server side, on localhost:8001 with the branch's `web` image (`docker compose build web && up -d`; served
+  bundle `index-CTaE4bZb.js` = the local build) and a scratch account `pr4check` (generated password, never
+  printed; disabled at the end): sign-in 200; after `unlock`, 5 wrong passwords 7 s apart → `401 401 401 401 401`,
+  6th with the right password → `429`; `disable` → right password `403`, then `enable`; a 129-character password →
+  `400`; after 61 s, 8 rapid sign-ins as `nobody01`…`nobody08` → 6 × `401 invalid_credentials`, 2 × `429
+  too_many_requests`.
+- Live in a browser: not run by the agent (no browser here); the user-run checklist is in the PR report.
+- Unit-only, and why: `503 sign_in_unavailable` (needs an account store the API cannot read; not safe to
+  provoke); the expired notice (only `expire()` after a signed-in API call produces it, and no page calls the API
+  yet); malformed bodies, unknown statuses, 2xx non-JSON, 422 (nginx and the API never send them).
+- No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
+the checks. The plan was approved before the build, with the user's revisions; the team reviews the diff.
+Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
 ## Open items
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
@@ -4595,7 +4710,7 @@ Context7 was not used.
 - [x] uvicorn's default access log prints the client IP; §1/§7 say no IP is stored. Decide for Stage 19 (e.g. `--no-access-log` or a log filter) (Entry 116). (`--no-access-log --no-proxy-headers` in the image and the documented local command; Entry 125)
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
 
-**Stage 18 web (Part E, Entries 127–133)**
+**Stage 18 web (Part E, Entries 127–134)**
 - [x] PR 1a: `web/` scaffold, theme storage, CI `web` job, pytest pin guards (merged in PR #88, `86cc77d`; Entry 127).
 - [ ] Add `web` as a required check on `main` after PR 1a merges (Iheb; Entry 127).
 - [x] PR 1b: `tokens.css`, `base.css`, fontsource fonts, token, contrast and no-raw-colour tests (merged in PR #89, `9a119d2`; Entry 128).
@@ -4604,8 +4719,10 @@ Context7 was not used.
 - [x] PR 3a: API client, `ApiError`, API types, no-timer lint rule (merged in PR #91, `b6f09d6`; Entry 130).
 - [x] PR 3b: session store, expiry handler, `checkSession` on load, A19 on `GET /api/session`, storage and console lint ban in `src/session` (merged in PR #93, `ee5fd50`; Entry 132).
 - [ ] Map `GET /session` 403 when `access_denied` is implemented (now `unavailable`; Entry 132).
-- [x] PR 3c: `react-router` 8.5.1 (A15), route list synced with `deploy/nginx.conf`, `next` check, guard, stub pages (on `feat/stage18-routing`, awaiting review; Entry 133).
-- [ ] PR 4: read `next` with `safeNext` after `POST /api/session`; never store or log it (Entry 133).
+- [x] PR 3c: `react-router` 8.5.1 (A15), route list synced with `deploy/nginx.conf`, `next` check, guard, stub pages (merged in PR #94, `b06df7b`; Entry 133).
+- [x] PR 4: S1 Sign in; `next` read by the guard with `safeNext` after `POST /api/session`, never stored or logged (on `feat/stage18-sign-in`, awaiting review; Entry 134).
+- [ ] PR 8: extract `Button`, `TextField` and `Banner` (HANDOFF line 133) from S1 into `web/src/components/` (deferred on purpose in PR 4; Entry 134).
+- [ ] Show/Hide toggle 36 px vs HANDOFF's 44 px targets at ≤ 640 px; check with PR 5's axe run (Entry 134).
 - [ ] PR 12: translate HANDOFF `?v=a,b` to repeated `verdict=` (Part E decision recorded in Entry 133).
 - [ ] A23: keep the `File` (PR 8, upload) and the note draft (PR 11, note) in a module store, not component state; PR 10's S5 "Sign in again" calls `session.expire()` (Entry 130).
 - [ ] Contract: `api_design.md` §5 does not list the Status, Limits, History, Stats, Session and Note responses (the web types follow §4 and `api/schemas.py`) (Entry 130).
@@ -4656,7 +4773,7 @@ Context7 was not used.
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
 `GET /api/status`. `POST /api/analyses` with the
-MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) merged in PR #88 (`86cc77d`; Entry 127); PR 1b (design tokens, base styles, IBM Plex fonts, token and contrast tests) merged in PR #89 (`9a119d2`; Entry 128), its 4 non-text pairs below 3:1 fixed in PR #92 (`c8c047e`; Entry 131). PR 2 (the `web` image: the built app served by nginx on the A2 routes, `/` → `/analyze`, A13 security headers on every answer) merged in PR #90 (`d352bad`; Entry 129). PR 3 is split in three (Entry 130): PR 3a (API client, `ApiError`, API types, no-timer lint rule) merged in PR #91 (`b6f09d6`; Entry 130); 3b (session store, expiry handler, `checkSession` on load) merged in PR #93 (`ee5fd50`; Entry 132); 3c (`react-router` 8.5.1, the six app routes checked against `deploy/nginx.conf`, the session guard, the `next` check, stub pages) is on `feat/stage18-routing`, awaiting review (Entry 133); pages are stubs, and the only API call is `GET /api/session` on load. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
+MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) merged in PR #88 (`86cc77d`; Entry 127); PR 1b (design tokens, base styles, IBM Plex fonts, token and contrast tests) merged in PR #89 (`9a119d2`; Entry 128), its 4 non-text pairs below 3:1 fixed in PR #92 (`c8c047e`; Entry 131). PR 2 (the `web` image: the built app served by nginx on the A2 routes, `/` → `/analyze`, A13 security headers on every answer) merged in PR #90 (`d352bad`; Entry 129). PR 3 is split in three (Entry 130): PR 3a (API client, `ApiError`, API types, no-timer lint rule) merged in PR #91 (`b6f09d6`; Entry 130); 3b (session store, expiry handler, `checkSession` on load) merged in PR #93 (`ee5fd50`; Entry 132); 3c (`react-router` 8.5.1, the six app routes checked against `deploy/nginx.conf`, the session guard, the `next` check, stub pages) merged in PR #94 (`b06df7b`; Entry 133). PR 4 (S1 Sign in: the form, `POST /api/session`, every S1 variant, Retry) is on `feat/stage18-sign-in`, awaiting review (Entry 134); the other pages are stubs, and the only API calls are `GET /api/session` on load and S1's `POST /api/session`. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
 canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.
