@@ -1,6 +1,6 @@
 // The rail footer (Stage 18 PR 6b; HANDOFF line 41, prototype lines 144-149 and 812-813): the analyst, the theme
 // control and Sign out. Inside the drawer on mobile, since the rail is the drawer. The service status line above it
-// comes with PR 7.
+// is RailStatus (PR 7a; prototype line 812).
 //
 // Theme: a native <select> (prototype line 485), stored and applied through theme.ts only. "Follow the system
 // setting" removes data-theme, so the CSS follows the OS live, with no listener.
@@ -13,6 +13,7 @@ import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { signOut } from '../session/session'
 import { useSession } from '../session/useSession'
 import { applyTheme, readTheme, writeTheme, type ThemeChoice } from '../theme'
+import RailStatus from './RailStatus'
 
 // Copy proposal (Entry 137 Q6), pending the team's review.
 export const SIGN_OUT_FAILED = 'Sign-out did not complete. You are still signed in. Try again.'
@@ -61,6 +62,7 @@ export default function RailFoot() {
 
   return (
     <div className="rail-foot">
+      <RailStatus />
       <div className="who">
         <div className="who-name">{session.status === 'signedIn' ? session.username : ''}</div>
         <div className="who-role">Analyst ID</div>

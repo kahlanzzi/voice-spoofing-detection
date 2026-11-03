@@ -232,7 +232,7 @@ describe('pages', () => {
 })
 
 describe('the guard has no side effects beyond navigation', () => {
-  it('no session call, no fetch, no storage through every state and route', async () => {
+  it("no session call, no fetch but the shell's status check, no storage through every state and route", async () => {
     const storage = (['getItem', 'setItem', 'removeItem', 'clear'] as const).map((method) =>
       vi.spyOn(Storage.prototype, method),
     )
@@ -260,7 +260,11 @@ describe('the guard has no side effects beyond navigation', () => {
     ]) {
       expect(transition).not.toHaveBeenCalled()
     }
-    expect(fetch).not.toHaveBeenCalled()
+    // The guard fetches nothing. The shell it lets through sends its one GET /api/status per mount (PR 7a); no
+    // other request, and none while not signed in.
+    const calls = vi.mocked(fetch).mock.calls
+    expect(calls.length).toBeGreaterThan(0)
+    for (const [path, init] of calls) expect([path, init?.method]).toEqual(['/api/status', 'GET'])
     // The only storage access is the router's own: at creation it reads the view transitions it applied
     // (react-router lib/router/router.js restoreAppliedTransitions); it writes them only after a view
     // transition, which the app does not use. The shell's theme control reads its choice through theme.ts (PR 6b).

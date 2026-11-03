@@ -1,4 +1,5 @@
 import { act, cleanup, render, screen, within } from '@testing-library/react'
+import { StrictMode } from 'react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter } from 'react-router'
 import { RouterProvider } from 'react-router/dom'
@@ -26,6 +27,18 @@ vi.mock('../session/session', () => ({
 
 const ID = 'req_' + '0123456789abcdef'.repeat(2)
 
+// GET /api/status (docs/api_design.md §4.1): the real status store, a stubbed fetch.
+const STATUS = {
+  state: 'ready',
+  checked_at: '2026-11-03T09:14:05Z',
+  checks: { analysis: 'available', history_and_stats: 'available' },
+  versions: { model_version: 'mock', profile_version: 'preprocessing-v1', policy_version: 'risk-v1' },
+  bundle_manifest_sha256: null,
+  deferral_on_fit: 0.0993,
+  mock: true,
+}
+const fetchMock = vi.fn<typeof fetch>()
+
 // A matchMedia stand-in whose (max-width: 860px) answer the test sets and changes.
 const media = vi.hoisted(() => {
   let matches = false
@@ -49,6 +62,9 @@ const media = vi.hoisted(() => {
 })
 
 beforeEach(() => {
+  fetchMock.mockReset()
+  fetchMock.mockImplementation(async () => new Response(JSON.stringify(STATUS), { status: 200 }))
+  vi.stubGlobal('fetch', fetchMock)
   vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
   media.install(NARROW_QUERY)
   media.set(false)
@@ -57,6 +73,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
 })
 
 function renderAt(path: string) {
@@ -131,17 +148,18 @@ describe('skip link and keyboard order', () => {
     expect(document.activeElement).toBe(within(main()).getByRole('heading', { level: 1 }))
   })
 
-  it('Tab order (wide, top bar hidden): skip, New analysis, the four pages, the theme, Sign out', async () => {
+  it('Tab order (wide, top bar hidden): skip, New analysis, the four pages, the status line, the theme, Sign out', async () => {
     renderAt('/overview')
+    await screen.findByRole('link', { name: 'Service status: Ready for analysis (mock)' })
     const order: (string | null)[] = []
-    for (let i = 0; i < 8; i += 1) {
+    for (let i = 0; i < 9; i += 1) {
       await userEvent.tab()
       const active = document.activeElement
       order.push(active instanceof HTMLSelectElement ? `select ${active.id}` : (active?.textContent ?? null))
     }
     expect(order).toEqual([
-      'Skip to main content', 'New analysis', 'Analyze', 'History', 'Overview', 'System status', 'select rail-theme',
-      'Sign out',
+      'Skip to main content', 'New analysis', 'Analyze', 'History', 'Overview', 'System status',
+      'Service status: Ready for analysis (mock)', 'select rail-theme', 'Sign out',
     ])
   })
 })
@@ -235,5 +253,37 @@ describe('the drawer (≤ 860 px)', () => {
     renderNarrow('/history')
     await userEvent.click(menu())
     expect(main().hasAttribute('inert')).toBe(false)
+  })
+})
+
+// PR 7a: the shell starts the one status check when it mounts; nothing else in it fetches.
+describe('the status check', () => {
+  const statusCalls = () => fetchMock.mock.calls.filter(([path]) => path === '/api/status')
+
+  it('one GET /api/status per shell mount, StrictMode included, none on navigation', async () => {
+    const router = createMemoryRouter(routes, { initialEntries: ['/analyze'] })
+    render(
+      <StrictMode>
+        <RouterProvider router={router} />
+      </StrictMode>,
+    )
+    await screen.findByRole('link', { name: 'Service status: Ready for analysis (mock)' })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({ method: 'GET', credentials: 'same-origin' })
+    for (const path of ['/history', '/overview', '/status', `/history/${ID}`, '/analyze']) {
+      await act(() => router.navigate(path))
+    }
+    await userEvent.click(screen.getByRole('link', { name: 'Service status: Ready for analysis (mock)' }))
+    expect(router.state.location.pathname).toBe('/status')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('a new shell mount checks again', async () => {
+    renderAt('/history')
+    await screen.findByRole('link', { name: /^Service status: Ready/ })
+    cleanup()
+    renderAt('/history')
+    await screen.findByRole('link', { name: /^Service status: Ready/ })
+    expect(statusCalls()).toHaveLength(2)
   })
 })

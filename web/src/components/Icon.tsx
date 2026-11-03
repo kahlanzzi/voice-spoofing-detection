@@ -2,7 +2,7 @@
 // built screen uses. Always beside visible text, so hidden from assistive technology.
 import type { JSX } from 'react'
 
-export type IconName = 'wave' | 'alert' | 'clock' | 'lock' | 'upload' | 'plus' | 'history' | 'grid' | 'server' | 'menu'
+export type IconName = 'wave' | 'alert' | 'clock' | 'lock' | 'upload' | 'plus' | 'history' | 'grid' | 'server' | 'menu' | 'dot' | 'x'
 
 const PATHS: Record<IconName, JSX.Element> = {
   wave: (
@@ -75,6 +75,13 @@ const PATHS: Record<IconName, JSX.Element> = {
       <path d="M4 6h16" />
       <path d="M4 12h16" />
       <path d="M4 18h16" />
+    </>
+  ),
+  dot: <circle cx="12" cy="12" r="5" fill="currentColor" />,
+  x: (
+    <>
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
     </>
   ),
 }

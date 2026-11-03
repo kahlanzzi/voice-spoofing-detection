@@ -42,6 +42,16 @@
   border-top: 1px solid var(--nav-line); padding-top: var(--sp-4);
 }
 .rail-foot:empty { display: none; }
+/* Rail status line (PR 7a; prototype lines 139-143). --target high, not 32 px, like every shell target; the icon
+   colours are the --nav-ok / --nav-warn / --nav-err tokens (P 143's values), at least 3:1 on --nav and --nav-2. */
+.svc {
+  display: flex; align-items: center; gap: var(--sp-2); min-height: var(--target); padding: 0 var(--sp-2);
+  border-radius: var(--r-sm); color: var(--nav-ink); text-decoration: none; font-size: var(--fs-sm);
+}
+.svc:hover { background: var(--nav-2); }
+.svc svg { flex: none; }
+.svc-ready svg { color: var(--nav-ok); } .svc-notice svg { color: var(--nav-warn); } .svc-down svg { color: var(--nav-err); }
+.svc-mock { color: var(--nav-muted); }
 /* Rail footer (PR 6b; prototype lines 144-149). The theme select's border is --nav-muted, 7.33 / 7.53:1 on --nav-2
    (1.4.11); Sign out keeps the --nav-line border (text-labelled, like Menu) and is --target high, not 40 px. */
 .who { display: flex; flex-direction: column; padding: 0 var(--sp-2); min-width: 0; }
