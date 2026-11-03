@@ -14,6 +14,9 @@ it('scans the source files', () => {
     expect.arrayContaining([
       '/src/main.tsx',
       '/src/pages/SignIn.tsx',
+      '/src/pages/SignIn.css',
+      '/src/pages/signInOutcome.ts',
+      '/src/components/Icon.tsx',
       '/src/routing/guard.tsx',
       '/src/theme.ts',
       '/src/styles/base.css',
@@ -21,6 +24,7 @@ it('scans the source files', () => {
   )
   // CSS is read as text only with test.css enabled (vite.config.ts); an empty file would pass silently.
   expect(files['/src/styles/base.css']).toContain('var(--bg)')
+  expect(files['/src/pages/SignIn.css']).toContain('var(--err-bg)')
 })
 
 it.each(Object.keys(files))('%s has no raw colour value', (path) => {

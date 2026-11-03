@@ -95,3 +95,32 @@ describe('no timers, storage or console in src/routing', () => {
     }
   })
 })
+
+// The sign-in screen (PR 4): the password and Analyst ID live in its state only, and no lockout countdown, so
+// SignIn and signInOutcome get both bans; other pages do not (later pages may need a timer, e.g. the toast).
+
+describe('no timers, storage, cookie or console in the sign-in screen', () => {
+  it.each([
+    ['setTimeout(() => undefined, 1)\n', 'no-restricted-syntax'],
+    ['window.setInterval(() => undefined, 1)\n', 'no-restricted-syntax'],
+    ["localStorage.setItem('password', 'x')\n", 'no-restricted-globals'],
+    ["window.sessionStorage.setItem('username', 'x')\n", 'no-restricted-properties'],
+    ["document.cookie = 'x'\n", 'no-restricted-properties'],
+    ["console.log('x')\n", 'no-restricted-globals'],
+    ["globalThis.console.error('x')\n", 'no-restricted-properties'],
+  ])('%s is an error in src/pages/SignIn.tsx and signInOutcome.ts', async (code, rule) => {
+    expect(await ruleIds(code, 'src/pages/SignIn.tsx')).toContain(rule)
+    expect(await ruleIds(code, 'src/pages/signInOutcome.ts')).toContain(rule)
+  })
+
+  it('console in the S1 test file is allowed, a timer is not', async () => {
+    expect(await ruleIds("console.log('x')\n", 'src/pages/SignIn.test.tsx')).toEqual([])
+    expect(await ruleIds('setTimeout(() => undefined, 1)\n', 'src/pages/SignIn.test.tsx')).toContain(
+      'no-restricted-syntax',
+    )
+  })
+
+  it('other pages are not banned', async () => {
+    expect(await ruleIds("setTimeout(() => undefined, 1)\nconsole.log('x')\n", 'src/pages/Analyze.tsx')).toEqual([])
+  })
+})
