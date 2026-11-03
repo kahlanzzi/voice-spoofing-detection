@@ -10,9 +10,12 @@ import './styles/base.css'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
+import { startSession } from './session/session'
 import { applyTheme, readTheme } from './theme'
 
 applyTheme(readTheme())
+// Module level, not an effect: StrictMode cannot run it twice.
+void startSession()
 
 const root = document.getElementById('root')
 if (!root) throw new Error('index.html has no #root element')
