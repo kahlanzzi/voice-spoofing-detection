@@ -3,7 +3,7 @@
    100dvh (the prototype's -40px is its own banner, line 126); every shell target is at least --target (44 px) at
    every width (HANDOFF lines 86 and 245); the prototype's 16 / 14 / 22 px text uses the nearest tokens (as in
    Entry 134). Layout sizes with no token (36 px brand mark, 48 px New analysis, 288 px / 86vw drawer, z-index
-   24-60) are the prototype's. .btn and .btn-primary still come from SignIn.css until PR 8 extracts Button. */
+   24-60) are the prototype's. .btn and .btn-primary come from components/Button.css (PR 8a). */
 
 .skip {
   position: absolute; left: var(--sp-2); top: -100px; z-index: 60; background: var(--surface); color: var(--link);

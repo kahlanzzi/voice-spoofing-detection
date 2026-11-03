@@ -9,7 +9,10 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { apiFetch } from '../api/client'
 import type { SessionInfo, SignInRequest } from '../api/types'
+import Banner from '../components/Banner'
+import Button from '../components/Button'
 import Icon from '../components/Icon'
+import TextField from '../components/TextField'
 import { checkSession, markSignedIn } from '../session/session'
 import './SignIn.css'
 import { SIGN_IN_COPY, signInOutcome, type SignInError } from './signInOutcome'
@@ -106,8 +109,6 @@ export default function SignIn({ variant }: { variant: SignInVariant }) {
   const banner = error ?? (variant === 'unavailable' ? 'unavailable' : null)
   const showRetry = error === null && variant === 'unavailable'
   const invalid = error === 'invalid'
-  const describedBy = (fieldError: boolean, errorId: string) =>
-    fieldError ? errorId : invalid ? 'si-banner' : undefined
 
   return (
     <main className="signin" id="main">
@@ -125,65 +126,45 @@ export default function SignIn({ variant }: { variant: SignInVariant }) {
           Sign in to the analyst console
         </h1>
         {variant === 'expired' && !expiredSeen && (
-          <div className="banner-info" role="status">
-            <Icon name="clock" size={16} />
-            <span>Your session expired. Sign in again to continue where you left off.</span>
-          </div>
+          <Banner tone="info" icon="clock" role="status">
+            Your session expired. Sign in again to continue where you left off.
+          </Banner>
         )}
         {banner !== null && (
-          <div className="banner-err" role="alert" id="si-banner" key={alertKey}>
-            <Icon name={banner === 'locked' || banner === 'denied' ? 'lock' : 'alert'} size={16} />
-            <span>{SIGN_IN_COPY[banner]}</span>
-          </div>
+          <Banner tone="err" icon={banner === 'locked' || banner === 'denied' ? 'lock' : 'alert'} role="alert" id="si-banner" key={alertKey}>
+            {SIGN_IN_COPY[banner]}
+          </Banner>
         )}
         {showRetry && (
-          <button
-            type="button"
-            className="btn btn-secondary"
-            ref={retryRef}
-            onClick={() => void retry()}
-            disabled={busy !== null}
-            aria-busy={busy === 'retry' || undefined}
-          >
-            {busy === 'retry' && <span className="spin" aria-hidden="true" />}
+          <Button variant="secondary" ref={retryRef} onClick={() => void retry()} disabled={busy !== null} busy={busy === 'retry'}>
             {busy === 'retry' ? 'Checking…' : 'Retry'}
-          </button>
+          </Button>
         )}
-        <div className="field">
-          <label htmlFor="si-user">Analyst ID</label>
-          <input
-            className="input"
-            id="si-user"
-            name="username"
-            autoComplete="username"
-            ref={usernameRef}
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-            aria-invalid={fieldErrors.username || invalid}
-            aria-describedby={describedBy(fieldErrors.username, 'si-user-err')}
-          />
-          {fieldErrors.username && (
-            <span className="field-err" id="si-user-err">
-              <Icon name="alert" size={14} />
-              Enter your analyst ID.
-            </span>
-          )}
-        </div>
-        <div className="field">
-          <label htmlFor="si-pass">Password</label>
-          <div className="pw">
-            <input
-              className="input"
-              id="si-pass"
-              name="password"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="current-password"
-              ref={passwordRef}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              aria-invalid={fieldErrors.password || invalid}
-              aria-describedby={describedBy(fieldErrors.password, 'si-pass-err')}
-            />
+        <TextField
+          id="si-user"
+          label="Analyst ID"
+          name="username"
+          autoComplete="username"
+          ref={usernameRef}
+          value={username}
+          onChange={(event) => setUsername(event.target.value)}
+          error={fieldErrors.username ? 'Enter your analyst ID.' : null}
+          invalid={invalid}
+          describedBy={invalid ? 'si-banner' : undefined}
+        />
+        <TextField
+          id="si-pass"
+          label="Password"
+          name="password"
+          type={showPassword ? 'text' : 'password'}
+          autoComplete="current-password"
+          ref={passwordRef}
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          error={fieldErrors.password ? 'Enter your password.' : null}
+          invalid={invalid}
+          describedBy={invalid ? 'si-banner' : undefined}
+          action={
             <button
               type="button"
               aria-pressed={showPassword}
@@ -192,18 +173,11 @@ export default function SignIn({ variant }: { variant: SignInVariant }) {
             >
               {showPassword ? 'Hide' : 'Show'} <span className="sr">password</span>
             </button>
-          </div>
-          {fieldErrors.password && (
-            <span className="field-err" id="si-pass-err">
-              <Icon name="alert" size={14} />
-              Enter your password.
-            </span>
-          )}
-        </div>
-        <button type="submit" className="btn btn-primary" disabled={busy !== null} aria-busy={busy === 'submit' || undefined}>
-          {busy === 'submit' && <span className="spin" aria-hidden="true" />}
+          }
+        />
+        <Button type="submit" variant="primary" disabled={busy !== null} busy={busy === 'submit'}>
           {busy === 'submit' ? 'Signing in…' : 'Sign in'}
-        </button>
+        </Button>
         <p className="signin-help">Forgot your password? Ask your administrator.</p>
         <p className="sr" role="status">
           {busy === 'submit' ? 'Signing in…' : busy === 'retry' ? 'Checking…' : ''}

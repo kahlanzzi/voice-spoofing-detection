@@ -105,6 +105,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - `docs/experimental_protocol.md` v1.0 frozen (F1): all sections decided from the team-accepted defaults.
 
 ### Changed
+- Stage 18 PR 8a: shared `Button`, `TextField`, `Banner` and `Spinner` in `web/src/components/`; S1, S10 and the shell's New analysis use them with no change in behaviour or markup; CSS moved out of `SignIn.css` and `Status.css`. S10's Check now gets its quiet small style (a CSS-order bug had made it a 44 px button with no border).
 - The six PlantUML figures under `docs/uml/` now follow the SDD's visual grouping more closely:
   layered component views, report-style class/sequence legends and no implementation-status labels;
   canonical UML semantics are unchanged.

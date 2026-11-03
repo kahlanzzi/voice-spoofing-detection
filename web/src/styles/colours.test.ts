@@ -31,11 +31,21 @@ it('scans the source files', () => {
       '/src/pages/Status.tsx',
       '/src/pages/Status.css',
       '/src/pages/statusView.ts',
+      '/src/components/Button.tsx',
+      '/src/components/Button.css',
+      '/src/components/TextField.tsx',
+      '/src/components/TextField.css',
+      '/src/components/Banner.tsx',
+      '/src/components/Banner.css',
+      '/src/components/Spinner.tsx',
+      '/src/components/Spinner.css',
     ]),
   )
   // CSS is read as text only with test.css enabled (vite.config.ts); an empty file would pass silently.
   expect(files['/src/styles/base.css']).toContain('var(--bg)')
-  expect(files['/src/pages/SignIn.css']).toContain('var(--err-bg)')
+  expect(files['/src/pages/SignIn.css']).toContain('var(--surface)')
+  expect(files['/src/components/Banner.css']).toContain('var(--err-bg)')
+  expect(files['/src/components/Button.css']).toContain('var(--accent)')
   expect(files['/src/shell/Shell.css']).toContain('var(--nav)')
   expect(files['/src/shell/Shell.css']).toContain('var(--nav-ok)')
   expect(files['/src/pages/Status.css']).toContain('var(--ok-bg)')
