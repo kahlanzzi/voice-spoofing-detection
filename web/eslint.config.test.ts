@@ -72,3 +72,26 @@ describe('no timers, storage, cookie or console in src/session', () => {
     expect(await ruleIds("localStorage.setItem('k', 'v')\nconsole.log('x')\n", 'src/theme.ts')).toEqual([])
   })
 })
+
+// Routing (PR 3c): next and route state live only in the URL, so src/routing gets both bans; test files,
+// .ts or .tsx, are exempt from the storage and console ban only.
+
+describe('no timers, storage or console in src/routing', () => {
+  it.each([
+    ['setTimeout(() => undefined, 1)\n', 'no-restricted-syntax'],
+    ['window.setInterval(() => undefined, 1)\n', 'no-restricted-syntax'],
+    ["localStorage.setItem('next', '/analyze')\n", 'no-restricted-globals'],
+    ["window.sessionStorage.setItem('next', '/analyze')\n", 'no-restricted-properties'],
+    ["console.log('next')\n", 'no-restricted-globals'],
+    ["globalThis.console.info('next')\n", 'no-restricted-properties'],
+  ])('%s is an error in src/routing', async (code, rule) => {
+    expect(await ruleIds(code, 'src/routing/planted.ts')).toContain(rule)
+  })
+
+  it('console in a .tsx test file is allowed, a timer is not', async () => {
+    for (const filePath of ['src/routing/planted.test.tsx', 'src/session/planted.test.tsx']) {
+      expect(await ruleIds("console.log('x')\n", filePath)).toEqual([])
+      expect(await ruleIds('setTimeout(() => undefined, 1)\n', filePath)).toContain('no-restricted-syntax')
+    }
+  })
+})

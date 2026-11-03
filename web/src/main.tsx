@@ -9,19 +9,23 @@ import './styles/tokens.css'
 import './styles/base.css'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import App from './App'
+import { createBrowserRouter } from 'react-router'
+import { RouterProvider } from 'react-router/dom'
+import { routes } from './routing/router'
 import { startSession } from './session/session'
 import { applyTheme, readTheme } from './theme'
 
 applyTheme(readTheme())
 // Module level, not an effect: StrictMode cannot run it twice.
 void startSession()
+// Once, outside React: a data router is not held in React state (react-router docs, data mode installation).
+const router = createBrowserRouter(routes)
 
 const root = document.getElementById('root')
 if (!root) throw new Error('index.html has no #root element')
 
 createRoot(root).render(
   <StrictMode>
-    <App />
+    <RouterProvider router={router} />
   </StrictMode>,
 )

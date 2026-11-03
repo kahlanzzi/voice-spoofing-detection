@@ -4242,6 +4242,91 @@ reviews the diff. Context7 was not used.
 
 ---
 
+### Entry 133 — Stage 18 PR 3c: routing, route guard, `next` check, stub pages (2026-11-03)
+
+**What:** on `feat/stage18-routing` (Iheb, Part E; from `main` at `ee5fd50`, PR #93, not stacked), following the
+approved plan (user's revisions: query rule, test-file lint glob, answers Q1–Q2, one PR). Only `web/` and docs
+change; no `api/`, `src/`, `configs/` or `deploy/` change.
+- `react-router` `8.5.1`, exact (A15). `npm view react-router version` → `8.5.1` (published 2026-10-27; peers react
+  and react-dom `>=19.2.7`, we have 19.3.1); `npm view react-router-dom version` → `7.18.5`: the package's own docs
+  (`docs/upgrading/v7.md`) say v8 removes `react-router-dom`, DOM APIs come from `react-router/dom`. Data router
+  (A15, for D1's `useBlocker`): `createBrowserRouter(routes)` once at module level in `main.tsx`, next to the
+  unchanged `startSession()`. API read from the 8.5.1 package and its bundled docs; Context7 not used.
+- `web/src/routing/routes.ts`: `APP_ROUTES` = `/signin`, `/analyze`, `/history`, `/history/:requestId`,
+  `/overview`, `/status` (HANDOFF §12); `appRoute()` matches as nginx does: exact, case-sensitive, no trailing
+  slash, `/history/` + `req_` and 32 lowercase hex only (api_design §2).
+- `web/src/routing/next.ts`: `safeNext(raw)`, rejected → `/analyze`. The path must be one of the 5 protected app
+  routes exactly (not `/signin`, not `/`): this is the open-redirect defence and refuses absolute URLs, `//`,
+  schemes, backslashes, `%2F%2F`, `%5C` and double encoding in the path. The query is refused only for control
+  characters (`00–1F`, `7F`), whitespace or `#`, plus the 512-character cap (the longest real value, `/history`
+  with every filter, is ~150); otherwise it is kept byte-for-byte. Why: once the path is a fixed same-origin
+  route the query cannot change the destination, and a stricter rule would drop real filters (e.g. a raw `:` in
+  a time) and break HANDOFF §9 ("returns to the same place"). `signInPath()` builds `/signin?next=<path+query>`.
+  `next` lives only in the URL; nginx logs `$uri`, not the query.
+- `web/src/routing/guard.tsx` (component, not a loader: `expire()` can fire mid-page without a navigation):
+  `checking` → a "Checking your session…" status line, neither S1 nor the page (no sign-in flash); `signedIn` →
+  the page; `signedOut {none | expired}` and `unavailable` → `Navigate replace` to `/signin?next=…` (Q1: also for
+  `unavailable`). On `/signin`: `checking` → the same line; `signedIn` → `safeNext(next)`; otherwise the S1 stub
+  with its variant (default / expired session / sign-in service unavailable, HANDOFF §1). A path that is not an
+  app route (`/analyze/`, `/Analyze`, `/history/foo`, …) → a NotFound stub for every state; in-app `/` →
+  `/analyze`, as nginx's 302. The guard only navigates: no session call, no fetch, no storage, nothing cleared
+  (A23: the draft stores, PR 8 and PR 11, are module-level and survive navigation).
+- `web/src/session/useSession.ts`: `useSyncExternalStore(subscribe, getSnapshot)`, no state of its own.
+- `web/src/pages/`: 8 stubs (h1 + one line; Checking has no h1). Placeholder `App.tsx` and its test removed.
+- `web/eslint.config.js`: `src/routing/**` joins the no-timer rule (tests included) and the storage/console ban;
+  that ban's test exclusion is now `*.test.{ts,tsx}` in `src/session` and `src/routing`. `vite.config.ts`: Vitest
+  `fs.allow` adds `../deploy` for the route contract test.
+- React Router reads `sessionStorage` key `remix-router-transitions` when the router is created and writes it
+  only after a view transition, which the app does not use (`lib/router/router.js`). It is the router's own, not
+  route state; the guard test pins that this read is the only storage access and that nothing is written.
+
+**Decision recorded:** Part E decision (user-reported, agreed 2026-11-01): HANDOFF's ?v=a,b format is translated to
+repeated verdict= params (api_design §4.4); applied in PR 12; 3c's next keeps repeated params intact.
+
+**Tests (Vitest):** `next.test.ts` 65 (14 accepted, 39 rejected, the 512/513 cap; round trip of 10 `/history`
+and details URLs from the §4.4 params — repeated `verdict`, `q`, `from`/`to` incl. a `:` time, which §4.4 itself
+does not accept, `page` — through `signInPath` → `URLSearchParams.get` → `safeNext`, unchanged);
+`routes.test.ts` 22 (route list = `deploy/nginx.conf` app regex, same request-ID fragment, `= /` → `302 /analyze`,
+router paths = the list; `appRoute` cases); `guard.test.tsx` 35 (each state × protected route and `/signin`,
+expired → `?next=%2Fhistory%3Fverdict%3Da%26verdict%3Db`, signed in on `/signin?next=/history?verdict=a&verdict=b`
+→ `?verdict=a&verdict=b`, rejected next → `/analyze`, no S1 while checking, expiry mid-page, 9 non-routes ×
+5 states → NotFound, one h1 per page, no side effects); `eslint.config.test.ts` +7 (`src/routing` bans; console
+allowed and a timer refused in `.test.tsx` under `src/routing` and `src/session`). `colours.test.ts`: its
+sanity list named the removed `App.tsx`; now a page and the guard.
+
+**Planted failures (not committed):** `safeNext` returns a `//` value as is → `next.test.ts` `Tests 2 failed | 63
+passed (65)` (scheme-relative cases); the guard's `checking` branch removed → `guard.test.tsx` `Tests 4 failed | 31
+passed (35)` (the checking and no-flash tests). Restored: all pass.
+
+**Size:** `web/` code and config +250 / −28, tests +456 / −17; lockfile +47 / −4; docs +85 / −4. Total without the
+lockfile 791 added, with it 838: over 500 because of the tests (user-approved, one PR).
+
+**Evidence [verified]:**
+- Baseline: `node --version` `v26.13.0`; `git log --oneline -1 origin/main` `ee5fd50 Merge pull request #93 …`.
+- `python -m pytest -q` `1272 passed, 9 skipped`.
+- `web/`: `npm run typecheck`, `npm run lint`, `npm test -- --run` (`Test Files 11 passed (11)`, `Tests 510 passed
+  (510)`), `npm run build`, all exit 0; `npm audit --omit=dev` `found 0 vulnerabilities`.
+- Live: the branch's `web` image on `127.0.0.1:8002` (beside the running 8001 stack, same network): `/` → 302
+  `/analyze`; the 6 app routes and a full-ID details path → 200 `text/html`; `/history/foo`, an uppercase ID,
+  `/analyze/`, `/Analyze` → 404 `application/json`; `GET /api/session` → 401.
+- Live browser check on localhost:8001 (user-run, Opera private window, bundle index-DE6bsd3T.js; values read with
+  location.href because Opera hides the query in the address bar):
+  - signed out, /history?verdict=synthetic&verdict=uncertain →
+    http://localhost:8001/signin?next=%2Fhistory%3Fverdict%3Dsynthetic%26verdict%3Duncertain, stub 'default';
+  - api stopped (GET /api/session 503) → stub 'sign-in service unavailable', next kept;
+  - signed in via POST /api/session (analyst01 created in the Docker volume; an earlier lockout from attempts before
+    the account existed cleared with api.admin unlock), /signin?next=%2Fhistory%3Fverdict%3Da%26verdict%3Db →
+    http://localhost:8001/history?verdict=a&verdict=b, no console error.
+- No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
+the checks. The plan was approved before the build, with the user's revisions; the team reviews the diff.
+Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
 ## Open items
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
@@ -4510,16 +4595,18 @@ reviews the diff. Context7 was not used.
 - [x] uvicorn's default access log prints the client IP; §1/§7 say no IP is stored. Decide for Stage 19 (e.g. `--no-access-log` or a log filter) (Entry 116). (`--no-access-log --no-proxy-headers` in the image and the documented local command; Entry 125)
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
 
-**Stage 18 web (Part E, Entries 127–132)**
+**Stage 18 web (Part E, Entries 127–133)**
 - [x] PR 1a: `web/` scaffold, theme storage, CI `web` job, pytest pin guards (merged in PR #88, `86cc77d`; Entry 127).
 - [ ] Add `web` as a required check on `main` after PR 1a merges (Iheb; Entry 127).
 - [x] PR 1b: `tokens.css`, `base.css`, fontsource fonts, token, contrast and no-raw-colour tests (merged in PR #89, `9a119d2`; Entry 128).
 - [ ] Still open from Entry 127: the 9 s toast vs ui-ux-pro-max 3–5 s conflict.
 - [x] PR 2: `web` image (`deploy/web.Dockerfile`), A2 routes, A13 security headers, JSON 404 type fix (merged in PR #90, `d352bad`; Entry 129).
 - [x] PR 3a: API client, `ApiError`, API types, no-timer lint rule (merged in PR #91, `b6f09d6`; Entry 130).
-- [x] PR 3b: session store, expiry handler, `checkSession` on load, A19 on `GET /api/session`, storage and console lint ban in `src/session` (on `feat/stage18-session-store`, awaiting review; Entry 132).
+- [x] PR 3b: session store, expiry handler, `checkSession` on load, A19 on `GET /api/session`, storage and console lint ban in `src/session` (merged in PR #93, `ee5fd50`; Entry 132).
 - [ ] Map `GET /session` 403 when `access_denied` is implemented (now `unavailable`; Entry 132).
-- [ ] PR 3c (from `main` after 3b merges): `react-router` 8.5.1 (A15), route list synced with `deploy/nginx.conf`, `next` check, guard, stub pages, `npm audit` after the install, live check (Entry 130).
+- [x] PR 3c: `react-router` 8.5.1 (A15), route list synced with `deploy/nginx.conf`, `next` check, guard, stub pages (on `feat/stage18-routing`, awaiting review; Entry 133).
+- [ ] PR 4: read `next` with `safeNext` after `POST /api/session`; never store or log it (Entry 133).
+- [ ] PR 12: translate HANDOFF `?v=a,b` to repeated `verdict=` (Part E decision recorded in Entry 133).
 - [ ] A23: keep the `File` (PR 8, upload) and the note draft (PR 11, note) in a module store, not component state; PR 10's S5 "Sign in again" calls `session.expire()` (Entry 130).
 - [ ] Contract: `api_design.md` §5 does not list the Status, Limits, History, Stats, Session and Note responses (the web types follow §4 and `api/schemas.py`) (Entry 130).
 - [ ] Contract: `ErrorDetail.code` is `str` in `api/schemas.py`; §6 is a closed list. Use a `Literal`? The app maps an unknown code to `internal_error` (Entry 130).
@@ -4569,7 +4656,7 @@ reviews the diff. Context7 was not used.
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
 `GET /api/status`. `POST /api/analyses` with the
-MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) merged in PR #88 (`86cc77d`; Entry 127); PR 1b (design tokens, base styles, IBM Plex fonts, token and contrast tests) merged in PR #89 (`9a119d2`; Entry 128), its 4 non-text pairs below 3:1 fixed in PR #92 (`c8c047e`; Entry 131). PR 2 (the `web` image: the built app served by nginx on the A2 routes, `/` → `/analyze`, A13 security headers on every answer) merged in PR #90 (`d352bad`; Entry 129). PR 3 is split in three (Entry 130): PR 3a (API client, `ApiError`, API types, no-timer lint rule) merged in PR #91 (`b6f09d6`; Entry 130); 3b (session store, expiry handler, `checkSession` on load) is on `feat/stage18-session-store`, awaiting review (Entry 132); 3c (routing and guard) follows from `main`; no page beyond the placeholder, and the only API call is `GET /api/session` on load. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
+MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) merged in PR #88 (`86cc77d`; Entry 127); PR 1b (design tokens, base styles, IBM Plex fonts, token and contrast tests) merged in PR #89 (`9a119d2`; Entry 128), its 4 non-text pairs below 3:1 fixed in PR #92 (`c8c047e`; Entry 131). PR 2 (the `web` image: the built app served by nginx on the A2 routes, `/` → `/analyze`, A13 security headers on every answer) merged in PR #90 (`d352bad`; Entry 129). PR 3 is split in three (Entry 130): PR 3a (API client, `ApiError`, API types, no-timer lint rule) merged in PR #91 (`b6f09d6`; Entry 130); 3b (session store, expiry handler, `checkSession` on load) merged in PR #93 (`ee5fd50`; Entry 132); 3c (`react-router` 8.5.1, the six app routes checked against `deploy/nginx.conf`, the session guard, the `next` check, stub pages) is on `feat/stage18-routing`, awaiting review (Entry 133); pages are stubs, and the only API call is `GET /api/session` on load. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
 canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.
