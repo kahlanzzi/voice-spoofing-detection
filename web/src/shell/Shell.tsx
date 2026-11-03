@@ -8,10 +8,11 @@
 // opened at, so any navigation, Back included, closes it (prototype lines 757, 773) without an effect.
 //
 // New analysis goes to /analyze; clearing the current analysis (prototype line 762) comes with Analyze, PR 8. The
-// rail foot holds the service status line (PR 7), the analyst, theme and sign-out (PR 6b): empty here.
+// rail foot holds the analyst, theme and sign-out (RailFoot, PR 6b); the service status line joins it in PR 7.
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import Icon, { type IconName } from '../components/Icon'
+import RailFoot from './RailFoot'
 import './Shell.css'
 import { useNarrow } from './useNarrow'
 
@@ -128,7 +129,7 @@ export default function Shell() {
               ))}
             </ul>
           </nav>
-          <div className="rail-foot" />
+          <RailFoot />
         </aside>
         <main className="main" id="main" ref={mainRef} inert={open}>
           <div className="wrap">

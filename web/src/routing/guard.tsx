@@ -23,6 +23,9 @@ export function RequireSession(): JSX.Element {
   const { pathname, search } = useLocation()
   if (session.status === 'checking') return <Checking />
   if (session.status === 'signedIn') return <Outlet />
+  // After the analyst's own Sign out, S1 has no next: the next sign-in starts on the default page (PR 6b). Expiry
+  // keeps it, so the analyst returns to the same place (HANDOFF §9).
+  if (session.status === 'signedOut' && session.reason === 'signOut') return <Navigate to="/signin" replace />
   return <Navigate to={signInPath(pathname, search)} replace />
 }
 

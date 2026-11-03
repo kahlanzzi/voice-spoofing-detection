@@ -46,7 +46,7 @@ afterEach(() => {
 describe('exports', () => {
   it('are exactly the session surface, with no reset', () => {
     expect(Object.keys(session).sort()).toEqual(
-      ['checkSession', 'expire', 'getSnapshot', 'markSignedIn', 'markSignedOut', 'startSession', 'subscribe'].sort(),
+      ['checkSession', 'expire', 'getSnapshot', 'markSignedIn', 'markSignedOut', 'signOut', 'startSession', 'subscribe'].sort(),
     )
   })
 
@@ -179,7 +179,7 @@ describe('stale guard', () => {
 
   it('markSignedOut during a check wins', async () => {
     await inFlightThen(() => session.markSignedOut())
-    expect(session.getSnapshot()).toEqual({ status: 'signedOut', reason: 'none' })
+    expect(session.getSnapshot()).toEqual({ status: 'signedOut', reason: 'signOut' })
   })
 
   it('an expire() that changes nothing still wins', async () => {
@@ -244,6 +244,101 @@ describe('expiry handler', () => {
     fetchMock.mockResolvedValueOnce(apiError(401, 'session_expired'))
     await expect(client.apiFetch('/api/limits')).rejects.toThrow()
     expect(listener).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('signOut', () => {
+  async function signedIn(): Promise<void> {
+    fetchMock.mockResolvedValueOnce(json(200, INFO))
+    await session.startSession()
+    fetchMock.mockClear()
+  }
+
+  it('sends DELETE /api/session through the client, same origin', async () => {
+    await signedIn()
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }))
+    await session.signOut()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const [path, init] = fetchMock.mock.calls[0]!
+    expect(path).toBe('/api/session')
+    expect(init).toMatchObject({ method: 'DELETE', credentials: 'same-origin' })
+  })
+
+  it.each([
+    ['204', () => new Response(null, { status: 204 })],
+    ['401 session_expired', () => apiError(401, 'session_expired')],
+    ['401 with another code', () => apiError(401, 'unauthorized')],
+  ])('%s → signedOut signOut, true', async (_label, answer) => {
+    await signedIn()
+    fetchMock.mockResolvedValueOnce(answer())
+    expect(await session.signOut()).toBe(true)
+    expect(session.getSnapshot()).toEqual({ status: 'signedOut', reason: 'signOut' })
+  })
+
+  it.each([
+    ['503', () => apiError(503, 'analysis_unavailable')],
+    ['500', () => apiError(500, 'internal_error')],
+    ['403 origin_not_allowed', () => apiError(403, 'origin_not_allowed')],
+    ['a 200 that is not JSON', () => new Response('<!doctype html>', { status: 200 })],
+  ])('%s → still signed in, false', async (_label, answer) => {
+    await signedIn()
+    const before = session.getSnapshot()
+    fetchMock.mockResolvedValueOnce(answer())
+    expect(await session.signOut()).toBe(false)
+    expect(session.getSnapshot()).toBe(before)
+  })
+
+  it('a network error → still signed in, false, never rejects', async () => {
+    await signedIn()
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    await expect(session.signOut()).resolves.toBe(false)
+    expect(session.getSnapshot()).toEqual({ status: 'signedIn', username: 'analyst01' })
+  })
+
+  it('a session_expired DELETE does not call the expiry handler', async () => {
+    await signedIn()
+    const handler = vi.fn()
+    client.setSessionExpiredHandler(handler)
+    fetchMock.mockResolvedValueOnce(apiError(401, 'session_expired'))
+    await session.signOut()
+    expect(handler).not.toHaveBeenCalled()
+  })
+
+  it('concurrent calls share one DELETE; a call after the answer sends a new one', async () => {
+    await signedIn()
+    const answer = deferred()
+    fetchMock.mockReturnValueOnce(answer.promise)
+    const first = session.signOut()
+    expect(session.signOut()).toBe(first)
+    answer.resolve(apiError(503, 'analysis_unavailable'))
+    expect(await first).toBe(false)
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }))
+    const again = session.signOut()
+    expect(again).not.toBe(first)
+    expect(await again).toBe(true)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('an expiry during the DELETE wins: the answer is stale', async () => {
+    await signedIn()
+    const answer = deferred()
+    fetchMock.mockReturnValueOnce(answer.promise)
+    const call = session.signOut()
+    session.expire()
+    answer.resolve(new Response(null, { status: 204 }))
+    expect(await call).toBe(true)
+    expect(session.getSnapshot()).toEqual({ status: 'signedOut', reason: 'expired' })
+  })
+
+  it('a sign-in during a failing DELETE wins: false is not reported as signed out', async () => {
+    await signedIn()
+    const answer = deferred()
+    fetchMock.mockReturnValueOnce(answer.promise)
+    const call = session.signOut()
+    session.markSignedIn('analyst02')
+    answer.resolve(new Response(null, { status: 204 }))
+    expect(await call).toBe(false)
+    expect(session.getSnapshot()).toEqual({ status: 'signedIn', username: 'analyst02' })
   })
 })
 
@@ -335,6 +430,9 @@ describe('memory only', () => {
     fetchMock.mockResolvedValueOnce(apiError(401, 'session_expired'))
     await session.checkSession()
     session.markSignedOut()
+    session.markSignedIn('analyst01')
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }))
+    await session.signOut()
 
     for (const spy of [...storage, ...cookie, ...consoleSpies]) expect(spy).not.toHaveBeenCalled()
   })

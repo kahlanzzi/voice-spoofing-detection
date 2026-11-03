@@ -34,6 +34,7 @@ vi.mock('../session/session', () => ({
   expire: vi.fn(),
   markSignedIn: vi.fn(),
   markSignedOut: vi.fn(),
+  signOut: vi.fn(),
   startSession: vi.fn(),
 }))
 
@@ -42,6 +43,7 @@ const CHECKING: SessionState = { status: 'checking' }
 const SIGNED_IN: SessionState = { status: 'signedIn', username: 'analyst01' }
 const SIGNED_OUT: SessionState = { status: 'signedOut', reason: 'none' }
 const EXPIRED: SessionState = { status: 'signedOut', reason: 'expired' }
+const SIGNED_OUT_BY_ANALYST: SessionState = { status: 'signedOut', reason: 'signOut' }
 const UNAVAILABLE: SessionState = { status: 'unavailable' }
 
 const FILTERS = '/history?verdict=a&verdict=b'
@@ -113,6 +115,23 @@ describe('a protected route', () => {
     expect(s1Variant()).toBe('expired session')
     expect(router.state.location.search).toBe(FILTERS_NEXT)
   })
+
+  // PR 6b: after the analyst's own Sign out, S1 has no next; expiry from the same page keeps it (above).
+  it('sign-out mid-page → exactly /signin, no next, the default S1', async () => {
+    const router = renderAt(FILTERS, SIGNED_IN)
+    act(() => store.set(SIGNED_OUT_BY_ANALYST))
+    expect(await screen.findByRole('heading', { level: 1, name: S1_TITLE })).toBeTruthy()
+    expect(s1Variant()).toBe('default')
+    expect(router.state.location.pathname).toBe('/signin')
+    expect(router.state.location.search).toBe('')
+    expect(router.state.historyAction).toBe('REPLACE')
+  })
+
+  it('signedOut signOut on a protected URL → /signin with no next', async () => {
+    const router = renderAt(FILTERS, SIGNED_OUT_BY_ANALYST)
+    expect(await screen.findByRole('heading', { level: 1, name: S1_TITLE })).toBeTruthy()
+    expect(router.state.location.pathname + router.state.location.search).toBe('/signin')
+  })
 })
 
 describe('/signin', () => {
@@ -125,6 +144,7 @@ describe('/signin', () => {
   it.each([
     ['signedOut none', SIGNED_OUT, 'default'],
     ['signedOut expired', EXPIRED, 'expired session'],
+    ['signedOut signOut', SIGNED_OUT_BY_ANALYST, 'default'],
     ['unavailable', UNAVAILABLE, 'sign-in service unavailable'],
   ])('%s: S1 with its variant, next kept', (_label, state, variant) => {
     const router = renderAt(`/signin${FILTERS_NEXT}`, state)
@@ -235,6 +255,7 @@ describe('the guard has no side effects beyond navigation', () => {
       session.expire,
       session.markSignedIn,
       session.markSignedOut,
+      session.signOut,
       session.startSession,
     ]) {
       expect(transition).not.toHaveBeenCalled()
@@ -242,9 +263,10 @@ describe('the guard has no side effects beyond navigation', () => {
     expect(fetch).not.toHaveBeenCalled()
     // The only storage access is the router's own: at creation it reads the view transitions it applied
     // (react-router lib/router/router.js restoreAppliedTransitions); it writes them only after a view
-    // transition, which the app does not use. Nothing is written, and next never reaches storage.
+    // transition, which the app does not use. The shell's theme control reads its choice through theme.ts (PR 6b).
+    // Nothing is written, and next never reaches storage.
     const [getItem, ...writes] = storage
-    expect(new Set(getItem?.mock.calls.map(([key]) => key))).toEqual(new Set(['remix-router-transitions']))
+    expect(new Set(getItem?.mock.calls.map(([key]) => key))).toEqual(new Set(['remix-router-transitions', 'vsd-theme']))
     for (const spy of writes) expect(spy).not.toHaveBeenCalled()
   })
 })

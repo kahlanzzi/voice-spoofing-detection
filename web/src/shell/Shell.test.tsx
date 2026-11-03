@@ -20,6 +20,7 @@ vi.mock('../session/session', () => ({
   expire: vi.fn(),
   markSignedIn: vi.fn(),
   markSignedOut: vi.fn(),
+  signOut: vi.fn(),
   startSession: vi.fn(),
 }))
 
@@ -88,9 +89,12 @@ describe('layout and landmarks', () => {
     expect(links.map((link) => link.getAttribute('href'))).toEqual(['/analyze', '/history', '/overview', '/status'])
   })
 
-  it('the rail foot is empty until PR 6b and PR 7', () => {
+  it('the rail foot holds the analyst, the theme and Sign out (PR 6b; the status line is PR 7)', () => {
     renderAt('/analyze')
-    expect(rail().querySelector('.rail-foot')?.childElementCount).toBe(0)
+    const foot = rail().querySelector<HTMLElement>('.rail-foot')!
+    expect(within(foot).getByText('analyst01')).toBeTruthy()
+    expect(within(foot).getByRole('combobox', { name: 'Theme' })).toBeTruthy()
+    expect(within(foot).getByRole('button', { name: 'Sign out' })).toBeTruthy()
   })
 })
 
@@ -127,15 +131,17 @@ describe('skip link and keyboard order', () => {
     expect(document.activeElement).toBe(within(main()).getByRole('heading', { level: 1 }))
   })
 
-  it('Tab order (wide, top bar hidden): skip, New analysis, the four pages', async () => {
+  it('Tab order (wide, top bar hidden): skip, New analysis, the four pages, the theme, Sign out', async () => {
     renderAt('/overview')
     const order: (string | null)[] = []
-    for (let i = 0; i < 6; i += 1) {
+    for (let i = 0; i < 8; i += 1) {
       await userEvent.tab()
-      order.push(document.activeElement?.textContent ?? null)
+      const active = document.activeElement
+      order.push(active instanceof HTMLSelectElement ? `select ${active.id}` : (active?.textContent ?? null))
     }
     expect(order).toEqual([
-      'Skip to main content', 'New analysis', 'Analyze', 'History', 'Overview', 'System status',
+      'Skip to main content', 'New analysis', 'Analyze', 'History', 'Overview', 'System status', 'select rail-theme',
+      'Sign out',
     ])
   })
 })
