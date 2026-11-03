@@ -8,10 +8,13 @@
 // opened at, so any navigation, Back included, closes it (prototype lines 757, 773) without an effect.
 //
 // New analysis goes to /analyze; clearing the current analysis (prototype line 762) comes with Analyze, PR 8. The
-// rail foot holds the analyst, theme and sign-out (RailFoot, PR 6b); the service status line joins it in PR 7.
+// rail foot holds the service status line (PR 7a), the analyst, theme and sign-out (RailFoot, PR 6b). The shell
+// starts the one status check when it mounts: it mounts only once signed in, and GET /api/status needs a session
+// (docs/api_design.md §4.8). No other check but S10's Check now (PR 7b); StrictMode's second run shares the request.
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import Icon, { type IconName } from '../components/Icon'
+import { checkStatus } from '../status/status'
 import RailFoot from './RailFoot'
 import './Shell.css'
 import { useNarrow } from './useNarrow'
@@ -51,6 +54,10 @@ export default function Shell() {
     pendingFocus.current = 'drawer'
     setOpenAt(key)
   }
+
+  useEffect(() => {
+    void checkStatus()
+  }, [])
 
   // Focus once the drawer is on screen or gone (the SignIn.tsx pending-focus pattern).
   useEffect(() => {

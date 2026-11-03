@@ -29,6 +29,7 @@ const THEMED = [
   'ok-bg', 'ok-fg', 'ok-mark', 'warn-bg', 'warn-fg', 'warn-mark', 'err-bg', 'err-fg', 'err-mark',
   'demo-bg', 'demo-fg', 'elev-1', 'elev-2',
   'accent-ink', 'nav-ink-strong', 'nav-muted', 'nav-line', 'scrim',
+  'nav-ok', 'nav-warn', 'nav-err',
 ]
 // HANDOFF lines 120-126 (and --r-pill from the prototype), plus the proposed --lh-* and --fs-input.
 const STATIC = [
@@ -55,6 +56,8 @@ const NON_TEXT_PAIRS: [string, string][] = [
   ['line-strong', 'surface'], ['line-strong', 'bg'], ['line-strong', 'surface-2'],
   ['focus', 'surface'], ['focus', 'bg'],
   ['nav-indicator', 'nav'], ['nav-indicator', 'nav-2'],
+  // The rail status line's icons (PR 7), on the rail and on its hover fill.
+  ...['nav-ok', 'nav-warn', 'nav-err'].flatMap((fg) => ['nav', 'nav-2'].map((bg): [string, string] => [fg, bg])),
   ...['syn', 'unc', 'auth', 'ok', 'warn', 'err'].flatMap((k) =>
     ['surface', 'bg', 'surface-2', `${k}-bg`].map((bg): [string, string] => [`${k}-mark`, bg]),
   ),

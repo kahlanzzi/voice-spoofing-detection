@@ -15,6 +15,9 @@
   --nav-ink-strong: #FFFFFF; /* P 19 */
   --nav-muted: #A3B2C6; /* P 19 */
   --nav-line: #2A3F5F; /* P 19 */
+  /* Rail status line marks, Ready / Ready with a notice / Unavailable (Stage 18 PR 7): P 143's literal values, the
+     same in both themes as there. Tokens because HANDOFF line 93 allows raw values here only. */
+  --nav-ok: #3DBB6F; --nav-warn: #E3A32C; --nav-err: #F0857A; /* P 143 */
   /* Actions and focus: H 105-108 */
   --accent: #1F49B6; --accent-hover: #193C97; --accent-active: #132E75; --accent-soft: #E7EDFB;
   --link: #1F49B6; --focus: #1F49B6;
@@ -66,6 +69,7 @@
   --ink: #E5ECF5; --ink-2: #C3CEDC; --muted: #9AA9BC;
   --nav: #0A111C; --nav-2: #162741; --nav-ink: #E2E9F2; --nav-indicator: #8FB0FF;
   --nav-ink-strong: #FFFFFF; --nav-muted: #94A5BB; --nav-line: #22344F;
+  --nav-ok: #3DBB6F; --nav-warn: #E3A32C; --nav-err: #F0857A;
   --accent: #3460D6; --accent-hover: #2A50BE; --accent-active: #21409A; --accent-soft: #1A2B4D;
   --link: #9DB6FF; --focus: #9DB6FF;
   --danger: #F2958B; --danger-soft: #3A1714;
@@ -89,6 +93,7 @@
   --ink: #E5ECF5; --ink-2: #C3CEDC; --muted: #9AA9BC;
   --nav: #0A111C; --nav-2: #162741; --nav-ink: #E2E9F2; --nav-indicator: #8FB0FF;
   --nav-ink-strong: #FFFFFF; --nav-muted: #94A5BB; --nav-line: #22344F;
+  --nav-ok: #3DBB6F; --nav-warn: #E3A32C; --nav-err: #F0857A;
   --accent: #3460D6; --accent-hover: #2A50BE; --accent-active: #21409A; --accent-soft: #1A2B4D;
   --link: #9DB6FF; --focus: #9DB6FF;
   --danger: #F2958B; --danger-soft: #3A1714;

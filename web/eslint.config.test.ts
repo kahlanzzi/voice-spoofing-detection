@@ -122,6 +122,29 @@ describe('no timers, storage or console in src/shell', () => {
   })
 })
 
+// The status store (PR 7a): no polling, so no timer (a relative "x minutes ago" would need one), and in memory only.
+
+describe('no timers, storage or console in src/status', () => {
+  it.each([
+    ['setInterval(() => undefined, 60_000)\n', 'no-restricted-syntax'],
+    ['globalThis.setTimeout(() => undefined, 1)\n', 'no-restricted-syntax'],
+    ["sessionStorage.setItem('status', 'ready')\n", 'no-restricted-globals'],
+    ["console.log('x')\n", 'no-restricted-globals'],
+  ])('%s is an error in src/status', async (code, rule) => {
+    expect(await ruleIds(code, 'src/status/planted.ts')).toContain(rule)
+  })
+
+  it('console in a status test file is allowed, a timer is not', async () => {
+    expect(await ruleIds("console.log('x')\n", 'src/status/planted.test.ts')).toEqual([])
+    expect(await ruleIds('setTimeout(() => undefined, 1)\n', 'src/status/planted.test.ts')).toContain('no-restricted-syntax')
+  })
+
+  it.each(['src/status/status.ts', 'src/shell/RailStatus.tsx'])('%s keeps the timer, storage and console bans', async (file) => {
+    const ids = await ruleIds("setTimeout(() => undefined, 1)\nlocalStorage.setItem('k', 'v')\nconsole.log('x')\n", file)
+    expect(ids).toEqual(expect.arrayContaining(['no-restricted-syntax', 'no-restricted-globals']))
+  })
+})
+
 // The sign-in screen (PR 4): the password and Analyst ID live in its state only, and no lockout countdown, so
 // SignIn and signInOutcome get both bans; other pages do not (later pages may need a timer, e.g. the toast).
 
