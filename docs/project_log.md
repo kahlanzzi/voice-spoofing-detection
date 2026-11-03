@@ -4970,10 +4970,12 @@ session matrices). e2e +81 (estimate 55). Docs as in this commit.
      plan expected it to fail too.
   3. `.svc-ready svg { color: #3DBB6F; }` in `Shell.css` → `colours.test.ts` "/src/shell/Shell.css has no raw colour
      value" (and "scans the source files", which expects `var(--nav-ok)`) fail.
-- **Not done:** the live check on localhost:8001 (user-run: the line in the rail and the 390 px drawer, one GET
-  `/api/status` per load in DevTools, none on navigation; with the api stopped a reload lands on S1 unavailable,
-  which is 6b behaviour); a real screen-reader pass (Orca, PR 15). No DEEP-VOICE path, audio or dataset touched; no
-  secret in the diff.
+- Live check on localhost:8001 (user-run, signed in as analyst01, this branch's build): the rail footer shows 'Ready
+  for analysis (mock)' above analyst01 and links to /status; a reload makes exactly one GET /api/status (200);
+  navigating History → Overview → Analyze and Back makes none; the line is in the 390 px drawer; focus ring visible and
+  the line ≥ 44 px at 390 px.
+- **Not done:** a real screen-reader pass (Orca, PR 15). No DEEP-VOICE path, audio or dataset touched; no secret in
+  the diff.
 
 **AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
 the checks. The plan and the 7a scope were approved before the build. The team reviews the diff. Context7 was not
