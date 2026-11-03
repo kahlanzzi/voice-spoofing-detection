@@ -57,6 +57,6 @@ def test_build_context_is_an_allowlist_without_secrets_dependencies_or_data():
     assert IGNORE[0] == "*"
     allowed = {line[1:] for line in IGNORE if line.startswith("!")}
     assert allowed == {"web/", "deploy/nginx.conf", "deploy/nginx_security_headers.conf"}
-    for excluded in ("web/node_modules", "web/dist", "**/.env", "var/", ".venv/", "data/", "**/*.wav", "**/*.flac",
+    for excluded in ("web/node_modules", "web/dist", "web/test-results", "web/playwright-report", "**/.env", "var/", ".venv/", "data/", "**/*.wav", "**/*.flac",
                      "**/*.mp3"):
         assert excluded in IGNORE, excluded
