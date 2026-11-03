@@ -4308,7 +4308,15 @@ lockfile 791 added, with it 838: over 500 because of the tests (user-approved, o
   (510)`), `npm run build`, all exit 0; `npm audit --omit=dev` `found 0 vulnerabilities`.
 - Live: the branch's `web` image on `127.0.0.1:8002` (beside the running 8001 stack, same network): `/` → 302
   `/analyze`; the 6 app routes and a full-ID details path → 200 `text/html`; `/history/foo`, an uppercase ID,
-  `/analyze/`, `/Analyze` → 404 `application/json`; `GET /api/session` → 401. The in-browser guard pass is open.
+  `/analyze/`, `/Analyze` → 404 `application/json`; `GET /api/session` → 401.
+- Live browser check on localhost:8001 (user-run, Opera private window, bundle index-DE6bsd3T.js; values read with
+  location.href because Opera hides the query in the address bar):
+  - signed out, /history?verdict=synthetic&verdict=uncertain →
+    http://localhost:8001/signin?next=%2Fhistory%3Fverdict%3Dsynthetic%26verdict%3Duncertain, stub 'default';
+  - api stopped (GET /api/session 503) → stub 'sign-in service unavailable', next kept;
+  - signed in via POST /api/session (analyst01 created in the Docker volume; an earlier lockout from attempts before
+    the account existed cleared with api.admin unlock), /signin?next=%2Fhistory%3Fverdict%3Da%26verdict%3Db →
+    http://localhost:8001/history?verdict=a&verdict=b, no console error.
 - No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
 
 **AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
@@ -4597,7 +4605,6 @@ Context7 was not used.
 - [x] PR 3b: session store, expiry handler, `checkSession` on load, A19 on `GET /api/session`, storage and console lint ban in `src/session` (merged in PR #93, `ee5fd50`; Entry 132).
 - [ ] Map `GET /session` 403 when `access_denied` is implemented (now `unavailable`; Entry 132).
 - [x] PR 3c: `react-router` 8.5.1 (A15), route list synced with `deploy/nginx.conf`, `next` check, guard, stub pages (on `feat/stage18-routing`, awaiting review; Entry 133).
-- [ ] PR 3c live check in a browser: signed out `/history?verdict=synthetic` → S1 "default" with `next`; API stopped → "sign-in service unavailable"; after sign-in (PR 4) the analyst lands on `next` (Entry 133).
 - [ ] PR 4: read `next` with `safeNext` after `POST /api/session`; never store or log it (Entry 133).
 - [ ] PR 12: translate HANDOFF `?v=a,b` to repeated `verdict=` (Part E decision recorded in Entry 133).
 - [ ] A23: keep the `File` (PR 8, upload) and the note draft (PR 11, note) in a module store, not component state; PR 10's S5 "Sign in again" calls `session.expire()` (Entry 130).
