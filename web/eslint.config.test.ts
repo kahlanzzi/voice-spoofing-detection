@@ -126,7 +126,8 @@ describe('no timers, storage, cookie or console in the sign-in screen', () => {
 })
 
 // End-to-end tests (PR 5a): no fixed waits; secrets never typed with Playwright input APIs nor given to expect;
-// Playwright's use() in a fixture is not a React hook.
+// Playwright's use() in a fixture is not a React hook. PR 5b: axe runs with WCAG_TAGS and no blanket exclusion; no
+// bypassCSP.
 
 describe('e2e bans', () => {
   it.each([
@@ -136,6 +137,10 @@ describe('e2e bans', () => {
     'await field.pressSequentially(password)\n',
     'expect(accountPassword()).toBe(x)\n',
     'expect(cookieValue).toBe(x)\n',
+    "new AxeBuilder({ page }).disableRules(['color-contrast'])\n",
+    "new AxeBuilder({ page }).exclude('#si-user')\n",
+    "new AxeBuilder({ page }).withTags(['wcag2a'])\n",
+    'browser.newContext({ bypassCSP: true })\n',
   ])('%s is an error in e2e/', async (code) => {
     expect(await ruleIds(code, 'e2e/planted.spec.ts')).toContain('no-restricted-syntax')
   })
@@ -144,6 +149,7 @@ describe('e2e bans', () => {
     "await field.fill('e2e-main')\n",
     'await field.fill(junk)\n',
     'expect(html.includes(accountPassword())).toBe(false)\n',
+    'new AxeBuilder({ page }).withTags([...WCAG_TAGS])\n',
   ])('%s is allowed in e2e/', async (code) => {
     expect(await ruleIds(code, 'e2e/planted.spec.ts')).not.toContain('no-restricted-syntax')
   })

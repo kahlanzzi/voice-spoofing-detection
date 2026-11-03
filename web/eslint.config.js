@@ -87,6 +87,18 @@ export default tseslint.config(
           'CallExpression[callee.name="expect"] > CallExpression.arguments[callee.name="accountPassword"]',
           'CallExpression[callee.name="expect"] > Identifier.arguments[name=/^(password|cookie)/i]',
         ].map((selector) => ({ selector, message: 'Never pass a secret to expect: assert a boolean.' })),
+        {
+          selector: 'MemberExpression[property.name=/^(disableRules|exclude|include|withRules|options)$/]',
+          message: 'No blanket axe exclusion: pass an exact { rule, target, reason } to expectNoAxeViolations().',
+        },
+        {
+          selector: 'CallExpression[callee.property.name="withTags"]:not(:has(Identifier[name="WCAG_TAGS"]))',
+          message: 'axe runs with WCAG_TAGS only (HANDOFF l.297).',
+        },
+        {
+          selector: 'Identifier[name="bypassCSP"]',
+          message: 'No bypassCSP: a CSP block of axe is reported, not bypassed (Entry 135).',
+        },
       ],
     },
   },

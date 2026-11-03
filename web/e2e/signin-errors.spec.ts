@@ -1,7 +1,8 @@
-// S1's error variants on the real stack (Entry 134 live check). Two sign-in POSTs: invalid and denied, each on
-// its own account so neither can lock or disable another test's account.
+// S1's error variants on the real stack (Entry 134 live check), each scanned by axe in light and dark. Two sign-in
+// POSTs: invalid and denied, each on its own account so neither can lock or disable another test's account.
 import { randomBytes } from 'node:crypto'
 import { expect, test } from '@playwright/test'
+import { expectNoAxeViolations } from './support/axe.ts'
 import { ACCOUNTS, typeSecret } from './support/secret-guard.ts'
 import { COPY, countSignInPosts, signInForm, signInResponse } from './support/signin.ts'
 import { mustAdmin } from './support/stack.ts'
@@ -17,6 +18,7 @@ test('field errors: both messages, aria-invalid, focus on the Analyst ID, nothin
   await expect(form.password).toHaveAttribute('aria-invalid', 'true')
   await expect(form.username).toBeFocused()
   expect(posts()).toBe(0)
+  await expectNoAxeViolations(page, 'S1 field errors')
 })
 
 test('invalid credentials: banner, password cleared, Analyst ID kept and focused', async ({ page }) => {
@@ -33,6 +35,7 @@ test('invalid credentials: banner, password cleared, Analyst ID kept and focused
   await expect(form.password).toHaveValue('')
   await expect(form.username).toHaveValue(ACCOUNTS.invalid)
   await expect(form.username).toBeFocused()
+  await expectNoAxeViolations(page, 'S1 invalid')
 })
 
 test('access denied: a disabled account with the right password, focus on the h1', async ({ page }) => {
@@ -49,6 +52,7 @@ test('access denied: a disabled account with the right password, focus on the h1
     // No toHaveValue('') here: on failure it would print the real password. The invalid test checks the clearing.
     expect(await form.password.evaluate((input) => (input as HTMLInputElement).value === '')).toBe(true)
     await expect(form.heading).toBeFocused()
+    await expectNoAxeViolations(page, 'S1 denied')
   } finally {
     await mustAdmin('enable', ACCOUNTS.denied)
   }

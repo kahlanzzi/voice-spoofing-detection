@@ -17,8 +17,12 @@ export interface Result {
 }
 
 export function compose(args: string[], stdin = ''): Promise<Result> {
+  return docker(['compose', ...args], stdin)
+}
+
+function docker(args: string[], stdin = ''): Promise<Result> {
   return new Promise((done, fail) => {
-    const child = spawn('docker', ['compose', ...args], { cwd: REPO_ROOT, stdio: ['pipe', 'pipe', 'pipe'] })
+    const child = spawn('docker', args, { cwd: REPO_ROOT, stdio: ['pipe', 'pipe', 'pipe'] })
     let stdout = ''
     let stderr = ''
     child.stdout.on('data', (chunk: Buffer) => (stdout += chunk.toString()))
@@ -83,8 +87,33 @@ export async function waitHealthy(): Promise<void> {
   await expect.poll(healthStatus, { message: `GET ${BASE_URL}/api/health through nginx`, timeout: 60_000 }).toBe(200)
 }
 
+/**
+ * When the web container last started (`docker inspect` State.StartedAt, in ms). A spec reads it before and after
+ * restartWeb() to prove the restart happened: the sign-in budget alone cannot, nginx's limit may drain in time.
+ */
+export async function webStartedAt(): Promise<number> {
+  const id = (await mustCompose(['ps', '-q', 'web'])).stdout.trim()
+  if (!/^[0-9a-f]{12,64}$/.test(id)) throw new Error(`docker compose ps -q web gave no single container id: ${JSON.stringify(id)}`)
+  const result = await docker(['inspect', '-f', '{{.State.StartedAt}}', id])
+  const startedAt = Date.parse(result.stdout.trim())
+  if (result.code !== 0 || Number.isNaN(startedAt)) throw new Error(`docker inspect ${id} exited ${result.code}: ${result.stderr.trim()}`)
+  return startedAt
+}
+
 /** Restart nginx: a new process gets a new shared-memory zone, so the sign-in rate limit starts empty. */
 export async function restartWeb(): Promise<void> {
   await mustCompose(['restart', 'web'])
+  await waitHealthy()
+}
+
+/** Stop the api container (outage.spec); nginx then answers 503 analysis_unavailable for /api/. */
+export async function stopApi(): Promise<void> {
+  await mustCompose(['stop', 'api'])
+}
+
+/** Start the api container if it is not healthy, and wait until it answers through nginx. Teardown runs it first. */
+export async function ensureApiUp(): Promise<void> {
+  if (await apiHealthy()) return
+  await mustCompose(['start', 'api'])
   await waitHealthy()
 }

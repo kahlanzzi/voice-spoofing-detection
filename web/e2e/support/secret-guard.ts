@@ -11,7 +11,7 @@ import type { Cookie, Locator } from '@playwright/test'
 
 export const PASSWORD_ENV = 'VSD_E2E_PASSWORD'
 export const STATE_DIR_ENV = 'VSD_E2E_STATE_DIR'
-export const ACCOUNTS = { main: 'e2e-main', invalid: 'e2e-invalid', denied: 'e2e-denied' } as const
+export const ACCOUNTS = { main: 'e2e-main', invalid: 'e2e-invalid', denied: 'e2e-denied', locked: 'e2e-locked' } as const
 
 // docs/api_design.md §4.8 and api/auth.py password_problem: 15–128 code points, no username, no service word.
 const SERVICE_WORDS = ['vsd', 'voice', 'spoof']
