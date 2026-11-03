@@ -5165,7 +5165,7 @@ the checks. The plan was approved before the build. The team reviews the diff. C
 - [ ] PR 6: 6a merged #98; 6b on branch, awaiting review (app shell, rail, drawer, page-change rules: Entry 137; rail footer, theme control, sign-out on `feat/stage18-shell-signout`: Entry 138).
 - [ ] Review the sign-out failure copy "Sign-out did not complete. You are still signed in. Try again." (proposal; Entry 138).
 - [ ] PR 7: the rail status line (`GET /api/status` once, no polling; 500 or no answer → Unavailable), its "(mock)" tag from `/status.mock` and the degraded notice, in one status store with S10 (Entry 137).
-- [ ] PR 8/11 rule: an explicit sign-out (session reason `'signOut'`, Entry 138) clears the `File` and note-draft stores; expiry does not (prototype l.770, l.1494; Entry 137). D1 before sign-out with an unsaved note is PR 11.
+- [ ] PR 8/11 rule: an explicit sign-out clears the `File` and note-draft stores; expiry does not (prototype l.770, l.1494; Entry 137). D1 before sign-out with an unsaved note is PR 11.
 - [x] Stub window.scrollTo in the Vitest setup (jsdom 'Not implemented' noise; done in PR 6b, Entry 138).
 - [ ] Add `e2e` as a required check on `main` after 5 green PR runs in a row (Iheb; Entry 135).
 - [ ] nginx takes ~5 s to return 503 when the api is stopped (connect timeout); consider a lower proxy_connect_timeout in a deploy/ fix PR (Entry 136).
