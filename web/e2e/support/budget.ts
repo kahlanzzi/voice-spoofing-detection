@@ -8,8 +8,9 @@ import { resolve } from 'node:path'
 export const ZONE_CAPACITY = 6
 
 // docs/setup.md "End-to-end tests". A (global setup's restart): signin.setup 1, signin-errors invalid 1 and denied 1,
-// http.spec without Origin 1 and with a foreign one 1. B (locked.spec's restart): 5 wrong passwords and the right one.
-export const SEGMENTS = { A: 5, B: 6 } as const
+// http.spec without Origin 1 and with a foreign one 1, signout.spec 1 (PR 6b). B (locked.spec's restart): 5 wrong
+// passwords and the right one. Both are full: a new sign-in POST needs its own segment, opened by a `restart web`.
+export const SEGMENTS = { A: 6, B: 6 } as const
 
 // The one planned 429 is the API's account_locked (locked.spec checks its code; nginx's own 429 would be a second).
 export const PLAN = { posts: SEGMENTS.A + SEGMENTS.B, limited: 1 } as const
