@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import css from './tokens.css?raw'
 
 // Token coverage and WCAG 2.x contrast for tokens.css (Stage 18 PR 1b). Pairs are the ones the
-// prototype uses (docs/design/analyst-console-prototype.html); thresholds 4.5:1 text, 3:1 non-text.
+// prototype uses (docs/design/analyst-console-prototype.html); thresholds 4.5:1 text, 3:1 non-text
+// (WCAG 1.4.11, no exceptions since Entry 131). Borders and marks are checked on every background
+// they sit on: --surface, --bg, --surface-2 and, for marks, their own tint.
 
 type Tokens = Record<string, string>
 
@@ -50,15 +52,13 @@ const TEXT_PAIRS: [string, string][] = [
 ]
 
 const NON_TEXT_PAIRS: [string, string][] = [
-  ['line-strong', 'surface'], ['focus', 'surface'], ['focus', 'bg'],
+  ['line-strong', 'surface'], ['line-strong', 'bg'], ['line-strong', 'surface-2'],
+  ['focus', 'surface'], ['focus', 'bg'],
   ['nav-indicator', 'nav'], ['nav-indicator', 'nav-2'],
-  ...['syn', 'unc', 'auth', 'ok', 'warn', 'err'].map((k): [string, string] => [`${k}-mark`, 'surface']),
+  ...['syn', 'unc', 'auth', 'ok', 'warn', 'err'].flatMap((k) =>
+    ['surface', 'bg', 'surface-2', `${k}-bg`].map((bg): [string, string] => [`${k}-mark`, bg]),
+  ),
 ]
-
-// Below 3:1, values unchanged on purpose: waiting on a team answer (Entry 128 open item).
-const KNOWN_NON_TEXT_EXCEPTIONS = new Set([
-  'light line-strong/surface', 'dark line-strong/surface', 'light unc-mark/surface', 'light warn-mark/surface',
-])
 
 function luminance(hex: string): number {
   const m = /^#([0-9a-f]{6})$/i.exec(hex)
@@ -99,14 +99,8 @@ describe('contrast', () => {
       expect(ratio(theme, fg, bg)).toBeGreaterThanOrEqual(4.5)
     })
 
-    it.each(NON_TEXT_PAIRS)(`${themeName}: non-text --%s on --%s is at least 3:1 or a known exception`, (fg, bg) => {
-      const value = ratio(theme, fg, bg)
-      if (KNOWN_NON_TEXT_EXCEPTIONS.has(`${themeName} ${fg}/${bg}`)) {
-        // A fixed exception must leave the list, so the list stays exact.
-        expect(value).toBeLessThan(3)
-      } else {
-        expect(value).toBeGreaterThanOrEqual(3)
-      }
+    it.each(NON_TEXT_PAIRS)(`${themeName}: non-text --%s on --%s is at least 3:1`, (fg, bg) => {
+      expect(ratio(theme, fg, bg)).toBeGreaterThanOrEqual(3)
     })
   }
 
