@@ -58,6 +58,15 @@ function heading(): string | null {
   return screen.queryByRole('heading', { level: 1 })?.textContent ?? null
 }
 
+const S1_TITLE = 'Sign in to the analyst console'
+
+// Which S1 variant is on screen (PR 4): Retry only when unavailable, the notice only when expired.
+function s1Variant(): string {
+  if (screen.queryByRole('button', { name: 'Retry' })) return 'sign-in service unavailable'
+  if (screen.queryByText(/Your session expired/)) return 'expired session'
+  return 'default'
+}
+
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn<typeof fetch>())
 })
@@ -88,8 +97,8 @@ describe('a protected route', () => {
     ['unavailable', UNAVAILABLE, 'sign-in service unavailable'],
   ])('%s → /signin with next = path + query', async (_label, state, variant) => {
     const router = renderAt(FILTERS, state)
-    expect(await screen.findByRole('heading', { level: 1, name: 'Sign in' })).toBeTruthy()
-    expect(screen.getByText(`Stub page. Variant: ${variant}.`)).toBeTruthy()
+    expect(await screen.findByRole('heading', { level: 1, name: S1_TITLE })).toBeTruthy()
+    expect(s1Variant()).toBe(variant)
     expect(router.state.location.pathname).toBe('/signin')
     expect(router.state.location.search).toBe(FILTERS_NEXT)
     expect(new URLSearchParams(router.state.location.search).get('next')).toBe(FILTERS)
@@ -100,7 +109,8 @@ describe('a protected route', () => {
     const router = renderAt(FILTERS, SIGNED_IN)
     expect(heading()).toBe('History')
     act(() => store.set(EXPIRED))
-    expect(await screen.findByText('Stub page. Variant: expired session.')).toBeTruthy()
+    expect(await screen.findByRole('heading', { level: 1, name: S1_TITLE })).toBeTruthy()
+    expect(s1Variant()).toBe('expired session')
     expect(router.state.location.search).toBe(FILTERS_NEXT)
   })
 })
@@ -118,8 +128,8 @@ describe('/signin', () => {
     ['unavailable', UNAVAILABLE, 'sign-in service unavailable'],
   ])('%s: S1 with its variant, next kept', (_label, state, variant) => {
     const router = renderAt(`/signin${FILTERS_NEXT}`, state)
-    expect(heading()).toBe('Sign in')
-    expect(screen.getByText(`Stub page. Variant: ${variant}.`)).toBeTruthy()
+    expect(heading()).toBe(S1_TITLE)
+    expect(s1Variant()).toBe(variant)
     expect(router.state.location.search).toBe(FILTERS_NEXT)
   })
 
@@ -148,10 +158,10 @@ describe('/signin', () => {
 describe('no sign-in flash while checking', () => {
   it.each(['/analyze', `/signin?next=%2Fhistory`])('%s shows no S1 until the check answers', async (entry) => {
     renderAt(entry, CHECKING)
-    expect(screen.queryByRole('heading', { name: 'Sign in' })).toBeNull()
-    expect(screen.queryByText(/Variant:/)).toBeNull()
+    expect(screen.queryByRole('heading', { name: S1_TITLE })).toBeNull()
+    expect(screen.queryByLabelText('Analyst ID')).toBeNull()
     act(() => store.set(SIGNED_OUT))
-    expect(await screen.findByRole('heading', { level: 1, name: 'Sign in' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { level: 1, name: S1_TITLE })).toBeTruthy()
   })
 })
 
