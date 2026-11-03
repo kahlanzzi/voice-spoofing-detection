@@ -11,7 +11,13 @@ const RAW_COLOUR = /#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?)\(/i
 
 it('scans the source files', () => {
   expect(Object.keys(files)).toEqual(
-    expect.arrayContaining(['/src/App.tsx', '/src/main.tsx', '/src/theme.ts', '/src/styles/base.css']),
+    expect.arrayContaining([
+      '/src/main.tsx',
+      '/src/pages/SignIn.tsx',
+      '/src/routing/guard.tsx',
+      '/src/theme.ts',
+      '/src/styles/base.css',
+    ]),
   )
   // CSS is read as text only with test.css enabled (vite.config.ts); an empty file would pass silently.
   expect(files['/src/styles/base.css']).toContain('var(--bg)')
