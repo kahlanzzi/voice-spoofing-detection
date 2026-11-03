@@ -4871,6 +4871,12 @@ the fixture fix and comments). Vitest +359 (estimate 260, over: the signOut matr
      fails: `Received: "http://localhost:8001/signin?next=%2Fanalyze"`.
   3. `color: #E2E9F2` in the footer CSS → `colours.test.ts` "/src/shell/Shell.css has no raw colour value" fails.
   After the reverts: 706 passed.
+- Live check on localhost:8001 (user-run, signed in as analyst01, this branch's build): rail footer shows analyst01
+  / 'Analyst ID' / Theme / Sign out; Dark kept after a reload; System follows prefers-color-scheme live (DevTools
+  Rendering); Sign out from /history?verdict=a → /signin with no next, a reload stays on S1; with the api stopped,
+  Sign out → after ~5 s the alert, still in the shell; api started, a reload stays signed in (session survived); Tab
+  order Theme → Sign out with a visible focus ring, also inside the 390 px drawer. CI dry run on -p vsd-ci: 45
+  passed, 12/1, scan clean, exit 0.
 - **Not done:** a real screen-reader pass (Orca, PR 15) and a user-run keyboard pass on :8001 for the footer.
 - No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
 
