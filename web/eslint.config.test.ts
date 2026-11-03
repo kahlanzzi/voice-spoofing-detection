@@ -159,6 +159,15 @@ describe('no timers, storage or console in S10', () => {
   })
 })
 
+// The shared components (PR 8a) render props only.
+
+describe('no timers, storage or console in the shared components', () => {
+  it.each(['src/components/Button.tsx', 'src/components/TextField.tsx'])('%s keeps the timer, storage and console bans', async (file) => {
+    const ids = await ruleIds("setTimeout(() => undefined, 1)\nlocalStorage.setItem('x', 'y')\nconsole.log('x')\n", file)
+    expect(ids).toEqual(expect.arrayContaining(['no-restricted-syntax', 'no-restricted-globals']))
+  })
+})
+
 // The sign-in screen (PR 4): the password and Analyst ID live in its state only, and no lockout countdown, so
 // SignIn and signInOutcome get both bans; other pages do not (later pages may need a timer, e.g. the toast).
 

@@ -7,12 +7,13 @@
 // while it is open (prototype lines 804-807, 1402-1403, 1480-1483). Its open state is the location key it was
 // opened at, so any navigation, Back included, closes it (prototype lines 757, 773) without an effect.
 //
-// New analysis goes to /analyze; clearing the current analysis (prototype line 762) comes with Analyze, PR 8. The
+// New analysis goes to /analyze; clearing the current analysis (prototype line 762) comes with PR 8b. The
 // rail foot holds the service status line (PR 7a), the analyst, theme and sign-out (RailFoot, PR 6b). The shell
 // starts the one status check when it mounts: it mounts only once signed in, and GET /api/status needs a session
 // (docs/api_design.md §4.8). No other check but S10's Check now (PR 7b); StrictMode's second run shares the request.
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
+import Button from '../components/Button'
 import Icon, { type IconName } from '../components/Icon'
 import { checkStatus } from '../status/status'
 import RailFoot from './RailFoot'
@@ -86,10 +87,9 @@ export default function Shell() {
   }
 
   const newAnalysis = (
-    <button type="button" className="btn btn-primary" onClick={() => void navigate('/analyze')}>
-      <Icon name="plus" size={18} />
+    <Button variant="primary" icon={<Icon name="plus" size={18} />} onClick={() => void navigate('/analyze')}>
       New analysis
-    </button>
+    </Button>
   )
 
   return (

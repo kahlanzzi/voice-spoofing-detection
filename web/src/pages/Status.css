@@ -1,10 +1,10 @@
 /* S10 System status (Stage 18 PR 7b). Tokens only for colour, type, radius, space and motion; from the prototype
-   (docs/design/analyst-console-prototype.html): helpers 82-87; quiet and small buttons 113-119; page head 154-157;
-   panel 165-168; tags 170-171; kicker 214; key-value list 231-233; disclosure 235-239; warning banner 263-264;
-   decision line 284-285; status 351-365; narrow 417-439. The prototype's 14 / 22 px text uses the nearest tokens
-   (as in Entry 134). The check list is .check-* where the prototype says .svc-*: Shell.css owns .svc-* for the rail
-   line. .btn and .spin come from SignIn.css (one bundle). Button, Banner, StatusPill and Collapsible become shared
-   components in PR 8 (HANDOFF lines 133-150). */
+   (docs/design/analyst-console-prototype.html): helpers 82-87; page head 154-157; panel 165-168; tags 170-171;
+   kicker 214; key-value list 231-233; disclosure 235-239; decision line 284-285; status 351-365; narrow 417-439.
+   The prototype's 14 / 22 px text uses the nearest tokens (as in Entry 134). The check list is .check-* where the
+   prototype says .svc-*: Shell.css owns .svc-* for the rail line. Button, Banner and Spinner come from
+   web/src/components/ (PR 8a, Entry 141); StatusPill, Collapsible and the decision line can follow when a second
+   screen needs them (HANDOFF lines 142-151). */
 
 .mono { font-family: var(--font-mono); }
 
@@ -18,11 +18,6 @@
   font-size: var(--fs-xs); font-weight: 600; white-space: nowrap;
 }
 .tag-demo { background: var(--demo-bg); color: var(--demo-fg); }
-
-.btn-quiet { background: transparent; color: var(--ink); border-color: var(--line-strong); }
-.btn-quiet:hover:not([disabled]) { background: var(--surface-2); }
-.btn-quiet:active:not([disabled]) { background: var(--line); }
-.btn-sm { min-height: 36px; padding: 0 var(--sp-3); font-size: var(--fs-sm); }
 
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); }
 .panel h2 { font-size: var(--fs-md); font-weight: 600; }
@@ -45,15 +40,11 @@
 .sum-text, .check-text { color: var(--ink-2); }
 .check-text { font-size: var(--fs-sm); margin-top: var(--sp-1); }
 
-.banner-warn {
-  background: var(--warn-bg); color: var(--warn-fg); border-radius: var(--r-sm); padding: var(--sp-3);
-  font-size: var(--fs-sm); display: flex; gap: var(--sp-2); align-items: flex-start;
-}
 .decision {
   border: 1px dashed var(--line-strong); border-radius: var(--r-sm); padding: var(--sp-2) var(--sp-3);
   font-size: var(--fs-sm); color: var(--ink-2); display: flex; gap: var(--sp-2); align-items: flex-start;
 }
-.banner-warn svg, .decision svg { flex: none; margin-top: 2px; }
+.decision svg { flex: none; margin-top: 2px; }
 
 .checks-title { padding: var(--sp-5) var(--sp-5) var(--sp-1); }
 .check-list { display: flex; flex-direction: column; list-style: none; margin: 0; padding: 0; }
@@ -87,9 +78,7 @@ details.more[open] > summary::before { transform: rotate(45deg); }
 .kv dt { color: var(--muted); }
 .kv dd { margin: 0; overflow-wrap: anywhere; }
 
-/* HANDOFF line 86: every target ≥ 44 × 44 px at ≤ 640 px, so the small button grows. */
 @media (max-width: 640px) {
-  .btn-sm { min-height: var(--target); }
   .sum, .checks-title, .check-item, details.more { padding-left: var(--sp-4); padding-right: var(--sp-4); }
   .check-item { grid-template-columns: minmax(0, 1fr); }
   .kv { grid-template-columns: minmax(0, 1fr); gap: var(--sp-1); }

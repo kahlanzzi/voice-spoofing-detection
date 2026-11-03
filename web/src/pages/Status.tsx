@@ -10,9 +10,12 @@
 // shell's own check never announce. The effect waits for React's commit: the button is enabled again by then.
 //
 // The summary has no role (HANDOFF line 143): the region above is what speaks. Not built here: the "Audio and
-// stored data" panel (prototype lines 1202-1205, from /limits in PR 8) and the stale-status banner (Open item).
+// stored data" panel (prototype lines 1202-1205, from /limits in PR 8c) and the stale-status banner (Open item).
 import { useEffect, useRef } from 'react'
+import Banner from '../components/Banner'
+import Button from '../components/Button'
 import Icon from '../components/Icon'
+import Spinner from '../components/Spinner'
 import { formatCheckedAt } from '../status/checkedAt'
 import { checkStatus } from '../status/status'
 import { useStatus } from '../status/useStatus'
@@ -22,7 +25,7 @@ import './Status.css'
 const SUMMARY_ICON: Record<Exclude<SummaryKind, 'loading'>, 'check' | 'alert' | 'x'> = { ready: 'check', degraded: 'alert', down: 'x' }
 
 function PillIcon({ kind }: { kind: PillKind }) {
-  if (kind === 'wait') return <span className="spin" aria-hidden="true" />
+  if (kind === 'wait') return <Spinner />
   return <Icon name={kind === 'ok' ? 'check' : 'alert'} size={14} />
 }
 
@@ -71,23 +74,15 @@ export default function Status() {
         </div>
         <div className="updated">
           {label !== null && result !== null && <span className="checked-at">{`${label} ${formatCheckedAt(result.checkedAt)}`}</span>}
-          <button
-            ref={button}
-            type="button"
-            className="btn btn-quiet btn-sm"
-            disabled={checking}
-            aria-busy={checking || undefined}
-            onClick={checkNow}
-          >
-            {checking ? <span className="spin" aria-hidden="true" /> : <Icon name="refresh" size={14} />}
+          <Button ref={button} variant="quiet" size="sm" busy={checking} icon={<Icon name="refresh" size={14} />} onClick={checkNow}>
             Check now
-          </button>
+          </Button>
         </div>
       </div>
 
       <section className={`panel sum sum-${view.summary.kind}`} aria-labelledby="sum-h" aria-busy={loading || undefined}>
         <div className="sum-icon">
-          {loading ? <span className="spin" aria-hidden="true" /> : <Icon name={SUMMARY_ICON[view.summary.kind as Exclude<SummaryKind, 'loading'>]} size={22} />}
+          {loading ? <Spinner /> : <Icon name={SUMMARY_ICON[view.summary.kind as Exclude<SummaryKind, 'loading'>]} size={22} />}
         </div>
         <div className="sum-body">
           <p className="kicker">Current status</p>
@@ -95,10 +90,9 @@ export default function Status() {
           <p className="sum-text">{view.summary.text}</p>
           {view.notice !== null && (
             <>
-              <div className="banner-warn">
-                <Icon name="alert" size={16} />
-                <span>{view.notice}</span>
-              </div>
+              <Banner tone="warn" icon="alert">
+                {view.notice}
+              </Banner>
               <p className="decision">
                 <Icon name="decision" size={16} />
                 <span>
