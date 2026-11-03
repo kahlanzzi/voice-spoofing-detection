@@ -4776,8 +4776,14 @@ logout" is not applied: §4.8 says sign-out asks for no confirmation, and D1 cov
 - Planted failures (not committed, reverted): `h1.focus()` removed → 12 of 40 shell tests fail; `background: #13233A`
   in `Shell.css` → `colours.test.ts` "/src/shell/Shell.css has no raw colour value" fails. Restored: 675 passed. The
   sign-out plant belongs to 6b.
-- Live on :8001 through the e2e suite (real nginx, both browsers). **Not done:** a manual keyboard pass by a person
-  and a real screen-reader pass (H l.303), still required.
+- Live on :8001 through the e2e suite (real nginx, both browsers). **Not done:** a real screen-reader pass (H l.303),
+  still required.
+- Keyboard pass on localhost:8001 (user-run, signed in as analyst01, this branch's build): skip link is the first
+  Tab and Enter focuses the h1; Tab order skip → New analysis → Analyze → History → Overview → System status; a rail
+  click and Back move focus to the h1 and set the title; a reload does not move focus; at 390 px the top bar shows
+  Menu and New analysis, no horizontal scroll, Menu opens the drawer with focus on its first link, Escape closes it
+  and returns focus to Menu, a drawer link closes it and focuses the new h1; focus ring visible throughout.
+  Screen-reader pass (Orca) is due in PR 15.
 - No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
 
 **AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
@@ -5073,6 +5079,7 @@ answers above. The team reviews the diff. Context7 was not used.
 - [ ] PR 6b: rail footer (username + "Analyst ID", theme `<select>`, sign-out with no `next` after an explicit sign-out; a failed DELETE stays signed in), `e2e-signout` account, budget 12 with A = 6; own plan, from `main` after 6a merges (Entry 137).
 - [ ] PR 7: the rail status line (`GET /api/status` once, no polling; 500 or no answer → Unavailable), its "(mock)" tag from `/status.mock` and the degraded notice, in one status store with S10 (Entry 137).
 - [ ] PR 8/11 rule: an explicit sign-out clears the `File` and note-draft stores; expiry does not (prototype l.770, l.1494; Entry 137). D1 before sign-out with an unsaved note is PR 11.
+- [ ] Stub window.scrollTo in the Vitest setup (jsdom 'Not implemented' noise; PR 6b).
 - [ ] Add `e2e` as a required check on `main` after 5 green PR runs in a row (Iheb; Entry 135).
 - [ ] nginx takes ~5 s to return 503 when the api is stopped (connect timeout); consider a lower proxy_connect_timeout in a deploy/ fix PR (Entry 136).
 - [ ] PR 8: extract `Button`, `TextField` and `Banner` (HANDOFF line 133) from S1 into `web/src/components/` (deferred on purpose in PR 4; Entry 134).
