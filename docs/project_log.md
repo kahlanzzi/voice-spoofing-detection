@@ -4176,6 +4176,72 @@ check. Context7 was not used.
 
 ---
 
+### Entry 132 — Stage 18 PR 3b: session store, expiry handler, `checkSession` (2026-11-03)
+
+**What:** on `feat/stage18-session-store` (Iheb, Part E; from `main` at `c8c047e`, not stacked), following the
+approved plan (user's answers to Q1–Q8 folded in). Only `web/` and docs change; no `api/`, `src/`, `configs/` or
+`deploy/` change; no new dependency (`package.json` and `web/package-lock.json` unchanged).
+- `web/src/session/session.ts`: a module store read through `useSyncExternalStore(subscribe, getSnapshot)`. States
+  `checking` (initial) | `signedIn {username}` | `signedOut {reason: 'none' | 'expired'}` | `unavailable`, from
+  HANDOFF §1 S1 (default, expired session, sign-in service unavailable) and §4.8 (`GET /session` on load). The
+  same snapshot object is kept while unchanged; a no-op transition notifies no one. Notify iterates a copy of the
+  listeners; a throwing listener does not stop the others or the caller, and its error is rethrown in a
+  `queueMicrotask` (`reportError` is not in Node or jsdom).
+- `checkSession()` (`GET /api/session` through `apiFetch`, never rejects): 200 → `signedIn` (typed `SessionInfo`,
+  no runtime check); 401 → `signedOut {expired}` if the state was `signedIn`, otherwise `signedOut {none}` (the
+  load-time 401 is not the S1 notice, §4.8 "Errors for S1"); 403, 500, 503, any other status, a non-JSON 2xx, a
+  network error or any other throw → `unavailable` (A19: only a 401 signs out). Concurrent calls share one
+  request. A generation counter, bumped by every transition (also a no-op one), drops a result that arrives after
+  a newer change; a transition also drops the shared request, so the next call sends a fresh one. Retry from
+  `unavailable` stays `unavailable` until the answer (no `checking`).
+- `expire()` (the `setSessionExpiredHandler` target, and PR 10's S5 "Sign in again"), `markSignedIn(username)`
+  (PR 4), `markSignedOut()` (PR 6), `startSession()` (registers `expire`, then `checkSession`). The client's
+  handler slot is single, so registering twice cannot double-fire. No navigation (PR 3c).
+- `web/src/main.tsx`: `startSession()` at module level, not in an effect, so StrictMode cannot run it twice.
+- No test reset in the module: tests use `vi.resetModules()` and a fresh `import()`; a test pins the export list.
+- A23: 3b creates no draft store and clears nothing; the file and note draft stores stay in PR 8 and PR 11.
+- `web/eslint.config.js`: the no-timer rule (`no-restricted-syntax`) now covers `src/api/**` and `src/session/**`,
+  tests included. A second block, `src/session/**` without `*.test.ts`, bans `localStorage`, `sessionStorage` and
+  `console` (`no-restricted-globals`; also on `window`, `globalThis` and `self` via `no-restricted-properties`)
+  and `document.cookie`. Different rule names, so flat config's per-rule replacement cannot make one ban cancel
+  the other; `calculateConfigForFile`: `src/api/client.ts` → syntax; `src/session/session.ts` → syntax, globals,
+  properties; `src/session/session.test.ts` → syntax. `window.document.cookie` is not matched by the lint rule;
+  the cookie spy test covers it.
+
+**Tests (Vitest):** `src/session/session.test.ts`, 38 tests: export list; initial `checking`; request shape;
+every mapping above (401 with a malformed body; 403, 500, 503, nginx 503, 400, 404, 429, 502, 504, 200 HTML;
+`TypeError` and `AbortError`); 401 from `signedIn` / `unavailable` / `signedOut {expired}`; Retry without
+notify; dedupe (one fetch for two calls, a new one after); stale guard (expiry via a real `apiFetch` 401 on
+`/api/limits`, `markSignedOut`, a no-op `expire()`, a fresh request after the expiry); expiry on `GET
+/api/limits` and not on the three `/api/session` calls or `POST /api/analyses`; `startSession` twice → one
+notify; unsubscribe during notify; throwing listener; snapshot identity; `useSyncExternalStore` via `renderHook`;
+no `Storage.prototype`, `document.cookie` or `console` call through every transition. `web/eslint.config.test.ts`:
++15 (timers, storage bare / `window.` / `globalThis.` / `self.`, cookie, console in `src/session`; a timer and
+storage in one file report both rules; console allowed and a timer refused in a session test file; allowed in
+`src/theme.ts`).
+
+**Planted failures (not committed):** generation check removed → `Tests 4 failed | 34 passed (38)` (the 4 stale-guard
+tests); dedupe removed → `1 failed | 37 passed`; try/catch in notify removed → `1 failed | 37 passed` (throwing
+listener). Restored → `38 passed (38)`.
+
+**Size:** code and tests 554 lines added (`session.ts` 135, `session.test.ts` 341, ESLint 35 + 44, `main.tsx` 3),
+above the plan's ~435 for those files: the test file is larger than estimated. Tests were not cut.
+
+**Evidence [verified]:**
+- Baseline: `node --version` `v26.13.0`; `git log --oneline -1 main` `c8c047e Merge pull request #92 …`.
+- `python -m pytest -q` `1272 passed, 9 skipped`.
+- `web/`: `npm ci`, `npm run typecheck`, `npm run lint`, `npm test -- --run` (`Test Files 9 passed (9)`, `Tests
+  370 passed (370)`), `npm run build`, all exit 0; `npm audit --omit=dev` `found 0 vulnerabilities`.
+- No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
+the checks. The plan was approved before the build, with the user's answers and the lint-layout fix; the team
+reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
 ## Open items
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
@@ -4444,14 +4510,15 @@ check. Context7 was not used.
 - [x] uvicorn's default access log prints the client IP; §1/§7 say no IP is stored. Decide for Stage 19 (e.g. `--no-access-log` or a log filter) (Entry 116). (`--no-access-log --no-proxy-headers` in the image and the documented local command; Entry 125)
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
 
-**Stage 18 web (Part E, Entries 127–131)**
+**Stage 18 web (Part E, Entries 127–132)**
 - [x] PR 1a: `web/` scaffold, theme storage, CI `web` job, pytest pin guards (merged in PR #88, `86cc77d`; Entry 127).
 - [ ] Add `web` as a required check on `main` after PR 1a merges (Iheb; Entry 127).
 - [x] PR 1b: `tokens.css`, `base.css`, fontsource fonts, token, contrast and no-raw-colour tests (merged in PR #89, `9a119d2`; Entry 128).
 - [ ] Still open from Entry 127: the 9 s toast vs ui-ux-pro-max 3–5 s conflict.
 - [x] PR 2: `web` image (`deploy/web.Dockerfile`), A2 routes, A13 security headers, JSON 404 type fix (merged in PR #90, `d352bad`; Entry 129).
 - [x] PR 3a: API client, `ApiError`, API types, no-timer lint rule (merged in PR #91, `b6f09d6`; Entry 130).
-- [ ] PR 3b (from `main` after 3a merges): session state, handler registration, `checkSession` on load, A19 on `GET /api/session` (Entry 130).
+- [x] PR 3b: session store, expiry handler, `checkSession` on load, A19 on `GET /api/session`, storage and console lint ban in `src/session` (on `feat/stage18-session-store`, awaiting review; Entry 132).
+- [ ] Map `GET /session` 403 when `access_denied` is implemented (now `unavailable`; Entry 132).
 - [ ] PR 3c (from `main` after 3b merges): `react-router` 8.5.1 (A15), route list synced with `deploy/nginx.conf`, `next` check, guard, stub pages, `npm audit` after the install, live check (Entry 130).
 - [ ] A23: keep the `File` (PR 8, upload) and the note draft (PR 11, note) in a module store, not component state; PR 10's S5 "Sign in again" calls `session.expire()` (Entry 130).
 - [ ] Contract: `api_design.md` §5 does not list the Status, Limits, History, Stats, Session and Note responses (the web types follow §4 and `api/schemas.py`) (Entry 130).
@@ -4459,7 +4526,7 @@ check. Context7 was not used.
 - [ ] Contract: an unhandled exception in `POST /api/analyses` after the ID is assigned (e.g. `analyzer.info()`) answers 500 with body `request_id: null` (`api/errors.py` `_unhandled_error`); §6 expects the upload's ID (Entry 130).
 - [ ] Contract: constraints in Pydantic but not in the doc: `confidence` 0..1, the `request_id` pattern, `StatusChecks` value `unavailable` (Entry 130).
 - [ ] Contract: `deferral_on_fit` is not nullable (Status, MonitoringMarker) while §4.7 says a figure that cannot be computed is `null`; ask Donia (Entry 130).
-- [x] Non-text contrast below 3:1 (light `--line-strong`/`--surface` 1.86, dark 1.99, light `--unc-mark` and `--warn-mark` 2.87; Entry 128): fixed for WCAG 1.4.11, no exceptions left, on `fix/stage18-contrast` (Entry 131).
+- [x] Non-text contrast below 3:1 (light `--line-strong`/`--surface` 1.86, dark 1.99, light `--unc-mark` and `--warn-mark` 2.87; Entry 128): fixed for WCAG 1.4.11, no exceptions left (merged in PR #92, `c8c047e`; Entry 131).
 - [ ] `npm audit`: 12 moderate (GHSA-g3hv-75wg-m249, `minimatch` 10.2.6 under eslint and typescript-eslint, dev only; production 0). Decide: wait for upstream, or an `overrides` pin to `minimatch` ≥ 11.0.1 by approval (Entry 127).
 
 **Midterm documentation (Entries 102–110)**
@@ -4493,7 +4560,7 @@ check. Context7 was not used.
 
 ---
 
-## Current status — updated 2026-11-01
+## Current status — updated 2026-11-03
 
 **Documentation navigation:** Entry 115 groups the docs index by topic without moving files. This follow-up awaits PR/CI and human review; implementation status below is unchanged.
 
@@ -4502,7 +4569,7 @@ check. Context7 was not used.
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
 `GET /api/status`. `POST /api/analyses` with the
-MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) merged in PR #88 (`86cc77d`; Entry 127); PR 1b (design tokens, base styles, IBM Plex fonts, token and contrast tests) merged in PR #89 (`9a119d2`; Entry 128), its 4 non-text pairs below 3:1 fixed on `fix/stage18-contrast`, awaiting review (Entry 131). PR 2 (the `web` image: the built app served by nginx on the A2 routes, `/` → `/analyze`, A13 security headers on every answer) merged in PR #90 (`d352bad`; Entry 129). PR 3 is split in three (Entry 130): PR 3a (API client, `ApiError`, API types, no-timer lint rule) merged in PR #91 (`b6f09d6`; Entry 130); 3b (session state) and 3c (routing and guard) follow from `main`; no page beyond the placeholder and no API call from a page yet. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
+MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) merged in PR #88 (`86cc77d`; Entry 127); PR 1b (design tokens, base styles, IBM Plex fonts, token and contrast tests) merged in PR #89 (`9a119d2`; Entry 128), its 4 non-text pairs below 3:1 fixed in PR #92 (`c8c047e`; Entry 131). PR 2 (the `web` image: the built app served by nginx on the A2 routes, `/` → `/analyze`, A13 security headers on every answer) merged in PR #90 (`d352bad`; Entry 129). PR 3 is split in three (Entry 130): PR 3a (API client, `ApiError`, API types, no-timer lint rule) merged in PR #91 (`b6f09d6`; Entry 130); 3b (session store, expiry handler, `checkSession` on load) is on `feat/stage18-session-store`, awaiting review (Entry 132); 3c (routing and guard) follows from `main`; no page beyond the placeholder, and the only API call is `GET /api/session` on load. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
 canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.

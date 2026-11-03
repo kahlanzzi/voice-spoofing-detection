@@ -28,3 +28,47 @@ describe('no timers in src/api', () => {
     expect(await ruleIds('setTimeout(() => undefined, 1)\n', 'src/theme.ts')).not.toContain('no-restricted-syntax')
   })
 })
+
+// Session state (PR 3b): the timer rule also covers src/session, tests included; storage, cookie and
+// console are errors there too, tests exempt. The two bans use different rules, so neither replaces the other.
+
+describe('no timers, storage, cookie or console in src/session', () => {
+  it.each([
+    'setTimeout(() => undefined, 1)\n',
+    'window.setTimeout(() => undefined, 1)\n',
+    'globalThis.setInterval(() => undefined, 1)\n',
+  ])('%s is a timer error in src/session', async (code) => {
+    expect(await ruleIds(code, 'src/session/planted.ts')).toContain('no-restricted-syntax')
+  })
+
+  it.each([
+    ["localStorage.setItem('k', 'v')\n", 'no-restricted-globals'],
+    ["sessionStorage.getItem('k')\n", 'no-restricted-globals'],
+    ["window.localStorage.setItem('k', 'v')\n", 'no-restricted-properties'],
+    ["globalThis.sessionStorage.getItem('k')\n", 'no-restricted-properties'],
+    ["self.localStorage.setItem('k', 'v')\n", 'no-restricted-properties'],
+    ["document.cookie = 'x'\n", 'no-restricted-properties'],
+    ["console.log('x')\n", 'no-restricted-globals'],
+    ["window.console.log('x')\n", 'no-restricted-properties'],
+    ["globalThis.console.error('x')\n", 'no-restricted-properties'],
+  ])('%s is an error in src/session', async (code, rule) => {
+    expect(await ruleIds(code, 'src/session/planted.ts')).toContain(rule)
+  })
+
+  it('a timer and storage in one file report both rules', async () => {
+    const ids = await ruleIds("setTimeout(() => undefined, 1)\nlocalStorage.setItem('k', 'v')\n", 'src/session/planted.ts')
+    expect(ids).toContain('no-restricted-syntax')
+    expect(ids).toContain('no-restricted-globals')
+  })
+
+  it('console in a session test file is allowed, a timer is not', async () => {
+    expect(await ruleIds("console.log('x')\n", 'src/session/planted.test.ts')).toEqual([])
+    expect(await ruleIds('setTimeout(() => undefined, 1)\n', 'src/session/planted.test.ts')).toContain(
+      'no-restricted-syntax',
+    )
+  })
+
+  it('storage and console outside src/session are allowed', async () => {
+    expect(await ruleIds("localStorage.setItem('k', 'v')\nconsole.log('x')\n", 'src/theme.ts')).toEqual([])
+  })
+})
