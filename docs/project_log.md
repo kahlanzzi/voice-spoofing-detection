@@ -4431,6 +4431,18 @@ overrun is JSX layout, not logic (reviewer's decision). The toggle fix adds 3 li
   `400`; after 61 s, 8 rapid sign-ins as `nobody01`…`nobody08` → 6 × `401 invalid_credentials`, 2 × `429
   too_many_requests`.
 - Live in a browser: not run by the agent (no browser here); the user-run checklist is in the PR report.
+- Live browser check on localhost:8001 (user-run, Opera private window, bundle index-Bru4mD4n.js; URL and focus
+  read with location.href and document.activeElement):
+  - empty submit → both field errors, focus #si-user (aria-invalid=true);
+  - wrong password → invalid banner, password cleared, Analyst ID kept, focus #si-user;
+  - api.admin disable → 403 → denied banner (lock icon), focus h1 #si-h; enable after;
+  - unlock, 5 wrong (~6 s apart) → 5 × 401, 6th with the right password → 429 → locked banner (lock icon), no
+    countdown, focus h1; unlock after;
+  - api stopped → GET /api/session 503 → unavailable banner + Retry; api started, Retry → 'Checking…' → default form;
+  - fresh private window, /history?verdict=synthetic → sign in through the form →
+    http://localhost:8001/history?verdict=synthetic; GET /api/session 200 and a reload stays on the page (cookie
+    Path=/api is hidden in DevTools' cookie table on /history);
+  - Local storage empty, Session storage empty or only remix-router-transitions, password not in the page HTML.
 - Unit-only, and why: `503 sign_in_unavailable` (needs an account store the API cannot read; not safe to
   provoke); the expired notice (only `expire()` after a signed-in API call produces it, and no page calls the API
   yet); malformed bodies, unknown statuses, 2xx non-JSON, 422 (nginx and the API never send them).
