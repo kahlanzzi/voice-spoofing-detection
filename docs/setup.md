@@ -239,13 +239,13 @@ npm run test:e2e:firefox                   # Firefox
   through `docker compose exec -T`, password on stdin). At the end it disables them, which ends their sessions.
   `analyst01` and other accounts are never touched.
 - **Projects, per browser:** `<browser>-setup` (sign in, save the session) → `<browser>` (sign-in flows, stub
-  pages, the HTTP/Origin matrix, security headers, the JSON 404) → `<browser>-last`, ordered by dependencies. The
+  pages, the shell and its page-change rules, the HTTP/Origin matrix, security headers, the JSON 404) → `<browser>-last`, ordered by dependencies. The
   last project restarts `web` a second time and locks `e2e-locked` through the form (unlocked at the end), then
   **stops the `api` container** and starts it again (outage and Retry). If a run is interrupted, the global
   teardown starts `api` again; otherwise run `docker compose start api`. If an earlier project fails, the last
   one does not run.
-- **Accessibility:** axe-core (`@axe-core/playwright`) scans every S1 state the suite reaches and the stub pages,
-  in light and dark, with the WCAG 2.0/2.1/2.2 A and AA tags (HANDOFF section 13); 0 violations expected. A
+- **Accessibility:** axe-core (`@axe-core/playwright`) scans every S1 state the suite reaches, the stub pages
+  inside the shell and the shell at 390 px with the drawer closed and open, in light and dark, with the WCAG 2.0/2.1/2.2 A and AA tags (HANDOFF section 13); 0 violations expected. A
   failure lists only rule, impact and selector, never the page's HTML. No rule is disabled; an exclusion is one
   exact rule and selector with its reason, in the spec and the project log.
 - **Password:** made for the run (48 hex characters, which always pass the §4.8 rules) and held only in the

@@ -63,7 +63,7 @@ const S1_TITLE = 'Sign in to the analyst console'
 // Which S1 variant is on screen (PR 4): Retry only when unavailable, the notice only when expired.
 function s1Variant(): string {
   if (screen.queryByRole('button', { name: 'Retry' })) return 'sign-in service unavailable'
-  if (screen.queryByText(/Your session expired/)) return 'expired session'
+  if (screen.queryByText(/Your session expired. Sign in again to continue where/)) return 'expired session'
   return 'default'
 }
 
@@ -149,7 +149,7 @@ describe('/signin', () => {
     ['next to sign-in', '/signin?next=%2Fsignin'],
   ])('signedIn with %s → /analyze', async (_label, entry) => {
     const router = renderAt(entry, SIGNED_IN)
-    expect(await screen.findByRole('heading', { level: 1, name: 'Analyze' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Analyze a recording' })).toBeTruthy()
     expect(router.state.location.pathname).toBe('/analyze')
     expect(router.state.location.search).toBe('')
   })
@@ -187,14 +187,14 @@ describe('paths that are not app routes', () => {
 
   it('/ → /analyze, as nginx', async () => {
     const router = renderAt('/', SIGNED_IN)
-    expect(await screen.findByRole('heading', { level: 1, name: 'Analyze' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Analyze a recording' })).toBeTruthy()
     expect(router.state.location.pathname).toBe('/analyze')
   })
 })
 
 describe('pages', () => {
   it.each([
-    ['/analyze', 'Analyze'],
+    ['/analyze', 'Analyze a recording'],
     ['/history', 'History'],
     [`/history/${ID}`, 'Analysis details'],
     ['/overview', 'Overview'],

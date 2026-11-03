@@ -96,6 +96,26 @@ describe('no timers, storage or console in src/routing', () => {
   })
 })
 
+// The shell (PR 6a): no timers (page changes run in effects, not on a delay) and no storage or console (the theme
+// is stored by theme.ts only).
+
+describe('no timers, storage or console in src/shell', () => {
+  it.each([
+    ['setTimeout(() => undefined, 40)\n', 'no-restricted-syntax'],
+    ['window.setInterval(() => undefined, 1)\n', 'no-restricted-syntax'],
+    ["localStorage.setItem('vsd-theme', 'dark')\n", 'no-restricted-globals'],
+    ["window.localStorage.getItem('vsd-theme')\n", 'no-restricted-properties'],
+    ["console.log('x')\n", 'no-restricted-globals'],
+  ])('%s is an error in src/shell', async (code, rule) => {
+    expect(await ruleIds(code, 'src/shell/planted.tsx')).toContain(rule)
+  })
+
+  it('console in a shell test file is allowed, a timer is not', async () => {
+    expect(await ruleIds("console.log('x')\n", 'src/shell/planted.test.tsx')).toEqual([])
+    expect(await ruleIds('setTimeout(() => undefined, 1)\n', 'src/shell/planted.test.tsx')).toContain('no-restricted-syntax')
+  })
+})
+
 // The sign-in screen (PR 4): the password and Analyst ID live in its state only, and no lockout countdown, so
 // SignIn and signInOutcome get both bans; other pages do not (later pages may need a timer, e.g. the toast).
 

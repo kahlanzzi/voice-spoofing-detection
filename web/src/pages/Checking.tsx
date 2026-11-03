@@ -2,7 +2,7 @@
 // no sign-in flash. No h1: it is not a page (HANDOFF §6 uses "Checking…" for a pending check).
 export default function Checking() {
   return (
-    <main>
+    <main className="plain">
       <p role="status">Checking your session…</p>
     </main>
   )
