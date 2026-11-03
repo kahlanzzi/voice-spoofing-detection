@@ -16,32 +16,33 @@ export default tseslint.config(
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },
-  // No polling (team decision 2026-11-01): no timers in the API layer or session state, whether called
-  // bare or through window or globalThis. Tests included.
+  // No polling (team decision 2026-11-01): no timers in the API layer, session state or routing, whether
+  // called bare or through window or globalThis. Tests included.
   {
-    files: ['src/api/**', 'src/session/**'],
+    files: ['src/api/**', 'src/session/**', 'src/routing/**'],
     rules: {
       'no-restricted-syntax': [
         'error',
         {
           selector: 'Identifier[name=/^(setTimeout|setInterval)$/]',
-          message: 'No timers in src/api or src/session (no polling).',
+          message: 'No timers in src/api, src/session or src/routing (no polling).',
         },
       ],
     },
   },
-  // Session state lives in memory only and the username is never logged (Stage 18 PR 3b): no Web Storage,
-  // no document.cookie (the session cookie is the server's HttpOnly cookie), no console. Tests are exempt,
-  // they spy on these. Do not add no-restricted-syntax here: it would replace the timer rule above.
+  // Session state lives in memory only and the username is never logged (Stage 18 PR 3b); likewise the
+  // sign-in `next` and any route state live only in the URL (PR 3c): no Web Storage, no document.cookie (the
+  // session cookie is the server's HttpOnly cookie), no console. Tests are exempt, they spy on these. Do not
+  // add no-restricted-syntax here: it would replace the timer rule above.
   {
-    files: ['src/session/**'],
-    ignores: ['src/session/**/*.test.ts'],
+    files: ['src/session/**', 'src/routing/**'],
+    ignores: ['src/session/**/*.test.{ts,tsx}', 'src/routing/**/*.test.{ts,tsx}'],
     rules: {
       'no-restricted-globals': [
         'error',
         ...['localStorage', 'sessionStorage', 'console'].map((name) => ({
           name,
-          message: 'No storage or console in src/session (memory only, never logged).',
+          message: 'No storage or console in src/session or src/routing (memory or URL only, never logged).',
         })),
       ],
       'no-restricted-properties': [
@@ -50,10 +51,10 @@ export default tseslint.config(
           ['localStorage', 'sessionStorage', 'console'].map((property) => ({
             object,
             property,
-            message: 'No storage or console in src/session (memory only, never logged).',
+            message: 'No storage or console in src/session or src/routing (memory or URL only, never logged).',
           })),
         ),
-        { object: 'document', property: 'cookie', message: 'No document.cookie in src/session (HttpOnly cookie).' },
+        { object: 'document', property: 'cookie', message: 'No document.cookie in src/session or src/routing (HttpOnly cookie).' },
       ],
     },
   },
