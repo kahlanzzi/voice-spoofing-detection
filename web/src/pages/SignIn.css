@@ -1,0 +1,72 @@
+/* S1 Sign in (Stage 18 PR 4). Tokens only for colour, type, radius, space and motion; from the prototype
+   (docs/design/analyst-console-prototype.html): buttons 103-109, 120; spinner 206-207; banners 261-264;
+   form fields 267-277; sign-in 280-285 and 443. Layout sizes with no HANDOFF token (440, 112, 36, 14 px) are
+   the prototype's values. The prototype's 22 / 18 / 14 px text uses the nearest tokens (Entry 134).
+   Button, TextField and Banner become components in PR 8 (HANDOFF line 133, deferred). */
+
+.signin {
+  max-width: none; min-height: 100vh; min-height: 100dvh; display: grid; place-items: center;
+  padding-block: var(--sp-7); padding-left: max(var(--sp-4), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--sp-4), env(safe-area-inset-right, 0px));
+}
+.signin-card {
+  width: 100%; max-width: 440px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: var(--sp-6); display: flex; flex-direction: column; gap: var(--sp-4); box-shadow: var(--elev-2);
+}
+.signin-card h1 { font-size: var(--fs-lg); }
+.signin-card h1:focus { outline: none; }
+.signin-brand { display: flex; align-items: center; gap: var(--sp-3); }
+.signin-brand .brand-mark {
+  width: 36px; height: 36px; border-radius: var(--r-md); background: var(--nav); color: var(--nav-ink-strong);
+  display: grid; place-items: center; flex: none;
+}
+.brand-name { font-weight: 700; font-size: var(--fs-md); }
+.signin-sub, .signin-help { font-size: var(--fs-sm); color: var(--muted); }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2); min-height: var(--target);
+  padding: 0 var(--sp-4); border-radius: var(--r-sm); border: 1px solid transparent; font-weight: 600;
+  font-size: var(--fs-base); cursor: pointer; white-space: nowrap;
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.btn-primary { background: var(--accent); color: var(--accent-ink); }
+.btn-primary:hover:not([disabled]) { background: var(--accent-hover); }
+.btn-primary:active:not([disabled]) { background: var(--accent-active); }
+.btn-secondary { background: var(--surface); color: var(--link); border-color: var(--link); align-self: flex-start; }
+.btn-secondary:hover:not([disabled]) { background: var(--accent-soft); }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+.spin {
+  width: 14px; height: 14px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent;
+  animation: spin .9s linear infinite; flex: none;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.banner-err, .banner-info {
+  border-radius: var(--r-sm); padding: var(--sp-3); font-size: var(--fs-sm); display: flex; gap: var(--sp-2);
+  align-items: flex-start;
+}
+.banner-err { background: var(--err-bg); color: var(--err-fg); }
+.banner-info { background: var(--accent-soft); color: var(--ink); }
+.banner-err svg, .banner-info svg { flex: none; margin-top: 2px; }
+
+.field { display: flex; flex-direction: column; gap: var(--sp-1); min-width: 0; }
+.field label { font-size: var(--fs-sm); font-weight: 600; }
+.input {
+  height: var(--target); padding: 0 var(--sp-3); border-radius: var(--r-sm); border: 1px solid var(--line-strong);
+  background: var(--surface); width: 100%; min-width: 0;
+}
+.input:hover { border-color: var(--ink-2); }
+.input:focus { border-color: var(--link); }
+.input[aria-invalid="true"] { border-color: var(--err-fg); border-width: 2px; }
+.field-err { font-size: var(--fs-sm); color: var(--err-fg); display: inline-flex; gap: var(--sp-1); align-items: center; }
+.pw { position: relative; }
+.pw .input { padding-right: 112px; }
+.pw button {
+  position: absolute; right: var(--sp-1); top: var(--sp-1); height: 36px; padding: 0 var(--sp-3);
+  border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface-2); cursor: pointer;
+  font-size: var(--fs-sm);
+}
+
+@media (max-width: 640px) {
+  .signin-card { padding: var(--sp-5) var(--sp-4); }
+}

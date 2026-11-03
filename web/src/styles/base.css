@@ -23,3 +23,6 @@ main { max-width: var(--content-max); padding: var(--sp-6); display: flex; flex-
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Visually hidden, still read by screen readers (prototype line 84). */
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
