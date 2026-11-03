@@ -4387,8 +4387,10 @@ needs them (Open item).
   held failures (Entry 133: attempts made before analyst01 existed).
 - A burst with one unknown username mixes the API's lockout into nginx's limit (the 6th 429 is the API's
   `account_locked`, as in Entry 126); distinct usernames show nginx's own 429.
-- The Show/Hide toggle is 36 px high (prototype line 277); HANDOFF line 86 asks for 44 px targets at ≤ 640 px.
-  Kept as the prototype; for the team (PR 5's axe run will report it if it fails 2.5.8).
+- Touch target, fixed (reviewer's decision, HANDOFF over the prototype): the Show/Hide toggle is 36 px high
+  (prototype line 277), but HANDOFF line 86 asks for every target ≥ 44 × 44 px at ≤ 640 px. `SignIn.css` now
+  gives it `height` and `min-width` `var(--target)` (44 px) inside `@media (max-width: 640px)`, and keeps 36 px
+  above. `SignIn.css.test.ts` (2 tests) checks both rules as text, since jsdom applies no media queries.
 
 **ui-ux-pro-max (review checklist):** met: accessible authentication (paste and password managers, autocomplete),
 password toggle, `role="alert"` errors, errors below fields with `aria-describedby`, loading button, `<form
@@ -4412,15 +4414,15 @@ list + `SignIn.css`, `signInOutcome.ts`, `Icon.tsx`.
 `disabled` removed → `× double click sends one request`, `× two submit events in a row send one request`, `Tests
 2 failed | 30 skipped (32)`. Restored: `Tests 63 passed (63)`.
 
-**Size:** `web/` code and config +380 / −20, tests +543 / −8; lockfile +15; docs +122 / −4. Code is over the
-plan's ~330 split line because of JSX layout (one attribute or SVG path per line), not scope; the user chose
-one PR.
+**Size:** `web/` code and config +380 / −20, tests +543 / −8; lockfile +15; docs +122 / −4. Code ≈ 380 lines, over
+the planned ~330 split line; kept as one PR because the planned split would merge a half-built S1 and the
+overrun is JSX layout, not logic (reviewer's decision). The toggle fix adds 3 lines of CSS and a 2-test file.
 
 **Evidence [verified]:**
 - Baseline: `node --version` `v26.13.0`; `git log --oneline -1 origin/main` `b06df7b Merge pull request #94 …`.
 - `python -m pytest -q` `1272 passed, 9 skipped`.
 - `web/`: `npm run typecheck`, `npm run lint`, `npm test -- --run` (`Test Files 13 passed (13)`, `Tests 585 passed
-  (585)`), `npm run build`, all exit 0; `npm audit --omit=dev` `found 0 vulnerabilities` (the full `npm audit`
+  (585)`; after the toggle fix `Test Files 14 passed (14)`, `Tests 587 passed (587)`), `npm run build`, all exit 0; `npm audit --omit=dev` `found 0 vulnerabilities` (the full `npm audit`
   shows 12 moderate in dev dependencies, `minimatch`, the same before this change).
 - Live, server side, on localhost:8001 with the branch's `web` image (`docker compose build web && up -d`; served
   bundle `index-CTaE4bZb.js` = the local build) and a scratch account `pr4check` (generated password, never
@@ -4722,7 +4724,6 @@ Context7 was not used.
 - [x] PR 3c: `react-router` 8.5.1 (A15), route list synced with `deploy/nginx.conf`, `next` check, guard, stub pages (merged in PR #94, `b06df7b`; Entry 133).
 - [x] PR 4: S1 Sign in; `next` read by the guard with `safeNext` after `POST /api/session`, never stored or logged (on `feat/stage18-sign-in`, awaiting review; Entry 134).
 - [ ] PR 8: extract `Button`, `TextField` and `Banner` (HANDOFF line 133) from S1 into `web/src/components/` (deferred on purpose in PR 4; Entry 134).
-- [ ] Show/Hide toggle 36 px vs HANDOFF's 44 px targets at ≤ 640 px; check with PR 5's axe run (Entry 134).
 - [ ] PR 12: translate HANDOFF `?v=a,b` to repeated `verdict=` (Part E decision recorded in Entry 133).
 - [ ] A23: keep the `File` (PR 8, upload) and the note draft (PR 11, note) in a module store, not component state; PR 10's S5 "Sign in again" calls `session.expire()` (Entry 130).
 - [ ] Contract: `api_design.md` §5 does not list the Status, Limits, History, Stats, Session and Note responses (the web types follow §4 and `api/schemas.py`) (Entry 130).

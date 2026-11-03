@@ -67,6 +67,9 @@
   font-size: var(--fs-sm);
 }
 
+/* HANDOFF line 86: every target ≥ 44 × 44 px at ≤ 640 px; HANDOFF wins over the prototype's 36 px toggle,
+   which stays above 640 px. */
 @media (max-width: 640px) {
   .signin-card { padding: var(--sp-5) var(--sp-4); }
+  .pw button { top: 0; right: 0; height: var(--target); min-width: var(--target); }
 }
