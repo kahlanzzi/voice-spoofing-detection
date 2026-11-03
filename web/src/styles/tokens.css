@@ -1,12 +1,14 @@
 /* Design tokens (Stage 18 PR 1b). The only file with raw values (HANDOFF.md line 93).
-   Sources: H = docs/design/HANDOFF.md §4 (lines 100-114, 120-126), copied exactly.
+   Sources: H = docs/design/HANDOFF.md §4 (lines 100-114, 120-126), copied exactly; 4 values
+   changed for WCAG 1.4.11 (non-text 3:1), Entry 131, are marked where they are set.
    P = docs/design/analyst-console-prototype.html (lines 14-69), for tokens HANDOFF names without a
    value ("see prototype", line 113; --elev-*, --r-pill, lines 123-124) or does not list. Each P token
    is cited at its first (light) definition; the dark values are prototype lines 42-68.
    Theme selectors match web/src/theme.ts and P lines 42, 55, 69. */
 :root {
   /* Neutral surfaces and text: H 100-104 */
-  --bg: #F2F4F8; --surface: #FFFFFF; --surface-2: #F7F9FC; --line: #DAE0E8; --line-strong: #B4BFCC;
+  --bg: #F2F4F8; --surface: #FFFFFF; --surface-2: #F7F9FC; --line: #DAE0E8;
+  --line-strong: #7C8FA6; /* H 103 #B4BFCC; changed for WCAG 1.4.11, Entry 131 */
   --ink: #132033; --ink-2: #364457; --muted: #576476;
   /* Navigation rail: H 109 */
   --nav: #13233A; --nav-2: #1C3050; --nav-ink: #E2E9F2; --nav-indicator: #8FB0FF;
@@ -20,12 +22,12 @@
   --accent-ink: #FFFFFF; /* P 21 */
   /* Verdicts: surface, text, mark: H 110-112 */
   --syn-bg: #FBE9E4; --syn-fg: #872A13; --syn-mark: #B23A1C;
-  --unc-bg: #FCF1D7; --unc-fg: #694200; --unc-mark: #D08A0C;
+  --unc-bg: #FCF1D7; --unc-fg: #694200; --unc-mark: #BF7E0B; /* H 111 #D08A0C; changed for WCAG 1.4.11, Entry 131 */
   --auth-bg: #E1F0F5; --auth-fg: #0A4C62; --auth-mark: #0A7FA3;
   /* System states, Ready / Degraded / Unavailable (H 113 "see prototype"): P 28.
      --warn-* keep the prototype's literal values; they are not aliases of --unc-*. */
   --ok-bg: #E3F2E8; --ok-fg: #1D6A3D; --ok-mark: #2E9A58; /* P 28 */
-  --warn-bg: #FCF1D7; --warn-fg: #694200; --warn-mark: #D08A0C; /* P 28 */
+  --warn-bg: #FCF1D7; --warn-fg: #694200; --warn-mark: #BF7E0B; /* P 28 #D08A0C; changed for WCAG 1.4.11, Entry 131 */
   --err-bg: #FBE8E8; --err-fg: #9A1C1C; --err-mark: #C9372C; /* P 28 */
   /* Prototype notice: H 114 */
   --demo-bg: #FFE6A6; --demo-fg: #3A2900;
@@ -59,7 +61,8 @@
 @media (max-width: 640px) { :root { --fs-input: 16px; } }
 
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #0D1522; --surface: #142033; --surface-2: #19283E; --line: #283A54; --line-strong: #3A5070;
+  --bg: #0D1522; --surface: #142033; --surface-2: #19283E; --line: #283A54;
+  --line-strong: #52729F; /* H 103 #3A5070; changed for WCAG 1.4.11, Entry 131 */
   --ink: #E5ECF5; --ink-2: #C3CEDC; --muted: #9AA9BC;
   --nav: #0A111C; --nav-2: #162741; --nav-ink: #E2E9F2; --nav-indicator: #8FB0FF;
   --nav-ink-strong: #FFFFFF; --nav-muted: #94A5BB; --nav-line: #22344F;
@@ -81,7 +84,8 @@
 
 /* Same values as the block above (tokens.test.ts checks they stay identical). */
 :root[data-theme="dark"] {
-  --bg: #0D1522; --surface: #142033; --surface-2: #19283E; --line: #283A54; --line-strong: #3A5070;
+  --bg: #0D1522; --surface: #142033; --surface-2: #19283E; --line: #283A54;
+  --line-strong: #52729F; /* H 103 #3A5070; changed for WCAG 1.4.11, Entry 131 */
   --ink: #E5ECF5; --ink-2: #C3CEDC; --muted: #9AA9BC;
   --nav: #0A111C; --nav-2: #162741; --nav-ink: #E2E9F2; --nav-indicator: #8FB0FF;
   --nav-ink-strong: #FFFFFF; --nav-muted: #94A5BB; --nav-line: #22344F;
