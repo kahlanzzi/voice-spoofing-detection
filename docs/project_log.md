@@ -4586,6 +4586,10 @@ change; only `web/e2e/`, the Playwright and ESLint configs, their guards and doc
   `ensureApiUp()` first, since its `api.admin` calls need the api.
 - `e2e/support/nginx-headers.ts`: the expected security headers are read from `deploy/nginx_security_headers.conf`;
   an `add_header` line it cannot read throws.
+- **Both restarts are proven** (user's revision after planted failure 3 stayed green): `stack.ts` `webStartedAt()` reads
+  the web container's `State.StartedAt` (`docker compose ps -q web`, then `docker inspect -f '{{.State.StartedAt}}'`);
+  the global setup and `locked.spec`'s `beforeAll` read it, call `restartWeb()`, read it again and assert the new time
+  is later. A missing restart now fails whatever the timing; the budget remains the check on the POSTs themselves.
 
 **Sign-in POST budget** (nginx 10/min, burst 5 → 6 at once per fresh zone; every POST to `location = /api/session`
 counts, whatever the API answers):
@@ -4644,14 +4648,20 @@ allowed). `tests/web/test_web_scaffold.py` unchanged (CI unchanged; exact pins a
    `Tests 3 failed | 229 passed (232)`.
 2. The control expecting `403` with the allowed Origin: 3 ✘ (`DELETE /api/session`, `POST /api/analyses`, `PUT …/note`,
    `Expected: 403`, `Received: 401`); `3 failed, 2 did not run, 26 passed`; exit 1.
-3. `beforeAll(restartWeb)` commented out in `locked.spec.ts`: **did not fail**: `31 passed (3.0m)`, `11 (planned 11),
-   429: 1 (planned 1)`, exit 0 (see the zero-margin finding). The rule itself is proven by the unit tests (`2 sign-in
-   POST(s) answered 429, more than the planned 1`).
+3. The second restart removed from `locked.spec.ts`:
+   - First attempt (`beforeAll(restartWeb)` commented out, before the start-time check): **did not fail**: `31 passed
+     (3.0m)`, `11 (planned 11), 429: 1 (planned 1)`, exit 0 (see the zero-margin finding). The budget rule itself is
+     proven by the unit tests (`2 sign-in POST(s) answered 429, more than the planned 1`).
+   - Second attempt (with the start-time check; only `await restartWeb()` commented out in the `beforeAll`): `✘ 30
+     [chromium-last] › e2e/locked.spec.ts:21:1 › 5 wrong passwords → …`, `Error: the web container restarted before the
+     lockout`, `expect(received).toBeGreaterThan(expected)`, `Expected: > 1793707829873`, `Received:   1793707829873`;
+     `1 failed, 30 passed (6.0m)`; `sign-in POSTs through nginx: 5 (planned 11), 429: 0 (planned 1)`; exit 1.
 Restored (web image rebuilt after 1): all green.
 
 **Size (lines added / removed):** harness and config (`web/e2e/support`, `run.ts`, teardown, `playwright.config.ts`,
 `eslint.config.js`, `package.json`) +147 / −24; specs +184 / −4; guards +102 / −22; CI 0; docs +136 / −9; lockfile +27.
-Total added without the lockfile 569, with it 596 (plan ≈ 520 / 545: denser guards and a longer entry).
+Total added without the lockfile 569, with it 596 (plan ≈ 520 / 545: denser guards and a longer entry); the restart
+check then added 29 lines of harness and spec and 21 of this entry.
 
 **Evidence [verified]:**
 - Baseline: `node --version` `v26.13.0`; `git log --oneline -1 origin/main` `880ec2b Merge pull request #96 …`.
@@ -4668,6 +4678,12 @@ Total added without the lockfile 569, with it 596 (plan ≈ 520 / 545: denser gu
   key; `docker compose -p vsd-ci up -d --build --wait --wait-timeout 240`; `npm ci`; `npx playwright install chromium`;
   `npm run test:e2e` → `31 passed (2.9m)`, `11 (planned 11), 429: 1 (planned 1)`, scan clean, exit 0; `down -v`; default
   stack started again. The GitHub job itself is not run (no push).
+- After the start-time check (one run, Chromium): `npm run test:e2e` → `31 passed (4.5m)`, `sign-in POSTs through
+  nginx: 11 (planned 11), 429: 1 (planned 1)`, `secret scan: 0 matches in 2 files`, exit 0. Run times on this machine
+  vary (2.6–6.0 min for the same 31 tests; `access denied` 10–23 s), so they are not compared between runs.
+- The outage spec waits on the 503 response itself (`page.waitForResponse` for GET /api/session, then status 503 and
+  code `analysis_unavailable`); `playwright.config.ts` sets no timeout, and `e2e/**` bans `setTimeout`,
+  `setInterval` and `waitForTimeout` by lint.
 - No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
 
 **AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
@@ -4960,6 +4976,7 @@ the checks. The plan was approved before the build; the open questions were take
 - [x] PR 5a: e2e harness and sign-in flows (merged in PR #96, `880ec2b`; Entry 135).
 - [ ] PR 5b: axe (light/dark, HANDOFF l.297 tags) on S1 variants and stubs, HTTP/Origin matrix, security headers and JSON 404, lockout with a second `restart web`, outage + Retry (on `chore/stage18-e2e-axe`, awaiting review; Entry 136).
 - [ ] Add `e2e` as a required check on `main` after 5 green PR runs in a row (Iheb; Entry 135).
+- [ ] nginx takes ~5 s to return 503 when the api is stopped (connect timeout); consider a lower proxy_connect_timeout in a deploy/ fix PR (Entry 136).
 - [ ] PR 8: extract `Button`, `TextField` and `Banner` (HANDOFF line 133) from S1 into `web/src/components/` (deferred on purpose in PR 4; Entry 134).
 - [ ] PR 12: translate HANDOFF `?v=a,b` to repeated `verdict=` (Part E decision recorded in Entry 133).
 - [ ] A23: keep the `File` (PR 8, upload) and the note draft (PR 11, note) in a module store, not component state; PR 10's S5 "Sign in again" calls `session.expire()` (Entry 130).

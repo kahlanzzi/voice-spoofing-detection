@@ -6,12 +6,17 @@ import { expectNoAxeViolations } from './support/axe.ts'
 import { expect, test } from './support/fixtures.ts'
 import { ACCOUNTS, typeSecret } from './support/secret-guard.ts'
 import { COPY, signInForm, signInResponse } from './support/signin.ts'
-import { mustAdmin, restartWeb } from './support/stack.ts'
+import { mustAdmin, restartWeb, webStartedAt } from './support/stack.ts'
 
 // lockout_threshold in configs/api.yaml.
 const THRESHOLD = 5
 
-test.beforeAll(restartWeb)
+// Segment B needs its own zone; the start time proves the restart happened, whatever the timing.
+test.beforeAll(async () => {
+  const before = await webStartedAt()
+  await restartWeb()
+  expect(await webStartedAt(), 'the web container restarted before the lockout').toBeGreaterThan(before)
+})
 
 test('5 wrong passwords → invalid; the right one next → locked, no countdown, focus on the h1', async ({ page }) => {
   try {

@@ -17,8 +17,12 @@ export interface Result {
 }
 
 export function compose(args: string[], stdin = ''): Promise<Result> {
+  return docker(['compose', ...args], stdin)
+}
+
+function docker(args: string[], stdin = ''): Promise<Result> {
   return new Promise((done, fail) => {
-    const child = spawn('docker', ['compose', ...args], { cwd: REPO_ROOT, stdio: ['pipe', 'pipe', 'pipe'] })
+    const child = spawn('docker', args, { cwd: REPO_ROOT, stdio: ['pipe', 'pipe', 'pipe'] })
     let stdout = ''
     let stderr = ''
     child.stdout.on('data', (chunk: Buffer) => (stdout += chunk.toString()))
@@ -81,6 +85,19 @@ async function healthStatus(): Promise<number> {
 /** Wait until GET /api/health answers 200 through nginx (Playwright's polling, no fixed sleep). */
 export async function waitHealthy(): Promise<void> {
   await expect.poll(healthStatus, { message: `GET ${BASE_URL}/api/health through nginx`, timeout: 60_000 }).toBe(200)
+}
+
+/**
+ * When the web container last started (`docker inspect` State.StartedAt, in ms). A spec reads it before and after
+ * restartWeb() to prove the restart happened: the sign-in budget alone cannot, nginx's limit may drain in time.
+ */
+export async function webStartedAt(): Promise<number> {
+  const id = (await mustCompose(['ps', '-q', 'web'])).stdout.trim()
+  if (!/^[0-9a-f]{12,64}$/.test(id)) throw new Error(`docker compose ps -q web gave no single container id: ${JSON.stringify(id)}`)
+  const result = await docker(['inspect', '-f', '{{.State.StartedAt}}', id])
+  const startedAt = Date.parse(result.stdout.trim())
+  if (result.code !== 0 || Number.isNaN(startedAt)) throw new Error(`docker inspect ${id} exited ${result.code}: ${result.stderr.trim()}`)
+  return startedAt
 }
 
 /** Restart nginx: a new process gets a new shared-memory zone, so the sign-in rate limit starts empty. */
