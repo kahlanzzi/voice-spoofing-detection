@@ -1,6 +1,6 @@
-/// <reference types="vitest/config" />
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
+import { configDefaults } from 'vitest/config'
 
 // Dev loop (A12): the dev server forwards /api to nginx on 8001 and presents the Origin the API
 // allows (configs/api.yaml allowed_origins), so api.yaml stays unchanged. Dev server only:
@@ -27,6 +27,8 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    // e2e/ belongs to Playwright (playwright.config.ts), never to Vitest.
+    exclude: [...configDefaults.exclude, 'e2e/**'],
     // Process CSS in tests: without it Vitest returns '' for CSS, `?raw` included, and the token and
     // colour tests would read empty files.
     css: true,

@@ -59,4 +59,35 @@ export default tseslint.config(
       ],
     },
   },
+  // End-to-end tests (Stage 18 PR 5a) run in Node. No fixed waits: Playwright's auto-wait and expect polling only.
+  // The password and cookie values never go to fill/type/pressSequentially/insertText (Playwright prints typed text
+  // in step titles, kept in the JSON report) nor to expect (a failure prints what it was given): typeSecret() types
+  // the password, assertions take booleans. rules-of-hooks is off: fixtures call Playwright's use(), which the
+  // plugin mistakes for React's `use`; this is not React code.
+  {
+    files: ['e2e/**', 'playwright.config.ts'],
+    languageOptions: { globals: globals.node },
+    rules: {
+      'react-hooks/rules-of-hooks': 'off',
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Identifier[name=/^(setTimeout|setInterval)$/]',
+          message: 'No fixed waits in e2e: use auto-wait or expect polling.',
+        },
+        {
+          selector: 'MemberExpression[property.name="waitForTimeout"]',
+          message: 'No fixed waits in e2e: use auto-wait or expect polling.',
+        },
+        ...['fill', 'type', 'pressSequentially', 'insertText'].flatMap((method) => [
+          `CallExpression[callee.property.name="${method}"] > CallExpression.arguments[callee.name="accountPassword"]`,
+          `CallExpression[callee.property.name="${method}"] > Identifier.arguments[name=/^(password|cookie)/i]`,
+        ]).map((selector) => ({ selector, message: 'Never type a secret with Playwright input APIs: use typeSecret().' })),
+        ...[
+          'CallExpression[callee.name="expect"] > CallExpression.arguments[callee.name="accountPassword"]',
+          'CallExpression[callee.name="expect"] > Identifier.arguments[name=/^(password|cookie)/i]',
+        ].map((selector) => ({ selector, message: 'Never pass a secret to expect: assert a boolean.' })),
+      ],
+    },
+  },
 )
