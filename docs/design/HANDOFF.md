@@ -100,7 +100,7 @@ Names below are the CSS custom properties in the prototype; keep them in `web/sr
 | `--bg` | page background | `#F2F4F8` | `#0D1522` |
 | `--surface` | panels, cards | `#FFFFFF` | `#142033` |
 | `--surface-2` | subtle fill, table header | `#F7F9FC` | `#19283E` |
-| `--line` / `--line-strong` | borders / inputs, axes | `#DAE0E8` / `#B4BFCC` | `#283A54` / `#3A5070` |
+| `--line` / `--line-strong` | borders / inputs, axes | `#DAE0E8` / `#7C8FA6` | `#283A54` / `#52729F` |
 | `--ink` / `--ink-2` / `--muted` | text levels | `#132033` / `#364457` / `#576476` | `#E5ECF5` / `#C3CEDC` / `#9AA9BC` |
 | `--accent` / `-hover` / `-active` | primary action | `#1F49B6` / `#193C97` / `#132E75` | `#3460D6` / `#2A50BE` / `#21409A` |
 | `--accent-soft` | selected, info fill | `#E7EDFB` | `#1A2B4D` |
@@ -108,10 +108,12 @@ Names below are the CSS custom properties in the prototype; keep them in `web/sr
 | `--danger` / `--danger-soft` | destructive action | `#A8231A` / `#FBEAE8` | `#F2958B` / `#3A1714` |
 | `--nav`, `--nav-2`, `--nav-ink`, `--nav-indicator` | rail | `#13233A`, `#1C3050`, `#E2E9F2`, `#8FB0FF` | `#0A111C`, `#162741`, `#E2E9F2`, `#8FB0FF` |
 | `--syn-bg` / `--syn-fg` / `--syn-mark` | Likely synthetic | `#FBE9E4` / `#872A13` / `#B23A1C` | `#3A1A12` / `#F5BBA8` / `#E0674A` |
-| `--unc-bg` / `--unc-fg` / `--unc-mark` | Cannot decide | `#FCF1D7` / `#694200` / `#D08A0C` | `#382A0D` / `#F3D08A` / `#E3A32C` |
+| `--unc-bg` / `--unc-fg` / `--unc-mark` | Cannot decide | `#FCF1D7` / `#694200` / `#BF7E0B` | `#382A0D` / `#F3D08A` / `#E3A32C` |
 | `--auth-bg` / `--auth-fg` / `--auth-mark` | Likely authentic | `#E1F0F5` / `#0A4C62` / `#0A7FA3` | `#0F2D39` / `#98D5EA` / `#3BAFD3` |
-| `--ok-*`, `--warn-*`, `--err-*` | Ready / Degraded / Unavailable | see prototype | see prototype |
+| `--ok-*`, `--warn-*`, `--err-*` | Ready / Degraded / Unavailable | see prototype; `--warn-mark` `#BF7E0B` | see prototype |
 | `--demo-bg` / `--demo-fg` | prototype notice | `#FFE6A6` / `#3A2900` | `#4A3A0B` / `#FFE7A8` |
+
+Changed 2026-11-03 (project log Entry 131): light and dark `--line-strong` and light `--unc-mark` / `--warn-mark` were below WCAG 1.4.11's 3:1 for non-text contrast. Their lightness was changed and the hue kept. The prototype HTML keeps the old values; this table and `tokens.css` win.
 
 ### Type, space, shape
 
