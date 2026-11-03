@@ -120,7 +120,8 @@ docker compose down                   # keeps the store; down -v deletes it
   fail if a larger `max_size_bytes` no longer fits. More at once fail until concurrency is limited
   (Open items).
 - **Admin:** `docker compose exec` gives a TTY, so the hidden password prompt works; it uses the same
-  config, key and volume as the API.
+  config, key and volume as the API. Scripts use `docker compose exec -T` and pipe the password twice on
+  stdin (getpass falls back to stdin without a TTY and does not echo it); never put it in an argument.
 - The root filesystem is read-only, all capabilities are dropped, and FastAPI's `/docs` is reachable
   only inside the container.
 
@@ -216,6 +217,44 @@ The audit notebook refuses to run on unpinned or changed data. Pins change only 
 decision (D21). DEEP-VOICE: only the accesses listed in D20 before the single guarded external run;
 `tests/governance/test_deepvoice_access.py` fails CI if its paths appear elsewhere. Datasets are
 never committed or redistributed (D25).
+
+## End-to-end tests (Stage 18)
+
+Playwright drives a real browser against the **real stack**: nginx on http://localhost:8001 in front of the
+API (the Compose setup above). Never the Vite dev server: its proxy rewrites `Origin` (A12), so it would hide
+exactly the Origin and cookie bugs these tests exist to catch. Chromium runs in CI; Firefox is a local run.
+
+```bash
+docker compose up -d                       # the stack, with VSD_SIGNIN_HMAC_KEY in .env
+cd web
+npx playwright install chromium firefox    # once; Linux system libraries: sudo npx playwright install-deps
+npm run test:e2e                           # Chromium
+npm run test:e2e:firefox                   # Firefox
+```
+
+- **Always through the scripts** (`web/e2e/run.ts`); a plain `npx playwright test` refuses to start. One
+  browser per run.
+- **What a run does to the stack:** it restarts the `web` container (nginx's sign-in rate limit starts empty),
+  then creates or resets the accounts `e2e-main`, `e2e-invalid` and `e2e-denied` (`api.admin` through
+  `docker compose exec -T`, password on stdin). At the end it disables them, which ends their sessions.
+  `analyst01` and other accounts are never touched.
+- **Password:** made for the run (48 hex characters, which always pass the §4.8 rules) and held only in the
+  environment of the Playwright process. Set `VSD_E2E_PASSWORD` yourself to use your own (e.g. to grep for it
+  afterwards). It is never printed or written: Playwright puts typed text in its step titles, so the tests
+  type it through `typeSecret()`, and assertions on it are booleans.
+- **Sign-in rate limit:** nginx allows 6 sign-in POSTs at once from a fresh limit. A run makes 3. Afterwards
+  `run.ts` counts them in nginx's log: a passing run must show exactly 3 (0 means the check read nothing) and a
+  failed run at most 3; any 429 fails the run.
+- **Outputs:** no trace, video or screenshot; the `list` reporter and a JSON report at
+  `web/playwright-report/results.json` (plain text). `web/test-results/` and `web/playwright-report/` are
+  gitignored and kept out of the web image's build context. The signed-in storage state lives in a private
+  temp folder outside the repo and is deleted at the end of the run.
+- **Secret scan:** after each run, every output file is scanned for the password, the saved cookie value
+  and any `vsd_session=<id>`; Playwright's console output is redacted line by line. A hit fails the run
+  with exit code 3 and names the file, never the value.
+- **CI** (`e2e` job): a per-run key from `openssl rand -hex 32` (masked), `docker compose up --wait`,
+  Chromium only, `npm run test:e2e`. The JSON report is uploaded only when the job fails and the scan is
+  clean; `docker compose down -v` always runs.
 
 ## Tests and CI
 

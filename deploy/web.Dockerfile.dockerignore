@@ -7,6 +7,9 @@
 !deploy/nginx_security_headers.conf
 web/node_modules
 web/dist
+# e2e outputs (Stage 18 PR 5a): never in an image, even after a failed secret scan.
+web/test-results
+web/playwright-report
 **/*.tsbuildinfo
 # Listed for readers; already excluded by the first line.
 **/.env

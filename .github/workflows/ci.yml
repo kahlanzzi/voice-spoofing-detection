@@ -74,3 +74,60 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  # End-to-end tests on the real stack (Stage 18 PR 5a; docs/setup.md "End-to-end tests"): docker compose with nginx
+  # on 8001, Chromium only (Firefox is a local run). The HMAC key is made for this run and masked; it is no repo
+  # secret and is never committed. e2e/run.ts seeds the e2e accounts, runs Playwright and scans the outputs for the
+  # password and the session cookie; the JSON report is uploaded only on failure and only if that scan is clean.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: web/.nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web deps (lockfile only)
+        working-directory: web
+        run: npm ci
+
+      - name: Make a per-run sign-in key
+        run: |
+          k=$(openssl rand -hex 32)
+          echo "::add-mask::$k"
+          echo "VSD_SIGNIN_HMAC_KEY=$k" >> "$GITHUB_ENV"
+
+      - name: Start the stack
+        run: docker compose up -d --build --wait --wait-timeout 240
+
+      # Not cached: --with-deps installs OS packages, and restoring the browser takes about as long as downloading it.
+      - name: Install Chromium
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-end tests (Chromium)
+        id: e2e
+        working-directory: web
+        run: npm run test:e2e
+
+      - name: Upload the JSON report (failure, clean scan only)
+        if: failure() && steps.e2e.outputs.scan == 'clean'
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: web/playwright-report/results.json
+          retention-days: 7
+
+      - name: Stack logs (no passwords, cookies or IPs, docs/api_design.md §4.8)
+        if: failure()
+        run: docker compose logs api web
+
+      - name: Stop the stack
+        if: always()
+        run: docker compose down -v
