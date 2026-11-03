@@ -240,14 +240,14 @@ npm run test:e2e:firefox                   # Firefox
   `analyst01` and other accounts are never touched.
 - **Projects, per browser:** `<browser>-setup` (sign in, save the session) → `<browser>` (sign-in flows, stub
   pages, the shell and its page-change rules, the HTTP/Origin matrix, security headers, the JSON 404, sign-out as
-  `e2e-signout` in its own context, the theme control, the rail status line and its one `GET /api/status`) → `<browser>-last`, ordered by dependencies. The
+  `e2e-signout` in its own context, the theme control, the rail status line and its one `GET /api/status`, S10 with Check now) → `<browser>-last`, ordered by dependencies. The
   last project restarts `web` a second time and locks `e2e-locked` through the form (unlocked at the end), then
-  **stops the `api` container** and starts it again, twice (outage and Retry; a sign-out that gets nginx's 503 and
-  keeps `e2e-main` signed in). If a run is interrupted, the global
+  **stops the `api` container** and starts it again, three times (outage and Retry; a sign-out that gets nginx's 503 and
+  keeps `e2e-main` signed in; S10 Check now → Unavailable with "Last attempt", then Ready). If a run is interrupted, the global
   teardown starts `api` again; otherwise run `docker compose start api`. If an earlier project fails, the last
   one does not run.
 - **Accessibility:** axe-core (`@axe-core/playwright`) scans every S1 state the suite reaches, the stub pages
-  inside the shell, the shell at 390 px with the drawer closed and open, the rail footer and S1 after sign-out, the rail status line (wide and in the 390 px drawer), in light and dark, with the WCAG 2.0/2.1/2.2 A and AA tags (HANDOFF section 13); 0 violations expected. A
+  inside the shell, the shell at 390 px with the drawer closed and open, the rail footer and S1 after sign-out, the rail status line (wide and in the 390 px drawer), S10 Ready (details closed and open) and S10 Unavailable with the api stopped, in light and dark, with the WCAG 2.0/2.1/2.2 A and AA tags (HANDOFF section 13); 0 violations expected. A
   failure lists only rule, impact and selector, never the page's HTML. No rule is disabled; an exclusion is one
   exact rule and selector with its reason, in the spec and the project log.
 - **Password:** made for the run (48 hex characters, which always pass the §4.8 rules) and held only in the
