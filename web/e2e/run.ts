@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { createInterface } from 'node:readline'
 import { isBrowser, playwrightArgs } from './support/args.ts'
-import { budgetProblem, countLoggedSignIns, PLANNED_SIGN_IN_POSTS, webLogSince } from './support/budget.ts'
+import { budgetProblem, countLoggedSignIns, PLAN, webLogSince } from './support/budget.ts'
 import {
   newPassword, PASSWORD_ENV, passwordProblem, scanOutputs, secretKind, STATE_DIR_ENV, stateCookieValues,
 } from './support/secret-guard.ts'
@@ -79,11 +79,11 @@ try {
   code = await new Promise<number | null>((done) => child.on('close', done))
   await relayed
 
-  // The sign-in budget: exactly the planned POSTs on a green run, at most that on a failed one, never a 429.
+  // The sign-in budget: exactly the planned POSTs and 429s on a green run, at most that on a failed one.
   let budget: string | null
   try {
     const count = countLoggedSignIns(await webLogSince(startedAt))
-    console.log(`sign-in POSTs through nginx: ${count.posts} (planned ${PLANNED_SIGN_IN_POSTS}), 429: ${count.limited}`)
+    console.log(`sign-in POSTs through nginx: ${count.posts} (planned ${PLAN.posts}), 429: ${count.limited} (planned ${PLAN.limited})`)
     budget = budgetProblem(count, code === 0)
   } catch (error) {
     budget = `nginx's log could not be read: ${(error as Error).message}`

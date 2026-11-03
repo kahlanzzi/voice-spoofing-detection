@@ -88,3 +88,15 @@ export async function restartWeb(): Promise<void> {
   await mustCompose(['restart', 'web'])
   await waitHealthy()
 }
+
+/** Stop the api container (outage.spec); nginx then answers 503 analysis_unavailable for /api/. */
+export async function stopApi(): Promise<void> {
+  await mustCompose(['stop', 'api'])
+}
+
+/** Start the api container if it is not healthy, and wait until it answers through nginx. Teardown runs it first. */
+export async function ensureApiUp(): Promise<void> {
+  if (await apiHealthy()) return
+  await mustCompose(['start', 'api'])
+  await waitHealthy()
+}

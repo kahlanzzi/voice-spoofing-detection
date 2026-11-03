@@ -8,6 +8,8 @@ export const SIGNIN_WITH_NEXT = '/signin?next=%2Fhistory%3Fverdict%3Da%26verdict
 export const COPY = {
   invalid: 'The analyst ID or password is not correct. Check both and try again.',
   denied: 'This account does not have access to the analyst console. Ask your administrator for access.',
+  locked: 'This account is temporarily locked. Try again later, or ask your administrator.',
+  unavailable: 'Sign-in is temporarily unavailable. Try again in a few minutes.',
 } as const
 
 export function signInForm(page: Page) {
@@ -17,6 +19,7 @@ export function signInForm(page: Page) {
     password: page.locator('#si-pass'),
     submit: page.getByRole('button', { name: 'Sign in', exact: true }),
     alert: page.getByRole('alert'),
+    retry: page.getByRole('button', { name: 'Retry' }),
   }
 }
 

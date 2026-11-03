@@ -1,11 +1,18 @@
-// nginx's sign-in rate limit (deploy/nginx.conf: 10/min, burst 5, nodelay) allows 6 POSTs at once from a fresh zone.
-// A run makes PLANNED_SIGN_IN_POSTS; run.ts reads nginx's access log after the run and checks them. Node only (no
-// Playwright import), so run.ts can use it.
+// nginx's sign-in rate limit (deploy/nginx.conf: 10/min, burst 5, nodelay) allows 6 POSTs at once from a fresh zone,
+// and counts every POST to /api/session, whatever the API answers. A run has two segments, each opened by a
+// `restart web` (a fresh zone), each at most ZONE_CAPACITY. run.ts reads nginx's access log after the run and checks
+// the totals. Node only (no Playwright import), so run.ts can use it.
 import { spawn } from 'node:child_process'
 import { resolve } from 'node:path'
 
-// signin.setup (1), signin-errors invalid (1) and denied (1); docs/setup.md "End-to-end tests".
-export const PLANNED_SIGN_IN_POSTS = 3
+export const ZONE_CAPACITY = 6
+
+// docs/setup.md "End-to-end tests". A (global setup's restart): signin.setup 1, signin-errors invalid 1 and denied 1,
+// http.spec without Origin 1 and with a foreign one 1. B (locked.spec's restart): 5 wrong passwords and the right one.
+export const SEGMENTS = { A: 5, B: 6 } as const
+
+// The one planned 429 is the API's account_locked (locked.spec checks its code; nginx's own 429 would be a second).
+export const PLAN = { posts: SEGMENTS.A + SEGMENTS.B, limited: 1 } as const
 
 const SIGN_IN_POST = /"POST \/api\/session" (\d{3}) /
 
@@ -21,14 +28,15 @@ export function countLoggedSignIns(lines: string[]): SignInCount {
 }
 
 /**
- * Why the count breaks the budget, or null. A green run must show exactly the planned POSTs: fewer (0 included)
- * means the check is not reading the log. A failed run may have stopped early, so it may show fewer, never more.
- * Any 429 means nginx limited the suite.
+ * Why the count breaks the budget, or null. A green run must show exactly the planned POSTs and 429s: fewer POSTs
+ * (0 included) means the check is not reading the log. A failed run may have stopped early, so it may show fewer,
+ * never more. A 429 beyond the planned one means nginx limited the suite.
  */
-export function budgetProblem(count: SignInCount, green: boolean, planned = PLANNED_SIGN_IN_POSTS): string | null {
-  if (count.limited > 0) return `${count.limited} sign-in POST(s) answered 429`
-  if (green && count.posts !== planned) return `a green run must show ${planned} sign-in POSTs, nginx's log shows ${count.posts}`
-  if (count.posts > planned) return `${count.posts} sign-in POSTs, more than the planned ${planned}`
+export function budgetProblem(count: SignInCount, green: boolean, plan: SignInCount = PLAN): string | null {
+  if (count.limited > plan.limited) return `${count.limited} sign-in POST(s) answered 429, more than the planned ${plan.limited}`
+  if (count.posts > plan.posts) return `${count.posts} sign-in POSTs, more than the planned ${plan.posts}`
+  if (green && count.posts !== plan.posts) return `a green run must show ${plan.posts} sign-in POSTs, nginx's log shows ${count.posts}`
+  if (green && count.limited !== plan.limited) return `a green run must show ${plan.limited} × 429, nginx's log shows ${count.limited}`
   return null
 }
 
