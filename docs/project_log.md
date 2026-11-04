@@ -5266,6 +5266,81 @@ ran the checks. The team reviews the diff. Context7 was tried and failed (invali
 
 ---
 
+### Entry 145 — Stage 18 PR A: limits store, S2, S3 and the duration read (2026-11-04)
+
+**What:** on `feat/stage18-upload` (Iheb, Part E; from `main` at `898b7c6`, not stacked). 8c-1, 8c-2 and 8d merged into this
+one PR for the MVP (deadline 2026-11-07 23:59). The team agreed on the mock analyzer. `/analyze` is real up to the point of
+sending: Analyze recording stays disabled until PR B. No `api/` or `configs/` change; no new dependency. Design sources:
+HANDOFF (H) and `analyst-console-prototype.html` (P) only.
+- **MVP process exception, proposed to Donia.** Kept: required CI checks, pytest and Vitest green, token grep, Donia's review,
+  log entry and CHANGELOG per PR, quick live check. Changed: ~330-line limit lifted, one plan-review round, local Firefox e2e
+  once before the demo, no CI dry runs or computed-style comparisons.
+- `web/src/upload/limits.ts` (`status.ts` pattern). Q20: one GET per signed-in session of the shell. StrictMode's double mount,
+  navigation and a remount add none; sign-out or expiry then sign-in sends one more; failed waits for Retry. Pinned on the real
+  stores in `Shell.limits.test.tsx`, because `Shell.test.tsx`'s session stand-in never changes.
+- S2: page head, notice, limits loading / ready / failed, privacy text, one hidden input, Choose recording. S3: file card,
+  checks, Input error alert, Choose another file, Remove file. `.tag`, `.page-head`, `.panel` moved to `styles/page.css` (Q25).
+- **CSP change to A13: `media-src 'self' blob:`, approved by Donia, 2026-11-04, before build.** Her PR review confirms it against
+  the diff (own commit). `default-src 'self'` does not cover `blob:`, so the read failed and every file read as "Duration could
+  not be read", quietly, since unreadable counts as valid. It covers audio and video elements only, adds no network origin,
+  and leaves scripts at `'self'`. The value lives only in `deploy/nginx_security_headers.conf`, which all 10 nginx locations
+  include; `index.html` and Vite set no CSP. Probe on the live stack with P's read [verified]:
+
+  | Browser | CSP | Valid 1 s WAV | Garbage bytes |
+  |---|---|---|---|
+  | Chromium | live header | `error` code 4, 6 ms, CSP message | `error` |
+  | Chromium | + `media-src 'self' blob:` | `loadedmetadata`, duration 1, 149 ms | `error`, 18 ms |
+  | Firefox | live header | `error` code 4, 6 ms, CSP message | `error` |
+  | Firefox | + `media-src 'self' blob:` | `loadedmetadata`, duration 1, 8 ms | `error`, 3 ms |
+
+- Plan decisions (user, 2026-11-04): Q6a static Mock tag, tied to open decision 2. **Q7 accepted:** picking a file between 8c and
+  8d shows nothing, rather than keeping Choose recording disabled until 8d. Q8 deferred to after the MVP. Q9 one 3 s fallback timer
+  (P l.1294) behind a single `eslint-disable-next-line`: it is one-shot, not polling, and a false `unreadable` is safe because the
+  service re-checks, while no timer could leave Analyze disabled for good. Q20 above. Q21 Check now does not reload the limits and
+  S10 has no limits Retry. Q22 `role="alert"` only. Q23 no Demo scenarios panel. Q25 above.
+- P departures: the S2 h2 "Choose the recorded segment" and line "Browse for it on your computer." replace "Drop the recorded
+  segment here", since drag-and-drop is out (copy proposal); the announcement waits for the read, because P l.1281 fires first
+  and says "Some checks did not pass" for a good file; Retry moves focus to the heading. Declared visual change: S10's Mock tag
+  takes P's 1 px transparent border, +2 px.
+- **Known gap (Q8):** with failed limits, S2 says analysis is off while the rail and S10 still say Ready.
+- **Flaky test:** `SignIn.test.tsx:384`, the known flake, had its expected count changed 3 → 4, because the shell now also sends
+  `GET /api/limits`. The race itself is unchanged and the Open item stays.
+
+**Size:** added lines (`git diff --numstat`, comments included): code +651 / −35 (estimate ≈ 563); tests +1031 / −6 (estimate ≈ 941).
+Over the estimate, and the ~330-line limit is lifted (exception above). Docs as in this commit.
+
+**Tests [verified]:**
+- `npm run typecheck` → exit 0. `npm run lint` → exit 0. `npm run build` → exit 0. Vitest: `Test Files 35 passed (35)`, `Tests 1107
+  passed (1107)` (was 1003; +104). `.venv/bin/pytest -q` → `1278 passed, 9 skipped`.
+- Two Vitest tests stop short of the real thing, both accepted by the user, who checks them in the live check: the focus test uses
+  `fireEvent`, because `userEvent.upload` refocuses the input after its stand-in dialog, so a real picker closing is not covered;
+  "sign-out clears S3" runs on a session stand-in.
+- Planted failures (agent-run, one at a time, restored; `src/upload`, `src/shell`, `Analyze.test.tsx`, 275 tests): no `inFlight` share
+  → 2 failed; loads from ready → 2; no generation check → 1; no session subscription → 7; 401 as failed → 1; upper-case formats → 1;
+  Shell without `loadLimits` → 3; no timer → 2; no URL revoke → 4; announcement ignores the wait → 1; Analyze enabled when valid → 1.
+  CSP line reverted → `tests/deploy` 2 failed.
+- Chain (user-run, at `93ce679`, tree clean, from the repo root, empty cache after `npm ci`): typecheck, lint, build clean; Vitest `Test
+  Files 35 passed (35)`, `Tests 1107 passed (1107)`, exit 0, no re-run needed; `npm audit --omit=dev`: 0 vulnerabilities; pytest `1278
+  passed, 9 skipped`; token grep 0.
+- Live CSP (user-run): `Content-Security-Policy: default-src 'self'; media-src 'self' blob:; base-uri 'self'; form-action 'self';
+  frame-ancestors 'none'; object-src 'none'`.
+- e2e Chromium (user-run): `59 passed (2.6m)`; `sign-in POSTs through nginx: 12 (planned 12), 429: 1 (planned 1)`; secret scan 0 matches.
+- CSP plant (user-run; conf reverted to `a187fbe^`, web image rebuilt): exit 1; exactly 2 failed, `analyze.spec.ts:93` (valid WAV) and `:105`
+  (61 s WAV), both receiving "Duration could not be read in the browser; the service will check it"; the other 5 analyze tests passed;
+  4 did not run; POSTs 6, 429 0, no `sign-in budget:` line (failed-run rule); secret scan 0 (4 files, failure artifacts included).
+  Restored: conf = HEAD, `git status` clean, web image `sha256:9fa3f610…` = the green run's image, so no re-run.
+- Agent build note: an earlier `--network=none` image build failed at `RUN npm ci` (`EAI_AGAIN`), so the agent ran no e2e.
+- Live check on :8001 (user-run): OK. The real picker closing and sign-out clearing S3 were left to this check.
+- Not done: a real screen-reader pass (Orca, PR 15). Firefox e2e: not run (MVP exception; once before the demo). No DEEP-VOICE path, audio or dataset touched;
+  no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the code, the tests and this entry, and ran the agent checks above. The
+plan was approved before the build. The user ran the final chain, the e2e, the CSP plant and the live check. The team reviews the diff. Context7 was not used.
+
+**Gate:** review of this PR by Donia, who confirms the CSP change against the diff. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
 
 ## Open items
 
@@ -5551,7 +5626,7 @@ ran the checks. The team reviews the diff. Context7 was tried and failed (invali
 - [x] PR 6: 6a merged #98; 6b merged #99, `fd034dd` (app shell, rail, drawer, page-change rules: Entry 137; rail footer, theme control, sign-out: Entry 138).
 - [ ] Review the sign-out failure copy "Sign-out did not complete. You are still signed in. Try again." (proposal; Entry 138).
 - [x] PR 7: 7a merged #100 (`f6324fb`; status store, rail line: Entry 139); 7b merged #101 (`13e7b84`; S10: Check now, its polite region, "Last checked" / "Last attempt", status outage e2e: Entry 140).
-- [ ] PR 7b copy proposals, for review: unavailable from the service naming the failing checks; the degraded fallback "Some parts of the service are not fully available."; the Connection item's "Unreachable" when nginx answers 503 (Entry 139). Built in 7b with: "This console cannot reach the analysis service." for Unreachable; a failing check "Unavailable" with "Stored results and Overview figures cannot be loaded right now. Analysis is not affected." for History; the degraded notice "<checks> is/are not fully available."; the open-decision line's second sentence; "Status checked: Ready for analysis, with a notice." (Entry 140). PR 8b copy proposal, for review: "Unsupported format: this file has no extension. Use WAV, FLAC, MP3." for a file with no extension (P has no text for it; Entry 143 Q11).
+- [ ] PR 7b copy proposals, for review: unavailable from the service naming the failing checks; the degraded fallback "Some parts of the service are not fully available."; the Connection item's "Unreachable" when nginx answers 503 (Entry 139). Built in 7b with: "This console cannot reach the analysis service." for Unreachable; a failing check "Unavailable" with "Stored results and Overview figures cannot be loaded right now. Analysis is not affected." for History; the degraded notice "<checks> is/are not fully available."; the open-decision line's second sentence; "Status checked: Ready for analysis, with a notice." (Entry 140). PR 8b copy proposal, for review: "Unsupported format: this file has no extension. Use WAV, FLAC, MP3." for a file with no extension (P has no text for it; Entry 143 Q11). PR A copy proposal, for review: S2 h2 "Choose the recorded segment" and line "Browse for it on your computer." (Entry 145).
 - [ ] S10 stale-status banner (H l.32, l.166; P l.1194) not built: an honest one needs a clock tick, which the no-polling decision and the timer lint ban rule out (Q4, Entry 139).
 - [ ] Review the rail status tokens `--nav-ok` / `--nav-warn` / `--nav-err` (P l.143's values, the same in both themes; Entry 139).
 - [ ] PR 8b/11 rule: an explicit sign-out clears the `File` and note-draft stores; expiry does not (prototype l.770, l.1494; Entry 137); a different username after expiry clears the `File` (Entry 141 Q4). File part built in 8b (Entry 143). Note-draft part and D1 before sign-out with an unsaved note are PR 11.
@@ -5559,8 +5634,14 @@ ran the checks. The team reviews the diff. Context7 was tried and failed (invali
 - [x] Add `e2e` as a required check on `main` after 5 green PR runs in a row (Iheb; Entry 135). (done 2026-11-03: required after 4 green runs (#96–#99), a deliberate change by Iheb from the planned 5; Entry 139)
 - [ ] nginx takes ~5 s to return 503 when the api is stopped (connect timeout); consider a lower proxy_connect_timeout in a deploy/ fix PR (Entry 136).
 - [x] PR 8: extract `Button`, `TextField` and `Banner` (HANDOFF line 133) from S1 into `web/src/components/` (deferred on purpose in PR 4; Entry 134). (8a merged in #102: Button, TextField, Banner, Spinner; S1, S10 and New analysis use them; Entry 141)
-- [ ] PR 8 split (Entry 141): 8b merged in #104 (`1470254`; Entry 143); 8c `/limits`, S2, Mock tag, S10 "Audio and stored data"; 8d S3. Q5-Q9 open.
-- [ ] `SignIn.test.tsx:384` fails on some empty-cache runs (`expected "vi.fn()" to be called 3 times, but got 2 times`; 2 of 7), the likely Q19 flake; proposed: a small `fix/` PR with `await waitFor(...)` around its fetch assertions. CI starts with an empty cache, so it can fail there (Entry 144).
+- [ ] PR 8 split (Entry 141): 8b merged in #104 (`1470254`; Entry 143); 8c and 8d built together in PR A on `feat/stage18-upload`, awaiting review (Entry 145). Q5 and Q8 stay open below; Q6, Q7, Q9 decided (Entry 145).
+- [ ] MVP exception: `SignIn.test.tsx:384` fails on some empty-cache runs (`expected "vi.fn()" to be called 3 times, but got 2 times`; 2 of 7; the expected count is now 4, Entry 145), the likely Q19 flake: re-run in CI during the MVP. Proposed after it: a small `fix/` PR with `await waitFor(...)` around its fetch assertions. CI starts with an empty cache, so it can fail there (Entry 144).
+- [ ] Q5: RailFoot's alert onto Banner (adds an icon) (Entry 141).
+- [ ] MVP exception: Q8 deferred to after the MVP: the S10 "Audio and stored data" panel vs `audio_deletion`, and failed limits in S10 and the rail. Until then S2 says analysis is off while the rail and S10 say Ready (Entry 145).
+- [ ] MVP exception: drag-and-drop on S2 deferred (H l.177, optional); the S2 heading says "Choose", not "Drop" (Entry 145).
+- [ ] MVP exception: Firefox e2e not run per PR; once before the demo (Entry 145).
+- [ ] The Mock tag on S2 is static until open decision 2 (Q6a, Entry 145).
+- [ ] PR B: P's analysis-unavailable warning on the file card (H l.163), not in PR A (Entry 145).
 - [ ] Button pressed state `.btn-secondary:active` (P l.112; `btn-danger:active` P l.118 with it), deferred from 8a to keep it zero-change (Entry 141 Q2).
 - [ ] PR 12: translate HANDOFF `?v=a,b` to repeated `verdict=` (Part E decision recorded in Entry 133).
 - [ ] A23: the `File` store is built (PR 8b, Entry 143); the note draft (PR 11) still goes in a module store, not component state; PR 10's S5 "Sign in again" calls `session.expire()` (Entry 130).
@@ -5616,7 +5697,7 @@ ran the checks. The team reviews the diff. Context7 was tried and failed (invali
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
 `GET /api/status`. `POST /api/analyses` with the
-MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) merged in PR #88 (`86cc77d`; Entry 127); PR 1b (design tokens, base styles, IBM Plex fonts, token and contrast tests) merged in PR #89 (`9a119d2`; Entry 128), its 4 non-text pairs below 3:1 fixed in PR #92 (`c8c047e`; Entry 131). PR 2 (the `web` image: the built app served by nginx on the A2 routes, `/` → `/analyze`, A13 security headers on every answer) merged in PR #90 (`d352bad`; Entry 129). PR 3 is split in three (Entry 130): PR 3a (API client, `ApiError`, API types, no-timer lint rule) merged in PR #91 (`b6f09d6`; Entry 130); 3b (session store, expiry handler, `checkSession` on load) merged in PR #93 (`ee5fd50`; Entry 132); 3c (`react-router` 8.5.1, the six app routes checked against `deploy/nginx.conf`, the session guard, the `next` check, stub pages) merged in PR #94 (`b06df7b`; Entry 133). PR 4 (S1 Sign in: the form, `POST /api/session`, every S1 variant, Retry) merged in PR #95 (`1d41512`; Entry 134); the other pages are stubs, and the only API calls are `GET /api/session` on load and S1's `POST /api/session`. PR 5a (Playwright e2e harness on the real stack via nginx, never Vite; Chromium in CI, Firefox locally; secret scan; sign-in flows) merged in PR #96 (`880ec2b`; Entry 135); 5b (axe in light and dark, Origin matrix, security headers, JSON 404, lockout, outage) merged in PR #97 (`3963f5e`; Entry 136). PR 6 is split: 6a (app shell, rail, drawer, page-change rules) merged in PR #98 (`a16d8ef`; Entry 137); 6b (rail footer: Analyst ID, theme control, sign-out without `next`; e2e sign-in POST budget 12, both segments full) merged in PR #99 (`fd034dd`; Entry 138). `checks`, `web` and `e2e` are required on `main` since 2026-11-03 (Iheb; Entry 139). PR 7 is split: 7a (status store, rail status line) merged in PR #100 (`f6324fb`; Entry 139); 7b (S10 System status with Check now) merged in PR #101 (`13e7b84`; Entry 140). PR 8 is split in four (Entry 141); 8a (shared Button, TextField, Banner and Spinner; the Check now cascade fix) merged in PR #102 (`b70dde4`; Entry 141); 8b (File draft store, pre-upload checks, New analysis reset) merged in PR #104 (`1470254`; Entry 143). The colour scan fix is on `fix/stage18-vitest-cache`, awaiting review (Entry 144). The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
+MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) merged in PR #88 (`86cc77d`; Entry 127); PR 1b (design tokens, base styles, IBM Plex fonts, token and contrast tests) merged in PR #89 (`9a119d2`; Entry 128), its 4 non-text pairs below 3:1 fixed in PR #92 (`c8c047e`; Entry 131). PR 2 (the `web` image: the built app served by nginx on the A2 routes, `/` → `/analyze`, A13 security headers on every answer) merged in PR #90 (`d352bad`; Entry 129). PR 3 is split in three (Entry 130): PR 3a (API client, `ApiError`, API types, no-timer lint rule) merged in PR #91 (`b6f09d6`; Entry 130); 3b (session store, expiry handler, `checkSession` on load) merged in PR #93 (`ee5fd50`; Entry 132); 3c (`react-router` 8.5.1, the six app routes checked against `deploy/nginx.conf`, the session guard, the `next` check, stub pages) merged in PR #94 (`b06df7b`; Entry 133). PR 4 (S1 Sign in: the form, `POST /api/session`, every S1 variant, Retry) merged in PR #95 (`1d41512`; Entry 134); the other pages are stubs, and the only API calls are `GET /api/session` on load and S1's `POST /api/session`. PR 5a (Playwright e2e harness on the real stack via nginx, never Vite; Chromium in CI, Firefox locally; secret scan; sign-in flows) merged in PR #96 (`880ec2b`; Entry 135); 5b (axe in light and dark, Origin matrix, security headers, JSON 404, lockout, outage) merged in PR #97 (`3963f5e`; Entry 136). PR 6 is split: 6a (app shell, rail, drawer, page-change rules) merged in PR #98 (`a16d8ef`; Entry 137); 6b (rail footer: Analyst ID, theme control, sign-out without `next`; e2e sign-in POST budget 12, both segments full) merged in PR #99 (`fd034dd`; Entry 138). `checks`, `web` and `e2e` are required on `main` since 2026-11-03 (Iheb; Entry 139). PR 7 is split: 7a (status store, rail status line) merged in PR #100 (`f6324fb`; Entry 139); 7b (S10 System status with Check now) merged in PR #101 (`13e7b84`; Entry 140). PR 8 is split in four (Entry 141); 8a (shared Button, TextField, Banner and Spinner; the Check now cascade fix) merged in PR #102 (`b70dde4`; Entry 141); 8b (File draft store, pre-upload checks, New analysis reset) merged in PR #104 (`1470254`; Entry 143). The colour scan fix merged in PR #105 (`898b7c6`; Entry 144). PR A (limits store, S2, S3, the CSP `media-src` change) is on `feat/stage18-upload`: Chromium e2e green (59 passed), Firefox e2e once before the demo, awaiting review (Entry 145). The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
 canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.

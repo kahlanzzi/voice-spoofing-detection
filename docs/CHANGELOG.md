@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 18 PR A: upload limits store, S2 and S3 (pre-upload checks, duration read), with `media-src 'self' blob:` added to the CSP; Analyze stays disabled until PR B.
 - Stage 18 PR 8b: File draft store and pure pre-upload checks (`web/src/upload/`), memory only; New analysis clears the draft, and on /analyze restarts the page without a new history entry.
 - Draft Execution Plan v2.2 in Markdown and PDF, covering approved decisions and Stage 17/18 progress through PR #102.
 - Stage 18 PR 7b: S10 System status (`web/src/pages/Status.tsx`, `statusView.ts`, `Status.css`; `web/src/status/checkedAt.ts`) on the status store: summary (Checking… / Ready for analysis / Ready with a notice naming the failing checks / Unavailable), "What is checked" with icon + text, Technical details closed and absent without an answer, "Mock status values" tag; Check now (label kept while busy, spinner, disabled, `aria-busy`, one request, focus back) is the only check on the page, with "Status checked: …" in its own polite region; "Last checked" for the API's time, "Last attempt" for no answer, prototype format in the browser zone; e2e S10 tests and `status-outage.spec.ts` (last project).
