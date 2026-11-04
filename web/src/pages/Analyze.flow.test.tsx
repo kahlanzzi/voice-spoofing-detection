@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { createMemoryRouter } from 'react-router'
 import { RouterProvider } from 'react-router/dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { markSignedIn } from '../session/session'
+import { getSnapshot as getSession, markSignedIn } from '../session/session'
 import type { StatusState } from '../status/status'
 import { clearFileDraft, getSnapshot as getDraft, setFileDraft } from '../upload/fileDraft'
 import type { LimitsState } from '../upload/limits'
@@ -54,6 +54,8 @@ const ANALYSIS = {
   request_id: `req_${'c'.repeat(32)}`,
   notice: 'Decision support only.',
 }
+
+const ID = `req_${'d'.repeat(32)}`
 
 const fetchMock = vi.fn<typeof fetch>()
 
@@ -114,6 +116,22 @@ async function waiting() {
   const router = await picked()
   await userEvent.click(analyzeButton())
   return { answer, router }
+}
+
+const button = (name: string) => screen.getByRole<HTMLButtonElement>('button', { name })
+
+function apiError(status: number, code: string, requestId: string | null = ID): Response {
+  return json(status, { error: { code, message: 'A server sentence.', request_id: requestId } })
+}
+
+// S5, through the press.
+async function failed(answer: Response | 'network') {
+  if (answer === 'network') fetchMock.mockRejectedValueOnce(new TypeError('network'))
+  else fetchMock.mockResolvedValueOnce(answer)
+  const router = await picked()
+  await userEvent.click(analyzeButton())
+  await screen.findByRole('alert')
+  return router
 }
 
 async function finish(answer: ReturnType<typeof deferred>, response = json(201, ANALYSIS)) {
@@ -301,6 +319,29 @@ describe('focus', () => {
     expect(screen.queryByRole('alert')).toBeNull()
   })
 
+  it('Retry moves focus to the file heading too', async () => {
+    await failed(apiError(500, 'internal_error'))
+    fetchMock.mockReturnValueOnce(deferred().promise)
+    await userEvent.click(button('Retry analysis'))
+    expect(document.activeElement).toBe(fileHeading())
+  })
+
+  it('an error moves focus to its title', async () => {
+    await failed(apiError(500, 'internal_error'))
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Something went wrong on the service' }))
+  })
+
+  it('an error is exactly one alert', async () => {
+    await failed(apiError(500, 'internal_error'))
+    expect(screen.getAllByRole('alert')).toHaveLength(1)
+  })
+
+  it('an error is not also spoken politely (Q22)', async () => {
+    await failed(apiError(500, 'internal_error'))
+    expect(announcer().textContent).toBe('Analysis started.')
+    expect(document.getElementById('analyze-assertive')?.textContent).toBe('')
+  })
+
   it('an answer while away moves no focus and speaks nothing', async () => {
     const { answer, router } = await waiting()
     await act(async () => router.navigate('/other'))
@@ -353,5 +394,144 @@ describe('the draft after a result', () => {
     expect(getDraft()).toBeNull()
     expect(screen.getByRole('button', { name: 'Choose recording' })).toBeTruthy()
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Analyze a recording')
+  })
+})
+
+describe('S5', () => {
+  const REFUSED = ['Choose another file', 'Remove file']
+  const RETRY = ['Retry analysis', 'Choose another file']
+
+  it.each<[string, () => Response | 'network', string, string, string, string[]]>([
+    [
+      'network', () => 'network', 'Network interruption', 'The connection to the service was interrupted',
+      'Your browser could not reach the service, so the recording was not analyzed. Check your connection, then retry. Your file is still selected.',
+      RETRY,
+    ],
+    [
+      'service', () => apiError(503, 'analysis_unavailable'), 'Analysis service unavailable', 'The analysis service is unavailable',
+      'The service received the request but cannot analyze recordings right now. Your file is still selected. Try again in a few minutes. If it keeps failing, report the request ID through your usual support channel.',
+      ['Retry analysis', 'Check system status'],
+    ],
+    [
+      'timeout', () => apiError(504, 'analysis_timeout'), 'Request timeout', 'The analysis did not finish in time',
+      'The service did not answer before the console stopped waiting. Your file is still selected. Retrying sends a new request with a new request ID.',
+      RETRY,
+    ],
+    [
+      'corrupt', () => apiError(422, 'corrupt_audio'), 'Corrupt audio', 'The recording could not be decoded',
+      'The file passed the checks in your browser, but the service could not decode the audio. It may be damaged, or not really in the format its name suggests. Export the segment again and choose the new file.',
+      REFUSED,
+    ],
+    [
+      'session', () => apiError(401, 'session_expired', null), 'Session expired', 'Your session has expired',
+      'Sign in again to continue. Your selected file stays on this screen and nothing was analyzed.',
+      ['Sign in again'],
+    ],
+    [
+      'server', () => apiError(500, 'internal_error'), 'Unexpected service error', 'Something went wrong on the service',
+      'The request reached the service but failed unexpectedly. Your file is still selected. Retry once. If it fails again, report the request ID through your usual support channel.',
+      RETRY,
+    ],
+    [
+      'format', () => apiError(415, 'unsupported_format'), 'Unsupported format', 'The service does not accept this format',
+      'The file passed the checks in your browser, but the service refused its format. Choose a recording in an accepted format.',
+      REFUSED,
+    ],
+    [
+      'size', () => apiError(413, 'file_too_large'), 'File too large', 'The file is over the service’s size limit',
+      'The file passed the checks in your browser, but the service refused its size. Export only the segment with the request.',
+      REFUSED,
+    ],
+    [
+      'duration', () => apiError(422, 'recording_too_long'), 'Recording too long', 'The recording is over the duration limit',
+      'The service measured the recording and it is over the limit. Upload only the segment with the request.',
+      REFUSED,
+    ],
+    [
+      'empty', () => apiError(422, 'empty_file'), 'Empty file', 'The recording has no audio',
+      'The service found no audio in this file. Export the segment again and choose the new file.',
+      REFUSED,
+    ],
+  ])('%s: its badge, title, body, actions and alert', async (_kind, answer, badge, title, body, actions) => {
+    await failed(answer())
+    const panel = screen.getByRole('region', { name: title })
+    expect(panel.querySelector('.alert-kind')?.textContent).toBe(badge)
+    expect(panel.querySelector('.explain')?.textContent).toBe(body)
+    expect([...panel.querySelectorAll('.actions > *')].map((action) => action.textContent)).toEqual(actions)
+    expect(screen.getByRole('alert').textContent).toBe(`${title}. The analysis did not complete. No verdict was produced.`)
+  })
+
+  it('no verdict, risk or model output on any kind', async () => {
+    await failed(apiError(500, 'internal_error'))
+    expect(screen.getByText('The analysis did not complete. No verdict was produced.')).toBeTruthy()
+    expect(document.querySelector('.result')).toBeNull()
+    for (const word of ['Likely', 'Cannot decide', 'RISK', 'Calibrated', 'Mock result']) {
+      expect(document.body.textContent).not.toContain(word)
+    }
+  })
+
+  it('the request ID from the body', async () => {
+    await failed(apiError(500, 'internal_error'))
+    expect(screen.getByText(ID).tagName).toBe('CODE')
+  })
+
+  it('no request ID says None', async () => {
+    await failed('network')
+    expect(screen.getByText('None: the request was not accepted by the service')).toBeTruthy()
+  })
+
+  it('the server message is never shown', async () => {
+    await failed(apiError(500, 'internal_error'))
+    expect(document.body.textContent).not.toContain('A server sentence.')
+  })
+
+  it('the timeout says nothing about a late result in History', async () => {
+    await failed(apiError(504, 'analysis_timeout'))
+    expect(document.body.textContent).not.toContain('History')
+  })
+
+  it('Retry analysis goes to S4', async () => {
+    await failed(apiError(500, 'internal_error'))
+    fetchMock.mockReturnValueOnce(deferred().promise)
+    await userEvent.click(button('Retry analysis'))
+    expect(busyButton().disabled).toBe(true)
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('Check system status links /status', async () => {
+    await failed(apiError(503, 'analysis_unavailable'))
+    expect(screen.getByRole('link', { name: 'Check system status' }).getAttribute('href')).toBe('/status')
+  })
+
+  it('Choose another file opens the input, and a pick gives S3', async () => {
+    await failed(apiError(422, 'corrupt_audio'))
+    const input = document.querySelector<HTMLInputElement>('input[type="file"]')!
+    const click = vi.spyOn(input, 'click')
+    await userEvent.click(button('Choose another file'))
+    expect(click).toHaveBeenCalledTimes(1)
+    await userEvent.upload(input, wav('other.wav'), { applyAccept: false })
+    expect(fileHeading()).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('Remove file gives S2', async () => {
+    await failed(apiError(422, 'corrupt_audio'))
+    await userEvent.click(button('Remove file'))
+    expect(getDraft()).toBeNull()
+    expect(document.activeElement).toBe(button('Choose recording'))
+  })
+
+  it('Sign in again ends the session, and S3 follows with the file', async () => {
+    await failed(apiError(401, 'session_expired', null))
+    await userEvent.click(button('Sign in again'))
+    expect(getSession()).toEqual({ status: 'signedOut', reason: 'expired' })
+    expect(getDraft()).not.toBeNull()
+    expect(fileHeading()).toBeTruthy()
+  })
+
+  it('the file name row', async () => {
+    await failed(apiError(500, 'internal_error'))
+    expect(document.querySelector('.alert .kv dd')?.textContent).toBe('call.wav (this screen only)')
   })
 })

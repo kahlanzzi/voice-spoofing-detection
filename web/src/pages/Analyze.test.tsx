@@ -60,6 +60,7 @@ const sessionStore = vi.hoisted(() => {
 vi.mock('../session/session', () => ({
   getSnapshot: () => sessionStore.get(),
   subscribe: (listener: () => void) => sessionStore.subscribe(listener),
+  expire: vi.fn(),
 }))
 
 class FakeAudio {

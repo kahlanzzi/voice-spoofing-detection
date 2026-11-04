@@ -22,6 +22,7 @@ import { clearFileDraft, setFileDraft } from '../upload/fileDraft'
 import { useAnalysis } from '../upload/useAnalysis'
 import { useFileDraft } from '../upload/useFileDraft'
 import { useLimits } from '../upload/useLimits'
+import AnalyzeError from './AnalyzeError'
 import AnalyzeFile from './AnalyzeFile'
 import AnalyzeLimits from './AnalyzeLimits'
 import AnalyzeResult from './AnalyzeResult'
@@ -43,6 +44,7 @@ export default function Analyze() {
   const fileHeading = useRef<HTMLHeadingElement>(null)
   const limitsPanel = useRef<HTMLDivElement>(null)
   const resultHeading = useRef<HTMLHeadingElement>(null)
+  const errorHeading = useRef<HTMLHeadingElement>(null)
   const live = useRef<HTMLDivElement>(null)
   const assertive = useRef<HTMLDivElement>(null)
   const lastStatus = useRef(analysis.status)
@@ -61,7 +63,9 @@ export default function Analyze() {
   useEffect(() => {
     const was = lastStatus.current
     lastStatus.current = analysis.status
-    if (was !== 'submitting' || analysis.status !== 'result') return
+    if (was !== 'submitting') return
+    if (analysis.status === 'error') errorHeading.current?.focus()
+    if (analysis.status !== 'result') return
     resultHeading.current?.focus()
     speak(assertive.current, resultAnnouncement(analysis.analysis))
   }, [analysis])
@@ -145,6 +149,16 @@ export default function Analyze() {
       )}
       {file === null ? (
         <AnalyzeUpload state={state} chooseRef={choose} onChoose={openPicker} />
+      ) : analysis.status === 'error' ? (
+        <AnalyzeError
+          kind={analysis.kind}
+          requestId={analysis.requestId}
+          fileName={file.name}
+          headingRef={errorHeading}
+          onRetry={() => analyze(file)}
+          onReplace={openPicker}
+          onRemove={remove}
+        />
       ) : state.status === 'ready' ? (
         <AnalyzeFile
           file={file}
