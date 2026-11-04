@@ -168,6 +168,29 @@ describe('no timers, storage or console in the shared components', () => {
   })
 })
 
+// The upload store and checks (PR 8b): the File and its name stay in memory, never stored or logged.
+
+describe('no timers, storage or console in src/upload', () => {
+  it.each([
+    ['setTimeout(() => undefined, 3000)\n', 'no-restricted-syntax'],
+    ['globalThis.setInterval(() => undefined, 1)\n', 'no-restricted-syntax'],
+    ["localStorage.setItem('file', 'name')\n", 'no-restricted-globals'],
+    ["console.log('x')\n", 'no-restricted-globals'],
+  ])('%s is an error in src/upload', async (code, rule) => {
+    expect(await ruleIds(code, 'src/upload/planted.ts')).toContain(rule)
+  })
+
+  it.each(['src/upload/fileDraft.ts', 'src/upload/checks.ts'])('%s keeps the timer, storage and console bans', async (file) => {
+    const ids = await ruleIds("setTimeout(() => undefined, 1)\nlocalStorage.setItem('k', 'v')\nconsole.log('x')\n", file)
+    expect(ids).toEqual(expect.arrayContaining(['no-restricted-syntax', 'no-restricted-globals']))
+  })
+
+  it('console in an upload test file is allowed, a timer is not', async () => {
+    expect(await ruleIds("console.log('x')\n", 'src/upload/planted.test.ts')).toEqual([])
+    expect(await ruleIds('setTimeout(() => undefined, 1)\n', 'src/upload/planted.test.ts')).toContain('no-restricted-syntax')
+  })
+})
+
 // The sign-in screen (PR 4): the password and Analyst ID live in its state only, and no lockout countdown, so
 // SignIn and signInOutcome get both bans; other pages do not (later pages may need a timer, e.g. the toast).
 
