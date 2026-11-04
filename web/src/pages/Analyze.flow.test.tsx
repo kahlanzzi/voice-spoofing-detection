@@ -44,7 +44,22 @@ class FakeAudio {
   }
 }
 
+const ANALYSIS = {
+  prediction: 'authentic',
+  confidence: 0.95,
+  risk_level: 'LOW',
+  model_version: 'mock',
+  profile_version: 'preprocessing-v1',
+  policy_version: 'risk-v1',
+  request_id: `req_${'c'.repeat(32)}`,
+  notice: 'Decision support only.',
+}
+
 const fetchMock = vi.fn<typeof fetch>()
+
+function json(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
+}
 
 const wav = (name = 'call.wav', size = 1024) => new File([new Uint8Array(size)], name)
 const analyzeButton = () => screen.getByRole<HTMLButtonElement>('button', { name: 'Analyze recording' })
@@ -99,6 +114,10 @@ async function waiting() {
   const router = await picked()
   await userEvent.click(analyzeButton())
   return { answer, router }
+}
+
+async function finish(answer: ReturnType<typeof deferred>, response = json(201, ANALYSIS)) {
+  await act(async () => answer.resolve(response))
 }
 
 beforeEach(() => {
@@ -258,5 +277,81 @@ describe('focus', () => {
   it('the press moves focus to the file heading: the button is disabled', async () => {
     await waiting()
     expect(document.activeElement).toBe(fileHeading())
+  })
+
+  it('a result moves focus to its title', async () => {
+    const { answer } = await waiting()
+    await finish(answer)
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Likely authentic voice' }))
+  })
+
+  it('a result is spoken assertively', async () => {
+    const { answer } = await waiting()
+    await finish(answer)
+    const region = document.getElementById('analyze-assertive')!
+    expect(region.getAttribute('aria-live')).toBe('assertive')
+    expect(region.textContent).toBe(
+      'Result ready. Verdict: Likely authentic voice. Low risk. Required action: continue your normal verification procedure.',
+    )
+  })
+
+  it('a result is no alert (Q22)', async () => {
+    const { answer } = await waiting()
+    await finish(answer)
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('an answer while away moves no focus and speaks nothing', async () => {
+    const { answer, router } = await waiting()
+    await act(async () => router.navigate('/other'))
+    await finish(answer)
+    await act(async () => router.navigate('/analyze'))
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Analysis result')
+    expect(document.activeElement).toBe(document.body)
+    expect(document.getElementById('analyze-assertive')?.textContent).toBe('')
+  })
+})
+
+describe('the result page', () => {
+  it('the h1, the line under it and New analysis', async () => {
+    const { answer } = await waiting()
+    await finish(answer)
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Analysis result')
+    expect(document.querySelector('.page-sub')?.textContent).toBe('New result')
+    expect(screen.getByRole('button', { name: 'New analysis' })).toBeTruthy()
+  })
+
+  it('no static notice: the card has the service\'s own', async () => {
+    const { answer } = await waiting()
+    await finish(answer)
+    expect(document.querySelector('.notice')).toBeNull()
+    expect(document.querySelector('.api-notice')?.textContent).toContain(ANALYSIS.notice)
+  })
+
+  it('the result stays after leaving and coming back', async () => {
+    const { answer, router } = await waiting()
+    await finish(answer)
+    await act(async () => router.navigate('/other'))
+    await act(async () => router.navigate('/analyze'))
+    expect(screen.getByRole('heading', { level: 2, name: 'Likely authentic voice' })).toBeTruthy()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('the draft after a result', () => {
+  it('a result keeps the draft: the card names the file', async () => {
+    const { answer } = await waiting()
+    await finish(answer)
+    expect(getDraft()).not.toBeNull()
+    expect(document.querySelector('.result-body')?.textContent).toContain('call.wav')
+  })
+
+  it("the result's New analysis clears it and gives S2", async () => {
+    const { answer } = await waiting()
+    await finish(answer)
+    await userEvent.click(screen.getByRole('button', { name: 'New analysis' }))
+    expect(getDraft()).toBeNull()
+    expect(screen.getByRole('button', { name: 'Choose recording' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Analyze a recording')
   })
 })

@@ -15,6 +15,9 @@ export const PAGE_NAMES: Record<AppRoute, string> = {
 
 export const NOT_FOUND_NAME = 'Page not found'
 
+// /analyze while it shows a result (prototype line 721).
+export const RESULT_NAME = 'Analysis result'
+
 // New analysis on /analyze (PR 8b): the location state that makes the same page a page change (prototype lines
 // 755-759). A constant, no data, so nothing about the analysis reaches the history entry (Entry 143 Q16).
 export const RESTART_PAGE = { restartPage: true } as const
@@ -23,12 +26,13 @@ export function isPageRestart(state: unknown): boolean {
   return typeof state === 'object' && state !== null && 'restartPage' in state
 }
 
-export function pageName(pathname: string): string {
+export function pageName(pathname: string, showsResult = false): string {
   const route = appRoute(pathname)
+  if (route === '/analyze' && showsResult) return RESULT_NAME
   return route === null ? NOT_FOUND_NAME : PAGE_NAMES[route]
 }
 
 // "<name> · Voice Check analyst console" (prototype line 789).
-export function documentTitle(pathname: string): string {
-  return `${pageName(pathname)} · ${APP_NAME}`
+export function documentTitle(pathname: string, showsResult = false): string {
+  return `${pageName(pathname, showsResult)} · ${APP_NAME}`
 }

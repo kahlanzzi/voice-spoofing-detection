@@ -33,7 +33,7 @@ const THEMED = [
 ]
 // HANDOFF lines 120-126 (and --r-pill from the prototype), plus the proposed --lh-* and --fs-input.
 const STATIC = [
-  'font-sans', 'font-mono', 'fs-xs', 'fs-sm', 'fs-base', 'fs-md', 'fs-lg', 'fs-xl', 'fs-2xl',
+  'font-sans', 'font-mono', 'fs-xs', 'fs-sm', 'fs-base', 'fs-md', 'fs-lg', 'fs-xl', 'fs-2xl', 'fs-verdict-sm',
   'sp-1', 'sp-2', 'sp-3', 'sp-4', 'sp-5', 'sp-6', 'sp-7', 'sp-8', 'r-sm', 'r-md', 'r-lg', 'r-pill',
   'target', 'rail-w', 'content-max', 'dur', 'ease', 'lh-body', 'lh-title', 'fs-input',
 ]

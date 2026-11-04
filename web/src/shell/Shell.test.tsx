@@ -257,6 +257,18 @@ describe('New analysis', () => {
       await act(async () => running)
     })
 
+    it('the answer after that still shows', async () => {
+      const release = holdPost()
+      renderAt('/analyze')
+      setFileDraft(FILE)
+      const running = startAnalysis(FILE)
+      await userEvent.click(button())
+      release(answer(201, ANALYSIS))
+      await act(async () => running)
+      expect(within(main()).getByRole('heading', { level: 2, name: 'Likely authentic voice' })).toBeTruthy()
+      expect(posts()).toHaveLength(1)
+    })
+
     it('after a result it clears the draft and the analysis', async () => {
       await answered(answer(201, ANALYSIS))
       expect(getAnalysis().status).toBe('result')

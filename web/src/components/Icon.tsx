@@ -2,7 +2,7 @@
 // built screen uses. Always beside visible text, so hidden from assistive technology.
 import type { JSX } from 'react'
 
-export type IconName = 'wave' | 'alert' | 'clock' | 'lock' | 'upload' | 'plus' | 'history' | 'grid' | 'server' | 'menu' | 'dot' | 'x' | 'check' | 'refresh' | 'decision' | 'info'
+export type IconName = 'wave' | 'alert' | 'clock' | 'lock' | 'upload' | 'plus' | 'history' | 'grid' | 'server' | 'menu' | 'dot' | 'x' | 'check' | 'refresh' | 'decision' | 'info' | 'help' | 'shieldcheck' | 'wifi' | 'file' | 'up' | 'down' | 'minus'
 
 const PATHS: Record<IconName, JSX.Element> = {
   wave: (
@@ -107,6 +107,38 @@ const PATHS: Record<IconName, JSX.Element> = {
       <circle cx="12" cy="12" r="3" />
     </>
   ),
+  help: (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" />
+      <path d="M12 17h.01" />
+    </>
+  ),
+  shieldcheck: (
+    <>
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <path d="m9 12 2 2 4-4" />
+    </>
+  ),
+  wifi: (
+    <>
+      <path d="M5 12.5a10 10 0 0 1 14 0" />
+      <path d="M8.5 16a5 5 0 0 1 7 0" />
+      <path d="M12 19.5h.01" />
+      <path d="M2 2l20 20" />
+    </>
+  ),
+  file: (
+    <>
+      <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+      <path d="M14 3v6h6" />
+      <path d="m9.5 13 5 5" />
+      <path d="m14.5 13-5 5" />
+    </>
+  ),
+  up: <path d="m6 15 6-6 6 6" />,
+  down: <path d="m6 9 6 6 6-6" />,
+  minus: <path d="M6 12h12" />,
 }
 
 export default function Icon({ name, size = 18 }: { name: IconName; size?: number }) {

@@ -11,9 +11,12 @@
 // Only a pick arms that, so coming back to a kept draft announces nothing. Failures are spoken by the alert (Q22).
 //
 // Analyze recording moves focus to the file heading: the prototype's target, the button, is disabled at that moment and
-// cannot hold focus (line 1318).
+// cannot hold focus (line 1318). An answer that arrives on this page moves focus to its title (HANDOFF line 178); one
+// that arrived elsewhere does neither, since the page change then focuses the h1. Only a change from submitting seen
+// here counts, so a remount speaks nothing. The result goes to an assertive region, not an alert (Q22).
 import { useEffect, useRef, type ChangeEvent } from 'react'
 import Icon from '../components/Icon'
+import { resultAnnouncement } from '../components/resultText'
 import { resetAnalysis, startAnalysis } from '../upload/analysis'
 import { clearFileDraft, setFileDraft } from '../upload/fileDraft'
 import { useAnalysis } from '../upload/useAnalysis'
@@ -21,8 +24,15 @@ import { useFileDraft } from '../upload/useFileDraft'
 import { useLimits } from '../upload/useLimits'
 import AnalyzeFile from './AnalyzeFile'
 import AnalyzeLimits from './AnalyzeLimits'
+import AnalyzeResult from './AnalyzeResult'
 import AnalyzeUpload from './AnalyzeUpload'
 import './Analyze.css'
+
+function speak(region: HTMLElement | null, text: string) {
+  const message = document.createElement('p')
+  message.textContent = text
+  region?.replaceChildren(message)
+}
 
 export default function Analyze() {
   const state = useLimits()
@@ -32,7 +42,10 @@ export default function Analyze() {
   const choose = useRef<HTMLButtonElement>(null)
   const fileHeading = useRef<HTMLHeadingElement>(null)
   const limitsPanel = useRef<HTMLDivElement>(null)
+  const resultHeading = useRef<HTMLHeadingElement>(null)
   const live = useRef<HTMLDivElement>(null)
+  const assertive = useRef<HTMLDivElement>(null)
+  const lastStatus = useRef(analysis.status)
   const pendingFocus = useRef<'file' | 'choose' | null>(null)
   const armed = useRef(false)
 
@@ -45,10 +58,16 @@ export default function Analyze() {
     else choose.current?.focus()
   })
 
+  useEffect(() => {
+    const was = lastStatus.current
+    lastStatus.current = analysis.status
+    if (was !== 'submitting' || analysis.status !== 'result') return
+    resultHeading.current?.focus()
+    speak(assertive.current, resultAnnouncement(analysis.analysis))
+  }, [analysis])
+
   function announce(text: string) {
-    const message = document.createElement('p')
-    message.textContent = text
-    live.current?.replaceChildren(message)
+    speak(live.current, text)
   }
 
   function pick(event: ChangeEvent<HTMLInputElement>) {
@@ -80,6 +99,22 @@ export default function Analyze() {
   }
 
   const openPicker = () => input.current?.click()
+
+  const regions = (
+    <>
+      <div className="sr" aria-live="polite" aria-atomic="true" id="analyze-announcer" ref={live} />
+      <div className="sr" aria-live="assertive" aria-atomic="true" id="analyze-assertive" ref={assertive} />
+    </>
+  )
+
+  if (analysis.status === 'result' && file !== null) {
+    return (
+      <>
+        <AnalyzeResult analysis={analysis.analysis} fileName={file.name} headingRef={resultHeading} />
+        {regions}
+      </>
+    )
+  }
 
   return (
     <>
@@ -126,7 +161,7 @@ export default function Analyze() {
           <AnalyzeLimits state={state} retryFocus={limitsPanel} />
         </div>
       )}
-      <div className="sr" aria-live="polite" aria-atomic="true" id="analyze-announcer" ref={live} />
+      {regions}
     </>
   )
 }
