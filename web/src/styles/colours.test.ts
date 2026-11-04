@@ -2,12 +2,29 @@ import { expect, it } from 'vitest'
 
 // HANDOFF.md line 93: raw colour values live in tokens.css only. Test files are left out of the
 // scan so this file's own patterns do not match.
-const files = import.meta.glob<string>(
+// No type argument on this call: Vitest leaves a file out of its module cache only when it finds the glob call
+// spelled without one (cli-api, generateCachePath). With a type argument the file list froze, so new files went
+// unscanned and the test count depended on the cache (Entry 144).
+const files = import.meta.glob(
   ['/src/**/*.{ts,tsx,css}', '!/src/styles/tokens.css', '!/src/**/*.test.{ts,tsx}'],
   { query: '?raw', import: 'default', eager: true },
-)
+) as Record<string, string>
 
 const RAW_COLOUR = /#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?)\(/i
+
+// A fresh listing, so a frozen file list fails here. Not typed through @types/node: this file is in the app's
+// tsconfig, which keeps Node's globals out of browser code. Relative to web/, where Vitest runs.
+const NODE_FS: string = 'node:fs'
+
+it('scans every source file on disk', async () => {
+  const { readdirSync } = (await import(/* @vite-ignore */ NODE_FS)) as {
+    readdirSync(path: string, options: { recursive: true }): string[]
+  }
+  const onDisk = readdirSync('src', { recursive: true })
+    .filter((path) => /\.(ts|tsx|css)$/.test(path) && !/\.test\.tsx?$/.test(path) && path !== 'styles/tokens.css')
+    .map((path) => `/src/${path}`)
+  expect(Object.keys(files).sort()).toEqual(onDisk.sort())
+})
 
 it('scans the source files', () => {
   expect(Object.keys(files)).toEqual(
