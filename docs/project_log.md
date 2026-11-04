@@ -5205,9 +5205,16 @@ ceiling ~330); tests +702 (estimate ≈ 509: the `it.each` tables and the extra 
   limit rejected → 2; duration at the limit rejected → 2; P's `split('.').pop()` → 8; unreadable fails → 3; duration 0
   passes → 1; Shell does not clear → 3; Shell drops `replace` → 1; PageChange ignores the restart → 4; no key guard →
   1; `src/upload/**` out of the lint bans → 7.
-- **Not done:** `npm run test:e2e` and `npm run test:e2e:firefox` on a rebuilt stack, not run yet (user-run; no spec
-  changed, so the sign-in POST budget stays 12, 429: 1). A real screen-reader pass (Orca, PR 15). No DEEP-VOICE path,
-  audio or dataset touched; no secret in the diff.
+- e2e (user-run, 2026-11-04, on the 8b build, web image `d32f8e95`): Chromium `52 passed`, Firefox `52 passed`;
+  `sign-in POSTs through nginx: 12 (planned 12), 429: 1 (planned 1)`; secret scan 0 matches.
+- Live check on :8001 (Iheb, 2026-11-04, same build): New analysis from History → /analyze, and Back returns to
+  History; on /analyze, New analysis keeps `history.length`, focus on the h1, scroll to the top; at ≤ 860 px the
+  drawer's New analysis closes the drawer and focuses the h1. The draft clearing itself is not visible until 8c/8d
+  (unit-tested).
+- Q19 flake hunt on `main` (`c35de88`): 10/10 runs `881 passed (881)`, no failure; the 8b runs 3/3 `1000 passed
+  (1000)`. Logs kept in `/tmp`.
+- **Not done:** a real screen-reader pass (Orca, PR 15). No DEEP-VOICE path, audio or dataset touched; no secret in
+  the diff.
 
 **AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran the
 checks. The plan was approved before the build (two review rounds). The team reviews the diff. Context7 was not used.
