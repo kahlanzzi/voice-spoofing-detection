@@ -5197,9 +5197,9 @@ diff. Context7 was not used.
 ceiling ~330); tests +702 (estimate ≈ 509: the `it.each` tables and the extra matrix cases). Docs as in this commit.
 
 **Tests [verified]:**
-- `cd web && npm run typecheck` → exit 0. `npm run lint` → exit 0. `npm run build` → exit 0. `npx vitest run` × 3 →
-  `Test Files 31 passed (31)`, `Tests 1000 passed (1000)` each (was 881; +119, estimate +75: `it.each` rows count
-  singly). `.venv/bin/pytest -q` → `1278 passed, 9 skipped`.
+- `cd web && npm run typecheck` → exit 0. `npm run lint` → exit 0. `npm run build` → exit 0. Final Vitest result:
+  `1002 passed (1002)`, 31 files (was 881, +121, estimate +75: `it.each` rows count singly); user-run at `003df56` and
+  HEAD, identical test names. `.venv/bin/pytest -q` → `1278 passed, 9 skipped`.
 - Planted failures (agent-run, one at a time, restored, checksum equal after; `src/upload`, `src/shell` and the lint
   tests, 264 in all): expiry clears → 6 failed; no username branch → 6; session subscription inert → 11; size at the
   limit rejected → 2; duration at the limit rejected → 2; P's `split('.').pop()` → 8; unreadable fails → 3; duration 0
@@ -5211,8 +5211,13 @@ ceiling ~330); tests +702 (estimate ≈ 509: the `it.each` tables and the extra 
   History; on /analyze, New analysis keeps `history.length`, focus on the h1, scroll to the top; at ≤ 860 px the
   drawer's New analysis closes the drawer and focuses the h1. The draft clearing itself is not visible until 8c/8d
   (unit-tested).
-- Q19 flake hunt on `main` (`c35de88`): 10/10 runs `881 passed (881)`, no failure; the 8b runs 3/3 `1000 passed
-  (1000)`. Logs kept in `/tmp`.
+- Q19 flake hunt on `main` (`c35de88`): 10/10 runs `881 passed (881)`, no failure; on 8b: 1002 passed at `003df56` and
+  at HEAD (user-run). The earlier agent-run 1000-test runs (11:42-11:43) were not a different test set: no test file
+  changed after 11:38:41. `colours.test.ts` makes one test per source file through `import.meta.glob`, and Vitest's
+  module cache (`node_modules/.vitest-cache`) kept an older glob. The two tests are `/src/upload/checks.ts has no raw
+  colour value` and `/src/upload/fileDraft.ts has no raw colour value`. Cache effect reproduced with a throwaway
+  source file: unseen with the cache, seen with `--experimental.fsModuleCache=false`. The old logs hold no test names.
+  Logs kept in `/tmp`.
 - **Not done:** a real screen-reader pass (Orca, PR 15). No DEEP-VOICE path, audio or dataset touched; no secret in
   the diff.
 
