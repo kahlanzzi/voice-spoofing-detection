@@ -216,7 +216,12 @@ describe('no timers, storage, cookie or console in the sign-in screen', () => {
   })
 
   it('other pages are not banned', async () => {
-    expect(await ruleIds("setTimeout(() => undefined, 1)\nconsole.log('x')\n", 'src/pages/Analyze.tsx')).toEqual([])
+    expect(await ruleIds("setTimeout(() => undefined, 1)\nconsole.log('x')\n", 'src/pages/History.tsx')).toEqual([])
+  })
+
+  it.each(['src/pages/Analyze.tsx', 'src/pages/AnalyzeUpload.tsx', 'src/pages/AnalyzeFile.tsx'])('%s has the bans (PR A)', async (file) => {
+    const ids = await ruleIds("setTimeout(() => undefined, 1)\nconsole.log('x')\n", file)
+    expect(ids).toEqual(expect.arrayContaining(['no-restricted-syntax', 'no-restricted-globals']))
   })
 })
 

@@ -54,8 +54,18 @@ export function formatDuration(seconds: number): string {
   return `${Math.floor(whole / 60)} min ${whole % 60} s`
 }
 
+// "WAV, FLAC, MP3": the checks and S2's limits list, so they cannot disagree.
+export function formatList(formats: readonly string[]): string {
+  return formats.map((format) => format.toUpperCase()).join(', ')
+}
+
+// The size limit in MB, at most one decimal: the checks and S2's limits list.
+export function limitInMb(bytes: number): number {
+  return Number((bytes / BYTES_PER_MB).toFixed(1))
+}
+
 function formatCheck(extension: string, limits: CheckLimits): FileCheck {
-  const formats = limits.formats.map((format) => format.toUpperCase()).join(', ')
+  const formats = formatList(limits.formats)
   if (limits.formats.includes(extension)) {
     return { id: 'format', ok: true, wait: false, text: `Format ${extension.toUpperCase()} is accepted` }
   }
@@ -68,7 +78,7 @@ function formatCheck(extension: string, limits: CheckLimits): FileCheck {
 
 function sizeCheck(size: number, limits: CheckLimits): FileCheck {
   if (size === 0) return { id: 'size', ok: false, wait: false, text: EMPTY_TEXT }
-  const limit = Number((limits.max_size_bytes / BYTES_PER_MB).toFixed(1))
+  const limit = limitInMb(limits.max_size_bytes)
   const shown = formatSize(size)
   if (size <= limits.max_size_bytes) {
     return { id: 'size', ok: true, wait: false, text: `Size ${shown} is within ${limit} MB` }
