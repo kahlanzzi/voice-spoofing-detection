@@ -1,7 +1,8 @@
 /* What every page shares (Stage 18 PR A, Q25): page head, panels, tags and text helpers, moved out of Status.css so S2
    and S3 do not lean on the single CSS bundle. Tokens only; from the prototype
    (docs/design/analyst-console-prototype.html): helpers 83-87; page head 154-157; panel 165-168; tags 170-171. The
-   prototype's 14 px text uses --fs-sm (as in Entry 134). */
+   prototype's 14 px text uses --fs-sm (as in Entry 134). Technical details and the key-value list moved here from
+   Status.css in PR B, for the result and S5 (Q25). */
 
 .mono { font-family: var(--font-mono); }
 .muted { color: var(--muted); }
@@ -22,3 +23,27 @@
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); }
 .panel-pad { padding: var(--sp-5); }
 .panel h2 { font-size: var(--fs-md); font-weight: 600; }
+
+details.more { border-top: 1px solid var(--line); padding: var(--sp-3) var(--sp-5); }
+details.more > summary {
+  cursor: pointer; font-weight: 600; min-height: var(--target); display: flex; align-items: center; gap: var(--sp-2);
+  list-style: none;
+}
+details.more > summary::-webkit-details-marker { display: none; }
+details.more > summary::before {
+  content: ""; width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg); transition: transform var(--dur) var(--ease); flex: none; margin-right: var(--sp-1);
+}
+details.more[open] > summary::before { transform: rotate(45deg); }
+@media (prefers-reduced-motion: reduce) { details.more > summary::before { transition: none; } }
+.kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--sp-2) var(--sp-4); font-size: var(--fs-sm); margin: var(--sp-2) 0 0; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; overflow-wrap: anywhere; }
+
+@media (max-width: 640px) {
+  details.more { padding-left: var(--sp-4); padding-right: var(--sp-4); }
+  .kv { grid-template-columns: minmax(0, 1fr); gap: var(--sp-1); }
+  .kv dd { margin-bottom: var(--sp-2); }
+}
+
+.explain { font-size: var(--fs-sm); color: var(--ink-2); max-width: 70ch; }

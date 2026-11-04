@@ -180,7 +180,7 @@ describe('no timers, storage or console in src/upload', () => {
     expect(await ruleIds(code, 'src/upload/planted.ts')).toContain(rule)
   })
 
-  it.each(['src/upload/fileDraft.ts', 'src/upload/checks.ts'])('%s keeps the timer, storage and console bans', async (file) => {
+  it.each(['src/upload/fileDraft.ts', 'src/upload/checks.ts', 'src/upload/analysis.ts'])('%s keeps the timer, storage and console bans', async (file) => {
     const ids = await ruleIds("setTimeout(() => undefined, 1)\nlocalStorage.setItem('k', 'v')\nconsole.log('x')\n", file)
     expect(ids).toEqual(expect.arrayContaining(['no-restricted-syntax', 'no-restricted-globals']))
   })
@@ -223,7 +223,7 @@ describe('no timers, storage, cookie or console in the sign-in screen', () => {
     expect(await ruleIds("setTimeout(() => undefined, 1)\nconsole.log('x')\n", 'src/pages/History.tsx')).toEqual([])
   })
 
-  it.each(['src/pages/Analyze.tsx', 'src/pages/AnalyzeUpload.tsx', 'src/pages/AnalyzeFile.tsx'])('%s has the bans (PR A)', async (file) => {
+  it.each(['src/pages/Analyze.tsx', 'src/pages/AnalyzeUpload.tsx', 'src/pages/AnalyzeFile.tsx', 'src/pages/AnalyzeResult.tsx', 'src/pages/AnalyzeError.tsx'])('%s has the bans (PR A, B)', async (file) => {
     const ids = await ruleIds("setTimeout(() => undefined, 1)\nconsole.log('x')\n", file)
     expect(ids).toEqual(expect.arrayContaining(['no-restricted-syntax', 'no-restricted-globals']))
   })

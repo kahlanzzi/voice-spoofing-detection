@@ -1,0 +1,24 @@
+/* ErrorPanel (Stage 18 PR B). Tokens only; prototype lines 252-259 and 419. */
+
+.alert {
+  border-radius: var(--r-lg); border: 1px solid var(--line); border-left: 6px solid var(--alert-mark, var(--err-mark));
+  background: var(--surface); padding: var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-3);
+}
+.alert h2 { font-size: var(--fs-lg); }
+.alert h2:focus { outline: none; }
+.alert .kv { margin: 0; }
+.alert-kind {
+  font-size: var(--fs-sm); font-weight: 600; display: inline-flex; gap: var(--sp-2); align-items: center; padding: 2px var(--sp-3);
+  min-height: 28px; border-radius: var(--r-pill); align-self: flex-start;
+}
+.kind-input { background: var(--warn-bg); color: var(--warn-fg); }
+.alert.k-input { --alert-mark: var(--warn-mark); }
+.kind-net { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
+.alert.k-net { --alert-mark: var(--line-strong); }
+.kind-svc { background: var(--err-bg); color: var(--err-fg); }
+.alert.k-svc { --alert-mark: var(--err-mark); }
+.no-pred { font-weight: 600; }
+
+@media (max-width: 640px) {
+  .alert { padding-left: var(--sp-4); padding-right: var(--sp-4); }
+}

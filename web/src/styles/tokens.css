@@ -42,6 +42,7 @@
   --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
   --fs-xs: 12px; --fs-sm: 13px; --fs-base: 15px; --fs-md: 17px; --fs-lg: 20px; --fs-xl: 26px; --fs-2xl: 28px;
+  --fs-verdict-sm: 23px; /* the verdict title at 640 px and below: H 86, P 418 */
   /* Line heights: H 121 "1.5 body, 1.2 titles" (P 74, 155); token names proposed in Entry 128 */
   --lh-body: 1.5; --lh-title: 1.2;
   /* Text inputs: --fs-base, 16px on mobile (team decision B4; below) */

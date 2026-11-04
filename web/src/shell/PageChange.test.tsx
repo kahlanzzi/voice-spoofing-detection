@@ -34,6 +34,10 @@ vi.mock('../upload/limits', () => {
   return { getSnapshot: () => ready, subscribe: () => () => undefined, loadLimits: vi.fn(), retryLimits: vi.fn() }
 })
 
+// /analyze is named after what it shows (prototype line 721); the analysis store has its own tests.
+const analysis = vi.hoisted(() => ({ status: 'idle' }))
+vi.mock('../upload/useAnalysis', () => ({ useAnalysis: () => analysis }))
+
 vi.mock('../session/session', () => ({
   getSnapshot: () => store.get(),
   subscribe: (listener: () => void) => store.subscribe(listener),
@@ -179,6 +183,25 @@ describe('in-app navigation', () => {
     expect(document.activeElement).toBe(link)
     expect(announced()).toBe('')
     expect(scrollTo).not.toHaveBeenCalled()
+  })
+})
+
+describe('/analyze showing a result', () => {
+  afterEach(() => {
+    analysis.status = 'idle'
+  })
+
+  it('the title is Analysis result', () => {
+    analysis.status = 'result'
+    renderAt(['/analyze'], SIGNED_IN)
+    expect(document.title).toBe('Analysis result · Voice Check analyst console')
+  })
+
+  it('coming back announces Analysis result page', async () => {
+    analysis.status = 'result'
+    const router = renderAt(['/history'], SIGNED_IN)
+    await act(async () => router.navigate('/analyze'))
+    expect(announced()).toBe('Analysis result page')
   })
 })
 

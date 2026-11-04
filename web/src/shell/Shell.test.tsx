@@ -5,6 +5,7 @@ import { createMemoryRouter } from 'react-router'
 import { RouterProvider } from 'react-router/dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { routes } from '../routing/router'
+import { getSnapshot as getAnalysis, startAnalysis } from '../upload/analysis'
 import { clearFileDraft, getSnapshot as getFileDraft, setFileDraft } from '../upload/fileDraft'
 import { NARROW_QUERY } from './useNarrow'
 
@@ -192,6 +193,97 @@ describe('New analysis', () => {
     setFileDraft(FILE)
     await userEvent.click(screen.getAllByRole('button', { name: 'New analysis', hidden: true })[index]!)
     expect(getFileDraft()).toBeNull()
+  })
+
+  describe('with an analysis', () => {
+    // /analyze shows the file card now, and it reads the duration: an Audio that never answers.
+    class SilentAudio {
+      removeAttribute(): void {}
+    }
+
+    const ANALYSIS = {
+      prediction: 'authentic',
+      confidence: 0.95,
+      risk_level: 'LOW',
+      model_version: 'mock',
+      profile_version: 'preprocessing-v1',
+      policy_version: 'risk-v1',
+      request_id: ID,
+      notice: 'Decision support only.',
+    }
+
+    const answer = (status: number, body: unknown) => new Response(JSON.stringify(body), { status })
+    const posts = () => fetchMock.mock.calls.filter(([path]) => path === '/api/analyses')
+
+    function holdPost(): (response: Response) => void {
+      let release: (response: Response) => void = () => undefined
+      const held = new Promise<Response>((done) => {
+        release = done
+      })
+      fetchMock.mockImplementation(async (path) =>
+        path === '/api/analyses' ? held : new Response(JSON.stringify(STATUS), { status: 200 }),
+      )
+      return release
+    }
+
+    async function answered(response: Response) {
+      const release = holdPost()
+      renderAt('/history')
+      setFileDraft(FILE)
+      const running = startAnalysis(FILE)
+      release(response)
+      await act(async () => running)
+    }
+
+    beforeEach(() => {
+      vi.stubGlobal('Audio', SilentAudio)
+      URL.createObjectURL = () => 'blob:local/1'
+      URL.revokeObjectURL = () => undefined
+    })
+
+    it('during the POST the file and S4 stay, nothing is sent, and the page restarts', async () => {
+      const release = holdPost()
+      renderAt('/analyze')
+      setFileDraft(FILE)
+      const running = startAnalysis(FILE)
+      await userEvent.click(button())
+      expect(getFileDraft()).toBe(FILE)
+      expect(getAnalysis()).toEqual({ status: 'submitting' })
+      expect(posts()).toHaveLength(1)
+      expect(screen.getByRole('button', { name: 'Analyzing…' })).toBeTruthy()
+      expect(h1()).toBe(document.activeElement)
+      expect(announced()).toBe('Analyze a recording page')
+      release(answer(201, ANALYSIS))
+      await act(async () => running)
+    })
+
+    it('the answer after that still shows', async () => {
+      const release = holdPost()
+      renderAt('/analyze')
+      setFileDraft(FILE)
+      const running = startAnalysis(FILE)
+      await userEvent.click(button())
+      release(answer(201, ANALYSIS))
+      await act(async () => running)
+      expect(within(main()).getByRole('heading', { level: 2, name: 'Likely authentic voice' })).toBeTruthy()
+      expect(posts()).toHaveLength(1)
+    })
+
+    it('after a result it clears the draft and the analysis', async () => {
+      await answered(answer(201, ANALYSIS))
+      expect(getAnalysis().status).toBe('result')
+      await userEvent.click(button())
+      expect(getFileDraft()).toBeNull()
+      expect(getAnalysis()).toEqual({ status: 'idle' })
+    })
+
+    it('after an error it clears the draft and the analysis', async () => {
+      await answered(answer(500, { error: { code: 'internal_error', message: 'x', request_id: null } }))
+      expect(getAnalysis().status).toBe('error')
+      await userEvent.click(button())
+      expect(getFileDraft()).toBeNull()
+      expect(getAnalysis()).toEqual({ status: 'idle' })
+    })
   })
 
   it('from another page it pushes: Back returns there', async () => {
