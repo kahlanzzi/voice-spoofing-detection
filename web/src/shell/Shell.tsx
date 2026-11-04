@@ -7,8 +7,8 @@
 // while it is open (prototype lines 804-807, 1402-1403, 1480-1483). Its open state is the location key it was
 // opened at, so any navigation, Back included, closes it (prototype lines 757, 773) without an effect.
 //
-// New analysis goes to /analyze; clearing the current analysis (prototype line 762) comes with PR 8b. The
-// rail foot holds the service status line (PR 7a), the analyst, theme and sign-out (RailFoot, PR 6b). The shell
+// New analysis clears the File draft and goes to /analyze (prototype lines 761-763, PR 8b). Already there, it replaces
+// the entry, so Back is not a second /analyze, and PageChange repeats the page-change rules. The rail foot holds the service status line (PR 7a), the analyst, theme and sign-out (RailFoot, PR 6b). The shell
 // starts the one status check when it mounts: it mounts only once signed in, and GET /api/status needs a session
 // (docs/api_design.md §4.8). No other check but S10's Check now (PR 7b); StrictMode's second run shares the request.
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
@@ -16,6 +16,8 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import Button from '../components/Button'
 import Icon, { type IconName } from '../components/Icon'
 import { checkStatus } from '../status/status'
+import { clearFileDraft } from '../upload/fileDraft'
+import { RESTART_PAGE } from './pageNames'
 import RailFoot from './RailFoot'
 import './Shell.css'
 import { useNarrow } from './useNarrow'
@@ -30,7 +32,7 @@ const NAV: readonly { to: string; label: string; icon: IconName }[] = [
 type FocusTarget = 'drawer' | 'menu'
 
 export default function Shell() {
-  const { key } = useLocation()
+  const { key, pathname } = useLocation()
   const navigate = useNavigate()
   const narrow = useNarrow()
   const [openAt, setOpenAt] = useState<string | null>(null)
@@ -86,8 +88,15 @@ export default function Shell() {
     mainRef.current?.querySelector<HTMLElement>('h1')?.focus()
   }
 
+  function startNewAnalysis(): void {
+    // PR 10: unless submitting, this line only; the navigation still happens (prototype line 762). PR 11: D1 comes
+    // first, and the blocker runs inside navigate, so this clear moves behind it.
+    clearFileDraft()
+    void navigate('/analyze', pathname === '/analyze' ? { replace: true, state: RESTART_PAGE } : undefined)
+  }
+
   const newAnalysis = (
-    <Button variant="primary" icon={<Icon name="plus" size={18} />} onClick={() => void navigate('/analyze')}>
+    <Button variant="primary" icon={<Icon name="plus" size={18} />} onClick={startNewAnalysis}>
       New analysis
     </Button>
   )

@@ -6,6 +6,7 @@ import { RouterProvider } from 'react-router/dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { routes } from '../routing/router'
 import type { SessionState } from '../session/session'
+import { RESTART_PAGE } from './pageNames'
 
 // The page-change rules (HANDOFF lines 67-71, 174) through the real route tree, with a stand-in session store.
 
@@ -170,6 +171,48 @@ describe('in-app navigation', () => {
     const link = screen.getByRole('link', { name: 'Overview' })
     await userEvent.click(link)
     expect(document.activeElement).toBe(link)
+    expect(announced()).toBe('')
+    expect(scrollTo).not.toHaveBeenCalled()
+  })
+})
+
+describe('New analysis on /analyze (RESTART_PAGE)', () => {
+  async function restart(router: ReturnType<typeof renderAt>) {
+    await act(async () => router.navigate('/analyze', { replace: true, state: RESTART_PAGE }))
+  }
+
+  it('a restart on a new entry is a page change', async () => {
+    const router = renderAt(['/analyze'], SIGNED_IN)
+    await restart(router)
+    expect(document.activeElement).toBe(h1())
+    expect(announced()).toBe('Analyze a recording page')
+    expect(scrollTo).toHaveBeenCalledWith(0, 0)
+    expect(document.title).toBe('Analyze a recording · Voice Check analyst console')
+  })
+
+  it('a session change on the same entry does not fire it again', async () => {
+    const router = renderAt(['/analyze'], SIGNED_IN)
+    await restart(router)
+    const node = announcedNode()
+    scrollTo.mockClear()
+    act(() => store.set({ status: 'signedIn', username: 'analyst02' }))
+    expect(announcedNode()).toBe(node)
+    expect(scrollTo).not.toHaveBeenCalled()
+  })
+
+  it('a load with the marker in the entry, as after a reload, stays a first page', () => {
+    const entries = [{ pathname: '/analyze', state: RESTART_PAGE }]
+    store.set(SIGNED_IN)
+    render(<RouterProvider router={createMemoryRouter(routes, { initialEntries: entries })} />)
+    expect(document.activeElement).toBe(document.body)
+    expect(announced()).toBe('')
+    expect(scrollTo).not.toHaveBeenCalled()
+  })
+
+  it('a replace to the same page without the marker changes nothing', async () => {
+    const router = renderAt(['/analyze'], SIGNED_IN)
+    await act(async () => router.navigate('/analyze', { replace: true }))
+    expect(document.activeElement).toBe(document.body)
     expect(announced()).toBe('')
     expect(scrollTo).not.toHaveBeenCalled()
   })

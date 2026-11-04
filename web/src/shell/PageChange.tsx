@@ -6,7 +6,8 @@
 // line 1520). After that, each move to another pathname, by link, redirect or Back/Forward (HANDOFF line 72),
 // moves focus to the h1, announces "<Page> page" politely, sets the title and scrolls to the top. Two exceptions:
 // a query-only change (History filters, HANDOFF lines 74-76) is not a page change, and Back/Forward to /history
-// leaves the scroll alone, which PR 12 restores from history.state (HANDOFF line 69).
+// leaves the scroll alone, which PR 12 restores from history.state (HANDOFF line 69). New analysis on /analyze
+// (RESTART_PAGE, PR 8b) is one, once per entry: the effect also runs when the session changes.
 //
 // useLayoutEffect: it runs after the commit and before paint, so the new page is never painted at the old scroll
 // position. No timer: the message goes in a new node, which is announced even when the text repeats (the
@@ -14,18 +15,19 @@
 import { useLayoutEffect, useRef } from 'react'
 import { useLocation, useNavigationType } from 'react-router'
 import { useSession } from '../session/useSession'
-import { documentTitle, pageName } from './pageNames'
+import { documentTitle, isPageRestart, pageName } from './pageNames'
 
 const EXPIRED_MESSAGE = 'Your session expired. Sign in again to continue.'
 // Prototype line 1496, after the rail's Sign out (PR 6b).
 const SIGNED_OUT_MESSAGE = 'Signed out.'
 
 export default function PageChange() {
-  const { key, pathname } = useLocation()
+  const { key, pathname, state } = useLocation()
   const navigationType = useNavigationType()
   const session = useSession()
   const live = useRef<HTMLDivElement>(null)
   const lastPage = useRef<string | null>(null)
+  const lastKey = useRef<string | null>(null)
 
   useLayoutEffect(() => {
     const h1 = document.querySelector<HTMLElement>('h1')
@@ -33,7 +35,9 @@ export default function PageChange() {
     document.title = documentTitle(pathname)
     const previous = lastPage.current
     lastPage.current = pathname
-    if (previous === null || previous === pathname) return
+    const restart = key !== lastKey.current && isPageRestart(state)
+    lastKey.current = key
+    if (previous === null || (previous === pathname && !restart)) return
 
     if (!(navigationType === 'POP' && pathname === '/history')) window.scrollTo(0, 0)
     h1.focus({ preventScroll: true })
@@ -42,7 +46,7 @@ export default function PageChange() {
     message.textContent =
       reason === 'expired' ? EXPIRED_MESSAGE : reason === 'signOut' ? SIGNED_OUT_MESSAGE : `${pageName(pathname)} page`
     live.current?.replaceChildren(message)
-  }, [key, pathname, navigationType, session])
+  }, [key, pathname, state, navigationType, session])
 
   return <div className="sr" aria-live="polite" aria-atomic="true" id="page-announcer" ref={live} />
 }
