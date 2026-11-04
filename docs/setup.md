@@ -135,7 +135,7 @@ docker compose down                   # keeps the store; down -v deletes it
   `404 not_found`.
 - **Headers (A13):** every answer, nginx's own errors and the API's included, carries `Referrer-Policy:
   strict-origin-when-cross-origin`, `X-Content-Type-Options: nosniff` and `Content-Security-Policy:
-  default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'`.
+  default-src 'self'; media-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'`.
   They live in `deploy/nginx_security_headers.conf`, included in every location (a location with its
   own `add_header` would drop inherited ones). An inline script, a `data:` image or another origin
   would need a CSP change by decision.

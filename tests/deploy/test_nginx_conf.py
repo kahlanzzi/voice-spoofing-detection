@@ -23,8 +23,8 @@ INSTALLED = {dest: REPO / src for src, dest in re.findall(r"^COPY (deploy/\S+) (
 SECURITY_HEADERS = {  # team decision A13
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "X-Content-Type-Options": "nosniff",
-    "Content-Security-Policy": "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; "
-                               "object-src 'none'",
+    "Content-Security-Policy": "default-src 'self'; media-src 'self' blob:; base-uri 'self'; form-action 'self'; "
+                               "frame-ancestors 'none'; object-src 'none'",
 }
 APP_ROUTE = '~ ^/(signin|analyze|history|history/req_[0-9a-f]{32}|overview|status)$'
 ESCAPES = {"n": "\n", "t": "\t", "r": "\r"}
