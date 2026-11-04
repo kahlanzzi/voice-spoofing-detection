@@ -5,6 +5,7 @@ import { createMemoryRouter } from 'react-router'
 import { RouterProvider } from 'react-router/dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { routes } from '../routing/router'
+import { clearFileDraft, getSnapshot as getFileDraft, setFileDraft } from '../upload/fileDraft'
 import { NARROW_QUERY } from './useNarrow'
 
 // The shell (HANDOFF §2 line 40, §3 line 85, §7 lines 173-176) on a signed-in session. jsdom applies Shell.css but
@@ -72,6 +73,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup()
+  clearFileDraft()
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
 })
@@ -171,6 +173,72 @@ describe('New analysis', () => {
     expect(buttons).toHaveLength(2)
     await userEvent.click(buttons[index]!)
     expect(router.state.location.pathname).toBe('/analyze')
+  })
+
+  // Prototype lines 761-763 and 755-759. The stub Analyze has no file card yet: the store is what clears.
+  const FILE = new File(['audio'], 'call.wav', { type: 'audio/wav' })
+  const button = () => within(rail()).getByRole('button', { name: 'New analysis' })
+  const h1 = () => within(main()).getByRole('heading', { level: 1 })
+  const announced = () => document.getElementById('page-announcer')?.textContent
+
+  it.each([0, 1])('button %i clears the File draft from another page', async (index) => {
+    renderAt('/history')
+    setFileDraft(FILE)
+    await userEvent.click(screen.getAllByRole('button', { name: 'New analysis', hidden: true })[index]!)
+    expect(getFileDraft()).toBeNull()
+  })
+
+  it('from another page it pushes: Back returns there', async () => {
+    const router = renderAt('/history')
+    await userEvent.click(button())
+    expect(router.state.historyAction).toBe('PUSH')
+    await act(async () => router.navigate(-1))
+    expect(router.state.location.pathname).toBe('/history')
+  })
+
+  it('on /analyze it clears the draft without a new history entry', async () => {
+    const router = renderAt('/history')
+    await act(async () => router.navigate('/analyze'))
+    setFileDraft(FILE)
+    await userEvent.click(button())
+    expect(getFileDraft()).toBeNull()
+    expect(router.state.location.pathname).toBe('/analyze')
+    expect(router.state.historyAction).toBe('REPLACE')
+    await act(async () => router.navigate(-1))
+    expect(router.state.location.pathname).toBe('/history')
+  })
+
+  it('on /analyze with no draft it still restarts the page: focus on the h1, scroll, announcement', async () => {
+    renderAt('/history')
+    await userEvent.click(button())
+    vi.mocked(window.scrollTo).mockClear()
+    document.getElementById('page-announcer')?.replaceChildren()
+    await userEvent.click(button())
+    expect(document.activeElement).toBe(h1())
+    expect(window.scrollTo).toHaveBeenCalledWith(0, 0)
+    expect(announced()).toBe('Analyze a recording page')
+  })
+
+  it('clicking it twice on /analyze announces again, in a new node', async () => {
+    renderAt('/history')
+    await userEvent.click(button())
+    await userEvent.click(button())
+    const first = document.getElementById('page-announcer')?.firstChild
+    await userEvent.click(button())
+    expect(document.getElementById('page-announcer')?.firstChild).not.toBe(first)
+    expect(announced()).toBe('Analyze a recording page')
+  })
+
+  it('narrow, on /analyze: the drawer closes and focus goes to the h1, not lost with the button', async () => {
+    media.set(true)
+    renderAt('/analyze')
+    document.querySelector<HTMLElement>('header.topbar')!.style.display = 'flex'
+    await userEvent.click(menu())
+    expect(rail().classList.contains('open')).toBe(true)
+    await userEvent.click(button())
+    expect(rail().classList.contains('open')).toBe(false)
+    expect(main().hasAttribute('inert')).toBe(false)
+    expect(document.activeElement).toBe(h1())
   })
 })
 

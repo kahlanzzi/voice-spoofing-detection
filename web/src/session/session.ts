@@ -5,7 +5,7 @@
 // States (HANDOFF §1 S1): checking until GET /api/session answers on load; signedIn; signedOut, with
 // reason 'expired' for the S1 expired-session notice and 'signOut' after the rail's Sign out (PR 6b: S1 without
 // next); unavailable for "sign-in service unavailable". A19: a failed check never signs the analyst out; only a 401
-// does. Nothing here clears the file or note drafts (A23; an explicit sign-out clears them in PR 8/11, expiry never),
+// does. Nothing here clears the file or note drafts (A23): their stores subscribe here (upload/fileDraft.ts, PR 8b),
 // and nothing navigates (routing is PR 3c).
 import { apiFetch, setSessionExpiredHandler } from '../api/client'
 import { isHttpError } from '../api/errors'

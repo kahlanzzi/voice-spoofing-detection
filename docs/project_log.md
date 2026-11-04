@@ -5169,6 +5169,66 @@ diff. Context7 was not used.
 ---
 
 
+### Entry 143 — Stage 18 PR 8b: File draft store, pre-upload checks, New analysis reset (2026-11-04)
+
+**What:** on `feat/stage18-file-draft` (Iheb, Part E; from `main` at `c35de88`, not stacked). No UI screen; no `api/`,
+`deploy/`, `configs/` or CI change; no new dependency. Design sources: HANDOFF (H) and
+`analyst-console-prototype.html` (P) only.
+- `web/src/upload/fileDraft.ts` (A23): the `File` and its owner, in memory only. An explicit sign-out clears it;
+  expiry, `unavailable` and `signedOut('none')` keep it; a sign-in with another username clears it (Entry 141 Q4).
+  It subscribes to the session, which never imports it, so there is no circular import (as `status.ts`).
+- `web/src/upload/checks.ts`: `runChecks` matches P l.898-913, with limits from `LimitsResponse`. Departures, each so
+  the client never accepts what the server refuses: `fileExtension` follows `api/intake.py:149`, because P l.900
+  accepts `wav` and `.wav`, which the server refuses; a duration of 0 fails (Q13).
+- New analysis clears the draft. On /analyze it replaces the entry and repeats the page-change rules (P l.755-759):
+  focus on the h1, scroll to the top, "Analyze a recording page", and on a narrow screen the drawer closes.
+- Fix of P l.657, not a copy change: `formatDuration` rounds before splitting at 60 s and over, so 119.6 s reads
+  "2 min 0 s", not "1 min 60 s" (Q18).
+- `src/upload/**` joins the timer and storage/console lint bans. H l.280 now says module store (Q10).
+- Plan decisions (user, 2026-11-04): Q10 H l.280 now says module store (A23); Q11 a no-extension file gets new text, a
+  copy proposal for team review; Q12 the client refuses `..wav` on both Python versions; Q13 duration 0 fails with P's
+  Empty text; Q14 an expiry during the DELETE keeps the File, pinned by a test; Q15 PR 10 sends `upload.<ext>`; Q16
+  the same-page restart uses a constant in `location.state`; Q17 `src/upload/**` is under the timer ban, Q9 stays open
+  for 8d; Q18 above.
+- Q19: one baseline run on `main` at `c35de88` failed 1 of 881; its output was cut, so the test is unknown. 17 other
+  runs passed, including a 10-run hunt (10/10). Not reproduced, cause unknown; full logs kept on every 8b run.
+
+**Size:** added lines (`git diff --numstat` and new files, comments included): code +220 / −15 (estimate ≈ 193,
+ceiling ~330); tests +702 (estimate ≈ 509: the `it.each` tables and the extra matrix cases). Docs as in this commit.
+
+**Tests [verified]:**
+- `cd web && npm run typecheck` → exit 0. `npm run lint` → exit 0. `npm run build` → exit 0. Final Vitest result:
+  `1002 passed (1002)`, 31 files (was 881, +121, estimate +75: `it.each` rows count singly); user-run at `003df56` and
+  HEAD, identical test names. `.venv/bin/pytest -q` → `1278 passed, 9 skipped`.
+- Planted failures (agent-run, one at a time, restored, checksum equal after; `src/upload`, `src/shell` and the lint
+  tests, 264 in all): expiry clears → 6 failed; no username branch → 6; session subscription inert → 11; size at the
+  limit rejected → 2; duration at the limit rejected → 2; P's `split('.').pop()` → 8; unreadable fails → 3; duration 0
+  passes → 1; Shell does not clear → 3; Shell drops `replace` → 1; PageChange ignores the restart → 4; no key guard →
+  1; `src/upload/**` out of the lint bans → 7.
+- e2e (user-run, 2026-11-04, on the 8b build, web image `d32f8e95`): Chromium `52 passed`, Firefox `52 passed`;
+  `sign-in POSTs through nginx: 12 (planned 12), 429: 1 (planned 1)`; secret scan 0 matches.
+- Live check on :8001 (Iheb, 2026-11-04, same build): New analysis from History → /analyze, and Back returns to
+  History; on /analyze, New analysis keeps `history.length`, focus on the h1, scroll to the top; at ≤ 860 px the
+  drawer's New analysis closes the drawer and focuses the h1. The draft clearing itself is not visible until 8c/8d
+  (unit-tested).
+- Q19 flake hunt on `main` (`c35de88`): 10/10 runs `881 passed (881)`, no failure; on 8b: 1002 passed at `003df56` and
+  at HEAD (user-run). The earlier agent-run 1000-test runs (11:42-11:43) were not a different test set: no test file
+  changed after 11:38:41. `colours.test.ts` makes one test per source file through `import.meta.glob`, and Vitest's
+  module cache (`node_modules/.vitest-cache`) kept an older glob. The two tests are `/src/upload/checks.ts has no raw
+  colour value` and `/src/upload/fileDraft.ts has no raw colour value`. Cache effect reproduced with a throwaway
+  source file: unseen with the cache, seen with `--experimental.fsModuleCache=false`. The old logs hold no test names.
+  Logs kept in `/tmp`.
+- **Not done:** a real screen-reader pass (Orca, PR 15). No DEEP-VOICE path, audio or dataset touched; no secret in
+  the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran the
+checks. The plan was approved before the build (two review rounds). The team reviews the diff. Context7 was not used.
+
+**Gate:** review of this PR by Donia. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+
 ## Open items
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
@@ -5453,18 +5513,22 @@ diff. Context7 was not used.
 - [x] PR 6: 6a merged #98; 6b merged #99, `fd034dd` (app shell, rail, drawer, page-change rules: Entry 137; rail footer, theme control, sign-out: Entry 138).
 - [ ] Review the sign-out failure copy "Sign-out did not complete. You are still signed in. Try again." (proposal; Entry 138).
 - [x] PR 7: 7a merged #100 (`f6324fb`; status store, rail line: Entry 139); 7b merged #101 (`13e7b84`; S10: Check now, its polite region, "Last checked" / "Last attempt", status outage e2e: Entry 140).
-- [ ] PR 7b copy proposals, for review: unavailable from the service naming the failing checks; the degraded fallback "Some parts of the service are not fully available."; the Connection item's "Unreachable" when nginx answers 503 (Entry 139). Built in 7b with: "This console cannot reach the analysis service." for Unreachable; a failing check "Unavailable" with "Stored results and Overview figures cannot be loaded right now. Analysis is not affected." for History; the degraded notice "<checks> is/are not fully available."; the open-decision line's second sentence; "Status checked: Ready for analysis, with a notice." (Entry 140).
+- [ ] PR 7b copy proposals, for review: unavailable from the service naming the failing checks; the degraded fallback "Some parts of the service are not fully available."; the Connection item's "Unreachable" when nginx answers 503 (Entry 139). Built in 7b with: "This console cannot reach the analysis service." for Unreachable; a failing check "Unavailable" with "Stored results and Overview figures cannot be loaded right now. Analysis is not affected." for History; the degraded notice "<checks> is/are not fully available."; the open-decision line's second sentence; "Status checked: Ready for analysis, with a notice." (Entry 140). PR 8b copy proposal, for review: "Unsupported format: this file has no extension. Use WAV, FLAC, MP3." for a file with no extension (P has no text for it; Entry 143 Q11).
 - [ ] S10 stale-status banner (H l.32, l.166; P l.1194) not built: an honest one needs a clock tick, which the no-polling decision and the timer lint ban rule out (Q4, Entry 139).
 - [ ] Review the rail status tokens `--nav-ok` / `--nav-warn` / `--nav-err` (P l.143's values, the same in both themes; Entry 139).
-- [ ] PR 8b/11 rule: an explicit sign-out clears the `File` and note-draft stores; expiry does not (prototype l.770, l.1494; Entry 137); a different username after expiry clears the `File` (Entry 141 Q4). D1 before sign-out with an unsaved note is PR 11.
+- [ ] PR 8b/11 rule: an explicit sign-out clears the `File` and note-draft stores; expiry does not (prototype l.770, l.1494; Entry 137); a different username after expiry clears the `File` (Entry 141 Q4). File part built in 8b (Entry 143). Note-draft part and D1 before sign-out with an unsaved note are PR 11.
 - [x] Stub window.scrollTo in the Vitest setup (jsdom 'Not implemented' noise; done in PR 6b, Entry 138).
 - [x] Add `e2e` as a required check on `main` after 5 green PR runs in a row (Iheb; Entry 135). (done 2026-11-03: required after 4 green runs (#96–#99), a deliberate change by Iheb from the planned 5; Entry 139)
 - [ ] nginx takes ~5 s to return 503 when the api is stopped (connect timeout); consider a lower proxy_connect_timeout in a deploy/ fix PR (Entry 136).
-- [x] PR 8: extract `Button`, `TextField` and `Banner` (HANDOFF line 133) from S1 into `web/src/components/` (deferred on purpose in PR 4; Entry 134). (PR 8a on `feat/stage18-shared-components`, awaiting review: Button, TextField, Banner, Spinner; S1, S10 and New analysis use them; Entry 141)
-- [ ] PR 8 split (Entry 141): 8b File draft store + pre-upload checks + New analysis reset; 8c `/limits`, S2, Mock tag, S10 "Audio and stored data"; 8d S3. Open questions Q5–Q10 (Entry 141), decided when 8b/8c are planned.
+- [x] PR 8: extract `Button`, `TextField` and `Banner` (HANDOFF line 133) from S1 into `web/src/components/` (deferred on purpose in PR 4; Entry 134). (8a merged in #102: Button, TextField, Banner, Spinner; S1, S10 and New analysis use them; Entry 141)
+- [ ] PR 8 split (Entry 141): 8b built (Entry 143, awaiting review); 8c `/limits`, S2, Mock tag, S10 "Audio and stored data"; 8d S3. Q5-Q9 open.
 - [ ] Button pressed state `.btn-secondary:active` (P l.112; `btn-danger:active` P l.118 with it), deferred from 8a to keep it zero-change (Entry 141 Q2).
 - [ ] PR 12: translate HANDOFF `?v=a,b` to repeated `verdict=` (Part E decision recorded in Entry 133).
-- [ ] A23: keep the `File` (PR 8b, upload) and the note draft (PR 11, note) in a module store, not component state; PR 10's S5 "Sign in again" calls `session.expire()` (Entry 130).
+- [ ] A23: the `File` store is built (PR 8b, Entry 143); the note draft (PR 11) still goes in a module store, not component state; PR 10's S5 "Sign in again" calls `session.expire()` (Entry 130).
+- [ ] PR 10: the `submitting` guard on the clear in `Shell.tsx` `startNewAnalysis` (P l.762); PR 11 moves that clear behind D1, since the blocker runs inside `navigate` (Entry 143).
+- [ ] PR 10: send the upload as `upload.<ext>` through `fileExtension`, so the real file name stays in the browser; `FormData.append('file', file)` would send it (§4.3, H l.280; Entry 143 Q15).
+- [ ] API (owner: api): `api/intake.py:149` depends on the Python version for `..wav`: `PurePath.suffix` gives `.wav` on 3.13 (image) and `''` on 3.14 (venv). The client refuses it on both; no `api/` change in 8b (Entry 143 Q12).
+- [ ] Sign-out race: an expiry during the DELETE wins (`session.test.ts:322`), so `markSignedOut` never runs and the `File` stays after a real sign-out; a different username still clears it. Accepted for now, pinned by a test (Entry 143 Q14).
 - [ ] Contract: `api_design.md` §5 does not list the Status, Limits, History, Stats, Session and Note responses (the web types follow §4 and `api/schemas.py`) (Entry 130).
 - [ ] Contract: `ErrorDetail.code` is `str` in `api/schemas.py`; §6 is a closed list. Use a `Literal`? The app maps an unknown code to `internal_error` (Entry 130).
 - [ ] Contract: an unhandled exception in `POST /api/analyses` after the ID is assigned (e.g. `analyzer.info()`) answers 500 with body `request_id: null` (`api/errors.py` `_unhandled_error`); §6 expects the upload's ID (Entry 130).
@@ -5504,7 +5568,7 @@ diff. Context7 was not used.
 
 ---
 
-## Current status — updated 2026-11-03
+## Current status — updated 2026-11-04
 
 **Documentation navigation:** Entry 115 groups the docs index by topic without moving files. This follow-up awaits PR/CI and human review; implementation status below is unchanged.
 
@@ -5513,7 +5577,7 @@ diff. Context7 was not used.
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
 `GET /api/status`. `POST /api/analyses` with the
-MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) merged in PR #88 (`86cc77d`; Entry 127); PR 1b (design tokens, base styles, IBM Plex fonts, token and contrast tests) merged in PR #89 (`9a119d2`; Entry 128), its 4 non-text pairs below 3:1 fixed in PR #92 (`c8c047e`; Entry 131). PR 2 (the `web` image: the built app served by nginx on the A2 routes, `/` → `/analyze`, A13 security headers on every answer) merged in PR #90 (`d352bad`; Entry 129). PR 3 is split in three (Entry 130): PR 3a (API client, `ApiError`, API types, no-timer lint rule) merged in PR #91 (`b6f09d6`; Entry 130); 3b (session store, expiry handler, `checkSession` on load) merged in PR #93 (`ee5fd50`; Entry 132); 3c (`react-router` 8.5.1, the six app routes checked against `deploy/nginx.conf`, the session guard, the `next` check, stub pages) merged in PR #94 (`b06df7b`; Entry 133). PR 4 (S1 Sign in: the form, `POST /api/session`, every S1 variant, Retry) merged in PR #95 (`1d41512`; Entry 134); the other pages are stubs, and the only API calls are `GET /api/session` on load and S1's `POST /api/session`. PR 5a (Playwright e2e harness on the real stack via nginx, never Vite; Chromium in CI, Firefox locally; secret scan; sign-in flows) merged in PR #96 (`880ec2b`; Entry 135); 5b (axe in light and dark, Origin matrix, security headers, JSON 404, lockout, outage) merged in PR #97 (`3963f5e`; Entry 136). PR 6 is split: 6a (app shell, rail, drawer, page-change rules) merged in PR #98 (`a16d8ef`; Entry 137); 6b (rail footer: Analyst ID, theme control, sign-out without `next`; e2e sign-in POST budget 12, both segments full) merged in PR #99 (`fd034dd`; Entry 138). `checks`, `web` and `e2e` are required on `main` since 2026-11-03 (Iheb; Entry 139). PR 7 is split: 7a (status store, rail status line) merged in PR #100 (`f6324fb`; Entry 139); 7b (S10 System status with Check now) merged in PR #101 (`13e7b84`; Entry 140). PR 8 is split in four (Entry 141); 8a (shared Button, TextField, Banner and Spinner; the Check now cascade fix) is on `feat/stage18-shared-components`, awaiting review. The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
+MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) merged in PR #88 (`86cc77d`; Entry 127); PR 1b (design tokens, base styles, IBM Plex fonts, token and contrast tests) merged in PR #89 (`9a119d2`; Entry 128), its 4 non-text pairs below 3:1 fixed in PR #92 (`c8c047e`; Entry 131). PR 2 (the `web` image: the built app served by nginx on the A2 routes, `/` → `/analyze`, A13 security headers on every answer) merged in PR #90 (`d352bad`; Entry 129). PR 3 is split in three (Entry 130): PR 3a (API client, `ApiError`, API types, no-timer lint rule) merged in PR #91 (`b6f09d6`; Entry 130); 3b (session store, expiry handler, `checkSession` on load) merged in PR #93 (`ee5fd50`; Entry 132); 3c (`react-router` 8.5.1, the six app routes checked against `deploy/nginx.conf`, the session guard, the `next` check, stub pages) merged in PR #94 (`b06df7b`; Entry 133). PR 4 (S1 Sign in: the form, `POST /api/session`, every S1 variant, Retry) merged in PR #95 (`1d41512`; Entry 134); the other pages are stubs, and the only API calls are `GET /api/session` on load and S1's `POST /api/session`. PR 5a (Playwright e2e harness on the real stack via nginx, never Vite; Chromium in CI, Firefox locally; secret scan; sign-in flows) merged in PR #96 (`880ec2b`; Entry 135); 5b (axe in light and dark, Origin matrix, security headers, JSON 404, lockout, outage) merged in PR #97 (`3963f5e`; Entry 136). PR 6 is split: 6a (app shell, rail, drawer, page-change rules) merged in PR #98 (`a16d8ef`; Entry 137); 6b (rail footer: Analyst ID, theme control, sign-out without `next`; e2e sign-in POST budget 12, both segments full) merged in PR #99 (`fd034dd`; Entry 138). `checks`, `web` and `e2e` are required on `main` since 2026-11-03 (Iheb; Entry 139). PR 7 is split: 7a (status store, rail status line) merged in PR #100 (`f6324fb`; Entry 139); 7b (S10 System status with Check now) merged in PR #101 (`13e7b84`; Entry 140). PR 8 is split in four (Entry 141); 8a (shared Button, TextField, Banner and Spinner; the Check now cascade fix) merged in PR #102 (`b70dde4`; Entry 141); 8b (File draft store, pre-upload checks, New analysis reset) is on `feat/stage18-file-draft`, awaiting review (Entry 143). The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
 canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.

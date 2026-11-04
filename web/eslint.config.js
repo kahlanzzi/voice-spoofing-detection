@@ -18,10 +18,10 @@ export default tseslint.config(
   },
   // No polling (team decision 2026-11-01): no timers in the API layer, session state, routing, the sign-in
   // screen (no lockout countdown, PR 4), the shell (PR 6a), the status store (PR 7a) or S10 (PR 7b: no polling, no
-  // relative time), or the shared components (PR 8a), whether called bare or through window or globalThis. Tests
-  // included.
+  // relative time), the shared components (PR 8a) or the upload store and checks (PR 8b; the duration read's timer
+  // is open, Entry 141 Q9), whether called bare or through window or globalThis. Tests included.
   {
-    files: ['src/api/**', 'src/session/**', 'src/status/**', 'src/routing/**', 'src/shell/**', 'src/components/**', 'src/pages/SignIn*.{ts,tsx}', 'src/pages/signInOutcome*.{ts,tsx}', 'src/pages/Status*.{ts,tsx}', 'src/pages/statusView*.{ts,tsx}'],
+    files: ['src/api/**', 'src/session/**', 'src/status/**', 'src/routing/**', 'src/shell/**', 'src/components/**', 'src/upload/**', 'src/pages/SignIn*.{ts,tsx}', 'src/pages/signInOutcome*.{ts,tsx}', 'src/pages/Status*.{ts,tsx}', 'src/pages/statusView*.{ts,tsx}'],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -33,14 +33,16 @@ export default tseslint.config(
     },
   },
   // Session state lives in memory only and the username is never logged (Stage 18 PR 3b); likewise the
-  // sign-in `next` and any route state live only in the URL (PR 3c): no Web Storage, no document.cookie (the
+  // sign-in `next` and any route state live only in the URL (PR 3c; New analysis's RESTART_PAGE marker in location
+  // state holds no data, PR 8b): no Web Storage, no document.cookie (the
   // session cookie is the server's HttpOnly cookie), no console. Tests are exempt, they spy on these. Do not
   // add no-restricted-syntax here: it would replace the timer rule above. The sign-in screen joins (PR 4): the
   // password and Analyst ID live in its state only. The shell joins (PR 6a): the theme is stored by theme.ts only.
   // The status store joins (PR 7a): in memory only. S10 joins (PR 7b): it shows the store, never stores or logs it.
   // The shared components join (PR 8a): they render props only, with no timer, storage or console.
+  // The upload store and checks join (PR 8b): the File and its name stay in memory, never stored or logged.
   {
-    files: ['src/session/**', 'src/status/**', 'src/routing/**', 'src/shell/**', 'src/components/**', 'src/pages/SignIn*.{ts,tsx}', 'src/pages/signInOutcome*.{ts,tsx}', 'src/pages/Status*.{ts,tsx}', 'src/pages/statusView*.{ts,tsx}'],
+    files: ['src/session/**', 'src/status/**', 'src/routing/**', 'src/shell/**', 'src/components/**', 'src/upload/**', 'src/pages/SignIn*.{ts,tsx}', 'src/pages/signInOutcome*.{ts,tsx}', 'src/pages/Status*.{ts,tsx}', 'src/pages/statusView*.{ts,tsx}'],
     ignores: ['src/**/*.test.{ts,tsx}'],
     rules: {
       'no-restricted-globals': [
