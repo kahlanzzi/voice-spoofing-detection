@@ -137,6 +137,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - D26 completed with the v2.1 §5 hand-overs; per-folder `CODEOWNERS` (owner + consumer reviewer); project log header updated.
 
 ### Fixed
+- The colour scan in `web/src/styles/colours.test.ts` no longer depends on Vitest's module cache: a type argument on its glob call froze the file list, so new source files could go unscanned; a new test compares the list with the disk.
 - Stage 18: 4 non-text tokens raised to WCAG 1.4.11 3:1 on every background they sit on (light `--line-strong` `#7C8FA6`, dark `#52729F`, light `--unc-mark`/`--warn-mark` `#BF7E0B`; hue kept); `tokens.css`, HANDOFF §4 and the contrast test, which now has no exceptions and checks 31 non-text pairs per theme.
 - Part 6 report/PDF and index: replace stale publication/CI-pending wording with the verified PR #73/#72 merge and review record; measurements unchanged.
 - Part 6 lint cleanup: removed the constant-heading f-string prefix in `src/audit/for2sec_audit.py` and unused `BaselineModel` import in `src/tuning/baseline_fit.py`; scoped Ruff findings 2 to 0, with 937 passing tests and unchanged coverage/complexity; the Part 6 report/PDF now links the cleanup commit and preserved after evidence.
