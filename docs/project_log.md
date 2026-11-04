@@ -5368,10 +5368,17 @@ plan was approved before the build. The user ran the final chain, the e2e, the C
 - `SignIn.test.tsx:384`, the known flake, failed once in 3 full runs (`expected "vi.fn()" to be called 4 times, but got 2 times`). Not changed here; the Open item stays.
 - e2e Chromium (agent-run, at `b1e67bf`): `68 passed (6.4m)` (was 59; +9); `sign-in POSTs through nginx: 12 (planned 12), 429: 1 (planned 1)`; secret scan 0 matches. The real POST answered 201 through `route.continue()`, so the fallback gate was not needed.
 - Planted failures (agent-run, one at a time, restored, tree clean after; 231 tests): submitting set after a tick → 7 failed; no status check → 4; real filename → 7; result on a 500 → 16; 2xx without `parseAnalysis` → 2; notice dropped → 2; risk from prediction → 4; number on the main card → 1; Analyze enabled on a failed check → 6; disabled on Unavailable → 1; disabled on unreadable → 1; New analysis without the guard → 2; no generation check → 2; session error not reset → 2; error focus removed → 1; `role="alert"` on the result → 34; timeout History sentence → 2.
-- Chain and live check (user-run): pending.
+- Scope (user-run): `git diff --stat` empty for `api/`, `configs/`, `deploy/`, `tests/` and the lockfile.
+- `project_log` (user-run): 6 removed lines (5 Open items + Current status), none from an entry body; 15 `+- [` lines, the PR C and demo-database items included.
+- Chain (user-run, after `npm ci`, empty cache): typecheck, lint, build clean; Vitest `Test Files 40 passed (40)`, `Tests 1287 passed (1287)`, exit 0, on the first run after `npm ci`, no re-run needed; audit 0; token grep 0; pytest `1278 passed, 9 skipped`.
+- e2e Chromium (user-run): 68 passed; sign-in POSTs 12 (planned 12), 429: 1 (planned 1); secret scan 0.
+- Live check on :8001 (user-run): OK.
+- Code checks (user-run, at `5f5392c`): `MOCK_VERSIONS` in `api/analyzer.py`: `model_version` "mock" is the only field that differs from a real bundle, and the browser checks exactly that; `api/intake.py:149` `PurePath(...).suffix.lower()` accepts any case; `configs/api.yaml` `analysis_timeout_s` 30; `deploy/nginx.conf` `proxy_read_timeout` 60s, `proxy_send_timeout` 60s, `proxy_connect_timeout` 5s; `web/eslint.config.js` l.25 and l.47 include `src/components/**`.
+- `CALL.WAV` part name (agent-checked): sent as `upload.wav`. The user's live check confirms `CALL.WAV` gives a real result.
+- Overlap tests (user decision): all five kept.
 - Not done: a real screen-reader pass (Orca, PR 15). Firefox e2e: not run (MVP exception; once before the demo). No DEEP-VOICE path, audio or dataset touched; no secret in the diff.
 
-**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the code, the tests and this entry, and ran the agent checks above. The plan was approved before the build. Against the brief, it ran `npx --no-install vitest --version` once (the repo's own binary, nothing downloaded). Context7 was not used. The team reviews the diff.
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the code, the tests and this entry, and ran the agent checks above. The plan was approved before the build. The user ran the final chain, the e2e and the live check. Against the brief, it ran `npx --no-install vitest --version` once (the repo's own binary, nothing downloaded). Context7 was not used. The team reviews the diff.
 
 **Gate:** review of this PR by Donia, who also reviews the copy proposals. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
 
