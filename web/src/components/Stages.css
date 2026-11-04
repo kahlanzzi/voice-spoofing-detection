@@ -1,0 +1,10 @@
+/* Stages (Stage 18 PR B). Tokens only; prototype lines 202-205. Its 14 px text uses --fs-sm (as in Entry 134). */
+
+.stages { list-style: none; margin: 0; padding: 0; display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.stage {
+  display: inline-flex; align-items: center; gap: var(--sp-2); padding: var(--sp-1) var(--sp-3); min-height: var(--sp-6);
+  border-radius: var(--r-pill); font-size: var(--fs-sm); border: 1px solid var(--line); background: var(--surface-2);
+  color: var(--muted);
+}
+.stage.done { color: var(--ok-fg); background: var(--ok-bg); border-color: transparent; }
+.stage.now { color: var(--link); background: var(--accent-soft); border-color: var(--link); font-weight: 600; }

@@ -328,10 +328,8 @@ describe('S3: the file card', () => {
     expect(rows()[2]).toBe('Duration not checked: the file cannot be read as audio')
   })
 
-  it('Analyze recording is disabled when valid and when not', async () => {
+  it('Analyze recording is disabled while the duration is read and when a check fails', async () => {
     await picked()
-    expect(analyzeButton().disabled).toBe(true)
-    readDone(12.5)
     expect(analyzeButton().disabled).toBe(true)
     readDone(61)
     expect(analyzeButton().disabled).toBe(true)

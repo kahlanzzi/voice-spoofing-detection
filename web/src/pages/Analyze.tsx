@@ -9,9 +9,14 @@
 // expiry, since the File outlives the session and the limits do not. A pick moves focus to the file card, and its
 // result goes to this page's own polite region as a new node (S10's technique, no timer) once the checks have settled.
 // Only a pick arms that, so coming back to a kept draft announces nothing. Failures are spoken by the alert (Q22).
+//
+// Analyze recording moves focus to the file heading: the prototype's target, the button, is disabled at that moment and
+// cannot hold focus (line 1318).
 import { useEffect, useRef, type ChangeEvent } from 'react'
 import Icon from '../components/Icon'
+import { resetAnalysis, startAnalysis } from '../upload/analysis'
 import { clearFileDraft, setFileDraft } from '../upload/fileDraft'
+import { useAnalysis } from '../upload/useAnalysis'
 import { useFileDraft } from '../upload/useFileDraft'
 import { useLimits } from '../upload/useLimits'
 import AnalyzeFile from './AnalyzeFile'
@@ -22,6 +27,7 @@ import './Analyze.css'
 export default function Analyze() {
   const state = useLimits()
   const file = useFileDraft()
+  const analysis = useAnalysis()
   const input = useRef<HTMLInputElement>(null)
   const choose = useRef<HTMLButtonElement>(null)
   const fileHeading = useRef<HTMLHeadingElement>(null)
@@ -51,7 +57,14 @@ export default function Analyze() {
     if (chosen === undefined) return
     pendingFocus.current = 'file'
     armed.current = true
+    resetAnalysis()
     setFileDraft(chosen)
+  }
+
+  function analyze(chosen: File) {
+    pendingFocus.current = 'file'
+    announce('Analysis started.')
+    void startAnalysis(chosen)
   }
 
   function remove() {
@@ -102,6 +115,8 @@ export default function Analyze() {
           file={file}
           limits={state.limits}
           headingRef={fileHeading}
+          submitting={analysis.status === 'submitting'}
+          onAnalyze={() => analyze(file)}
           onReplace={openPicker}
           onRemove={remove}
           onSettled={(allPassed) => settled(file.name, allPassed)}

@@ -90,13 +90,13 @@ test('limits 500: the alert, analysis off, no axe violation; Retry loads them', 
   await expect(page.getByRole('heading', { level: 2, name: 'Choose the recorded segment' })).toBeFocused()
 })
 
-test('a valid WAV → S3: all checks passed, Analyze recording disabled; no axe violation', async ({ signedInPage: page }) => {
+test('a valid WAV → S3: all checks passed, Analyze recording enabled; no axe violation', async ({ signedInPage: page }) => {
   await ready(page)
   await pick(page, 'call.wav', wav(1))
   // The duration row is the CSP guard: without media-src blob: it reads "could not be read" (Entry 145).
   await expect(checks(page)).toHaveText([/^Passed: Format WAV is accepted$/, /^Passed: Size 16 KB is within /, /^Passed: Duration 1 s is within /])
   await expect(page.getByRole('alert')).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Analyze recording' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Analyze recording' })).toBeEnabled()
   await expect(page.locator('#file-h')).toBeFocused()
   await expect(page.locator('#analyze-announcer')).toHaveText('File selected: call.wav. All checks passed.')
   await expectNoAxeViolations(page, 'S3 all checks passed')

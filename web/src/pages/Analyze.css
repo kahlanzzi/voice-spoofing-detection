@@ -43,3 +43,13 @@
 .ck-ok { color: var(--ok-fg); }
 .ck-bad, .input-error { color: var(--err-fg); }
 .ck-wait { color: var(--muted); }
+
+/* S4 (Stage 18 PR B): prototype lines 207-208 and 940. */
+.progress { display: flex; flex-direction: column; gap: var(--sp-3); }
+.info-line {
+  display: flex; gap: var(--sp-2); align-items: flex-start; font-size: var(--fs-sm); color: var(--ink-2);
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3);
+}
+.info-line svg { flex: none; margin-top: 2px; color: var(--link); }
+.analysis-warn { color: var(--warn-fg); display: inline-flex; gap: var(--sp-2); align-items: center; }
+.analysis-warn svg { flex: none; }
