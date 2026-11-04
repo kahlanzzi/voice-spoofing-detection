@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 18 PR B: Analyze recording sends one `POST /api/analyses` as `upload.<ext>`; S4, the result card with every value from the response, S5 for every answer, and the analysis-unavailable warning.
 - Stage 18 PR A: upload limits store, S2 and S3 (pre-upload checks, duration read), with `media-src 'self' blob:` added to the CSP; Analyze stays disabled until PR B.
 - Stage 18 PR 8b: File draft store and pure pre-upload checks (`web/src/upload/`), memory only; New analysis clears the draft, and on /analyze restarts the page without a new history entry.
 - Draft Execution Plan v2.2 in Markdown and PDF, covering approved decisions and Stage 17/18 progress through PR #102.
