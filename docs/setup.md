@@ -135,7 +135,7 @@ docker compose down                   # keeps the store; down -v deletes it
   `404 not_found`.
 - **Headers (A13):** every answer, nginx's own errors and the API's included, carries `Referrer-Policy:
   strict-origin-when-cross-origin`, `X-Content-Type-Options: nosniff` and `Content-Security-Policy:
-  default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'`.
+  default-src 'self'; media-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'`.
   They live in `deploy/nginx_security_headers.conf`, included in every location (a location with its
   own `add_header` would drop inherited ones). An inline script, a `data:` image or another origin
   would need a CSP change by decision.
@@ -240,7 +240,7 @@ npm run test:e2e:firefox                   # Firefox
   `analyst01` and other accounts are never touched.
 - **Projects, per browser:** `<browser>-setup` (sign in, save the session) → `<browser>` (sign-in flows, stub
   pages, the shell and its page-change rules, the HTTP/Origin matrix, security headers, the JSON 404, sign-out as
-  `e2e-signout` in its own context, the theme control, the rail status line and its one `GET /api/status`, S10 with Check now) → `<browser>-last`, ordered by dependencies. The
+  `e2e-signout` in its own context, the theme control, the rail status line and its one `GET /api/status`, S10 with Check now, S2 and S3 with a WAV built in the spec) → `<browser>-last`, ordered by dependencies. The
   last project restarts `web` a second time and locks `e2e-locked` through the form (unlocked at the end), then
   **stops the `api` container** and starts it again, three times (outage and Retry; a sign-out that gets nginx's 503 and
   keeps `e2e-main` signed in; S10 Check now → Unavailable with "Last attempt", then Ready). If a run is interrupted, the global

@@ -11,12 +11,15 @@
 // the entry, so Back is not a second /analyze, and PageChange repeats the page-change rules. The rail foot holds the service status line (PR 7a), the analyst, theme and sign-out (RailFoot, PR 6b). The shell
 // starts the one status check when it mounts: it mounts only once signed in, and GET /api/status needs a session
 // (docs/api_design.md §4.8). No other check but S10's Check now (PR 7b); StrictMode's second run shares the request.
+// It also asks for the upload limits, which sends one GET per signed-in session of the shell (Entry 145 Q20), whatever
+// page comes first, so S2 finds them there.
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import Button from '../components/Button'
 import Icon, { type IconName } from '../components/Icon'
 import { checkStatus } from '../status/status'
 import { clearFileDraft } from '../upload/fileDraft'
+import { loadLimits } from '../upload/limits'
 import { RESTART_PAGE } from './pageNames'
 import RailFoot from './RailFoot'
 import './Shell.css'
@@ -60,6 +63,7 @@ export default function Shell() {
 
   useEffect(() => {
     void checkStatus()
+    void loadLimits()
   }, [])
 
   // Focus once the drawer is on screen or gone (the SignIn.tsx pending-focus pattern).

@@ -36,7 +36,8 @@ test('api stopped → Sign out answers 503: still signed in, the alert, focus on
     expect((await response).status()).toBe(503)
     expect((await (await response).json()).error.code).toBe('analysis_unavailable')
     expect(await (await response).headerValue('set-cookie')).toBeNull()
-    await expect(page.getByRole('alert')).toHaveText(SIGN_OUT_FAILED)
+    // In the rail: a limits GET still in flight when the api stopped would add S2's own alert (PR A).
+    await expect(rail.getByRole('alert')).toHaveText(SIGN_OUT_FAILED)
     await expect(signOut).toBeEnabled()
     await expect(signOut).toBeFocused()
     await expect(page).toHaveURL(`${BASE_URL}/analyze`)

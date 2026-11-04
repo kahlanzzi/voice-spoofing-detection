@@ -185,6 +185,10 @@ describe('no timers, storage or console in src/upload', () => {
     expect(ids).toEqual(expect.arrayContaining(['no-restricted-syntax', 'no-restricted-globals']))
   })
 
+  it('a second timer in src/upload/readDuration.ts is still an error: its one exemption is on one line', async () => {
+    expect(await ruleIds('setTimeout(() => undefined, 1)\n', 'src/upload/readDuration.ts')).toContain('no-restricted-syntax')
+  })
+
   it('console in an upload test file is allowed, a timer is not', async () => {
     expect(await ruleIds("console.log('x')\n", 'src/upload/planted.test.ts')).toEqual([])
     expect(await ruleIds('setTimeout(() => undefined, 1)\n', 'src/upload/planted.test.ts')).toContain('no-restricted-syntax')
@@ -216,7 +220,12 @@ describe('no timers, storage, cookie or console in the sign-in screen', () => {
   })
 
   it('other pages are not banned', async () => {
-    expect(await ruleIds("setTimeout(() => undefined, 1)\nconsole.log('x')\n", 'src/pages/Analyze.tsx')).toEqual([])
+    expect(await ruleIds("setTimeout(() => undefined, 1)\nconsole.log('x')\n", 'src/pages/History.tsx')).toEqual([])
+  })
+
+  it.each(['src/pages/Analyze.tsx', 'src/pages/AnalyzeUpload.tsx', 'src/pages/AnalyzeFile.tsx'])('%s has the bans (PR A)', async (file) => {
+    const ids = await ruleIds("setTimeout(() => undefined, 1)\nconsole.log('x')\n", file)
+    expect(ids).toEqual(expect.arrayContaining(['no-restricted-syntax', 'no-restricted-globals']))
   })
 })
 

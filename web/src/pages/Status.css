@@ -1,26 +1,11 @@
 /* S10 System status (Stage 18 PR 7b). Tokens only for colour, type, radius, space and motion; from the prototype
-   (docs/design/analyst-console-prototype.html): helpers 82-87; page head 154-157; panel 165-168; tags 170-171;
-   kicker 214; key-value list 231-233; disclosure 235-239; decision line 284-285; status 351-365; narrow 417-439.
+   (docs/design/analyst-console-prototype.html): kicker 214; key-value list 231-233; disclosure 235-239; decision line 284-285; status 351-365; narrow 417-439.
    The prototype's 14 / 22 px text uses the nearest tokens (as in Entry 134). The check list is .check-* where the
    prototype says .svc-*: Shell.css owns .svc-* for the rail line. Button, Banner and Spinner come from
    web/src/components/ (PR 8a, Entry 141); StatusPill, Collapsible and the decision line can follow when a second
-   screen needs them (HANDOFF lines 142-151). */
+   screen needs them (HANDOFF lines 142-151). The page head, panel and tags are in styles/page.css (PR A, Q25). */
 
-.mono { font-family: var(--font-mono); }
-
-.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-3) var(--sp-5); flex-wrap: wrap; }
-.page-head h1 { line-height: var(--lh-title); letter-spacing: -.01em; }
-.page-sub { color: var(--muted); font-size: var(--fs-sm); margin-top: var(--sp-1); }
 .updated { display: flex; gap: var(--sp-3); align-items: center; flex-wrap: wrap; font-size: var(--fs-sm); color: var(--muted); }
-
-.tag {
-  display: inline-flex; align-items: center; gap: var(--sp-1); padding: 2px var(--sp-2); border-radius: var(--r-pill);
-  font-size: var(--fs-xs); font-weight: 600; white-space: nowrap;
-}
-.tag-demo { background: var(--demo-bg); color: var(--demo-fg); }
-
-.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); }
-.panel h2 { font-size: var(--fs-md); font-weight: 600; }
 .kicker { font-size: var(--fs-xs); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 
 .sum { display: flex; gap: var(--sp-4); align-items: flex-start; padding: var(--sp-5); border-left: 6px solid var(--sum-mark); }

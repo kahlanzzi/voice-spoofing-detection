@@ -10,7 +10,8 @@
 // shell's own check never announce. The effect waits for React's commit: the button is enabled again by then.
 //
 // The summary has no role (HANDOFF line 143): the region above is what speaks. Not built here: the "Audio and
-// stored data" panel (prototype lines 1202-1205, from /limits in PR 8c) and the stale-status banner (Open item).
+// stored data" panel (prototype lines 1202-1205) and failed limits in the summary, both after the MVP (Q8), and the
+// stale-status banner (Open item).
 import { useEffect, useRef } from 'react'
 import Banner from '../components/Banner'
 import Button from '../components/Button'

@@ -1,5 +1,5 @@
 // The pre-upload checks (Stage 18 PR 8b; prototype lines 898-913, HANDOFF line 177): pure, with no I/O and no Audio
-// element (the duration read is 8d). Limits come from GET /api/limits in its own units, bytes and seconds
+// element (the duration read is readDuration.ts). Limits come from GET /api/limits in its own units, bytes and seconds
 // (docs/api_design.md §4.2); nothing here is a guessed value. The MIME type is not an input: the server ignores it
 // (§4.3).
 //
@@ -54,8 +54,18 @@ export function formatDuration(seconds: number): string {
   return `${Math.floor(whole / 60)} min ${whole % 60} s`
 }
 
+// "WAV, FLAC, MP3": the checks and S2's limits list, so they cannot disagree.
+export function formatList(formats: readonly string[]): string {
+  return formats.map((format) => format.toUpperCase()).join(', ')
+}
+
+// The size limit in MB, at most one decimal: the checks and S2's limits list.
+export function limitInMb(bytes: number): number {
+  return Number((bytes / BYTES_PER_MB).toFixed(1))
+}
+
 function formatCheck(extension: string, limits: CheckLimits): FileCheck {
-  const formats = limits.formats.map((format) => format.toUpperCase()).join(', ')
+  const formats = formatList(limits.formats)
   if (limits.formats.includes(extension)) {
     return { id: 'format', ok: true, wait: false, text: `Format ${extension.toUpperCase()} is accepted` }
   }
@@ -68,7 +78,7 @@ function formatCheck(extension: string, limits: CheckLimits): FileCheck {
 
 function sizeCheck(size: number, limits: CheckLimits): FileCheck {
   if (size === 0) return { id: 'size', ok: false, wait: false, text: EMPTY_TEXT }
-  const limit = Number((limits.max_size_bytes / BYTES_PER_MB).toFixed(1))
+  const limit = limitInMb(limits.max_size_bytes)
   const shown = formatSize(size)
   if (size <= limits.max_size_bytes) {
     return { id: 'size', ok: true, wait: false, text: `Size ${shown} is within ${limit} MB` }
@@ -94,13 +104,17 @@ function durationCheck(duration: DurationInput, limits: CheckLimits): FileCheck 
   return { id: 'duration', ok: false, wait: false, text }
 }
 
+// Whether the duration is worth reading: an accepted format with data in it (prototype line 1287).
+export function canBeAudio(file: Pick<File, 'name' | 'size'>, limits: Pick<CheckLimits, 'formats'>): boolean {
+  return limits.formats.includes(fileExtension(file.name)) && file.size > 0
+}
+
 export function runChecks(file: Pick<File, 'name' | 'size'>, limits: CheckLimits, duration: DurationInput): CheckResult {
   const format = formatCheck(fileExtension(file.name), limits)
-  const notAudio = format.ok === false || file.size === 0
   const checks: readonly FileCheck[] = [
     format,
     sizeCheck(file.size, limits),
-    notAudio
+    !canBeAudio(file, limits)
       ? { id: 'duration', ok: null, wait: false, text: 'Duration not checked: the file cannot be read as audio' }
       : durationCheck(duration, limits),
   ]
