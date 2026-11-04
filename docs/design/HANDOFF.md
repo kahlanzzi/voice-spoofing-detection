@@ -277,7 +277,7 @@ Not decided here. Each is shown in the prototype as a placeholder, a mock value 
   until a new analysis starts. Cancel only stops waiting (open decision 9).
 - **Errors:** map API error codes to the six error kinds; never render result components when
   the response is an error. Network failure = no request ID; service-side errors show the ID.
-- **Filenames:** keep the `File` object in component state only; never send the name as metadata
+- **Filenames:** keep the `File` object in memory only, in a module store (A23, Entry 130); never send the name as metadata
   and never write it to storage.
 - **Stats and limits:** read from the API; no computation of statistics in the browser.
 - **Reuse:** `ResultCard` serves both the new result and Analysis details (prop `fresh`);
