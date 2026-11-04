@@ -30,3 +30,16 @@
 @media (max-width: 640px) {
   .upload { padding: var(--sp-5) var(--sp-4); }
 }
+
+.file-card { display: flex; flex-direction: column; gap: var(--sp-4); }
+.file { display: flex; gap: var(--sp-4); align-items: flex-start; flex-wrap: wrap; justify-content: space-between; }
+.file-info { min-width: 0; }
+.panel .file-title { font-size: var(--fs-sm); font-weight: 600; }
+.file-name { font-family: var(--font-mono); font-size: var(--fs-base); font-weight: 500; overflow-wrap: anywhere; }
+.actions { display: flex; gap: var(--sp-3); flex-wrap: wrap; align-items: center; }
+.checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-2); font-size: var(--fs-sm); }
+.checks li { display: flex; gap: var(--sp-2); align-items: flex-start; }
+.checks svg { flex: none; margin-top: 2px; }
+.ck-ok { color: var(--ok-fg); }
+.ck-bad, .input-error { color: var(--err-fg); }
+.ck-wait { color: var(--muted); }

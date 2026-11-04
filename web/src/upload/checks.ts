@@ -1,5 +1,5 @@
 // The pre-upload checks (Stage 18 PR 8b; prototype lines 898-913, HANDOFF line 177): pure, with no I/O and no Audio
-// element (the duration read is 8d). Limits come from GET /api/limits in its own units, bytes and seconds
+// element (the duration read is readDuration.ts). Limits come from GET /api/limits in its own units, bytes and seconds
 // (docs/api_design.md §4.2); nothing here is a guessed value. The MIME type is not an input: the server ignores it
 // (§4.3).
 //
@@ -104,13 +104,17 @@ function durationCheck(duration: DurationInput, limits: CheckLimits): FileCheck 
   return { id: 'duration', ok: false, wait: false, text }
 }
 
+// Whether the duration is worth reading: an accepted format with data in it (prototype line 1287).
+export function canBeAudio(file: Pick<File, 'name' | 'size'>, limits: Pick<CheckLimits, 'formats'>): boolean {
+  return limits.formats.includes(fileExtension(file.name)) && file.size > 0
+}
+
 export function runChecks(file: Pick<File, 'name' | 'size'>, limits: CheckLimits, duration: DurationInput): CheckResult {
   const format = formatCheck(fileExtension(file.name), limits)
-  const notAudio = format.ok === false || file.size === 0
   const checks: readonly FileCheck[] = [
     format,
     sizeCheck(file.size, limits),
-    notAudio
+    !canBeAudio(file, limits)
       ? { id: 'duration', ok: null, wait: false, text: 'Duration not checked: the file cannot be read as audio' }
       : durationCheck(duration, limits),
   ]

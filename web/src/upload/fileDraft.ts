@@ -1,5 +1,5 @@
 // The selected recording (Stage 18 PR 8b; A23, Entry 130), read by React through useSyncExternalStore(subscribe,
-// getSnapshot) from 8d on. A module store, not component state, so the File survives the guarded page unmounting
+// getSnapshot) in useFileDraft.ts. A module store, not component state, so the File survives the guarded page unmounting
 // when the session expires (HANDOFF line 211). In memory only: a reload loses it, and neither the File nor its name
 // is ever stored or logged (HANDOFF line 280).
 //
