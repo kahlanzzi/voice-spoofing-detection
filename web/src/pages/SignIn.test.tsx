@@ -380,9 +380,11 @@ describe('the password stays in the form', () => {
     for (const spy of spies) expect(JSON.stringify(spy.mock.calls)).not.toContain(PASSWORD.trim())
     expect(cookie).not.toHaveBeenCalled()
     expect(JSON.stringify(router.state.location)).not.toContain(PASSWORD.trim())
-    // The two sign-ins, then the shell's one status check (PR 7a), which carries no body.
-    expect(fetchMock).toHaveBeenCalledTimes(3)
+    // The two sign-ins, then the shell's status check (PR 7a) and limits request (PR A), which carry no body.
+    expect(fetchMock).toHaveBeenCalledTimes(4)
     expect(fetchMock.mock.calls[2]?.[0]).toBe('/api/status')
     expect(fetchMock.mock.calls[2]?.[1]?.body).toBeUndefined()
+    expect(fetchMock.mock.calls[3]?.[0]).toBe('/api/limits')
+    expect(fetchMock.mock.calls[3]?.[1]?.body).toBeUndefined()
   })
 })

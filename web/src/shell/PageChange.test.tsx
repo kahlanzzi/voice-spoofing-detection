@@ -28,6 +28,12 @@ const store = vi.hoisted(() => {
   }
 })
 
+// The upload limits are a stand-in here, ready and inert: the shell's limits request is pinned in Shell.limits.test.tsx.
+vi.mock('../upload/limits', () => {
+  const ready = { status: 'ready', limits: { formats: ['wav'], max_size_bytes: 1048576, max_duration_s: 60, audio_deletion: 'Deleted' } }
+  return { getSnapshot: () => ready, subscribe: () => () => undefined, loadLimits: vi.fn(), retryLimits: vi.fn() }
+})
+
 vi.mock('../session/session', () => ({
   getSnapshot: () => store.get(),
   subscribe: (listener: () => void) => store.subscribe(listener),
