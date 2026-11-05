@@ -195,6 +195,28 @@ describe('no timers, storage or console in src/upload', () => {
   })
 })
 
+// S7 (PR C): no polling, so no timer, and the list lives in the page's state only.
+
+describe('no timers, storage or console in S7', () => {
+  it.each([
+    ['setInterval(() => undefined, 30000)\n', 'no-restricted-syntax'],
+    ["localStorage.setItem('history', '[]')\n", 'no-restricted-globals'],
+    ["console.log('x')\n", 'no-restricted-globals'],
+  ])('%s is an error in src/history', async (code, rule) => {
+    expect(await ruleIds(code, 'src/history/planted.ts')).toContain(rule)
+  })
+
+  it.each(['src/history/history.ts', 'src/pages/History.tsx'])('%s keeps the timer, storage and console bans', async (file) => {
+    const ids = await ruleIds("setTimeout(() => undefined, 1)\nlocalStorage.setItem('k', 'v')\nconsole.log('x')\n", file)
+    expect(ids).toEqual(expect.arrayContaining(['no-restricted-syntax', 'no-restricted-globals']))
+  })
+
+  it('console in a History test file is allowed, a timer is not', async () => {
+    expect(await ruleIds("console.log('x')\n", 'src/history/planted.test.ts')).toEqual([])
+    expect(await ruleIds('setTimeout(() => undefined, 1)\n', 'src/history/planted.test.ts')).toContain('no-restricted-syntax')
+  })
+})
+
 // The sign-in screen (PR 4): the password and Analyst ID live in its state only, and no lockout countdown, so
 // SignIn and signInOutcome get both bans; other pages do not (later pages may need a timer, e.g. the toast).
 
@@ -220,7 +242,7 @@ describe('no timers, storage, cookie or console in the sign-in screen', () => {
   })
 
   it('other pages are not banned', async () => {
-    expect(await ruleIds("setTimeout(() => undefined, 1)\nconsole.log('x')\n", 'src/pages/History.tsx')).toEqual([])
+    expect(await ruleIds("setTimeout(() => undefined, 1)\nconsole.log('x')\n", 'src/pages/Overview.tsx')).toEqual([])
   })
 
   it.each(['src/pages/Analyze.tsx', 'src/pages/AnalyzeUpload.tsx', 'src/pages/AnalyzeFile.tsx', 'src/pages/AnalyzeResult.tsx', 'src/pages/AnalyzeError.tsx'])('%s has the bans (PR A, B)', async (file) => {

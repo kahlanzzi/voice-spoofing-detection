@@ -18,11 +18,11 @@ export default tseslint.config(
   },
   // No polling (team decision 2026-11-01): no timers in the API layer, session state, routing, the sign-in
   // screen (no lockout countdown, PR 4), the shell (PR 6a), the status store (PR 7a) or S10 (PR 7b: no polling, no
-  // relative time), the shared components (PR 8a), the upload store and checks (PR 8b) or S2 and S3 (PR A), whether
-  // called bare or through window or globalThis. Tests included. One exception, by decision: the one-shot fallback in
+  // relative time), the shared components (PR 8a), the upload store and checks (PR 8b), S2 and S3 (PR A) or S7 (PR C),
+  // whether called bare or through window or globalThis. Tests included. One exception, by decision: the one-shot fallback in
   // src/upload/readDuration.ts, on that line alone (Entry 145 Q9).
   {
-    files: ['src/api/**', 'src/session/**', 'src/status/**', 'src/routing/**', 'src/shell/**', 'src/components/**', 'src/upload/**', 'src/pages/SignIn*.{ts,tsx}', 'src/pages/signInOutcome*.{ts,tsx}', 'src/pages/Status*.{ts,tsx}', 'src/pages/statusView*.{ts,tsx}', 'src/pages/Analyze*.{ts,tsx}'],
+    files: ['src/api/**', 'src/session/**', 'src/status/**', 'src/routing/**', 'src/shell/**', 'src/components/**', 'src/upload/**', 'src/history/**', 'src/pages/SignIn*.{ts,tsx}', 'src/pages/signInOutcome*.{ts,tsx}', 'src/pages/Status*.{ts,tsx}', 'src/pages/statusView*.{ts,tsx}', 'src/pages/Analyze*.{ts,tsx}', 'src/pages/History*.{ts,tsx}'],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -43,8 +43,9 @@ export default tseslint.config(
   // The shared components join (PR 8a): they render props only, with no timer, storage or console.
   // The upload store and checks join (PR 8b): the File and its name stay in memory, never stored or logged.
   // S2 and S3 join (PR A): they show the File's name, never store or log it.
+  // S7 joins (PR C): the list lives in the page's state, never stored or logged.
   {
-    files: ['src/session/**', 'src/status/**', 'src/routing/**', 'src/shell/**', 'src/components/**', 'src/upload/**', 'src/pages/SignIn*.{ts,tsx}', 'src/pages/signInOutcome*.{ts,tsx}', 'src/pages/Status*.{ts,tsx}', 'src/pages/statusView*.{ts,tsx}', 'src/pages/Analyze*.{ts,tsx}'],
+    files: ['src/session/**', 'src/status/**', 'src/routing/**', 'src/shell/**', 'src/components/**', 'src/upload/**', 'src/history/**', 'src/pages/SignIn*.{ts,tsx}', 'src/pages/signInOutcome*.{ts,tsx}', 'src/pages/Status*.{ts,tsx}', 'src/pages/statusView*.{ts,tsx}', 'src/pages/Analyze*.{ts,tsx}', 'src/pages/History*.{ts,tsx}'],
     ignores: ['src/**/*.test.{ts,tsx}'],
     rules: {
       'no-restricted-globals': [
