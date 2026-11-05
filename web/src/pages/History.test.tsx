@@ -134,6 +134,7 @@ describe('states', () => {
     expect(screen.getByText('Results appear here after the first analysis. Only results are stored: no audio and no original filenames.')).toBeTruthy()
     expect(within(screen.getByRole('main')).getByRole('button', { name: 'New analysis' })).toBeTruthy()
     expect(screen.queryByRole('table')).toBeNull()
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 
   it('empty: New analysis goes to /analyze', async () => {
@@ -161,6 +162,7 @@ describe('states', () => {
     expect(headers.map((header) => header.textContent)).toEqual(['Analyzed (GMT+1)', 'Request ID', 'Verdict · risk', 'Analyst note'])
     expect(headers.every((header) => header.getAttribute('scope') === 'col')).toBe(true)
     expect(await bodyRows()).toHaveLength(2)
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 
   it('a malformed body is the failed state, with no row at all', async () => {

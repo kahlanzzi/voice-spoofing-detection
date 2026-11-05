@@ -211,4 +211,11 @@ describe('the fetch rule', () => {
     expect(await history.loadHistory()).toBeNull()
     expect(session.getSnapshot()).toEqual({ status: 'signedOut', reason: 'expired' })
   })
+
+  it('a 401 is never failed on its own: the expiry above is not what keeps it so', async () => {
+    client.setSessionExpiredHandler(null)
+    fetchMock.mockResolvedValueOnce(apiError(401, 'session_expired'))
+    expect(await history.loadHistory()).toBeNull()
+    expect(session.getSnapshot()).toEqual({ status: 'signedIn', username: 'analyst01' })
+  })
 })
