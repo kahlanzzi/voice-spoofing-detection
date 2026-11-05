@@ -37,6 +37,9 @@ vi.mock('../upload/limits', () => {
   return { getSnapshot: () => ready, subscribe: () => () => undefined, loadLimits: vi.fn(), retryLimits: vi.fn() }
 })
 
+// History's GET is pinned in pages/History.test.tsx; here the page stays on its skeleton and sends nothing.
+vi.mock('../history/history', () => ({ loadHistory: () => new Promise(() => undefined) }))
+
 vi.mock('../session/session', () => ({
   getSnapshot: () => store.get(),
   subscribe: (listener: () => void) => store.subscribe(listener),

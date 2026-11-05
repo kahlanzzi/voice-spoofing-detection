@@ -12,7 +12,7 @@
 import type { Ref } from 'react'
 import type { AnalysisResponse, RiskLevel, Verdict } from '../api/types'
 import Icon, { type IconName } from './Icon'
-import { EXPLANATION, REQUIRED_ACTION, RISK_TEXT, VERDICT_TEXT } from './resultText'
+import { EXPLANATION, isMockResult, REQUIRED_ACTION, RISK_TEXT, VERDICT_TEXT } from './resultText'
 import './ResultCard.css'
 
 const VERDICT_LOOK: Record<Verdict, { className: string; icon: IconName }> = {
@@ -47,7 +47,7 @@ export default function ResultCard({ analysis, fileName, headingRef }: ResultCar
             <Icon name={RISK_ICON[risk]} size={14} />
             {RISK_TEXT[risk].toUpperCase()}
           </span>
-          {analysis.model_version === 'mock' && <span className="tag tag-demo">Mock result</span>}
+          {isMockResult(analysis) && <span className="tag tag-demo">Mock result</span>}
         </div>
       </div>
       <div className="result-body">
