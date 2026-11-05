@@ -8,6 +8,13 @@ export const VERDICT_TEXT: Record<Verdict, string> = {
   synthetic: 'Likely synthetic voice',
 }
 
+// The short form for a pill (prototype line 594, HANDOFF line 140).
+export const VERDICT_SHORT: Record<Verdict, string> = {
+  authentic: 'Likely authentic',
+  uncertain: 'Cannot decide',
+  synthetic: 'Likely synthetic',
+}
+
 export const RISK_TEXT: Record<RiskLevel, string> = { LOW: 'Low risk', MEDIUM: 'Medium risk', HIGH: 'High risk' }
 
 export const REQUIRED_ACTION: Record<Verdict, { heading: string; items: readonly string[] }> = {
@@ -43,6 +50,11 @@ export const EXPLANATION: Record<Verdict, string> = {
     'The model output is close enough to the policy boundary that the frozen risk policy does not choose a side. This is not a weak “authentic” result: treat the request as unverified.',
   authentic:
     'The frozen risk policy places this recording below its uncertainty band. This does not verify the caller’s identity and does not guarantee that the request is legitimate.',
+}
+
+// The response has no mock field: model_version "mock" is its one sign (Entry 146 Q26).
+export function isMockResult(analysis: Pick<AnalysisResponse, 'model_version'>): boolean {
+  return analysis.model_version === 'mock'
 }
 
 // Prototype line 1344, with the risk word from the response's risk_level.

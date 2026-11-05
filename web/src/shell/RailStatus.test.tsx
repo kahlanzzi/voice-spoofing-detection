@@ -44,6 +44,9 @@ vi.mock('../status/status', () => ({
 
 const SIGNED_IN = vi.hoisted(() => ({ status: 'signedIn', username: 'analyst01' }) as const)
 
+// History's GET is pinned in pages/History.test.tsx; here the page stays on its skeleton and sends nothing.
+vi.mock('../history/history', () => ({ loadHistory: () => new Promise(() => undefined) }))
+
 vi.mock('../session/session', () => ({
   getSnapshot: () => SIGNED_IN,
   subscribe: () => () => undefined,
