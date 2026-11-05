@@ -5412,15 +5412,20 @@ plan was approved before the build. The user ran the final chain, the e2e, the C
 - After `npm ci`: typecheck, lint, build clean; Vitest `Test Files 44 passed (44)`, `Tests 1394 passed (1394)`, exit 0 (was 1287; +107); `npm audit --omit=dev`: 0 vulnerabilities; `.venv/bin/pytest -q`: `1278 passed, 9 skipped`; token grep 0.
 - The plan said 1393. The extra test is the 401 one below. `Shell.limits.test.tsx` needed no change, as assumed. Not planned: `eslint.config.test.ts:245` used `History.tsx` as its unbanned page, now `Overview.tsx`.
 - Six test files mock `history/history`, so their counts hold; `SignIn.test.tsx:384` is untouched.
-- `SignIn.test.tsx`, the known flake's test, failed once in one full run; its message was not captured. The next 4 full runs and the run after `npm ci` passed. The Open item stays.
+- `SignIn.test.tsx`, the known flake's test, failed once in one full run; uncaptured (its message was not kept). The next 4 full runs and the run after `npm ci` passed, and the user's 4 full runs found no repeat. The Open item stays.
 - e2e Chromium: `76 passed (2.9m)` (was 68; +8); `sign-in POSTs through nginx: 12 (planned 12), 429: 1 (planned 1)`; secret scan 0 matches.
 - Planted failures (one at a time, restored, tree clean after; 94 targeted tests unless stated): bad items filtered → 18 failed; effect on `location.search` → 1; row link → 1; timer → 1, and lint exit 1; `search` forwarded → 2; no generation check → 2; no shared in-flight → 2; `confidence` in the row → 3; risk from the verdict → 1; no alert on the failure → 4; client-side sort → 1; Retry without the focus move → 1; count from rows → 1; announcement from rows → 1.
 - **Two plants survived at first, and the tests were changed (`e171e00`):** `role="alert"` on the list (0 failed), and 401 → failed (0 failed: `expire()` bumps the generation, so the answer was dropped before that branch mattered). After the fix: 1 failed each.
-- Hard-coded UTC, plain full Vitest run: cell format → `3 failed` under `TZ=UTC`, `3 failed` under `TZ=Africa/Tunis`; label format → `3 failed` under both (first run under Tunis `4 failed`, not captured; 3 in two re-runs, the same three tests as under UTC).
+- Hard-coded UTC, plain full Vitest run: cell format → `3 failed` under `TZ=UTC`, `3 failed` under `TZ=Africa/Tunis`; label format → `3 failed` under both (first run under Tunis `4 failed`, the fourth uncaptured; 3 in two re-runs, the same three tests as under UTC; the user's 4 full runs found no repeat).
 - Both UTC plants in one rebuild, e2e: 2 failed, both `history.spec.ts` (header `Analyzed (GMT+1)` not found; `Expected "3 Nov 2026, 10:14"`, `Received "3 Nov 2026, 09:14"`), 4 did not run, exit 1.
-- Not done: user-run chain and live check; a real screen-reader pass (Orca, PR 15); Firefox e2e (MVP exception; once before the demo). No DEEP-VOICE path, audio or dataset touched; no secret in the diff.
+- Scope (user-run): `git diff --stat` empty for `api`, `configs`, `deploy`, `tests` and `web/package-lock.json`.
+- `project_log` (user-run): 5 removed lines (the 4 planned + the PR B copy item), none from an entry body; 7 `+- [` lines.
+- Chain (user-run, at `3c339da`, after `npm ci`, empty cache): typecheck, lint, build clean; Vitest `Test Files 44 passed (44)`, `Tests 1394 passed (1394)`, exit 0; then 3 more full runs, all green, no failure captured; `npm audit --omit=dev` 0; token grep 0; pytest `1278 passed, 9 skipped`.
+- e2e Chromium (user-run): 76 passed; sign-in POSTs 12 (planned 12), 429: 1 (planned 1); secret scan 0.
+- Live check on :8001 (user-run, Iheb): OK.
+- Not done: a real screen-reader pass (Orca, PR 15); Firefox e2e (not run; MVP exception; once before the demo). No DEEP-VOICE path, audio or dataset touched; no secret in the diff.
 
-**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the code, the tests and this entry, and ran the checks above. The plan was reviewed and approved by the user before the build. Context7 was not used. The team reviews the diff.
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the code, the tests and this entry, and ran the checks above. The plan was reviewed and approved by the user before the build. The user ran the final chain, the e2e and the live check. Context7 was not used. The team reviews the diff.
 
 **Gate:** review of this PR by Donia, who also reviews the Q40 copy proposal. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
 
