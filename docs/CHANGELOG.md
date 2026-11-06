@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 18: README section "MVP: install and run", tested from a fresh clone: key, start, first account, mock labelling, what is not in the MVP, clean database, tests and troubleshooting.
 - Stage 18 PR C: S7 History (MVP cut): one `GET /api/analyses` per entry, the newest 10 records with verdict, risk, mock tag and browser-zone time; loading, empty and failed states with Retry; no filters, pager or row link yet.
 - Stage 18 PR B: Analyze recording sends one `POST /api/analyses` as `upload.<ext>`; S4, the result card with every value from the response, S5 for every answer, and the analysis-unavailable warning.
 - Stage 18 PR A: upload limits store, S2 and S3 (pre-upload checks, duration read), with `media-src 'self' blob:` added to the CSP; Analyze stays disabled until PR B.
