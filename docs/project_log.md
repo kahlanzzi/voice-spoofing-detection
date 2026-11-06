@@ -5463,6 +5463,8 @@ plan was approved before the build. The user ran the final chain, the e2e, the C
   - Step 14: reseeded `analyst01`, History "No analyses yet".
 - **One README deviation:** step 3 of "Use the MVP" promised a confidence score, but the main card shows no number (H; PR B's tests forbid score wording on the card). Fixed in `052bc19`: the output value is under Technical details.
 - **Limits:** a fresh clone on the developer's Linux machine, not a fresh machine, so NFR-10 is only partly evidenced (Open item). macOS and Windows not tested.
+- **Fixes for graders on other systems:** the portable `sed -i.bak` key line and the Git Bash sentence came from review for graders on other systems, not from the fresh-clone test. The `sed` line was re-tested on Linux by Iheb; macOS and Windows remain untested (the NFR-10 Open item).
+- **Base-image platforms (checked by Iheb with `docker buildx imagetools inspect`):** `nginx:1.30.6-alpine`, `node:26.13.0-alpine` and `python:3.13.15-slim-trixie` are pinned to multi-arch index digests that include linux/amd64 and linux/arm64/v8, so Apple Silicon builds natively. Checked, not tested on a Mac.
 
 **Size:** per commit, added / removed in `README.md`: `6ad2516` 199 / 0 (estimate 165: the one-line-per-item list and the tests and troubleshooting text); `2cecd78` 12 / 12; `052bc19` 2 / 2.
 

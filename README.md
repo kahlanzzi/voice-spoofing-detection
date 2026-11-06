@@ -49,6 +49,7 @@ find it in History. **It uses a mock analyzer, so its verdicts are not model res
 | Tests only | Python and a virtual environment | 3.13 (official, D15); 3.14 is allowed locally |
 
 Node and Python are not needed to run the MVP. These steps were tested on Linux only.
+On Windows, run the commands in Git Bash, not PowerShell.
 
 ```bash
 docker --version
@@ -78,7 +79,7 @@ anywhere.
 
 ```bash
 cp .env.example .env     # skip this line if you already have a .env: it would overwrite it
-sed -i "s/^VSD_SIGNIN_HMAC_KEY=.*/VSD_SIGNIN_HMAC_KEY=$(openssl rand -hex 32)/" .env
+sed -i.bak "s/^VSD_SIGNIN_HMAC_KEY=.*/VSD_SIGNIN_HMAC_KEY=$(openssl rand -hex 32)/" .env && rm .env.bak   # works with GNU sed (Linux, Git Bash) and BSD sed (macOS)
 grep -c '^VSD_SIGNIN_HMAC_KEY=.' .env    # prints 1, without showing the key
 ```
 
