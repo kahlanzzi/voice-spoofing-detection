@@ -33,6 +33,205 @@ Colab / Kaggle GPUs · Weights & Biases · pytest + GitHub Actions. Details: ADR
 [0002](docs/decisions/0002-tech-stack.md), its frontend replacement
 [0008](docs/decisions/0008-web-frontend-react.md), and [architecture](docs/architecture.md).
 
+## MVP: install and run
+
+The MVP runs in Docker at http://localhost:8001: sign in → upload a recording → read the verdict →
+find it in History. **It uses a mock analyzer, so its verdicts are not model results**; see
+[Mock results](#mock-results). To work on the code instead, see [Getting started](#getting-started).
+
+### Prerequisites
+
+| Needed for | Tool | Tested version |
+|---|---|---|
+| Running the MVP | Docker, with Compose v2 | Docker 28.5.2, Compose 2.40.3 |
+| Running the MVP | Git and `openssl` | any recent version |
+| Tests only | Node, exact version (`web/.nvmrc`) | 26.13.0 |
+| Tests only | Python and a virtual environment | 3.13 (official, D15); 3.14 is allowed locally |
+
+Node and Python are not needed to run the MVP. These steps were tested on Linux only.
+
+```bash
+docker --version
+docker compose version
+git --version
+openssl version
+```
+
+### 1. Get the code
+
+```bash
+git clone https://github.com/kahlanzzi/voice-spoofing-detection.git
+cd voice-spoofing-detection
+```
+
+> **Warning: the folder name decides whose data you are using.** Docker Compose names a project
+> after its folder. Two clones in folders with the same name, even in different places, count as
+> one project and share one database. `docker compose down -v` in either one deletes that database.
+> If you already have a clone, give the new one a different folder name:
+> `git clone https://github.com/kahlanzzi/voice-spoofing-detection.git vsd-second`
+
+### 2. Create the sign-in key
+
+The API refuses to start without `VSD_SIGNIN_HMAC_KEY`, a random hex key of at least 32 bytes. It is
+the only value you must set. It lives in `.env`, which git ignores; never commit it or paste it
+anywhere.
+
+```bash
+cp .env.example .env     # skip this line if you already have a .env: it would overwrite it
+sed -i "s/^VSD_SIGNIN_HMAC_KEY=.*/VSD_SIGNIN_HMAC_KEY=$(openssl rand -hex 32)/" .env
+grep -c '^VSD_SIGNIN_HMAC_KEY=.' .env    # prints 1, without showing the key
+```
+
+Every `docker compose` command needs this `.env`, `down` included. `docker compose config` prints
+the key, so do not share its output.
+
+### 3. Start
+
+```bash
+docker compose up -d --build --wait      # the first build takes a few minutes
+docker compose ps                        # api: Up (healthy); web: Up
+curl -s http://localhost:8001/api/health # {"ok":true}
+```
+
+Open http://localhost:8001. Use `localhost`, not an IP address: the session cookie needs it.
+
+### 4. Create the first account
+
+Accounts exist only through the admin command; there is no sign-up page. This creates the demo
+account `analyst01`:
+
+```bash
+docker compose exec api python -m api.admin create-account analyst01
+```
+
+It asks for a new password twice, at a hidden prompt, then prints `Account analyst01 created.`
+Whoever runs it chooses the password. It needs at least 15 characters and must not contain the
+username, `vsd`, `voice` or `spoof`. Never put it in a command, a file or the repository.
+
+### 5. Use the MVP
+
+1. **Sign in** with Analyst ID `analyst01` and the password you chose.
+2. **Upload:** on "Analyze a recording", choose a file. The page checks it against the limits below.
+3. **Read the verdict:** select **Analyze recording**. The result shows authentic, synthetic or
+   uncertain, with a confidence score, a LOW/MEDIUM/HIGH risk level, a request ID and the service's
+   notice.
+4. **Open History:** the newest 10 results appear, each with its verdict and risk.
+
+| Limit (from `GET /api/limits`, which needs a session) | Value |
+|---|---|
+| Accepted formats | wav, flac, mp3 |
+| Maximum size | 20 MB |
+| Maximum duration | 60 s |
+| Audio | Deleted when processing finishes |
+
+These are prototype values in [configs/api.yaml](configs/api.yaml), not final decisions. Only results
+are stored: no audio and no original filenames.
+
+The repository holds no audio. Use a recording of your own, or make a 1-second test tone outside the
+repository while the stack is running:
+
+```bash
+docker compose exec -T api python -c "import io,sys,numpy as n,soundfile as s;b=io.BytesIO();t=n.arange(16000)/16000;s.write(b,0.2*n.sin(2*n.pi*440*t),16000,format='WAV',subtype='PCM_16');sys.stdout.buffer.write(b.getvalue())" > /tmp/vsd-sample.wav
+```
+
+Do not use the FoR test split or the external dataset to try the app.
+
+### Mock results
+
+The analyzer is the `MockAnalyzer`: no model runs. The hash of the file's bytes picks the verdict, so
+the same file always gives the same mock result. It says nothing about whether the speech is real.
+Every such result carries a **Mock result** tag, on the result page and in History.
+
+The real model is not connected. It waits for the team's frozen ModelBundle (Stage 12, Donia) and
+its integration; FR-04 inference preprocessing comes with it.
+
+### Not in this MVP
+
+- Overview and Details: placeholder pages. Overview keeps its link in the side menu.
+- Analyst notes: History has the column and the result mentions the note, but none can be written.
+- History filters: not built.
+- History pager: only the newest 10 results can be reached.
+- History row links: rows do not open a result.
+- Toast: no message when an answer arrives on another page.
+- Drag-and-drop: choose the file with the button.
+- Copy button: the request ID has none.
+- Firefox e2e: not run for each PR; Chromium is.
+
+### Clean database for a demo
+
+The `vsd-var` volume holds one SQLite file with all accounts, sessions, sign-in lockout counts,
+analyses and notes. History is shared by all analysts, so rows from tests appear for everyone. To
+start from an empty History:
+
+> **Warning: this deletes everything in `vsd-var`: every account, session, analysis and note. It
+> cannot be undone.** Your `.env` and the Docker images are kept. Check the folder warning in
+> [step 1](#1-get-the-code) first. Run any e2e tests before this, never between this and the demo.
+
+```bash
+docker compose down -v
+docker compose up -d --build --wait
+docker compose exec api python -m api.admin create-account analyst01
+```
+
+The last command reseeds `analyst01`; choose its password again. Signed-in browsers must sign in
+again, and History then shows "No analyses yet".
+
+### Stop and reset
+
+```bash
+docker compose down      # stops and removes the containers; keeps vsd-var, so accounts and results stay
+docker compose down -v   # also deletes vsd-var: see the warning above
+```
+
+### Tests
+
+Tests are not needed to run the MVP.
+
+- **Python:** steps 4 to 6 of [Getting started](#getting-started).
+- **Web, from `web/`:**
+
+  ```bash
+  npm ci
+  npm run typecheck
+  npm run lint
+  npm test -- --run
+  npm run build
+  ```
+
+- **End-to-end, against the running stack on :8001, from `web/`:**
+
+  ```bash
+  npm ci
+  npx playwright install chromium    # once
+  npm run test:e2e
+  ```
+
+  You seed nothing by hand: the run creates its own `e2e-*` accounts and never touches `analyst01`.
+  It restarts `web`, stops `api` three times, and each green run adds 9 rows to History. Details are
+  in [End-to-end tests](docs/setup.md#end-to-end-tests-stage-18).
+
+### Troubleshooting
+
+- **Compose stops with `set VSD_SIGNIN_HMAC_KEY in .env`:** run [step 2](#2-create-the-sign-in-key)
+  in this folder.
+- **Port 8001 is in use:** find what holds it with `docker ps --filter publish=8001`. Often it is
+  another clone's stack: run `docker compose down` there, without `-v`.
+- **"Sign-in is temporarily unavailable" after several attempts:** nginx allows 10 sign-ins per
+  minute per address, with a burst of 5, then answers 429. Wait a minute, or run
+  `docker compose restart web`.
+- **"This account is temporarily locked":** 5 failed sign-ins lock a username for 15 minutes. To
+  clear it now: `docker compose exec api python -m api.admin unlock analyst01`.
+- **A change does not show up:** the app and the nginx config are inside the image, so rebuild with
+  `docker compose up -d --build --wait`.
+- **Requests fail after the `api` container was recreated:** run `docker compose restart web`.
+- **"Duration could not be read in the browser":** this does not block the analysis; the service
+  checks the file itself. If it happens for every file, the web image is probably old. The output of
+  `curl -sI http://localhost:8001/signin` must contain `media-src 'self' blob:`; if not, rebuild.
+
+More detail: [Running with Docker Compose](docs/setup.md#running-with-docker-compose-stage-17),
+[nginx](docs/setup.md#nginx-the-web-service), [API accounts](docs/setup.md#api-accounts-stage-17-d47)
+and the [API design](docs/api_design.md).
+
 ## Getting started
 
 Commands below use Bash (Git Bash on Windows). See [the setup guide](docs/setup.md) for
