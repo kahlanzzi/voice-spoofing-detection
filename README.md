@@ -113,8 +113,8 @@ username, `vsd`, `voice` or `spoof`. Never put it in a command, a file or the re
 1. **Sign in** with Analyst ID `analyst01` and the password you chose.
 2. **Upload:** on "Analyze a recording", choose a file. The page checks it against the limits below.
 3. **Read the verdict:** select **Analyze recording**. The result shows authentic, synthetic or
-   uncertain, with a confidence score, a LOW/MEDIUM/HIGH risk level, a request ID and the service's
-   notice.
+   uncertain, a LOW/MEDIUM/HIGH risk level, a request ID and the service's notice; the model's output
+   value is under **Technical details**.
 4. **Open History:** the newest 10 results appear, each with its verdict and risk.
 
 | Limit (from `GET /api/limits`, which needs a session) | Value |
