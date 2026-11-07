@@ -5476,6 +5476,40 @@ plan was approved before the build. The user ran the final chain, the e2e, the C
 
 ---
 
+### Entry 149 — Midterm backlog refreshed from merged Stage 17–18 evidence (2026-11-07)
+
+**What:** documentation-only refresh on `docs/stage19-backlog-refresh-malak`, based on
+`origin/main` at `f2f44cc` (PR #109 merged). The closed SRS requirement list, priorities, owners and
+acceptance criteria are unchanged. `docs/midterm/backlog.md` now distinguishes work completed by the
+labelled mock MVP from real-model work that still depends on Stages 11–12.
+
+**Merged evidence recorded:** Stage 17 PRs #77–#87 and Stage 18 PRs #88–#109 support the
+authenticated upload API, input errors, metadata-only SQLite storage, immediate temporary-audio
+deletion, History, notes API, stats/status, Docker/nginx deployment, React sign-in/upload/result and
+History, required CI and the tested README. Accordingly, FR-01–FR-03, FR-09–FR-10 and
+NFR-03/NFR-05–NFR-08 are marked Done or Done (mock MVP); FR-08, FR-11, FR-20 and the release/privacy
+checks remain Partial. FR-04–FR-07, NFR-09 and NFR-11 remain Partial/In progress until the one Stage
+11 run, Stage 12 F4 freeze and production-analyzer integration are complete.
+
+**Windows verification reported by Malak:** WSL 3.0.3, Docker Desktop 4.98.0, Engine 29.9.2 and
+Compose 5.6.1; a fresh clone built both images, both containers became healthy,
+`GET /api/health` returned `{"ok":true}`, and account `analyst01` was created. Browser sign-in,
+upload, result and History were not yet recorded in this verification, so NFR-10 stays Partial / in
+verification. No unmerged implementation or verbal completion report is counted as Done.
+
+**AI assistance:** **Codex** reviewed the current merged code, tests, PR history and existing backlog,
+then prepared this evidence-only status update. It did not add requirements, change priorities, push,
+approve or merge. The team reviews the classifications.
+
+**Checks [verified]:** after synchronizing the existing local virtual environment with the pinned
+`requirements.txt`, `python -m pytest -q` passed with **1278 passed, 9 skipped in 164.26 s**;
+the DEEP-VOICE governance test passed **3/3**; `git diff --check` passed; token grep found no token.
+
+**Gate:** human review of the evidence and status classifications; green required CI before merge.
+**WAITING FOR HUMAN REVIEW.**
+
+---
+
 ## Open items
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
@@ -5805,7 +5839,9 @@ plan was approved before the build. The user ran the final chain, the e2e, the C
 - [x] Non-text contrast below 3:1 (light `--line-strong`/`--surface` 1.86, dark 1.99, light `--unc-mark` and `--warn-mark` 2.87; Entry 128): fixed for WCAG 1.4.11, no exceptions left (merged in PR #92, `c8c047e`; Entry 131).
 - [ ] `npm audit`: 12 moderate (GHSA-g3hv-75wg-m249, `minimatch` 10.2.6 under eslint and typescript-eslint, dev only; production 0). Decide: wait for upstream, or an `overrides` pin to `minimatch` ≥ 11.0.1 by approval (Entry 127).
 - [ ] MVP exception: S8 Analysis details and S9 Overview are stub pages, listed under "Not in this MVP" in the README; Overview: option A, the stub keeps its rail link and the demo video does not open it (Entry 148).
-- [ ] NFR-10: the README test was a fresh clone on the developer's Linux machine, not a fresh machine; macOS and Windows not tested (Entry 148).
+- [ ] NFR-10: Linux fresh-clone flow passed (Entry 148). Malak's Windows fresh clone reached healthy
+  containers, `{"ok":true}` and account creation (Entry 149); record browser sign-in, upload, result
+  and History to complete the Windows test. macOS remains untested.
 - [ ] `docs/setup.md` "End-to-end tests" omits `npm ci`; the README has it. Add it at the next `setup.md` change (Entry 148).
 
 **Midterm documentation (Entries 102–110)**
@@ -5839,16 +5875,18 @@ plan was approved before the build. The user ran the final chain, the e2e, the C
 
 ---
 
-## Current status — updated 2026-11-06
+## Current status — updated 2026-11-07
 
-**Documentation navigation:** Entry 115 groups the docs index by topic without moving files. This follow-up awaits PR/CI and human review; implementation status below is unchanged.
+**Documentation navigation:** Entry 115 groups the docs index by topic without moving files. The
+midterm backlog refresh in Entry 149 records merged Stage 17–18 evidence without changing the closed
+requirements, priorities or scope; it awaits PR/CI and human review.
 
 **Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 closed (Entry 96): run and results merged (PR #60; Entry 94), brief accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-28; Donia attended as author; no corrections; Q9 reading agreed), merged as PR #61 (`f166001`). Stage 11 is current: the D41 registry and per-clip storage implementation is approved (PR #62, Entry 99); the D46 runtime/environment plan is proposed in PR #67 and the Stage 11 runner is proposed in PR #68; both await review/merge. No FoR test access before the approved prerequisites are met.
 
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
 `GET /api/status`. `POST /api/analyses` with the
-MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. Iheb is working on the frontend/backend integration (user-reported); no unpublished implementation is counted as merged. The Stage 18 HTML prototype is mock data only; Stage 18 PR 1a (`web/` scaffold, theme storage, CI `web` job) merged in PR #88 (`86cc77d`; Entry 127); PR 1b (design tokens, base styles, IBM Plex fonts, token and contrast tests) merged in PR #89 (`9a119d2`; Entry 128), its 4 non-text pairs below 3:1 fixed in PR #92 (`c8c047e`; Entry 131). PR 2 (the `web` image: the built app served by nginx on the A2 routes, `/` → `/analyze`, A13 security headers on every answer) merged in PR #90 (`d352bad`; Entry 129). PR 3 is split in three (Entry 130): PR 3a (API client, `ApiError`, API types, no-timer lint rule) merged in PR #91 (`b6f09d6`; Entry 130); 3b (session store, expiry handler, `checkSession` on load) merged in PR #93 (`ee5fd50`; Entry 132); 3c (`react-router` 8.5.1, the six app routes checked against `deploy/nginx.conf`, the session guard, the `next` check, stub pages) merged in PR #94 (`b06df7b`; Entry 133). PR 4 (S1 Sign in: the form, `POST /api/session`, every S1 variant, Retry) merged in PR #95 (`1d41512`; Entry 134); the other pages are stubs, and the only API calls are `GET /api/session` on load and S1's `POST /api/session`. PR 5a (Playwright e2e harness on the real stack via nginx, never Vite; Chromium in CI, Firefox locally; secret scan; sign-in flows) merged in PR #96 (`880ec2b`; Entry 135); 5b (axe in light and dark, Origin matrix, security headers, JSON 404, lockout, outage) merged in PR #97 (`3963f5e`; Entry 136). PR 6 is split: 6a (app shell, rail, drawer, page-change rules) merged in PR #98 (`a16d8ef`; Entry 137); 6b (rail footer: Analyst ID, theme control, sign-out without `next`; e2e sign-in POST budget 12, both segments full) merged in PR #99 (`fd034dd`; Entry 138). `checks`, `web` and `e2e` are required on `main` since 2026-11-03 (Iheb; Entry 139). PR 7 is split: 7a (status store, rail status line) merged in PR #100 (`f6324fb`; Entry 139); 7b (S10 System status with Check now) merged in PR #101 (`13e7b84`; Entry 140). PR 8 is split in four (Entry 141); 8a (shared Button, TextField, Banner and Spinner; the Check now cascade fix) merged in PR #102 (`b70dde4`; Entry 141); 8b (File draft store, pre-upload checks, New analysis reset) merged in PR #104 (`1470254`; Entry 143). The colour scan fix merged in PR #105 (`898b7c6`; Entry 144). PR A (limits store, S2, S3, the CSP `media-src` change) merged in PR #106 (`ee43400`; Entry 145). PR B (Analyze recording, S4, the result card, S5) merged in PR #107 (`308ebd1`; Entry 146). PR C (S7 History, MVP cut) merged in PR #108 (`901e999`; Entry 147); Firefox e2e once before the demo. The MVP README is on `docs/stage18-mvp-readme`: fresh-clone test passed on the developer's machine, awaiting review (Entry 148). The midterm backlog in Entry 102 keeps unimplemented end-to-end flows Partial or Planned.
+MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. The Stage 18 React mock MVP is also merged: PRs #88–#108 provide sign-in, the shell, status, upload, result and History, and PR #109 merges the tested README. It remains explicitly mock-labelled; Overview and Details are stubs, the analyst-note UI and full History controls are not implemented, and the production analyzer still waits for F4. Malak's Windows check reached healthy containers, `{"ok":true}` and account creation; the browser flow remains to be recorded (Entry 149).
 
 **Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
 canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.
