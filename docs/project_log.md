@@ -5671,6 +5671,111 @@ in that interval. Approval commits go in before merge (as for PR #111).
 
 ---
 
+### Entry 154 — Stage 11 runner implemented (PR A) (2026-10-31)
+
+**Numbering:** written as Entry 102 on 2026-10-31; renumbered to 154 when `main` was merged into
+`feat/stage11-runner` on 2026-11-10 (Entries 102–153 were taken on `main` in the meantime). D46 is
+now approved (PR #67, record Entry 153). The text below is unchanged from 2026-10-31.
+
+**Owner:** Donia Mabrouk.
+
+**Scope [doc]:** D29, D31, D41 / ADR 0010, D45, D46 (proposed in PR #67), Entry 99 carried items,
+Protocol §7. PR A of three (A runner, B report from stored files, C notebook 06). Code and
+synthetic tests only: no dataset, Drive, cache, checkpoint, W&B or FoR test access;
+`docs/audit_evidence/run_registry.jsonl` not created.
+
+**What we did:** on `feat/stage11-runner`, from `main` at `af5d6e8`:
+- **Runner** `src/evaluation/stage11_run.py`, the official run in two phases (D46 (5) order), model
+  set `baseline-v1` and `cnn-v1-seed0..2`, all scored on CPU (D46 (1)):
+  1. pre-claim checks: `results_ref`, new output folder, clean full-SHA commit, environment gate
+     (Python 3.13, torch 2.11.0), the committed Stage 7, 8 and 10 evidence (cross-checked; the
+     D41 baseline hash also equal to Stage 7's), F2 and F3 hashes, `configs/cnn.yaml` hash and
+     batch size, each model against its recorded hash, the reproduction gate (two val-A cache
+     builds per feature, byte-identical and equal to Stage 7 / Stage 8), every test row valid
+     under the clip_scores row rules, no earlier `("for", "test", "stage11_test")` record;
+  2. `RunRegistry.claim`, re-read and verified;
+  3. environment evidence: `out/` with `environment.json`, `pip_freeze.txt` and `claim.json`
+     (`claim` ends here and prints the `run_id`; no audio read);
+  4. `score`: `claim.json` must match the `run_id` and commit, then `scoring_started.json` is
+     created exclusively, then `environment_score.json`;
+  5. the pre-claim checks again, the single started registry record, the registry bytes and
+     environment files against `claim.json`, the test-row counts;
+  6. test features in memory, twice, canonical feature hash equal (D46 (7));
+  7. each model scored twice, byte-identical; bundle-seed p and prediction from the frozen policy,
+     baseline from its D29 threshold; every prediction recomputed independently (Entry 99);
+  8. per-clip files (D41, D45) and `run_report.json` (no metrics);
+  9. `RunRegistry.complete` with the `results_ref` of `claim.json`.
+- **Rehearsal** `rehearse`, the D46 dry run on val-A and val-B only: other splits refused before
+  anything is read; same `preflight`, feature and scoring code; known answers from the caches,
+  each checkpoint's `val_a_eer`, Stage 7 EERs and Stage 10 `val_b_scores.npz` (bytes); no registry.
+- **CLI** subcommands `rehearse`, `claim`, `score`; no one-step run and no split argument.
+- **Guard** `tests/governance/test_for_test_access.py`: `ALLOWED` is exactly
+  `("src/evaluation/stage11_run.py",)`, pinned by `test_allow_list_is_pinned` (it replaces
+  `test_allow_list_is_empty`).
+- **MFCC npz-bytes test** `tests/features/test_mfcc_cache_npz_bytes.py` (the D46 (4)
+  precondition): two builds with different commits give byte-identical `.npz` files.
+- **Docs:** design note `docs/stage11_run.md`, added to `docs/README.md`.
+
+**Choices with reasons** (`docs/stage11_run.md` "Why"):
+- Two phases with a Drive flush between them: on Colab, Drive writes are cached locally and synced
+  later, so a re-read on the same mount does not prove the claim is durable (D46 (6)); `score`
+  checks the registry bytes against `claim.json` after the notebook's flush and remount.
+- Marker before `preflight`: "no rerun after the claim" (D46 (8)) holds in code even if `score`
+  crashes before reading any audio.
+- `claim.json` checked before the marker (local file and git only): a mistyped `run_id` is refused
+  without writing anything, so it cannot use up the one scoring call.
+- All test-row metadata validated before the claim with clip_scores' own validators, and the counts
+  computed: a row `write_clip_scores` would refuse is found before the claim, not after it.
+- Environment evidence right after the claim and again in the score session: the D46 (3) record
+  survives a crash, and the scoring session (possibly a new runtime) is recorded too;
+  `environment_same_as_claim` is descriptive only.
+- Independent prediction checks before writing (Entry 99): bundle seed by an explicit `np.where`
+  band rule quoting the `decisions.py` convention, baseline by `raw >= threshold`.
+- Computed hashes: the checkpoint hash in the report is computed with the repository's function,
+  not copied from the expected value.
+- The rehearsal writes its report on failure (every check so far, `"passed": false`, the failing
+  check), so a failed dry run shows what failed.
+- Verified, not changed: F3 gives finite features or raises (log floor `log_epsilon` 1e-6,
+  `src/preprocessing/features.py:39`; finiteness checks `:41-42`, `:59-60`; silent clips
+  `src/preprocessing/waveform.py:94-95`); an F3 error on a test clip happens after the claim and
+  stops the run under D46 (8).
+
+**Review:** review rounds by Claude (claude.ai) on the pasted diffs, with Donia. Changes made:
+`results_ref` a required, validated argument; environment evidence written right after the claim;
+rehearsal report on failure; round 1: the two-phase run with the marker, pre-claim validation of
+all test-row metadata, the explicit band rule, computed checkpoint hashes, the F3 finiteness check
+(verify only); then `claim.json` checked before the marker, `environment_score.json`, tests for an
+environment file and the test rows changed since the claim, and two wording nits.
+
+**Carried to PR C (notebook 06, not done here):** `drive.flush_and_unmount()` and remount between
+`claim` and `score`; check the registry SHA-256 on Drive against `claim.json`; read the `run_id`
+from `claim.json` in code, not typed by hand; the val-A caches must exist in the score session
+(rebuild before `score` if the runtime restarted); `out/` and the registry on Drive, outside the
+clone; `--results-ref` = the Drive-relative path of `run_report.json`; the notebook adds its own
+exact `ALLOWED` entry. **Carried to PR B:** the Stage 11 report computed from the stored files
+only (no second test run).
+
+**Evidence:**
+- [verified] full `pytest -q` from the project venv (local, Windows, Python 3.14.7): 887 passed
+  before (at `af5d6e8`), 980 passed after.
+- [verified] `tests/features/test_mfcc_cache_npz_bytes.py` passes.
+
+**Not done:** no data, Drive, notebook or FoR test access; no registry file created; no decision,
+protocol, ADR, `docs/evaluation_harness.md` or `src/evaluation/__init__.py` changed.
+
+**Decisions:** none (D46 is proposed in PR #67).
+
+**AI assistance:** **Claude** (claude.ai) wrote the prompts and reviewed the diffs with Donia.
+**Claude Code** (Claude Opus 5.5) implemented the code, tests and docs, ran the tests, and wrote
+this entry and the CHANGELOG line. Donia ran the commands, pasted outputs and diffs, and reviewed.
+AI does not approve or merge.
+
+**Gate:** must not merge before D46 is approved (PR #67). Review by Khalil (required, Part C
+reviewer), Malak (Stage 14 reads these files) and Iheb (CI and the guard's `ALLOWED` change). AI
+does not approve or merge.
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -5916,8 +6021,13 @@ in that interval. Approval commits go in before merge (as for PR #111).
 **Stage 14 robustness (D41)**
 - [x] Obtain all-four approval for D41/ADR 0010 (PR #46, 2026-10-24).
 - [x] Implement and review the closed-purpose registry and Stage 11 per-clip scores before any Stage 11 or Stage 14 FoR test access. (Entry 99; reviewed and approved by Khalil, required, and Malak, requested, in PR #62, 2026-10-29)
-- [ ] Stage 11 runner PR: hard-code `("for", "test", "stage11_test")`, take `run_id` from `claim()`, check each prediction against p and the frozen (bundle seed) or D29 (baseline) threshold before writing, read the manifest `group` column as strings, add the runner to the FoR test-split guard `ALLOWED` in that PR (Entry 99)
+- [ ] Stage 11 runner PR: hard-code `("for", "test", "stage11_test")`, take `run_id` from `claim()`, check each prediction against p and the frozen (bundle seed) or D29 (baseline) threshold before writing, read the manifest `group` column as strings, add the runner to the FoR test-split guard `ALLOWED` in that PR (Entry 99) (implemented on `feat/stage11-runner`, Entry 102; ticked at merge)
 - [ ] Stage 14 and 16 score readers: check the sidecar `run_id` against a completed `stage11_test` registry record and `manifest_sha256` against F2 (Entry 99)
+
+**Stage 11 runner (Entry 154, written as Entry 102)**
+- [ ] Review of PR A: Khalil (required), Malak, Iheb; merge only after D46 is approved (PR #67). D46 approved (PR #67, Entry 153); review of PR #68 remains.
+- [ ] PR B: Stage 11 report computed from the stored files only.
+- [ ] PR C, notebook 06: Drive flush and remount between `claim` and `score`, registry SHA-256 checked against `claim.json`, `run_id` read from `claim.json` in code, val-A caches present in the score session, `out/` and registry on Drive outside the clone, `--results-ref` the Drive-relative path of `run_report.json`, the notebook's own exact `ALLOWED` entry (Entry 102).
 
 **Stage 17 API (Part E, Entry 100)**
 - [x] Team review of the API contract `docs/api_design.md`, including the proposed `invalid_request` (400) code. (approved, PR #65, Donia, 2026-10-30; Entry 101)
@@ -6068,6 +6178,10 @@ canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI eth
 **Midterm refactor audit:** Entries 108–110 record the initial report and baseline. Entry 111 implements two small lint cleanups on the stacked cleanup branch: 937 tests pass, governance 3 passed, scoped lint findings 2 to 0, coverage and complexity unchanged. No speedup is claimed. Entry 112 adds the measured report/PDF and after captures. The work merged via #73 into combined #72 (`76c55aa`) after recorded teammate approvals and successful CI. Entry 113 corrected stale report status and merged as PR #74 (`ca45601`); separate final editorial/course acceptance remains open. Evidence-sensitive restructuring stays deferred.
 
 **What was done:**
+- **Stage 11 runner (PR A)** on `feat/stage11-runner` (Entry 154, written as Entry 102; PR #68): `src/evaluation/stage11_run.py`,
+  two-phase official run (`claim`, then `score` with a once-only marker), val-A/val-B rehearsal as
+  the D46 dry run, MFCC npz-bytes test, guard `ALLOWED` = the runner; synthetic tests only,
+  980 passed; no FoR test access.
 - **Midterm AI ethics and usage reflection** on `docs/stage11-midterm-ai-ethics-malak` (Entry 107):
   documented tools, human oversight, corrected AI errors, privacy/data governance, bias and harm,
   licensing, MCP security and academic responsibility; tool inventory confirmed and content approved
@@ -6201,7 +6315,8 @@ canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI eth
   `docs/risk_policy.md`; not yet fitted on real val-B scores.
 - A tested append-only run registry (`src/evaluation/run_registry.py`) that refuses a second
   Stage 11 run for the same model set (D31); the D41 purpose key, per-clip score files and the FoR
-  test-split guard are approved (PR #62, Entry 99).
+  test-split guard are approved (PR #62, Entry 99); the Stage 11 runner that uses them is in
+  review (Entry 154, PR #68).
 - A tested ModelBundle format (`src/bundle/`) whose loader verifies every part before use,
   documented in `docs/model_bundle.md`.
 - Governance rules that keep the external set metadata-only until the one guarded Stage 13 run.
@@ -6228,7 +6343,8 @@ canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI eth
 - `docs/stage18-ui-prototype-v4`: prototype v4 and design handoff (Entry 98), merged as PR #64 (`e2e5eb6`).
 - `feat/stage11-d41-registry-storage`: D41 registry and per-clip storage implementation (Entry 99), merged as PR #62 (`877f2af`).
 - `docs/stage17-api-design`: Stage 17 API design note (Entry 100), merged as PR #65 (`af5d6e8`).
-- `docs/stage11-d46-runtime`: D46 proposal (Entry 152, written as Entry 101), open PR #67.
+- `docs/stage11-d46-runtime`: D46 proposal (Entry 152, written as Entry 101), merged as PR #67 (`37d0233`); approval record PR #112 (Entry 153).
+- `feat/stage11-runner`: Stage 11 runner, PR A (Entry 154, written as Entry 102), PR #68; D46 approved (PR #67, Entry 153).
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 

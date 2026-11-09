@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 11 runner (D46 implementation, PR A) `src/evaluation/stage11_run.py`: two-phase official run (`claim` / `score` with a once-only marker), val-A/val-B rehearsal as the D46 dry run, MFCC npz-bytes test, guard `ALLOWED` = the runner; design note `docs/stage11_run.md`; synthetic tests only, no FoR test access.
 - D46 approved (PR #67): Stage 11 run procedure; `evaluation_harness.md` "Run registry" now names the live registry on Drive and the committed copy as evidence (D46 (6)).
 - D46 (proposed): Stage 11 run procedure: T4 runtime with CPU scoring, environment gate and record, val-A log-Mel/MFCC reproduction gate, durable registry claim on Drive before the first test read, test features in memory only (computed twice), pre-declared rerun rule; no FoR test accessed.
 - D48–D55, ADRs 0012–0015 and H8–H9 approved (PR #111); AGENTS.md hard rules 1 and 3 and the roadmap updated; Protocol addendum for model v2, the joint external run and F5 (v1 rules unchanged).
