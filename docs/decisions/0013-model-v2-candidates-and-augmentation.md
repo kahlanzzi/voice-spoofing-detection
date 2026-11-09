@@ -1,7 +1,6 @@
 # 0013. Model v2: candidates, robust selection and training augmentation
 
-- **Status:** Proposed (agreed in principle by the team on 2026-11-09, user-reported; formal
-  approval by all four in this PR)
+- **Status:** Approved (all four; PR #111, 2026-11-10)
 - **Date:** 2026-11-09
 - **Register:** D49 (amends AGENTS.md hard rule 3 and Execution Plan v2.2 §1.3 for model v2 only),
   D50 (supersedes D10 for model v2 only); H9

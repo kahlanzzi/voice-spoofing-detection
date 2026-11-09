@@ -1,7 +1,6 @@
 # 0015. Inference infrastructure, capacity and staging/production environments
 
-- **Status:** Proposed (agreed in principle by the team on 2026-11-09, user-reported; formal
-  approval by all four in this PR)
+- **Status:** Approved (all four; PR #111, 2026-11-10)
 - **Date:** 2026-11-09
 - **Register:** D53, D54
 - **Deciders:** Iheb Zemzemi (Part E owner), Donia Mabrouk (author), Malak Ben Salem, Khalil Dridi

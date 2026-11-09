@@ -1,7 +1,6 @@
 # 0012. Model v2 track and one joint external run
 
-- **Status:** Proposed (agreed in principle by the team on 2026-11-09, user-reported; formal
-  approval by all four in this PR)
+- **Status:** Approved (all four; PR #111, 2026-11-10)
 - **Date:** 2026-11-09
 - **Register:** D48 (amends D36 and D41)
 - **Deciders:** Donia Mabrouk (Part C owner, author), Iheb Zemzemi, Malak Ben Salem, Khalil Dridi
