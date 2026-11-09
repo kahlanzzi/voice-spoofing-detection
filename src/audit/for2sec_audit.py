@@ -384,7 +384,7 @@ def run(root: Path, out: Path, revision: str, limit: int | None = None,
 def _write_markdown(path, report, inv, num_sc, cat_sc, tokens):
     ok = inv[inv["decode_ok"]]
     c = report["counts"]
-    md = [f"# FoR-2sec audit — machine summary",
+    md = ["# FoR-2sec audit — machine summary",
           f"Revision: `{report['revision']}` · files: {c['files']} · "
           f"generated {report['environment']['timestamp_utc']}",
           "\n## 1. Inventory",

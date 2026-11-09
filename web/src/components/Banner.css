@@ -1,0 +1,10 @@
+/* Banner (Stage 18 PR 8a; prototype lines 261-264, moved from SignIn.css and Status.css). Tokens only; the
+   prototype's 14 px text uses --fs-sm (as in Entry 134). RailFoot's sign-out alert uses .banner-err as well. */
+.banner-err, .banner-info, .banner-warn {
+  border-radius: var(--r-sm); padding: var(--sp-3); font-size: var(--fs-sm); display: flex; gap: var(--sp-2);
+  align-items: flex-start;
+}
+.banner-err { background: var(--err-bg); color: var(--err-fg); }
+.banner-info { background: var(--accent-soft); color: var(--ink); }
+.banner-warn { background: var(--warn-bg); color: var(--warn-fg); }
+.banner-err svg, .banner-info svg, .banner-warn svg { flex: none; margin-top: 2px; }

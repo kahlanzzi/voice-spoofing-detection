@@ -1,0 +1,57 @@
+/* ResultCard (Stage 18 PR B). Tokens only; prototype lines 216-243 and 401, 418-419. Its 14 px text uses --fs-sm (as in
+   Entry 134). */
+
+.result { border-radius: var(--r-lg); border: 1px solid var(--line); background: var(--surface); overflow: hidden; }
+.result-top {
+  padding: var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-2); border-top: 6px solid var(--mark);
+  background: var(--tint); color: var(--tint-ink);
+}
+.kicker { font-size: var(--fs-xs); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.result-top h2 {
+  font-size: var(--fs-2xl); line-height: var(--lh-title); font-weight: 700; letter-spacing: -.01em; color: var(--tint-ink);
+  display: flex; gap: var(--sp-3); align-items: center;
+}
+.result-top h2 svg { flex: none; }
+.result-top h2:focus { outline: none; }
+.r-syn { --mark: var(--syn-mark); --tint: var(--syn-bg); --tint-ink: var(--syn-fg); }
+.r-unc { --mark: var(--unc-mark); --tint: var(--unc-bg); --tint-ink: var(--unc-fg); }
+.r-auth { --mark: var(--auth-mark); --tint: var(--auth-bg); --tint-ink: var(--auth-fg); }
+.meta-row { display: flex; gap: var(--sp-2) var(--sp-4); flex-wrap: wrap; align-items: center; font-size: var(--fs-base); }
+.risk {
+  display: inline-flex; align-items: center; gap: var(--sp-2); padding: var(--sp-1) var(--sp-3); border-radius: var(--r-pill);
+  background: var(--tint-ink); color: var(--tint); font-size: var(--fs-sm); font-weight: 700; letter-spacing: .03em;
+}
+.result-body { padding: var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-5); }
+.todo {
+  border-left: 4px solid var(--mark); background: var(--surface-2); padding: var(--sp-3) var(--sp-4); border-radius: var(--r-sm);
+  display: flex; flex-direction: column; gap: var(--sp-2);
+}
+.todo h3 { font-size: var(--fs-base); display: flex; gap: var(--sp-2); align-items: center; }
+.todo h3 svg { flex: none; }
+.todo ul { margin: 0; padding-left: var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-1); }
+.r-unc .todo { background: var(--unc-bg); color: var(--unc-fg); }
+.r-unc .todo h3 { font-size: var(--fs-md); }
+.section-h { font-size: var(--fs-base); font-weight: 600; margin-bottom: var(--sp-2); }
+.result-body .kv { margin: 0; }
+.more-body { display: flex; flex-direction: column; gap: var(--sp-3); margin-top: var(--sp-2); }
+.more-body .kv { margin: 0; }
+.score-def {
+  border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); background: var(--surface-2);
+  display: flex; flex-direction: column; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--ink-2);
+}
+.score-def ul { margin: 0; padding-left: var(--sp-5); }
+.score-val { font-family: var(--font-mono); font-weight: 600; color: var(--ink); }
+.api-notice {
+  padding: var(--sp-3) var(--sp-5); border-top: 1px solid var(--line); font-size: var(--fs-sm); color: var(--ink-2);
+  background: var(--surface-2);
+}
+
+@media (max-width: 1100px) {
+  .result-top, .result-body { padding: var(--sp-4); }
+  .result details.more { padding-inline: var(--sp-4); }
+}
+
+@media (max-width: 640px) {
+  .result-top h2 { font-size: var(--fs-verdict-sm); }
+  .api-notice { padding-left: var(--sp-4); padding-right: var(--sp-4); }
+}

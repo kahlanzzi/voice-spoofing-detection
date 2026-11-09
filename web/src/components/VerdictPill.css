@@ -1,0 +1,9 @@
+/* VerdictPill: prototype lines 313-315, tokens only. */
+.pill {
+  display: inline-flex; align-items: center; gap: var(--sp-1); padding: 2px var(--sp-3); border-radius: var(--r-pill);
+  font-size: var(--fs-xs); font-weight: 700; letter-spacing: .01em; white-space: nowrap; min-height: 24px;
+}
+.pill svg { flex: none; }
+.p-syn { background: var(--syn-bg); color: var(--syn-fg); }
+.p-unc { background: var(--unc-bg); color: var(--unc-fg); }
+.p-auth { background: var(--auth-bg); color: var(--auth-fg); }

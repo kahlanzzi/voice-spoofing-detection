@@ -1,0 +1,6 @@
+/* Spinner (Stage 18 PR 8a; prototype lines 206-207, moved from SignIn.css). 14 px is the prototype's size. */
+.spin {
+  width: 14px; height: 14px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent;
+  animation: spin .9s linear infinite; flex: none;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

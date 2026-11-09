@@ -1,0 +1,29 @@
+/* TextField (Stage 18 PR 8a; prototype lines 267-277, moved from SignIn.css). Tokens only; 112 px and 36 px are the
+   prototype's sizes for the action inside the input (S1's Show/Hide). No font-size on .input: base.css sets
+   --fs-input (16 px on phones, B4). */
+.field { display: flex; flex-direction: column; gap: var(--sp-1); min-width: 0; }
+.field label { font-size: var(--fs-sm); font-weight: 600; }
+.field-hint { font-size: var(--fs-sm); color: var(--muted); }
+.input {
+  height: var(--target); padding: 0 var(--sp-3); border-radius: var(--r-sm); border: 1px solid var(--line-strong);
+  background: var(--surface); width: 100%; min-width: 0;
+}
+/* :where() keeps hover at 0,2,0, so :focus and [aria-invalid] still win over it, as before PR 8a. */
+.input:hover:where(:not([disabled])) { border-color: var(--ink-2); }
+.input:focus { border-color: var(--link); }
+.input[aria-invalid="true"] { border-color: var(--err-fg); border-width: 2px; }
+.input[disabled] { background: var(--surface-2); color: var(--muted); cursor: not-allowed; }
+.field-err { font-size: var(--fs-sm); color: var(--err-fg); display: inline-flex; gap: var(--sp-1); align-items: center; }
+.pw { position: relative; }
+.pw .input { padding-right: 112px; }
+.pw button {
+  position: absolute; right: var(--sp-1); top: var(--sp-1); height: 36px; padding: 0 var(--sp-3);
+  border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface-2); cursor: pointer;
+  font-size: var(--fs-sm);
+}
+
+/* HANDOFF line 86: every target ≥ 44 × 44 px at ≤ 640 px; HANDOFF wins over the prototype's 36 px action, which
+   stays above 640 px. */
+@media (max-width: 640px) {
+  .pw button { top: 0; right: 0; height: var(--target); min-width: var(--target); }
+}

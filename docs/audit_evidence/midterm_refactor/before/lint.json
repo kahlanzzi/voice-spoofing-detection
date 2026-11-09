@@ -1,0 +1,72 @@
+﻿[
+  {
+    "cell": null,
+    "code": "F541",
+    "end_location": {
+      "column": 48,
+      "row": 387
+    },
+    "filename": "C:\\Users\\dridi\\Documents\\voice_spoofing\\voice-spoofing-detection\\src\\audit\\for2sec_audit.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "\"# FoR-2sec audit ΓÇö machine summary\"",
+          "end_location": {
+            "column": 48,
+            "row": 387
+          },
+          "location": {
+            "column": 11,
+            "row": 387
+          }
+        }
+      ],
+      "message": "Remove extraneous `f` prefix"
+    },
+    "location": {
+      "column": 11,
+      "row": 387
+    },
+    "message": "f-string without any placeholders",
+    "name": "f-string-missing-placeholders",
+    "noqa_row": 387,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/f-string-missing-placeholders"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 58,
+      "row": 31
+    },
+    "filename": "C:\\Users\\dridi\\Documents\\voice_spoofing\\voice-spoofing-detection\\src\\tuning\\baseline_fit.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from src.models.baseline import N_FEATURES, fit_scaler, from_sklearn",
+          "end_location": {
+            "column": 84,
+            "row": 31
+          },
+          "location": {
+            "column": 1,
+            "row": 31
+          }
+        }
+      ],
+      "message": "Remove unused import: `src.models.baseline.BaselineModel`"
+    },
+    "location": {
+      "column": 45,
+      "row": 31
+    },
+    "message": "`src.models.baseline.BaselineModel` imported but unused",
+    "name": "unused-import",
+    "noqa_row": 31,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  }
+]

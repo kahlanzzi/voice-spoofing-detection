@@ -1,0 +1,18 @@
+# Build context for deploy/api.Dockerfile: an allowlist. Everything is excluded except what the image copies.
+# Never in the context: .env and other secrets, var/ (the SQLite store), .venv/, data/, audio, models (AGENTS.md rule 7).
+*
+!api/
+!configs/api.yaml
+!configs/api_logging.yaml
+!requirements-api.txt
+**/__pycache__
+**/*.py[cod]
+# Listed for readers; already excluded by the first line.
+.env
+.env.*
+var/
+.venv/
+data/
+**/*.wav
+**/*.flac
+**/*.mp3

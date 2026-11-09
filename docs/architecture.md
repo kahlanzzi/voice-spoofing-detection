@@ -117,7 +117,9 @@ start (NFR-09); if a request fails, no prediction is fabricated (NFR-06).
 
 - Clips longer than 2 s: reject, truncate or window-and-aggregate (SDD §9.5). D5 fixes the
   evaluation unit (2 s windows); the online behavior is still open.
-- Access-control mechanism (API key vs analyst login), SRS §7.4: open, decide before Stage 17.
+- Access-control mechanism, SRS §7.4: decided, analyst login (username + password, server-side
+  cookie sessions); D47, [ADR 0011](decisions/0011-analyst-sign-in-sessions.md), contract in
+  [api_design.md](api_design.md) §4.8.
 - History persistence across restarts: SQLite volume first; open.
 - Hosting vendor and TLS termination: open.
 - Differences from the SDD set by later decisions: FoR validation split into val-A (training
