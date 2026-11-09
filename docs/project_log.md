@@ -5646,6 +5646,31 @@ review is still required. AI did not push, open or merge a PR.
 
 ---
 
+### Entry 153 — D46 approval record (2026-11-10)
+
+**What:** PR #67 (D46, the Stage 11 run procedure, Entry 152) was approved by Iheb, Malak and Khalil
+(Donia author; approvals as reported by Donia on 2026-11-10) and merged as `37d0233` **before** its
+approval commit, so `main` still showed D46 as Proposed. This PR records the approval, as PR #56
+did for D44:
+- `docs/decisions/README.md`: D46 status Approved, via PR #67;
+- Protocol §14: the D46 row loses "(proposed)" and gets PR #67;
+- `docs/evaluation_harness.md` "Run registry": the path paragraph and Why (d) now follow D46 (6)
+  (live registry on Drive, re-read before the first test read, committed byte for byte after the
+  run); this text change was planned for the approval commit;
+- the Entry 94 open item (Stage 11 runtime and environment plan) is ticked.
+
+**No rule changes:** D46's text is unchanged. Whether D46 also governs v2's own Stage 11 run
+(D48 (7)) is not decided here; it needs its own decision.
+
+**Process note:** until this record merged, D46 read Proposed on `main`; no FoR test access happened
+in that interval. Approval commits go in before merge (as for PR #111).
+
+**AI assistance:** Claude (claude.ai, Claude Opus 5.5) drafted these edits; Donia reviews before push.
+
+**Gate:** green CI and one approval, then merge. **WAITING FOR REVIEW.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -5779,7 +5804,7 @@ review is still required. AI did not push, open or merge a PR.
 - [x] 10a-2 part 2: notebook 05 and its tests (Entry 93): merged as PR #59 (`11c07fe`).
 - [x] 10a-2 part 2: official Colab run of notebook 05 (2026-10-28; Entry 94)
 - [x] Commit the Stage 10 evidence and results (Entry 94): merged as PR #60 (`ff0a226`)
-- [ ] Stage 11: plan runtime and environment recording (T4 image family; unpinned feature libraries) before any FoR test access (Entry 94): proposed as D46 (Entry 152, written as Entry 101; PR #67), awaiting approval (all four)
+- [x] Stage 11: plan runtime and environment recording (T4 image family; unpinned feature libraries) before any FoR test access (Entry 94): proposed as D46 (Entry 152, written as Entry 101); approved via PR #67, 2026-11-10 (Entry 153)
 - [x] Approve D45 (bundle-seed-only policy): approved via PR #57 (2026-10-28; Entry 91).
 
 **Stage 11 run registry (Entry 34)**
@@ -6022,9 +6047,9 @@ review is still required. AI did not push, open or merge a PR.
 
 ---
 
-## Current status — updated 2026-11-10
+## Current status — updated 2026-11-10 (Entry 153)
 
-**After the midterm review (Entries 150–151):** decisions D48–D55 (model v2 track with one joint Stage 13 run, live analysis, infrastructure, environments, interface redesign) and H8–H9 are approved in PR #111 (2026-11-10), with the Protocol addendum D48 (6) requires; the v1 Stage 11 claim may follow once D46 (PR #67) and the runner (PR #68) are merged.
+**After the midterm review (Entries 150–151):** decisions D48–D55 (model v2 track with one joint Stage 13 run, live analysis, infrastructure, environments, interface redesign) and H8–H9 are approved in PR #111 (2026-11-10), with the Protocol addendum D48 (6) requires; D46 is approved (PR #67, record Entry 153); the v1 Stage 11 claim may follow once the runner (PR #68) is merged and the dry run passes.
 
 **Documentation navigation:** Entry 115 groups the docs index by topic without moving files. The
 midterm backlog refresh in Entry 149 records merged Stage 17–18 evidence without changing the closed

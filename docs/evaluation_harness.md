@@ -301,8 +301,11 @@ Each case has its hand calculation as a comment.
 - `evaluation_purpose` is closed in code: `EVALUATION_PURPOSES = {"stage11_test",
   "stage14_robustness"}` (D41, ADR 0010). Any other value, including `""`, another spelling or
   another case, is refused at `claim` and in a loaded line; adding a purpose needs a new decision.
-- The real registry file for Stage 11 is `docs/audit_evidence/run_registry.jsonl`. It is committed
-  by PR right after the run. The path is passed by the caller; the code hard-codes none.
+- The live registry for Stage 11 is on Drive, `processed/metadata/stage11/run_registry.jsonl` under
+  the shared Drive root (D46 (6)). The claim line is re-read from Drive and verified before the first
+  test read. Right after the run, the file is committed byte for byte to
+  `docs/audit_evidence/run_registry.jsonl` by PR, with its SHA-256 and line count. The path is
+  passed by the caller; the code hard-codes none.
 - Right after Stage 11, the registry's SHA-256 and line count are recorded in the project-log entry
   and the results PR (mitigation for truncation, see (e)).
 
@@ -342,7 +345,9 @@ dataclass: `run_id` (uuid4 hex), `status` (`"started"` | `"completed"`), `datase
 - **(c) Order-independent model set.** The model set is stored sorted, so listing the same models
   in another order cannot pass as a new run.
 - **(d) Path from the caller.** No Colab or Drive path is hard-coded (AGENTS.md code rules); tests
-  use a temporary file, and Stage 11 passes the committed evidence path.
+  use a temporary file, and Stage 11 passes the Drive path of the live registry (D46 (6)). A
+  registry inside the Colab clone would be lost with the session, so a crashed session could be
+  rerun unblocked; the committed copy is the evidence, not the live file.
 - **(e) Limitation.** The code protects one copy of the file: it cannot see a deleted file or a
   second copy. The team-level guarantee is that the real registry is committed through a reviewed
   PR right after Stage 11.
