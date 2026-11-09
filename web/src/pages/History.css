@@ -1,0 +1,43 @@
+/* S7 History: tokens only. From the prototype: reminder 162-163, count line 305, table 306-311, skeleton 319-320, states
+   321-325, cards 431-436. The prototype's 14 px text uses --fs-sm (as in page.css). */
+
+.reminder { display: flex; gap: var(--sp-2); align-items: center; font-size: var(--fs-sm); color: var(--ink-2); }
+.reminder svg { flex: none; color: var(--link); }
+
+.count-line { display: flex; gap: var(--sp-1) var(--sp-3); align-items: center; flex-wrap: wrap; font-size: var(--fs-sm); }
+.num { font-variant-numeric: tabular-nums; }
+
+.table-wrap { overflow-x: auto; }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+table.data th {
+  text-align: left; font-size: var(--fs-xs); font-weight: 600; color: var(--muted); padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--line); background: var(--surface-2); white-space: nowrap;
+}
+table.data td { padding: var(--sp-2) var(--sp-4); border-bottom: 1px solid var(--line); vertical-align: middle; }
+table.data tbody tr:hover td { background: var(--surface-2); }
+table.data tr:last-child td { border-bottom: none; }
+
+.history-id { font-size: var(--fs-sm); overflow-wrap: anywhere; }
+.history-verdict { display: inline-flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
+.history-showing { padding: var(--sp-3) var(--sp-4); border-top: 1px solid var(--line); font-size: var(--fs-sm); }
+
+.history-skel { padding: var(--sp-4); display: flex; flex-direction: column; gap: 20px; min-height: 400px; }
+.skel {
+  height: 14px; border-radius: var(--sp-1); background: linear-gradient(90deg, var(--surface-2), var(--line), var(--surface-2));
+  background-size: 200% 100%; animation: shimmer 1.2s linear infinite;
+}
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+.state { padding: var(--sp-7) var(--sp-5); text-align: center; display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); }
+.state-text { display: flex; flex-direction: column; gap: var(--sp-3); }
+.state-icon { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); color: var(--muted); }
+.state-icon.err { background: var(--err-bg); color: var(--err-fg); }
+
+@media (max-width: 640px) {
+  table.stack-sm thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  table.stack-sm, table.stack-sm tbody, table.stack-sm tr, table.stack-sm td { display: block; width: 100%; }
+  table.stack-sm tr { border-bottom: 1px solid var(--line); padding: var(--sp-3) var(--sp-4); }
+  table.stack-sm td { border: none; padding: 2px 0; display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); text-align: right; }
+  table.stack-sm td::before { content: attr(data-label); color: var(--muted); font-size: var(--fs-xs); text-align: left; flex: none; }
+  table.stack-sm .history-verdict { justify-content: flex-end; }
+}

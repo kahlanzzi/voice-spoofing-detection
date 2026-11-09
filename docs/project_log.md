@@ -2778,10 +2778,2807 @@ reviews the diff.
 
 ---
 
-### Entry 101 — D46 proposed: Stage 11 run procedure (2026-10-31)
+### Entry 101 — Stage 17 step 2: API skeleton (2026-10-30)
 
-**Numbering:** provisional; the number is fixed at merge time (Entry 85 is reserved for
-`feat/stage13-window-runner`; Entry 100 is the Stage 17 API design note, PR #65).
+**What:** on `feat/stage17-api-skeleton` (Iheb, Part E), the first API code, following the approved
+contract `docs/api_design.md`. `api/main.py`: `create_app()`, every route under `/api`, module-level
+`app` for `uvicorn api.main:app`. `api/config.py`: strict loader for `configs/api.yaml` (the 11 §9
+keys; missing, unknown or wrongly typed keys raise `ValueError`); `VSD_API_CONFIG` points to another
+file. `api/errors.py`: `ApiError` and handlers so every error uses the §6 shape: FastAPI validation
+errors become `400 invalid_request`, unknown routes `404 not_found`, wrong methods
+`405 invalid_request`, unhandled exceptions `500 internal_error` with a fixed message (traceback in
+the server log only). `request_id` in error bodies is `null` (§6). `api/middleware.py`: `req_` +
+32 hex request ID in an `X-Request-ID` header on every response, including 500s; a client-sent ID
+is ignored. `api/schemas.py`: `AnalysisResponse` (exactly the 8 §11 fields, extra fields
+forbidden), `StoredAnalysis`, `Error` and the §4.1 status shape. `api/routers/status.py`:
+`GET /api/status` with fixed mock values (state `ready`, `mock: true`, `deferral_on_fit` from
+config). `requirements.txt`: `fastapi==0.162.0`, `httpx==0.28.1`, `python-multipart==0.0.32`,
+`uvicorn==0.54.0`. 50 tests in `tests/api/`. Not in this PR: analyzer, uploads, storage, limits,
+history, stats, auth, Docker.
+
+**Contract changes [doc]:** with Iheb's approval, `docs/api_design.md` status set to "Approved
+(PR #65, Donia, 2026-10-30)" and §6 gains a row: `invalid_request` with HTTP 405 for a method not
+allowed on a known path.
+
+**Evidence [verified]:** the requirements install cleanly in fresh venvs on Python 3.13.2 and
+3.14.6 (installed versions equal the pins; FastAPI brings Starlette 1.10.0 and Pydantic 2.14.2).
+`python -m pytest -q` on 3.14: 794 passed, 9 skipped (torch tests; CI runs them with torch).
+`tests/api` on 3.13: 50 passed. `uvicorn api.main:app` started locally: `GET /api/status` answered
+`200` with the §4.1 body and an `X-Request-ID`; `GET /api/nope` answered `404` in the §6 shape.
+No dataset access; no DEEP-VOICE path.
+
+**Finding [verified]:** Starlette 1.10 has a built-in request body limit (`max_body_size`,
+`RequestBodyLimitMiddleware`). It is relevant to the §4.3 size protection and is left to the
+uploads PR.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) proposed the plan, wrote the code, tests and
+this entry, and ran the checks. Iheb approved the plan with changes (405 row, approval line) and
+reviews the diff. Context7 was not used: it rejected the configured key, so FastAPI and Starlette
+behaviour was checked against the installed source and the tests.
+
+**Gate:** team review of this PR. AI agents do not merge.
+
+---
+### Entry 102 — Midterm requirements backlog prepared (2026-10-31)
+
+**What:** added `docs/midterm/backlog.md` on `docs/stage11-midterm-backlog-malak`. The backlog
+reorganizes the repository's existing SRS v3.0 requirement set into a midterm implementation view:
+FR-01–FR-20, NFR-01–NFR-11 and PC-01–PC-09. Each row records the existing priority, D26 owner or
+stage, current status, repository evidence and remaining work. It explicitly forbids adding rows
+without an approved requirements change and records the two current source conflicts instead of
+silently choosing a new requirement.
+
+**Evidence [verified]:** 40 unique requirement rows: 20 FR, 11 NFR and 9 PC. IDs and priorities
+were checked against SRS v3.0; owners, stages and status evidence were checked against `AGENTS.md`,
+the decision register, accepted stage briefs, `docs/project_log.md`, merged `main` and the current
+open Stage 11 PRs. The API skeleton is merged in PR #66; the backlog does not mark its unimplemented
+upload, storage, History, notes, statistics or React flows as done.
+
+**Requirement / decision served [doc]:** midterm assignment backlog; D26 ownership; no new
+requirement or decision.
+
+**Checks [verified]:** `python -m pytest -q`: 794 passed, 9 skipped in 89.78s;
+`tests/governance/test_deepvoice_access.py`: 3 passed in 0.37s. Documentation-only change; no
+dataset or DEEP-VOICE access.
+
+**AI assistance:** **Codex** audited the repository sources, extracted the closed requirement list,
+cross-checked status claims and drafted the backlog and required records. Malak reviews the diff and
+remains responsible for the submission.
+
+**Gate:** teammate review of the backlog and its evidence before merge. AI agents do not merge.
+
+---
+### Entry 103 — Midterm UML package prepared (2026-10-31)
+
+**What:** added `docs/uml/` on `docs/stage11-midterm-uml-malak`: five editable PlantUML sources
+and five matching SVG exports for the online use cases, API/analyzer class model, upload-analysis
+sequence, History/result/note sequence, and the research/online component-deployment boundary. The
+package README records its sources, status notation, open assumptions, render commands and review
+owners; `docs/README.md` links the package.
+
+**Scope [doc]:** the SRS, Execution Plan, `AGENTS.md`, D38/ADR 0008, approved API design, UI handoff,
+architecture summary, midterm backlog and current `api/`/`src/` code. The diagrams add no
+requirements. They label the current mock `GET /api/status` and existing shared core as implemented;
+the analyzer seam, upload/history/note/stats routes, metadata repository, React/nginx app and Docker
+deployment remain planned. Access control remains an open decision. Research evaluation and
+DEEP-VOICE stay outside the online deployment.
+
+**Evidence [verified]:** PlantUML `-checkonly` accepted all 5 sources; all 5 generated SVG files
+parsed as XML; the rendered images were visually inspected for readable actors, relationships,
+sequence fragments, component boundaries and implemented/planned labels.
+
+**Checks [verified]:** `python -m pytest -q`: 794 passed, 9 skipped in 106.60s;
+`tests/governance/test_deepvoice_access.py`: 3 passed in 0.46s. Documentation-only change; no
+audio, dataset, checkpoint or DEEP-VOICE access.
+
+**AI assistance:** **Codex**, using the Diagram Maker UML, sequence and export skills, audited the
+repository interfaces, drafted the sources, rendered and visually checked the SVGs, and prepared the
+required records. Malak reviews the complete diff and remains responsible for the submission.
+
+**Gate:** Iheb validates API/backend/deployment flows; Donia validates ModelBundle/preprocessing/
+risk-policy boundaries; then teammate review and green CI. AI agents do not merge.
+
+---
+### Entry 104 — UML package aligned to the canonical SRS/SDD figures (2026-10-31)
+
+**What:** corrected `docs/uml/` after review identified that Entry 103's five diagrams formed a
+parallel implementation/planning model instead of the assignment's canonical report figures. The
+package now contains seven editable PlantUML sources and matching SVG exports that reconstruct SRS
+Figure 1 and SDD Figures 1-6: one merged use-case model, online and research component views,
+analysis and evaluation/governance class views, and the UC-01 and UC-08 sequences. The package
+README maps every repository file to its report figure and defines one-source consistency rules.
+
+**Scope [doc]:** the SRS/SDD actors, UC IDs, include/extend relations, component boundaries,
+classes, multiplicities, participants and message order. No requirement, use case or domain class was
+invented. The only post-report annotations are approved D38/ADR 0008 (React label), PR #65's API
+contract (`POST /api/analyses`, `201`, exact eight-field response) and D41/ADR 0010's registry-key
+refinement. Implementation status remains in `docs/midterm/backlog.md` and this log, outside the UML.
+
+**Evidence [verified]:** PlantUML `-checkonly` accepted all 7 sources; all 7 generated SVG files
+parsed as XML; all 7 rendered PNG previews were visually reviewed for correct UML notation,
+readable labels, component boundaries, multiplicities, include/extend direction, sequence ordering,
+alternative paths, contrast and clipping. No rendering defect remained.
+
+**Checks [verified]:** `python -m pytest -q`: 794 passed, 9 skipped in 19.68s;
+`tests/governance/test_deepvoice_access.py`: 3 passed in 0.54s. Documentation-only change; no audio,
+dataset, checkpoint or DEEP-VOICE access.
+
+**AI assistance:** **Codex**, using the Diagram Maker UML and diagram-review rules, compared the
+editable reconstructions with the canonical PDF figures, corrected the UML notation, regenerated and
+visually inspected every export, and prepared the records. Malak reviews the complete diff and remains
+responsible for the submission.
+
+**Gate:** Iheb validates the online/API and UC-01 figures; Donia validates the shared core and model
+boundaries; Khalil validates UC-08 and evaluation governance; then teammate review and green CI. AI
+agents do not merge.
+
+---
+### Entry 105 — Canonical use-case figure given fixed, PDF-faithful layout (2026-10-31)
+
+**What:** replaced only the use-case diagram's automatic PlantUML layout with editable draw.io XML
+and a matching hand-positioned SVG. The layout now follows the approved SRS Figure 1: API Client and
+Fraud Prevention Analyst on the left, research/compliance/operations actors on the right, and the
+submission, shared analysis and research/operations use cases in compact columns. The five actors,
+UC-01–UC-10 labels, nine actor associations, five `include` relations and one `extend` relation are
+unchanged. No requirement or system behaviour changed.
+
+**Evidence [verified]:** `use-case.drawio` and `use-case.svg` parse as XML; the 1400×750 SVG was
+rendered in a browser and visually reviewed at full resolution. Actor labels do not overlap, every
+actor remains outside the system boundary, every use case remains inside it, relationship arrows and
+legend are readable, and no content is clipped. The other six canonical diagrams are unchanged.
+
+**Checks [verified]:** `python -m pytest -q`: 794 passed, 9 skipped in 19.30s;
+`tests/governance/test_deepvoice_access.py`: 3 passed in 0.62s. Documentation-only change; no audio,
+dataset, checkpoint or DEEP-VOICE access.
+
+**AI assistance:** **Codex**, using the Diagram Maker UML and diagram-review rules, compared the
+automatic render with the approved PDF figure, rejected two inadequate automatic layouts, produced
+the fixed vector layout, and visually inspected the final render. Malak reviews the complete diff and
+remains responsible for the submission.
+
+**Gate:** Iheb, Donia and Khalil confirm that the fixed layout preserves the canonical SRS meaning;
+then teammate review and green CI. AI agents do not merge.
+
+---
+### Entry 106 — Remaining canonical UML figures audited and visually aligned (2026-10-31)
+
+**What:** cross-checked the six remaining editable UML sources and SVG exports against SDD Figures
+1–6 after the use-case layout correction. The online and research component views now use clear
+vertical layers; research dependencies point to the same shared-core and infrastructure boundaries
+shown in the report instead of crossing individual components. The class and sequence diagrams use
+compact report-style legends and consistent blue sequence styling. Implementation-status wording was
+removed from specification-level figures. No actor, component, class, relationship, multiplicity,
+participant, message, alternative path or requirement changed.
+
+**Controlled differences [verified]:** the only post-report differences remain the three already
+listed in `docs/uml/README.md`: D38 / ADR 0008's React label, PR #65's approved
+`POST /api/analyses` / `201` eight-field response, and D41 / ADR 0010's registry-key refinement.
+The figures do not introduce a second domain model.
+
+**Evidence [verified]:** PlantUML `-checkonly` accepted all 6 PlantUML sources; all 7 SVG exports and
+the draw.io source parsed as XML. All 7 final renders were visually reviewed at full resolution for
+boundaries, direction, multiplicities, message order, alternative fragments, label readability,
+contrast and clipping. No rendering defect or cross-diagram naming conflict remained.
+
+**Checks [verified]:** `python -m pytest -q`: 794 passed, 9 skipped in 19.14s;
+`tests/governance/test_deepvoice_access.py`: 3 passed in 0.50s. Documentation-only change; no audio,
+dataset, checkpoint or DEEP-VOICE access.
+
+**AI assistance:** **Codex**, using the Diagram Maker UML, diagram-review and PDF inspection rules,
+compared each editable figure to the canonical SDD page, preserved the report semantics, improved
+only the presentation, regenerated the exports and prepared this audit record. Malak reviews the
+complete diff and remains responsible for the submission.
+
+**Gate:** Iheb validates the online/API and UC-01 figures; Donia validates the shared core and model
+boundaries; Khalil validates UC-08 and evaluation governance; then teammate review and green CI. AI
+agents do not merge.
+
+---
+### Entry 107 — Midterm AI ethics and usage reflection drafted (2026-10-31)
+
+**What [doc]:** added `docs/ai-usage-reflection.md`, a team-level reflection owned by Malak and based
+only on repository evidence through 2026-10-31. It records the tools actually attributed in the log,
+human review and verification, four corrected AI outputs, privacy and MCP safeguards, model/data bias
+risks, licensing and rights limits, and academic accountability. Gemini/Antigravity support and the
+Context7 failure are distinguished from tools that produced accepted artifacts; no unsupported use is
+claimed.
+
+**Evidence [verified]:** every factual example traces to `AGENTS.md`, `CONTRIBUTING.md`, the decision
+register/ADR 0006, dataset audit, threat model or named project-log entries. Link and terminology
+checks passed. `python -m pytest -q`: 794 passed, 9 skipped in 21.99s;
+`tests/governance/test_deepvoice_access.py`: 3 passed in 0.59s; `git diff --check`: passed; token scan:
+no token found. Documentation only; no data, audio, model or experiment accessed.
+
+**Human review:** Malak confirmed that the team used no additional AI tool beyond the recorded
+inventory. Donia approved the reflection's content and assignment coverage by team message.
+
+**AI assistance:** **Codex** audited the repository evidence and drafted the reflection. Human review
+is recorded above; AI does not approve or merge.
+
+**Gate:** commit and push the reviewed document, then require green CI and GitHub PR approval before
+merge. **WAITING FOR PR REVIEW.**
+
+---
+### Entry 108 — Midterm initial refactor and optimization audit (2026-10-31)
+
+**Numbering:** provisional; main ends at 107. Open PRs #67 and #68 and fetched remote branch logs were checked; their highest entries are 101 and 102. Recheck at merge time.
+
+**What [doc]:** added `docs/refactor-optimization-report.md` on
+`docs/stage11-midterm-refactor-khalil`, based on main `98fd8d7`. It consolidates the existing
+API/UI and ML evidence, distinguishes historical results from new baseline checks, and proposes
+neutral placement of cache helpers shared by MFCC and log-Mel. This is an initial audit for team
+review, not an implemented refactor or a measured performance improvement.
+
+**Checks [user-executed]:** Khalil updated the declared dependencies after an initial missing-FastAPI
+collection error. The first complete non-CNN run was `794 passed, 9 skipped in 51.00s`.
+After installing CPU torch 2.11.0, safetensors 0.8.0 and wandb 0.31.0, `pip check` printed
+`No broken requirements found.` With `REQUIRE_TORCH_TESTS=1`,
+`python -m pytest -q -ra` printed `937 passed in 89.85s (0:01:29)`; no skips shown.
+Separate baseline DEEP-VOICE governance check: `3 passed in 0.22s`; after the documentation was added, the governance check passed again: `3 passed in 0.18s`. These outputs were supplied as pasted
+text/screenshots; the assistant could not launch the local interpreter directly.
+
+**Scope:** documentation only; no code refactor, source model/preprocessing/threshold change,
+frozen-evidence edit, dataset access or governed run. The report credits earlier improvements
+to their original PRs and does not claim them as Khalil's implementation.
+
+**AI assistance:** Codex inspected repository sources, verified recorded arithmetic and links,
+drafted the report and documentation records. Khalil ran the baseline commands; human review of
+the proposal and report remains pending.
+
+**Gate:** team review of the initial audit before any evidence-sensitive cache refactor; then any
+approved implementation gets a separate focused branch/PR. **WAITING FOR HUMAN REVIEW.**
+
+---
+### Entry 109 — Part 6 review corrections and measurement plan (2026-10-31)
+
+**Numbering:** provisional; main ends at 107, this branch has Entry 108. Open PRs #67/#68 and fetched remote logs were checked during preparation; their entries do not reserve 109. Recheck at merge time.
+
+**What [doc]:** corrected outdated commit-pending wording in the Part 6 report (initial commit
+`7c0e243`), replaced explanatory arithmetic notation with runnable PowerShell, and distinguished
+the configured Python version from a captured runtime version. Added an explicit course-requirement
+and completion section: initial audit is not the final refactor submission. Subsequent user-executed measurements now establish the software baseline; after-refactor results remain pending.
+
+**PDF [artifact]:** added a clearly labelled initial-audit PDF exported from the Markdown report;
+the PDF records its source Markdown SHA-256. All pages were rendered and visually inspected;
+record layouts and code blocks were checked for clipping, orphaned continuations and readability.
+Regenerate after final evidence and review decisions.
+
+**Checks:** report links and recorded arithmetic rechecked against the current repository;
+`git diff --check` clean. Earlier user-run checks remain `937 passed in 89.85s (0:01:29)`
+and governance `3 passed in 0.18s`; this review did not rerun or relabel them as assistant runs.
+Khalil then collected coverage (937 passed in 73.21s), Radon and Ruff outputs. Coverage: 88.92% statement, 79.80% branch, 86.76% combined; Radon: 342 function/method blocks (class summaries and nested closures excluded), mean CC 4.6082, maximum 37; Ruff: 2 findings under E4/E7/E9/F. Raw JSON, versions and a provenance summary are preserved in `docs/audit_evidence/midterm_refactor/before/`. No source code or frozen evidence changed.
+
+**AI assistance:** Codex performed the review, corrected documentation and prepared/rendered the
+PDF. New user-generated metrics were verified and summarized; after-refactor evidence and final human acceptance are still required.
+
+**Gate:** review this corrected initial audit and measured baseline, then obtain team review
+before any evidence-sensitive refactor; final Markdown/PDF and implementation evidence must agree.
+**WAITING FOR HUMAN REVIEW.**
+
+---
+### Entry 110 — Pre-push Part 6 documentation consistency review (2026-10-31)
+
+**Numbering:** provisional; main ends at 107 and this branch has Entries 108–109. Open PRs #67/#68 and fetched branch logs were rechecked; neither reserves 110. Recheck at merge time.
+
+**What [doc]:** corrected three report issues identified during Khalil's requested read-only
+review of `3f57ec3`: a coverage-attainment contradiction, outdated revision-pending wording,
+and an unpinned audit-tool installation recipe. The report now states the measured coverage
+result for its explicit source scope, records both existing report commits, and pins the
+reproduction tools to coverage 7.17.0, Radon 6.0.1 and Ruff 0.17.3. The matching initial-audit
+PDF was regenerated from the corrected Markdown and checked before handoff.
+
+**Evidence/checks:** committed raw-evidence SHA-256 values, tool-version capture hash,
+coverage and complexity arithmetic, lint count, relative links and PDF source hash were
+rechecked. Baseline data remain unchanged: user runs show 937 passing tests, governance
+3 passed, statement coverage 88.92%, branch 79.80%, combined 86.76%, maximum CC 37 and
+2 Ruff findings. No new test run or runtime improvement is claimed by this wording correction.
+
+**AI assistance:** Codex applied the user-authorized report corrections and repeated document
+and evidence checks. No application code, test, config, model, frozen evidence or dataset changed.
+
+**Gate:** corrected initial audit is ready for Khalil's review; the final Part 6 submission
+still needs any approved refactor, actual after-results, PR/CI and human acceptance.
+**WAITING FOR HUMAN REVIEW.**
+
+### Entry 111 — Part 6 focused lint cleanup and after-checks (2026-10-31)
+
+**Numbering:** provisional. Main ends at 107; this branch has 108–110. Open PRs
+#67/#68 and their fetched branch logs were rechecked; neither reserves 111. Recheck at merge.
+
+**What [code]:** on `chore/stage11-lint-cleanup-khalil`, removed an unnecessary
+f-string prefix from the constant audit-report heading in `src/audit/for2sec_audit.py`
+and the unused `BaselineModel` import in `src/tuning/baseline_fit.py`. Static AST
+comparison confirmed these are the only source changes. Cache-helper restructuring is deferred.
+
+**Evidence/checks:** Khalil ran the full suite with `REQUIRE_TORCH_TESTS=1`:
+`937 passed in 57.15s`; the governance test returned `3 passed in 0.18s`.
+The after coverage run returned `937 passed in 85.53s (0:01:25)`.
+Compared with the before capture, scoped Ruff E4/E7/E9/F findings fell from 2 to 0
+(exit 0). Statement coverage remains 3748/4215 (88.92%), branch coverage 1047/1312
+(79.80%), combined 86.76%. Radon remains 342 function/method blocks, mean CC
+4.6082 and maximum 37. Tool versions and measurement scopes match the before run.
+Different test durations are not evidence of a speedup; no performance gain is claimed.
+
+**AI assistance:** Codex proposed and applied the two small edits, inspected their diff,
+and compared the user-run measurements. Khalil executed the project-runtime checks.
+No model, preprocessing rule, threshold, API contract, governance rule or frozen evidence
+changed. No DEEP-VOICE or FoR test-split access was performed for this cleanup.
+
+**Gate:** commit this tested cleanup, then finalize the report/PDF and preserve the after
+captures with a link to the actual cleanup commit. PR/CI and independent human review remain pending.
+**WAITING FOR HUMAN REVIEW.**
+
+### Entry 112 — Part 6 measured cleanup report and after evidence (2026-10-31)
+
+**Numbering:** provisional; main still ends at 107, local history at 111. Open PRs
+#67/#68 reserve neither 111 nor 112 at the latest check. Recheck before merge.
+
+**What [doc]:** updated `docs/refactor-optimization-report.md` and its PDF to record
+the focused cleanup commit `de943333c9f8e51416666b84f37d319cd8cac4b9` and actual
+before/after results. Preserved the after JSON outputs, normalized console/version
+captures and comparison provenance under `docs/audit_evidence/midterm_refactor/after/`.
+The before evidence remains unchanged. Every claimed code improvement links the
+actual cleanup commit; no PR number or approval is invented.
+
+**Evidence/checks:** user-run after suite: `937 passed in 57.15s`; governance:
+`3 passed in 0.18s`; coverage suite: `937 passed in 85.53s (0:01:25)`.
+Compared the raw captures: Ruff findings 2 to 0; statement/branch/combined coverage
+88.92%/79.80%/86.76% unchanged; all 342 measured complexity blocks unchanged.
+Versions match. Test durations are not presented as a speedup. The modest lint-only
+scope and unresolved course acceptance are explicit. PDF source hash and rendered
+pages are checked before handoff; no new runtime test is attributed to this doc edit.
+
+**AI assistance:** Codex compared captured evidence, drafted the final review version
+and generated/inspected its PDF. Khalil executed the project-runtime checks and
+committed the two source edits. No model, dataset or frozen evidence changed.
+
+**Gate:** audit publication, focused cleanup PR, required CI, independent code/report
+review and final human acceptance remain open. The cache extraction is still deferred.
+**WAITING FOR HUMAN REVIEW.**
+
+### Entry 113 — Correct Part 6 post-merge report status (2026-11-01)
+
+**Numbering:** provisional. Main ends at 112. Open PRs #67/#68 and remote
+branch history do not reserve 113 at this check; recheck at merge time.
+
+**What [doc]:** corrected only Khalil’s Part 6 report/PDF, its documentation-index
+row and this change record. PR #73 merged into the audit branch as `c60d02f`;
+combined PR #72 merged into main as `76c55aa`. The report now distinguishes
+completed publication/CI/PR review from unverified final editorial/course acceptance.
+Original baseline revisions, measurements and evidence remain unchanged.
+
+**Verification:** GitHub records Malak’s approval of #73 at `32bd764`, Donia’s
+approval of combined #72 at `c60d02f`, and successful CI on merged main `76c55aa`.
+Relative links, original evidence hashes, preserved old log entries and the regenerated
+PDF source hash/render are checked before handoff. No new local test run or changed
+model-performance result is claimed for this documentation correction.
+
+**AI assistance:** Codex verified the GitHub records, corrected wording and regenerated
+and checked the PDF. No code, model, governance rule, frozen evidence or dataset changed.
+**Gate:** this follow-up needs its own commit, PR/CI and human review; separate final
+editorial acceptance and team submission remain unverified.
+**WAITING FOR HUMAN REVIEW.**
+
+### Entry 114 — Group README, index and current-status refresh (2026-11-01)
+
+**Numbering:** provisional. Main ends at 113 after PR #74 merged.
+Open PRs #67/#68 and fetched remote branch histories were checked; 114 is not
+reserved there. Recheck all open PRs and main before merge. This standalone
+branch starts from main after PR #74; its report/PDF edits are retained unchanged.
+
+**What [doc]:** refreshed README status, approved React stack and current
+folder tree; documented complete CPU test dependencies, the mock API/status
+and standalone design prototype, and the remaining end-to-end/Compose work.
+Expanded the docs index and corrected verified current-status records.
+Folder layout, application code, model behavior, frozen evidence and historical
+log entries are preserved. Part 6 report/PDF corrections are already merged through PR #74 and are not changed here.
+
+**Evidence:** merged main `ca45601` (PR #74); Stage 11 open PRs #67/#68; approved D38,
+API contract PR #65, API skeleton #66, AI ethics reflection #71 and combined
+Part 6 #72/#73. Iheb’s ongoing frontend/backend work is user-reported and is
+not presented as merged or verified. No research gate is advanced.
+
+**Checks:** Khalil ran `$env:REQUIRE_TORCH_TESTS = "1"`, then
+`.\.venv\Scripts\python.exe -m pytest -q -ra`: `937 passed in 58.30s`.
+`.\.venv\Scripts\python.exe -m pytest -q tests/governance/test_deepvoice_access.py`:
+`3 passed in 0.19s`. These are user-executed results supplied by screenshot.
+Relative links, the generated tree, old-entry preservation, token-pattern scan and
+changed-file scope were checked; `git diff --check` returned no errors. The Part 6
+report/PDF are byte-identical to merged main. No fresh-install/MVP demo validation
+or performance improvement is inferred from these tests.
+
+**AI assistance:** Codex inspected main/open PRs and drafted navigation/status
+corrections. Team owners must review descriptions of their ongoing work.
+**WAITING FOR HUMAN REVIEW.**
+
+### Entry 115 — Organize documentation index by topic (2026-11-01)
+
+**Numbering:** provisional. Main ends at 114 after group-docs PR #75.
+Open PRs #67/#68 reserve neither 114 nor 115 at the latest check; recheck before merge.
+
+**What [doc]:** grouped the existing `docs/README.md` entries into six sections:
+start here; requirements/decisions/history; implementation guides; API/design/UML;
+results/evidence; and midterm/course deliverables. Added quick navigation.
+Every original table row and link is retained. No files or folders moved;
+application code, reports/PDFs and original evidence are unchanged.
+
+**Checks:** original-row/link preservation, local link targets, navigation anchors,
+old-log-entry preservation and whitespace checks passed. Khalil set
+`REQUIRE_TORCH_TESTS=1` and ran `.\.venv\Scripts\python.exe -m pytest -q -ra`:
+`937 passed in 52.48s`. Then `.\.venv\Scripts\python.exe -m pytest -q tests/governance/test_deepvoice_access.py`:
+`3 passed in 0.57s`. These are user-executed results supplied by screenshot;
+no fresh-install demonstration is claimed. PR/CI and human review remain pending.
+
+**AI assistance:** Codex grouped the existing entries and checked their preservation.
+This changes navigation only and introduces no requirement or governance decision.
+**WAITING FOR HUMAN REVIEW.**
+
+### Entry 116 — Stage 17 step 3: POST /api/analyses with MockAnalyzer and SQLite (2026-11-01)
+
+**Numbering:** provisional. Main ends at 115 (PR #76); recheck against open PRs before merge.
+
+**What:** on `feat/stage17-analyze` (Iheb, Part E; fast-forwarded to `4682768` before writing this
+entry), the first upload endpoint, following `docs/api_design.md` §4.3, §5–§9.
+`api/analyzer.py`: `Analyzer` Protocol (`analyze(path)`, `info()`), `AnalysisOutcome`,
+`AnalyzerInfo`, `AnalyzerUnavailable`, and `MockAnalyzer`: the SHA-256 of the file bytes picks the
+outcome (same file → same result) in risk-v1 shapes (synthetic 1.00 HIGH; uncertain 0.50–1.00
+MEDIUM; authentic 0.73–1.00 LOW), `model_version` `mock`, `mock: true`, `deferral_on_fit` from
+config; no torch or `src.models` import. `api/intake.py`: the §4.3 order with three size layers:
+(1) `ContentLengthGuard` answers a §6 `413` before the body is read; (2) Starlette 1.10's
+`RequestBodyLimitMiddleware` stops bodies without `Content-Length`; (3) the file bytes are counted
+while writing the temp file (exact `max_size_bytes`). Layers 1–2 allow 64 KiB of multipart framing
+above the cap. Then empty file, `soundfile` decode of the whole file in blocks (`corrupt_audio`;
+0 frames → `empty_file`) and duration. Random temp name in `temp_dir`, deleted in `finally` on success
+and every error; the original file name is used only for its extension. `api/db.py` +
+`api/repository.py`: `sqlite3`, `analysis_record` with the 11 §7 columns and CHECK constraints,
+created in the app lifespan; all SQL in the repository. `api/routers/analyses.py`: request ID
+first; analyzer in a worker thread with `analysis_timeout_s` (`504`; not ready or refusing → `503`;
+other exception → `500`); record stored, then `201` + `Location` + exactly the 8 §11 fields;
+`processing_ms` from handler start to result ready. `GET /api/status`: versions, manifest hash,
+`deferral_on_fit`, `mock` and `state`/`checks.analysis` (from `ready`) now come from
+`analyzer.info()`. New config key `database_path` (`var/api.sqlite`, relative to the repo root;
+`var/` gitignored). `requirements.txt`: `starlette==1.10.0` pinned, since the code now imports it
+directly and FastAPI only requires `starlette>=0.46.0`.
+
+**Contract changes [doc]:** approved by Iheb in the plan: §9 gains the `database_path` row; the
+§4.3 size note gains one sentence on the 64 KiB multipart allowance; `GET /api/status` reports
+`unavailable` when the analyzer is not ready (as §4.1 already says).
+
+**Finding [verified]:** Starlette's body limit, when `Content-Length` is over its limit, replaces
+any response with a plain-text 413 (no §6 body, no request ID). The guard therefore runs outside
+it. Each size layer has a test that fails when that layer is removed (checked by disabling it).
+python-multipart rejects a multipart preamble (400), so the layer-2 test pads with an extra field.
+
+**Evidence [verified]:** `python -m pytest -q` (3.14.6, after the fast-forward): 852 passed, 9 skipped (torch tests).
+`tests/api` on a fresh 3.13.2 venv: 108 passed. Governance test: 3 passed.
+`uvicorn api.main:app --port 8001` with a scratchpad config: `curl -F file=@sample.wav` (2 s
+generated WAV) → `201`, `Location: /api/analyses/req_7fb8…`, the 8 fields (`uncertain`, 0.75,
+`MEDIUM`, `mock`), the same ID in `X-Request-ID`; a `.ogg` name → `415 unsupported_format` with
+its request ID; the temp folder was empty and the row was stored. No audio committed; no dataset
+access; no DEEP-VOICE path.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) read the contract and the installed Starlette
+source, proposed the plan, wrote the code, tests and this entry, and ran the checks. Iheb approved
+the plan with answers (allowance, status from `ready`, `var/api.sqlite`, one open item) and the
+fast-forward, and reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+### Entry 117 — Stage 17 step 4: GET /api/limits and a real GET /api/status (2026-11-01)
+
+**Numbering:** provisional. Main ends at 116 (PR #77); recheck against open PRs before merge.
+
+**What:** on `feat/stage17-limits-status` (Iheb, Part E; branched from `main` at `87b4108`),
+following `docs/api_design.md` §2, §4.1, §4.2, §6–§9. `GET /api/limits` (`api/routers/limits.py`,
+`LimitsResponse`) returns `formats`, `max_size_bytes`, `max_duration_s` and `audio_deletion` from
+the loaded config only. No new config keys. `GET /api/status`: `checks.history_and_stats` now comes
+from `AnalysisRepository.probe()`. The probe is `SELECT 1 FROM analysis_record LIMIT 1` over a
+`mode=ro` connection (`api/db.py` `connect_readonly`; `PROBE_TIMEOUT_S = 1.0`, an internal setting,
+not a §9 value). It never creates the file or folder and never writes. A probe failure is caught,
+logged with the exception class only (no path, IP or file name) and reported as `unavailable` in
+the 200 body, never as a 500. `analyzer.info()` errors still give `500` (§4.1): without `info()`
+there are no versions to report.
+
+**Provisional state rule [doc → proposal, open decision 7]:** `derive_state()` is the only place
+`state` is computed. Ready = both checks available. Unavailable = analysis unavailable (§4.1 as
+written) **or** database unavailable, because records are stored before the `201`, so a database
+failure makes every analysis fail too. Under the prototype rule (HANDOFF §11 item 7) a database
+failure would show "Degraded" while uploads fail. `degraded` stays in the schema but is not produced
+until the team decides. **Known limit:** the probe is read-only (a write probe would take write
+locks on every status call). A database that is readable but not writable (disk full, read-only
+mount, permissions) passes the probe, so `/status` says `ready` while `POST /api/analyses` answers
+`500`. This is noted in the `probe()` and `derive_state()` docstrings.
+
+**Contract change [doc]:** approved by Iheb in the plan. §4.1 gains one bullet on what
+`history_and_stats` means. The degraded wording and §10 item 7 are unchanged.
+
+**Evidence [verified]:** `python -m pytest -q` (3.14): 871 passed, 9 skipped (torch tests).
+`tests/api`: 127 passed. New tests cover: limits equal `configs/api.yaml` and follow
+`VSD_API_CONFIG`; status ready; database missing (file and folder not created), not a database
+(bytes unchanged), deleted after start, analyzer not ready, both failing; the `derive_state` table;
+`connect_readonly` refusing writes; the probe on a missing table and on a locked database. Manual
+`uvicorn` run: see the PR report. No audio committed; no dataset access; no DEEP-VOICE path.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) read the contract, HANDOFF §11 and the code,
+proposed the plan, wrote the code, tests and this entry, and ran the checks. Iheb approved the plan
+with two additions (document the read-only limit; check how `api/main.py` exposes the app) and
+reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+### Entry 118 — Stage 17 step 5a: GET /api/analyses (history) and GET /api/analyses/{request_id} (2026-11-01)
+
+**Numbering:** provisional. Main ends at 117 (PR #78); recheck against open PRs before merge.
+
+**What:** on `feat/stage17-history-notes` (Iheb, Part E; branched from `main` at `2b9ec04`),
+following `docs/api_design.md` §2, §4.4, §4.5, §5, §6, §7 and §9. Step 5 is split (approved by Iheb):
+5a (this PR) is read-only history and details. 5b (notes, `PUT …/note`) comes later on a new branch from
+`main` after 5a merges. It is not stacked.
+- `GET /api/analyses`: `verdict` (repeatable), `from`/`to` (inclusive UTC days), `q` (request-ID
+  substring, ignoring case), `page`, `page_size` (1 to `page_size_max`, default 10). The response is
+  `items` (§5 `StoredAnalysis`, newest first), `total`, `page`, `page_size`, and `counts`, which ignore
+  the verdict filter (§4.4). A page past the last one gives empty `items` and its query is skipped.
+- `GET /api/analyses/{request_id}`: the `Location` from `POST /api/analyses` now resolves. An unknown
+  ID, or one not in the §2 form, gives `404 not_found`. Bad queries, wrong-type values included
+  (`page=abc`), give `400 invalid_request`. Both carry `request_id: null` (§6, "otherwise `null`").
+- Storage: the `analysis_note` table (§7) is created at startup. It has `request_id` as PK and an FK
+  to `analysis_record`, `text NOT NULL CHECK (non-blank)`, and an `updated_at NOT NULL` CHECK for the
+  `Z` form. In 5a it is only read (LEFT JOIN), so `note` is `null` until 5b. All SQL stays in
+  `api/repository.py`. `processing_ms` and `is_mock` are never returned.
+- `create_app()` raises if `stats_time_zone` is not `UTC`, because days are read as UTC with no
+  conversion until open decision 6.
+
+**Contract change [doc]:** gap text approved by Iheb in the plan. §4.4 gains 4 bullets: tie order,
+UTC days and the guard, `q` details, and counts/duplicates/unknown parameters/default page size.
+§4.5 gains 1 bullet (a malformed ID is 404). There is no §4.6 change in 5a.
+
+**Evidence [verified]:** `python -m pytest -q` (3.14): 923 passed, 9 skipped (torch tests).
+`tests/api`: 179 passed (127 before). The new tests cover an empty history, the shape, newest-first and
+the same-second tie, paging (pages 1–3, past-last, huge page), verdict filters, counts, day bounds, `q`
+(case and literal `%`/`_`), 14 bad-query cases, details from `Location`, 404 for unknown and malformed
+IDs, the note-table schema, FK and CHECKs, the time-zone guard, and no file name, client host or
+stored-only fields in responses. A mutation check (reversing the tie order, counts that follow the
+verdict filter) made 2 tests fail each. In a manual `uvicorn` + `curl` run every route answered as
+expected, and the file name appeared in no response and not in the server log. Ruff is not installed
+in the venv, so it was not run. No audio committed; no dataset access; no DEEP-VOICE path.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) read the contract and the code, proposed the plan
+and the gap list, wrote the code, tests and this entry, and ran the checks. Iheb approved the plan with
+five points (§6 quote for `request_id: null`, wrong-type queries → 400, check `stats_time_zone` before
+the guard, quote §4.4 on counts and `q`, no stacking) and reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+### Entry 119 — Stage 17 step 5b: PUT /api/analyses/{request_id}/note (2026-11-01)
+
+**Numbering:** provisional. Main ends at 118 (PR #79); recheck against open PRs before merge.
+
+**What:** on `feat/stage17-notes` (Iheb, Part E; branched from `main` at `8d1ed1e` after PR #79), following
+`docs/api_design.md` §4.6, §6, §7 and §9 and the 5b part of the reviewed Step 5 plan.
+- `PUT /api/analyses/{request_id}/note` (`api/routers/notes.py`): the ID is checked against the §2 form, then
+  the Content-Type media type (`application/json`, parameters such as `charset` allowed), then the body is
+  read with a byte cap and parsed by a strict `NoteRequest`. Text is trimmed and counted in code points. Over
+  `note_max_chars` gives 400 with nothing stored, blank text removes the note, and removing an absent note
+  answers `{"note": null}`. Unknown ID → 404, storage failure → 500. Every error carries `request_id: null`.
+- `api/repository.py`: `save_note` (`INSERT … ON CONFLICT DO UPDATE`) and `delete_note`. Each checks the
+  record in the same `BEGIN IMMEDIATE` transaction and only reads `analysis_record`.
+- Body size: until now the only limit on this route was Starlette's at `max_size_bytes` + 64 KiB, which answers
+  in plain text. `note_body_limit` = 12 × `note_max_chars` + 1 KiB (25,024 bytes) is derived in code from the
+  §9 key, with no new config key. `ContentLengthGuard` answers a larger or non-numeric Content-Length on the
+  note path with a §6 400, and the route counts streamed bytes against the same cap.
+- Privacy: there is no FastAPI body parameter, and pydantic errors are dropped. The one log line holds only the
+  request ID and the exception class name.
+
+**Contract change [doc]:** §4.6 gains the four reviewed gap bullets (G9–G14). The G10 bullet also states the JSON
+Content-Type and the body cap (approved by Iheb in the delta plan, with the Content-Type check moved before the
+body read).
+
+**Evidence [verified]:** `python -m pytest -q` (3.14): 986 passed, 9 skipped (torch tests). `tests/api`: 242
+passed (200 before the new notes file, 179 at Entry 118). The new tests cover save, replace, the charset
+header, trimming, exactly `note_max_chars` (ASCII, é, 😀), +1 → 400 with nothing stored or the old note kept,
+blank removal, absent removal, 11 bad bodies (lone surrogate included), unknown and malformed IDs, an
+over-limit Content-Length, a streamed over-limit body, the `rowid` + row of `analysis_record` unchanged after
+save, replace, remove and absent remove, and the note text absent from responses and `caplog` on success, on six
+400 cases and on injected 500s whose exception message holds the text. A mutation check (no trim, logging the
+exception, an off-by-one limit) made 5, 2 and 3 tests fail. A manual `uvicorn` + `curl` run answered as expected,
+and the server log had 0 hits for the note text or the file name. Ruff is not installed in the venv, so it was
+not run. No audio committed; no dataset access; no DEEP-VOICE path.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the delta plan, the code, tests and this entry, and ran
+the checks. Iheb approved the plan with two changes (Content-Type checked before the body is read, plus a test with
+`charset=utf-8`; an Open item for the router helpers imported across routers) and reviews the diff. Context7 was
+not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 120 — Stage 17 step 6: GET /api/stats (2026-11-01)
+
+**Numbering:** main ends at 119 (PR #80, `76943f7`); recheck against open PRs before merge.
+
+**What:** on `feat/stage17-stats` (Iheb, Part E; branched from `main` at `76943f7` after PR #80), following
+`docs/api_design.md` §4.7, §2, §5, §6 and §9 and the reviewed Step 6 plan (one PR, no split).
+- `GET /api/stats` (`api/routers/stats.py`): `from`/`to` use the §4.4 date rules. The default is the last 7 UTC
+  days including today. Only `from` given runs to today; only `to` given starts 6 days before it. `from` after
+  `to`, more than 366 days or a start before 0001-01-01 → 400 `invalid_request`, `request_id: null`. Every day is
+  listed, with zeros for empty days. `uncertain_share` is rounded to 4 places and is `null` at 0. `today` is the
+  day of `generated_at`, which comes from one clock read. `time_zone` is `stats_time_zone`. `monitoring_marker`
+  (`deferral_on_fit`, `policy_version`, `mock`) comes from `analyzer.info()`, as §4.7 and ADR 0008 §8 require.
+  The route logs nothing.
+- `api/repository.py`: `stats()` reads every figure in one `BEGIN` snapshot, with `?` parameters only. It reuses
+  history's `_where`, so total and counts equal `GET /api/analyses` for the same days. The median runs as an
+  `ORDER BY … LIMIT/OFFSET` on the middle one or two values, with halves rounded up in integer math.
+  `awaiting_note` covers synthetic and uncertain results with no note, using history's ordering.
+- Mock rows: stats and history both count every result, and `is_mock` is not a filter (G6).
+- Not changed: `analysis_record`, `analysis_note`, POST/PUT routes, config keys, the UTC startup guard.
+
+**Contract change [doc]:** §4.7 gains the seven reviewed gap bullets (G1–G7). G6 is in Iheb's wording: before the
+real ModelBundle is served, the store starts empty or mock results and their notes are removed.
+
+**Evidence [verified]:** `python -m pytest -q` (3.14): 1032 passed, 9 skipped (torch tests). `tests/api`: 288 passed
+(242 at Entry 119). The new tests cover:
+- an empty store for the default and an explicit period; a single day; empty days set to zero; the verdict mix and
+  the share rounding; inclusive bounds at 00:00:00 and 23:59:59; defaults when only one bound is given
+- `today` outside the period; a future period
+- `awaiting_note`: 6 newest, same-second ties, noted and authentic results excluded, period-scoped
+- `monitoring_marker` from a non-mock fake analyzer
+- 15 cases of 400 with the exact §6 body, and 366 days accepted
+- stats total and counts equal to history over 4 ranges (with one `is_mock = 0` row)
+- the median: odd, even, and halves up
+- a failed read → 500 with `request_id: null`
+- the file name, note text and IP absent from responses and `caplog`
+
+Manual `uvicorn` on port 8001 (scratch config and database) with `/tmp/test_clip.wav` and `/tmp/ZZSECRETNAME_q7.wav`:
+- an empty store gave 7 zero days
+- after 2 × 201, stats and history for today both gave total 2 with counts `{0, 0, 2}`
+- the 400 bodies matched §6
+- the server log had 0 hits for either file name
+
+Ruff is not installed in the venv, so it was not run. No audio committed; no dataset access; no DEEP-VOICE path.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, code, tests and this entry, and ran the checks.
+Iheb approved the plan as one PR with two changes (the G6 wording and Open item, and manual checks on port 8001 with
+the two existing clips) and reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 121 — Stage 17 step 7a: open decision 1 decided (D47) and the sign-in contract (2026-11-01)
+
+**Numbering:** main ends at 120 (PR #81, `8558f66`); recheck against open PRs before merge. D46 is used
+by open PR #67, so this decision is D47; ADR 0011 is the next free ADR.
+
+**What:** on `docs/stage17-signin-contract` (Iheb, Part E; branched from `main` at `8558f66`). Docs only:
+no code, tests or config changed.
+- **Decision [doc]:** the team took open decision 1 on 2026-11-01 (user-reported): Option A, username +
+  password with server-side sessions in a cookie. Recorded following AGENTS.md ("a new decision gets a
+  D-ID row in `docs/decisions/README.md`; major ones also get an ADR from `docs/decisions/TEMPLATE.md`
+  (D24)") as D47 + ADR 0011 (`docs/decisions/0011-analyst-sign-in-sessions.md`), with an ADR-index row.
+  It is marked decided in `api_design.md` §10 item 1, HANDOFF §11 item 1 and `architecture.md` §7.
+- **`api_design.md` §4.8** rewritten as the sign-in contract. It covers `POST`/`GET`/`DELETE /session`,
+  `GET /health` (`{"ok": true}`, no session, no data; used by the Step 8 Docker health check) and which
+  routes need a session (all others, including `/status` and `/limits`). It also covers the cookie
+  (`HttpOnly; Secure; SameSite=Strict; Path=/api`, 32-byte ID stored as SHA-256), sessions in SQLite
+  with idle and absolute limits, and admin-created accounts (argon2id, recovery via an admin). Lockout
+  is per username, keyed by HMAC-SHA-256 with `VSD_SIGNIN_HMAC_KEY` from the environment, plus an nginx
+  per-IP rate limit. The rest: an `Origin` check (CSRF), the S1 error codes and the privacy and logging
+  rules.
+- Also changed: §3 rows; §4.1/§4.2 `401`; §4.3 checks before the request ID; §4.6/§5/§7 note author
+  `updated_by` (replaces G13); §6 rows `invalid_credentials`, `account_locked`, `too_many_requests`,
+  `sign_in_unavailable` and `origin_not_allowed`; §7 tables `account`, `session` and `sign_in_failure`;
+  §9 keys with values **proposed, team to confirm in review**. `password_min_chars` = 15 per NIST
+  SP 800-63B-4 §3.1.1.2 (single-factor), and an idle-limit trade-off note is added.
+- **Accepted risk (ADR 0011):** anyone who knows a username can lock that analyst out for
+  `lockout_minutes`; nginx only slows this. The remedy is an admin unlock.
+
+**HANDOFF S1 check [doc]:** the contract covers default, field errors (browser + 400), loading, invalid
+credentials, access denied, temporarily locked, sign-in unavailable, expired session (S1 and S5) and
+rail sign-out with D1. Mismatches, listed and not fixed:
+1. The S1 banner "Open product decision … Nothing you type is checked or stored" must go in Stage 18.
+2. The UI label is "Analyst ID"; the contract field is `username`. The label can stay; the team confirms.
+3. nginx `429 too_many_requests` has no S1 state of its own; it shows as "sign-in unavailable".
+4. HANDOFF §11.1 recovery and sign-out confirmation: recovery = ask an admin (no "forgot password" link
+   needed); sign-out has no confirmation beyond D1.
+5. Prototype "access denied" means no console access; here it means a disabled account. The wording fits.
+6. If the app polls `/status` in the background (S10 "stale status"), the session never goes idle.
+7. Threat model §10.1 / §11 item 5 still say "unmitigated until access control is decided" (signed
+   Stage 2 doc, left unchanged).
+
+Not changed: the threat model, the SRS, code, tests, `configs/api.yaml` (keys come in Step 7b). ADR 0010
+is missing from the ADR index in `docs/decisions/README.md` (pre-existing; not fixed here).
+
+**Evidence [verified]:** `.venv/bin/python -m pytest -q` (Python 3.14.6): `1032 passed, 9 skipped in
+59.54s`; `tests/api`: `288 passed`. Same counts as Entry 120, so nothing else changed. No audio, dataset
+or DEEP-VOICE path touched.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the §4.8 contract, ADR 0011, D47 and
+this entry, and ran the checks. It checked NIST SP 800-63B-4 §3.1.1.2 on pages.nist.gov. Iheb approved the
+plan with four changes (`GET /health`, the lockout-DoS accepted risk, the NIST-based minimum and idle note,
+the HMAC key) and the architecture.md edit, and reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR, including the §9 proposed values. AI agents do not merge. **WAITING FOR
+HUMAN REVIEW.**
+
+---
+### Entry 122 — Stage 17 step 7b-1a: sign-in storage, argon2id, HMAC key and admin command (2026-11-01)
+
+**Numbering:** main ends at 121 (PR #82, `0e03e02`); recheck against open PRs (#67, #68) before merge.
+
+**What:** on `feat/stage17-signin` (Iheb, Part E; branched from `main` at `0e03e02`), first part of the
+sign-in code (`api_design.md` §4.8, D47, ADR 0011). Step 7b is split into three PRs (Iheb, approved
+plan): **7b-1a** (this one) storage, hashing, key and admin command; **7b-1b** `POST`/`GET`/`DELETE
+/session`, `GET /health` and the session + Origin middleware for the `/session` routes; **7b-2** the
+middleware on every route, note `updated_by` with its migration, and existing tests signed in.
+- `api/repository.py`: tables `account`, `session` (no IP or user-agent column) and `sign_in_failure`
+  (§7), created by `create_schema()`; `AccountRepository` (create, get, set password, disable/enable,
+  clear failures). `set_password` and disable delete all of the account's sessions in the same
+  transaction. CHECKs refuse an upper-case username, a non-argon2id hash and a non-hex session or
+  HMAC key. SQL only here, `?` parameters only.
+- `api/auth.py`: argon2id with the RFC 9106 low-memory profile (t=3, m=64 MiB, p=4, 16-byte salt);
+  `VSD_SIGNIN_HMAC_KEY` from the environment (hex, at least 32 bytes; errors name the variable, never
+  the value); HMAC-SHA-256 of the lower-case username; username rules; password rules (length in code
+  points, 15–128) plus the **NIST SP 800-63B-4 §3.1.1.2 context check** (team answer, user-reported): no
+  username, `vsd`, `voice` or `spoof`, ignoring case. The common-password list is not added (it needs an
+  AGENTS.md rule 7 exception).
+- `api/admin.py`: `python -m api.admin create-account | set-password | disable | enable | unlock
+  <username>`; password typed twice with `getpass`; exit 0 / 1 (refused, one stderr line, never the
+  password) / 2 (usage). `unlock` needs the key and works for any typed username.
+- `configs/api.yaml` + `api/config.py`: the §9 sign-in keys with the values confirmed by the team
+  (user-reported): idle 30 min, absolute 12 h, lockout 5 / 15 min, password 15–128, and the dev
+  `allowed_origins` (`http://localhost:8001`, `http://127.0.0.1:8001`). nginx values and the session ID
+  length stay out. Only the password keys are read in 7b-1a.
+- `requirements.txt`: `argon2-cffi==25.1.0`. `.env.example`: `VSD_SIGNIN_HMAC_KEY=` (name only).
+  `docs/setup.md`: the admin command and how to load `.env` for `unlock`.
+- No existing route changes; the app still starts without the key (the refusal comes with 7b-1b).
+- Agreed for 7b-1b (Iheb): a disabled account with the right password neither counts nor resets the
+  failure count; a store error on any `/session` route answers `503 sign_in_unavailable`, the session
+  check on other routes `500 internal_error`. Each becomes one sentence in §4.8 in 7b-1b.
+
+**Evidence [verified]:**
+- `argon2-cffi==25.1.0` (bindings 26.1.0) installs, hashes and verifies in fresh venvs on Python 3.13.2
+  and 3.14.6; the hash starts `$argon2id$v=19$m=65536,t=3,p=4$`.
+- `.venv/bin/python -m pytest -q` (Python 3.14.6): `1102 passed, 9 skipped in 159.43s` (Entry 121: 1032
+  passed, 9 skipped; +70 new tests). `tests/api`: `358 passed`; `tests/governance`: `50 passed`. The
+  slowest tests are untouched evaluation and splitting tests; the longer time is not attributed to this
+  change [hypothesis: machine load].
+- Manual run against a scratch database (`VSD_API_CONFIG`): create (exit 0), duplicate (exit 1),
+  context-word password (exit 1, nothing changed), disable/enable (exit 0), unlock with a key (exit 0),
+  unlock without (exit 1). The database holds only the argon2id hash; the password is not in the file.
+- No audio, dataset or DEEP-VOICE path touched; no key or secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the code, the tests and this entry,
+and ran the checks. Iheb approved the plan with changes (three-PR split, Q1–Q5 answers) and reviews the
+diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+### Entry 123 — Stage 17 step 7b-1b: sign-in endpoints, GET /health and the session guard (2026-11-01)
+
+**Numbering:** main ends at 122 (PR #83, `b067b8c`); recheck against open PRs (#67, #68) before merge.
+
+**What:** on `feat/stage17-session` (Iheb, Part E; branched from `main` at `b067b8c` after PR #83),
+second part of the sign-in code (`api_design.md` §4.8, D47, ADR 0011), following the approved 7b-1b
+delta plan. No existing route changes behaviour: the guard covers the `/session` routes only.
+- `api/session_guard.py` (new): `SessionGuard` ASGI middleware. Origin first (`403
+  origin_not_allowed` on `POST`/`DELETE /api/session`), then the session (`401 session_expired`, cookie
+  cleared, on `GET`/`DELETE`); a valid session updates `last_seen_at`. Store error → `503
+  sign_in_unavailable` on `/session`, `500 internal_error` elsewhere (used from 7b-2). Cookie
+  `vsd_session` with `HttpOnly; Secure; SameSite=Strict; Path=/api`, ID from `secrets.token_urlsafe(32)`,
+  stored as SHA-256 only.
+- `api/routers/session.py` (new): `POST /session` in the §4.8 order (locked → 429 without verify;
+  unknown user verified against a dummy hash → same 401 body as a wrong password; disabled → 403,
+  failures neither counted nor reset; success resets failures, rehashes an old hash, replaces the
+  cookie's session). `GET /session` (who am I), `DELETE /session` (204, cookie cleared). Body read by
+  hand: JSON only, 4 KiB, strict fields, password ≤ `password_max_chars`, every refusal the fixed `400`.
+  Logs: failures without the username, success with the account ID only.
+- `api/routers/health.py` (new): `GET /health` → `{"ok": true}`; no database, no analyzer, no log.
+- `api/repository.py`: `AccountRepository.is_locked`, `record_failure`, `rehash_password` (keeps
+  sessions and `password_changed_at`), `start_session`, `touch_session`, `end_session`; `ActiveSession`.
+- `api/intake.py`: `ContentLengthGuard` answers `POST /api/session` above 4 KiB with the §6 `400`.
+- `api/main.py`: middleware order RequestId → SessionGuard → ContentLengthGuard → BodyLimit; the
+  lifespan reads `VSD_SIGNIN_HMAC_KEY` (no key → the API does not start) and makes the dummy hash with
+  the app's hasher (no hash literal); `create_app(..., hasher=None)`.
+- `requirements.txt`: `python-dotenv==1.2.4` for `uvicorn --env-file .env`. `docs/setup.md` and
+  `README.md`: the run command. `docs/api_design.md` §4.8: the two agreed sentences (Q2, Q3).
+- Tests: `tests/api/conftest.py` gives every test a fresh random key (no literal) and a fast argon2id
+  hasher for the app (real hash ≈ 86 ms, verify ≈ 76 ms here); one test keeps the real hasher and checks
+  the dummy hash and a rehash have `m=65536,t=3,p=4`. New: `test_api_session.py`,
+  `test_api_session_guard.py`, `test_api_health.py`, plus repository, intake and main tests (canary
+  password typed as username; byte-identical 401 bodies; verify called with the dummy hash for an
+  unknown user and not called when locked; startup refused without the key).
+- §4.8 and §4.3 wording (approved by Iheb in review of the 7b-1b report): the guard checks run
+  "before the upload is given its request ID (`request_id: null` in the body)". With the agreed order a
+  refused request still gets an `X-Request-ID` header; the old "before a request ID is assigned" did
+  not say that.
+
+**Evidence [verified]:**
+- `.venv/bin/python -m pytest -q` (Python 3.14.6): `1162 passed, 9 skipped in 141.57s` (Entry 122:
+  1102 passed, 9 skipped; +60 new tests). `tests/api`: `418 passed in 24.14s` (was 358 in 17.93s);
+  `tests/governance`: `50 passed`.
+- `python-dotenv==1.2.4` installs in a fresh Python 3.13.2 venv.
+- Manual run on port 8001 with a scratch config and a scratch env file (`--env-file`, cookie jar,
+  `Origin: http://localhost:8001`): `/api/health` 200 `{"ok":true}`; sign-in 200 with the §4.8 cookie;
+  `GET /api/session` 200; `DELETE` without Origin 403 `origin_not_allowed`; `DELETE` 204 and cookie
+  cleared; then `GET` 401 `session_expired`; unknown user and wrong password give the same 401 body;
+  after 5 failures the right password gets 429; `/api/status` still 200 without a cookie. Without the
+  key, uvicorn stops at startup with `VSD_SIGNIN_HMAC_KEY is not set`.
+- Seen in the manual run: uvicorn's access log prints the `/api/health` line (open item below), and
+  the app's INFO sign-in lines do not appear under uvicorn because the `api` logger has no level set.
+- No audio, dataset or DEEP-VOICE path touched; no key or secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the delta plan, the code, the tests and this
+entry, and ran the checks. Iheb approved the plan and reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+### Entry 124 — Stage 17 step 7b-2: every /api route signed in, note author and its migration (2026-11-01)
+
+**Numbering:** main ends at 123 (PR #84, `2e42e1b`); recheck against open PRs (#67, #68) before merge.
+
+**What:** on `feat/stage17-protect-routes` (Iheb, Part E; branched from `main` at `2e42e1b` after PR #84),
+the last sign-in part (`api_design.md` §4.6, §4.8, §5, §7; D47, ADR 0011), following the approved 7b-2
+delta plan.
+- `api/session_guard.py`: the route table is now two rules. `needs_session`: every path under `/api`
+  except `POST /api/session` and `GET /api/health`, by prefix, so unknown paths and wrong methods need a
+  session too. `needs_origin`: `POST /api/analyses`, `PUT /api/analyses/{id}/note`, `POST`/`DELETE
+  /api/session`. Origin is still checked first; a store error in the session check is `500
+  internal_error` outside `/session` (§4.8 Q3 sentence). The guard never reads the body.
+  `ANALYSES_PATH` and `NOTE_PATH` moved here from `api/intake.py` (one copy, no circular import).
+- `api/repository.py`: `analysis_note.updated_by_account_id` (nullable, refers to `account`).
+  `save_note(..., account_id)` sets text, time and author (a save by another account replaces the
+  author); removing a note deletes the row, so no author is kept. Stored notes join `account` for
+  `updated_by` (details, history, stats). `create_schema()` runs in one `BEGIN IMMEDIATE` transaction
+  and adds the column to an older `analysis_note` with `ALTER TABLE ... ADD COLUMN` (NULL default,
+  rows untouched); safe to run twice.
+- `api/schemas.py`: `Note.updated_by` (username or `null`). `api/routers/notes.py` records the
+  signed-in account from the guard's session; `api/routers/analyses.py` passes the author on.
+- `docs/api_design.md` §4.8: one sentence where the contract was silent: unknown paths and methods
+  under `/api` without a session answer `401 session_expired`, not `404`/`405`. §4.1: one sentence
+  added at review of the 7b-2 report: sessions use the same store, so an unreadable store gives
+  `500 internal_error` at the session check before `GET /status` runs; the app treats a `500` or no
+  answer from `/status` as Unavailable.
+- Tests: `tests/api/conftest.py` `client` is now signed in (https base URL, account, allowed `Origin`
+  on every request) through `signed_in()` / `signed_in_client()`; `anon` is the client before sign-in.
+  12 test files change: 6 that build their own app sign in with the helper (analyses, history, stats,
+  limits, middleware, errors); status (its broken-database tests swap the history repository after
+  sign-in, plus a new 500 when the session store itself is gone); notes, repository and schemas
+  (author, `save_note` signature, migration); `test_api_session_guard.py` (401 on each of 11 protected
+  routes incl. an unknown path and a 405 method, 403 without an allowed Origin on upload and note,
+  Origin before session, 500 on a store error, health and sign-in still open).
+- "Before any request body is read" is shown by calling the ASGI app with a `receive` that counts its
+  calls: no cookie, unknown or expired cookie (401) and no Origin (403) answer with **0 reads** for
+  both an upload and a note, body `request_id: null`; the control with session and Origin reads the
+  body (201 / 200).
+- Migration tests: a file built with the literal #83/#84 `analysis_note` DDL and two notes, after
+  `create_schema()` twice: the column once, notes and record rows identical, author `NULL`,
+  `PRAGMA foreign_key_check` empty; an app started on such a file shows `updated_by: null`. A forced
+  failure on the `ALTER` leaves the file exactly as before (the new tables created in the same call
+  are rolled back); without `BEGIN IMMEDIATE` this test fails (checked by removing it once).
+
+**Evidence [verified]:**
+- `.venv/bin/python -m pytest -q` (Python 3.14.6): `1210 passed, 9 skipped in 57.66s` (Entry 123:
+  1162 passed, 9 skipped; +48). `tests/api`: `466 passed in 12.33s` (was 418).
+- Manual run on port 8001 (scratch config, scratch env file, scratch database built with the #83/#84
+  schema and one old note; cookie jar; `Origin: http://localhost:8001`): `/api/health` 200; without a
+  cookie `/api/status`, `/api/limits`, an upload and `/api/nope` all `401 session_expired`; sign-in
+  200; `/api/status` 200; upload and note without Origin `403 origin_not_allowed`; upload 201; note
+  200 with `updated_by: "analyst01"`; details show it; the old note shows `updated_by: null`; sign-out
+  204, then `/api/status` 401. The uvicorn log holds no password, cookie or note text (grep: 0).
+- No audio, dataset or DEEP-VOICE path touched; no key or secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the delta plan, the code, the tests and this
+entry, and ran the checks. Iheb approved the plan and reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+### Entry 125 — Stage 17 step 8a: API image, .dockerignore, Compose api service and logging (2026-11-01)
+
+**Numbering:** main ends at 124 (PR #85, `ad236b0`); open PRs #67 and #68 carry Entries 101–102, so 125 is next.
+
+**What:** on `feat/stage17-docker` (Iheb, Part E; from `main` at `ad236b0`), the first half of Step 8, following
+the approved plan with the team's changes (tmpfs for uploads, split 8a / 8b with 8b on a new branch from `main`
+after 8a merges, tmpfs sized from `configs/api.yaml`). Sources followed: `api_design.md` §2, §4.3, §4.8, §6,
+§9; ADR 0008 §2 (`api` and `web` containers); ADR 0011 (rate limit in nginx). HANDOFF.md says nothing on
+Docker or deployment. No API code change, no new `api.yaml` key.
+- `deploy/api.Dockerfile`: `python:3.13.15-slim-trixie` pinned by digest (D15), non-root `app` (uid 10001),
+  copies only `api/`, `configs/api.yaml`, `configs/api_logging.yaml`, `requirements-api.txt`. `HEALTHCHECK`
+  on `GET /api/health` with Python's urllib (no curl in slim). CMD: `uvicorn ... --no-access-log
+  --no-proxy-headers --log-config configs/api_logging.yaml`.
+- `requirements-api.txt`: the API subset (argon2-cffi, fastapi, numpy, python-multipart, PyYAML, soundfile,
+  starlette, uvicorn). `requirements.txt` pulls no torch (that is `requirements-cnn.txt` plus a separate
+  install) but does pull librosa, scikit-learn, pandas, kaggle, huggingface_hub, pytest and httpx, none
+  imported by `api/`. The ModelBundle integration adds its own pins here in its PR; the test then holds them
+  equal to the main files too.
+- `.dockerignore`: allowlist (`*`, then the four paths); `.env`, `var/`, `.venv/`, `data/` and audio also listed.
+- `docker-compose.yml`: `api` only, `expose: 8000`, no `ports`. `VSD_SIGNIN_HMAC_KEY:
+  ${VSD_SIGNIN_HMAC_KEY:?...}` (not `env_file`: `.env` also holds the Kaggle, HF and W&B tokens). Named volume
+  `vsd-var` at `/app/var` (`database_path: var/api.sqlite` unchanged). `/tmp` tmpfs `size=192m`: each upload
+  uses `/tmp` twice (Starlette spools a file part over 1 MB to the system temp folder, then `api/intake.py`
+  copies it with `mkstemp`), so 2 x 21,037,056 x 4 = 168,296,448 bytes for `x-vsd-concurrent-uploads: 4`
+  (4 analysts uploading at once; nothing enforces it yet, linked to the Entry 116 item). `read_only`,
+  `cap_drop: [ALL]`, `no-new-privileges`.
+- `configs/api_logging.yaml`: `api` and `uvicorn.error` at INFO to stderr; `uvicorn.access` no handler,
+  CRITICAL, no propagation.
+- Tests (`tests/deploy/`, 19, no Docker needed): pinned `FROM` with digest, non-root `USER`, exact COPY set,
+  CMD flags, health check; `requirements-api.txt` pins equal `requirements.txt`, no model/dataset/test
+  package, every third-party import in `api/` covered; `.dockerignore` allowlist; key only via `${...:?}`, no
+  `env_file`, no hex secret, no published port, volume, tmpfs >= 2 x `body_limit()` x concurrent uploads
+  (fails if `max_size_bytes` grows without the tmpfs); logging config applied with `dictConfig`.
+- Docs: `docs/setup.md` "Running with Docker Compose (Stage 17)"; the local uvicorn command gains
+  `--no-access-log --log-config configs/api_logging.yaml`. README API row, CHANGELOG, AGENTS.md reminder
+  removed.
+
+**Evidence [verified]:**
+- `.venv/bin/python -m pytest -q` (Python 3.14.6): `1229 passed, 9 skipped in 147.25s` (Entry 124: 1210
+  passed, 9 skipped; +19). `tests/deploy`: `19 passed`. `tests/governance`: `50 passed`.
+- Manual, Docker 28.5.2 / Docker Compose 2.40.3: `docker compose build` and `up -d` → `(healthy)`; in the
+  container `uid=10001(app)`, `/tmp` tmpfs 192M, writing `/app` refused (read-only), no torch, librosa,
+  scikit-learn, pandas, pytest, httpx or dotenv installed; image `/app` holds only `api`, `configs`
+  (`api.yaml`, `api_logging.yaml`), `requirements-api.txt`, `var`. Two `GET /api/health` → `{"ok":true}`
+  with no log line. `docker compose exec -T api python -m api.admin create-account analyst01` (password on
+  stdin, test only) → created; sign-in with `Origin: http://localhost:8001`: wrong password 401
+  `invalid_credentials`, right one 200 with `vsd_session`. Log: `INFO api sign-in failed` (no username),
+  `INFO api sign-in succeeded, account_id=1`; no request line, no IP. `down` then `up -d`: the account still
+  signs in (volume kept). Empty key: Compose refuses (`required variable VSD_SIGNIN_HMAC_KEY is missing a
+  value`); a 2-byte key: the API refuses at startup (`must hold at least 32 bytes`). `down -v` removed the
+  test volume.
+- No audio, dataset or DEEP-VOICE path touched; no key or secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and
+ran the checks. The team approved the plan with changes and reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+### Entry 126 — Stage 17 step 8b: nginx web service, sign-in rate limit, no client IP (2026-11-01)
+
+**Numbering:** main ends at 125 (PR #86, `45bd4ad`); open PRs #67 and #68 carry Entries 101–102, so 126 is next.
+
+**What:** on `feat/stage17-nginx` (Iheb, Part E; from `main` at `45bd4ad`), the second half of Step 8 and the
+last Part E backend PR, following the approved delta plan (tmpfs for nginx's request buffers approved with it).
+Sources followed: `api_design.md` §1, §2, §4.8, §6, §9; ADR 0008 §2 (`web` container); ADR 0011 (rate limit in
+nginx). No API code change, no new `api.yaml` key.
+- `deploy/nginx.conf`: a complete main config mounted read-only over `/etc/nginx/nginx.conf`, with no `conf.d/`
+  include, so the image's default `main` log format (client address, Referer, User-Agent, X-Forwarded-For) is
+  never loaded. Routes: `location /api/` and `location = /api/session` → `proxy_pass http://api:8000`;
+  `location = /` → 200 placeholder (Stage 18); `location /` → 404. `/docs`, `/redoc` and `/openapi.json`
+  are therefore not routed.
+- Error pass-through: no `proxy_intercept_errors` (default off), so every API answer, including its 413, 503
+  and 504, reaches the client unchanged. `error_page` covers only nginx's own 404, 413
+  (`client_max_body_size 22m` > `body_limit()` 21,037,056), 429, and 502/504 → `=503` (proxy timeouts 60 s >
+  `analysis_timeout_s` 30; connect 5 s). Each answer is §6 JSON with `request_id: null`.
+- Rate limit: `map $request_method` → `$binary_remote_addr` for POST, `""` otherwise; `limit_req_zone ...
+  rate=10r/m`; `limit_req zone=signin burst=5 nodelay` only in `location = /api/session`;
+  `limit_req_status 429`.
+- No client IP: `log_format vsd` (time, method, `$uri`, status, bytes, duration); `error_log /dev/stderr crit`
+  (rejection and upstream lines carry `client:`); `X-Forwarded-For`, `X-Real-IP`, `Forwarded` set to `""` at
+  server level (no location overrides them); `server_tokens off`.
+- `docker-compose.yml`: `web` service `nginx:1.30.6-alpine@sha256:0e52bd05...97949` (index digest, equal to
+  `stable-alpine` on 2026-11-01), `ports: ["8001:80"]`, config `:ro`, `depends_on: api: service_healthy`,
+  tmpfs `/var/cache/nginx:size=96m` (nginx buffers each body over 16 KiB under `client_temp`, which would
+  otherwise be the container's disk layer; 22 MiB x `x-vsd-concurrent-uploads` 4 = 88 MiB),
+  `NGINX_ENTRYPOINT_QUIET_LOGS`.
+- Tests: `tests/deploy/test_nginx_conf.py` (12; a small directive/block/quote parser, since CI has no nginx):
+  no intercept; `error_page` codes exactly {404, 413, 429, 502, 504}; each nginx body has the §6 shape and a
+  code/status pair from the §6 table in `api_design.md`; body limit and timeouts above `configs/api.yaml`;
+  POST-only key, 10r/m, burst 5 `nodelay`, `limit_req` only on `/api/session`; no address or request-header
+  variable outside the map; `vsd` access log, `crit` error log, no `conf.d`; forwarded headers cleared;
+  only `/api` proxied; `/docs`, `/redoc`, `/openapi.json` reach only the 404 catch-all.
+  `test_deploy_compose.py` (+4): `web` pin, read-only mount and healthy dependency, published port equal to
+  `allowed_origins`, tmpfs >= `client_max_body_size` x concurrent uploads; the hex-secret check now ignores
+  `@sha256:` digests. Six one-line mutations of `nginx.conf` (intercept on, `$remote_addr` in the log, no
+  `nodelay`, `20m` limit, an `error_page 503`, one header not cleared) each failed one test.
+- Docs: `api_design.md` §2 (routing; transport: HTTPS outside `localhost`), §4.8 (`nodelay`, GET/DELETE not
+  limited, nginx 503 in the S1 table, nginx logging), §6 (pass-through rule and nginx's four own answers),
+  §9 row (`nodelay`). `docs/setup.md` nginx subsection and manual check; README API row; CHANGELOG.
+
+**Evidence [verified]:**
+- `.venv/bin/python -m pytest -q` (Python 3.14.6): `1245 passed, 9 skipped in 59.13s` (+16; baseline on this branch before the change:
+  `1229 passed, 9 skipped`). `tests/deploy` + `tests/governance`: `85 passed in 1.37s`.
+- Manual, Docker 28.5.2 / Compose 2.40.3, project name `vsd8b` (test volume only): `up -d --wait` → api
+  `(healthy)`, then web. `nginx -t` → `syntax is ok`, `test is successful`. Through `http://localhost:8001`:
+  `/` 200 placeholder; `/docs`, `/redoc`, `/openapi.json` and `--path-as-is /api/../docs` → 404 `not_found`,
+  `request_id: null`; `/api/health` `{"ok":true}`; sign-in with `Origin` → 200 and `vsd_session` (`HttpOnly;
+  Path=/api; SameSite=strict; Secure`). 21 MiB upload → `413 file_too_large` from the API with
+  `x-request-id: req_5c6e...` and the same ID in the body; 23 MiB → `413 file_too_large` from nginx, no
+  `X-Request-ID`, `request_id: null`. Sign-in burst with a different username per request, after the bucket
+  drained: 6 x `401 invalid_credentials`, then `429 too_many_requests` (nginx). (A first burst with one
+  username gave five 401s and then 429s: the 6th was the API's `account_locked`, so the run was repeated.)
+  8 x `GET /api/session` right after → 8 x 200 (not limited). `docker compose stop api` → `GET /api/status`
+  `503 analysis_unavailable` from nginx (after the 5 s connect timeout); `start api` → 200. `logs web api`
+  grepped for `client:|172\.|127\.0\.0\.1|192\.168\.|::1|x-forwarded` → 0 lines; web lines read like
+  `2026-11-01T15:43:16+00:00 "GET /api/status" 503 109 5.002`. `/var/cache/nginx` is tmpfs `size=98304k`.
+  `down -v` removed the test volume.
+- Not exercised by hand: the API's own 503/504 through nginx (the MockAnalyzer does not produce them); the
+  API's own 413 passing through shows the same `proxy_intercept_errors` behaviour, and the tests hold the
+  config.
+- No audio, dataset or DEEP-VOICE path touched; no key or secret in the diff (the test password stayed in the
+  shell).
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the delta plan, the files, the tests and this
+entry, and ran the checks. The team approved the plan and reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 127 — Stage 18 PR 1a: web/ scaffold, theme storage and the CI web job (2026-11-01)
+
+**Numbering:** main ends at 126 (PR #87, `7f5cd0b`); open PRs #67 and #68 carry Entries 101–102, so 127 is next.
+
+**What:** on `feat/stage18-scaffold` (Iheb, Part E; from `main` at `7f5cd0b`), the first Stage 18 PR, following
+the approved plan. PR 1 was split, not stacked: 1a (this PR) and 1b (`tokens.css`, `base.css`, fonts, token and
+contrast tests) on `feat/stage18-tokens` from `main` after 1a merges, with its own entry. No `src/`, `api/`,
+`configs/` or `deploy/` change.
+- `.gitignore` first (own commit, before any `npm install`): `node_modules/`, `web/dist/`, Playwright output.
+- `web/`: `package.json` (exact pins, `engines.node` 26.13.0), `package-lock.json`, `.nvmrc`, `.npmrc`
+  (`save-exact`, `engine-strict`), `tsconfig.json` → `tsconfig.app.json` (`src/`, `vite/client` types only) and
+  `tsconfig.node.json` (`vite.config.ts`, `eslint.config.js`, `node` types), same strict flags, `tsc -b`;
+  `vite.config.ts`, `eslint.config.js`, `index.html`, `src/main.tsx`, `src/App.tsx` (one `h1`, no API call),
+  `src/theme.ts`. Title and `h1` "Voice Check analyst console": prototype line 6 (HANDOFF names no product).
+- `theme.ts`: `system | light | dark` under localStorage `vsd-theme`, applied as `<html data-theme>` (`system`
+  removes it); every read and write in try/catch, failure → `system`. No UI control (PR 6).
+- CI: new `web` job (`npm ci`, typecheck, lint, `vitest --run`, build), Node from `web/.nvmrc`; actions pinned by
+  major tag like `checks` (`actions/checkout@v4`, `actions/setup-node@v4`). `checks` unchanged.
+- Tests: Vitest `theme.test.ts` (7) and `App.test.tsx` (1 h1, `fetch` never called); pytest
+  `tests/web/test_web_scaffold.py` (16, in `checks`): exact pins, lockfile root = `package.json`, `.nvmrc` =
+  `engines.node`, CI reads `.nvmrc`, `.npmrc` lines, `.gitignore` lines, each with a planted-failure case.
+
+**Decisions recorded (given with the plan before the build; user-reported):**
+- A25 Node `26.13.0` in `web/.nvmrc` (Node 26 entered Active LTS 2026-10-28); exact pin per the exact-pins rule.
+- A11 separate `web` CI job; Iheb adds `web` as a required check. A12 dev server proxies `/api` to
+  `http://localhost:8001` and rewrites Origin to it, dev server only; `configs/api.yaml` and `allowed_origins`
+  unchanged. A14 IBM Plex self-hosted via `@fontsource` (exact pins), no Google Fonts: built in 1b.
+- ADR 0008 §1 stack: Vite, React, TypeScript strict, ESLint, Vitest + React Testing Library, plain CSS + tokens,
+  no UI framework. **TypeScript 6.0.3, not 7.0.2:** `npm view typescript-eslint@8.72.1 peerDependencies` →
+  `typescript: '>=4.8.4 <6.1.0'`; 6.0.3 is the newest in range.
+- Team decisions agreed 2026-11-01 (only theme storage is implemented here): S1 banner removed; "Analyst ID"
+  label ↔ username; `/status` 500 or no answer → Unavailable, degraded → Ready plus a notice; no polling; theme
+  System/Light/Dark in localStorage; routes `/signin`, `/analyze`, `/history`, `/history/<id>`, `/overview`,
+  `/status`, `/` → `/analyze`; Cancel analysis out of Stage 18; note author shown; "Forgot your password? Ask your
+  administrator."; Mock values tag from `/status.mock`; mobile inputs 16 px.
+- For 1b: HANDOFF §4 gaps (`--ok/warn/err-*`, `--elev-*`, `--r-pill`, and `--accent-ink`, `--nav-ink-strong`,
+  `--nav-muted`, `--nav-line`, `--scrim`) take the prototype's values (lines 14–69), cited.
+
+**Planning findings for 1b [verified: computed, WCAG 2.x formula]:** all 34 HANDOFF text/background pairs reach
+4.5:1 in both themes (lowest: light `--muted`/`--bg` 5.46, dark `--accent-ink`/`--accent` 5.54). Non-text 3:1
+questions, values unchanged: `--line-strong` on `--surface` 1.86 light / 1.99 dark; light `--unc-mark` on surface
+2.87. ui-ux-pro-max (read-only, `--domain ux`, `--stack react`) conflicts, HANDOFF kept: 16 px mobile body vs
+`--fs-base 15`; toast 3–5 s vs 9 s.
+
+**Evidence [verified]:**
+- `node --version` `v26.13.0`, `npm --version` `11.20.0`. Governance test after the `.gitignore` commit:
+  `3 passed in 0.36s`. First `npm install` failed with `EIDLETIMEOUT` (slow registry); the retry with
+  `--fetch-timeout=600000` (CLI flag only) added 224 packages. `rm -rf node_modules && npm ci` with
+  `engine-strict=true` on 26.13.0: success (every installed package accepts Node 26).
+- `npm run typecheck && npm run lint && npm test -- --run && npm run build` → exit 0; Vitest `Test Files 2 passed
+  (2)`, `Tests 9 passed (9)`; build `dist/assets/index-*.js 220.04 kB │ gzip: 68.82 kB`. `tsc -b --verbose`
+  builds both projects; a probe using `process` in `src/` failed with TS2591 (removed).
+- `.venv/bin/python -m pytest -q` (Python 3.14.6): `1261 passed, 9 skipped in 70.42s` (+16; baseline `1245
+  passed, 9 skipped`). `node_modules`/`web/dist` in `git ls-files --others --exclude-standard`: 0.
+- `npm audit`: 12 moderate, all GHSA-g3hv-75wg-m249 in `minimatch` 10.2.6 under `eslint` and `typescript-eslint`
+  (dev tooling only); `npm audit --omit=dev`: `found 0 vulnerabilities`. Not fixed: npm's fix downgrades
+  typescript-eslint to 8.14.0 (open item).
+- No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
+the checks; the ui-ux-pro-max skill was used read-only as a checklist. The plan was approved before the build;
+the team reviews the diff.
+Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 128 — Stage 18 PR 1b: design tokens, base styles and IBM Plex fonts (2026-11-01)
+
+**Numbering:** main ends at 127 (PR #88, `86cc77d`); open PRs #67 and #68 carry Entries 101–102, so 128 is next.
+
+**What:** on `feat/stage18-tokens` (Iheb, Part E; from `main` at `86cc77d`, not stacked), following the approved
+plan. Only `web/` and docs change; no `src/`, `api/`, `configs/` or `deploy/` change; nothing from PR 2 or later.
+- `web/src/styles/tokens.css`: every token. Light on `:root`; dark in two identical blocks,
+  `@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) }` and `:root[data-theme="dark"]`, plus
+  `:root[data-theme="light"] { color-scheme: light }`, matching `theme.ts` (#88) and prototype lines 42, 55, 69.
+- `web/src/styles/base.css`: element styles from prototype lines 72–81 (body, headings, links, form controls,
+  `::selection`, `:focus-visible`), reduced motion, and a placeholder `main` rule until the shell PR.
+- `main.tsx` imports the fonts, then `tokens.css` and `base.css`; the placeholder page is token-styled.
+  `App.tsx`: comment only.
+- `vite.config.ts`: `test.css: true`. Without it Vitest returns `''` for CSS, `?raw` included (found while
+  building: the first token test read an empty file), so the CSS tests would have read nothing.
+- Tests (Vitest): `styles/tokens.test.ts` and `styles/colours.test.ts`, below.
+
+**Decisions recorded (given with the plan, user-reported; reasons):**
+- HANDOFF §4 values copied exactly, cited in comments: colours `HANDOFF.md` lines 100–112 and 114; type, space,
+  shape, sizes and motion lines 120–126. Reason: HANDOFF is the design source; the build reads it, not re-derives it.
+- HANDOFF gaps (`--ok/warn/err-*`, line 113 "see prototype"; `--elev-1/2`; `--r-pill`) and prototype extras
+  (`--accent-ink`, `--nav-ink-strong`, `--nav-muted`, `--nav-line`, `--scrim`) take the values of
+  `analyst-console-prototype.html` lines 14–69, one citation comment per token. A one-off script compared every
+  value with the prototype: no difference beyond the three new tokens below.
+- A14 fonts: `@fontsource/ibm-plex-sans` and `@fontsource/ibm-plex-mono` `5.3.0` (exact, `npm view … version`
+  → `5.3.0`, published 2026-07-19; OFL-1.1; no dependencies). Weights imported: Sans 400, 500, 600, 700 and Mono
+  400, 500, the ones the prototype loads (line 9); no italics. Bundled by Vite on the same origin (`font-display:
+  swap` in the fontsource CSS), no Google Fonts. Flag: prototype line 242 sets Mono 600 (`.score-val`), which it
+  never loads; decide when Technical details is built.
+- B4: text inputs (`input`, `select`, `textarea`) use `--fs-input`, `var(--fs-base)` by default and `16px` under
+  `@media (max-width: 640px)`; body stays at `--fs-base` 15 px. 640 px = the phone row of HANDOFF §3 (line 86,
+  "390 design") and the prototype's `@media (max-width: 640px)` (line 415). The token keeps the raw value inside
+  `tokens.css` (HANDOFF line 93).
+- Reduced motion: `animation`/`transition` off on `*, *::before, *::after` under `prefers-reduced-motion:
+  reduce` (HANDOFF lines 126, 185; prototype line 445).
+- Open questions from the plan, recommendations accepted: (1) `--rail-w` 248 px, 232 px under
+  `@media (max-width: 1280px)` (HANDOFF lines 82–84, 125; prototype lines 39, 400); (2) `--lh-body: 1.5` and
+  `--lh-title: 1.2` added now (HANDOFF line 121; `base.css` uses them; names proposed here), drawer 180 ms
+  deferred to the Drawer PR (nothing uses it yet); (3) `--warn-*` kept as the prototype's literal values, not
+  aliases of `--unc-*`: they mean Degraded, not Cannot decide (HANDOFF line 113).
+- Non-text pairs below 3:1 keep their values (team answer pending): light `--line-strong`/`--surface` 1.86, dark
+  1.99, light `--unc-mark`/`--surface` 2.87 and, found during planning, light `--warn-mark`/`--surface` 2.87 (same
+  value as `--unc-mark`; 4th named exception, approved).
+
+**Tests:**
+- `tokens.test.ts` (168): 47 themed tokens in light and both dark blocks; 29 static tokens on `:root`; dark
+  blocks identical; 34 text pairs ≥ 4.5:1 and 11 non-text pairs ≥ 3:1 in both themes (WCAG 2.x formula); the
+  4 known exceptions listed by name and asserted still below 3:1, so a fix must update the list and any other
+  failure fails.
+- `colours.test.ts` (5): no `#hex`, `rgb(a)(` or `hsl(a)(` in `src/**/*.{ts,tsx,css}` outside `tokens.css`;
+  test files are excluded (they would match their own patterns); `App.tsx`, `main.tsx`, `theme.ts`, `base.css`
+  must be scanned and `base.css` must be non-empty.
+- Planted failures, reverted, not committed: `// #123456` in `App.tsx` → `× /src/App.tsx has no raw colour
+  value`, `1 failed | 4 passed (5)`, then `5 passed (5)` after removal. Light `--muted` `#9AA9BC` and `--ok-mark`
+  `#A0D0B0` → `4 failed | 164 passed (168)`; light `--unc-mark` `#8A5A00` (exception fixed) → `1 failed`; one
+  dark-attribute value changed → `1 failed` (identical blocks).
+
+**ui-ux-pro-max (user level, read-only: `--domain ux`, `--stack react`; no `--design-system`, no `--persist`, no
+files written):** contrast 4.5:1, colour not alone, reduced motion, line height 1.5–1.75 and font loading (swap +
+fallback) are met or deferred to components; `--stack react` had no match for CSS variables or font loading.
+Conflicts, HANDOFF kept, questions for the team: "minimum 16 px body text on mobile" vs `--fs-base` 15 (B4 limits
+16 px to inputs); the example scale "12 14 16 18 24 32" vs HANDOFF 12/13/15/17/20/26/28.
+
+**Evidence [verified]:**
+- `node --version` `v26.13.0`, `npm --version` `11.20.0`; baseline `git log --oneline -1 main` `86cc77d Merge pull
+  request #88 …`, `python -m pytest -q` `1261 passed, 9 skipped`.
+- `rm -rf node_modules dist && npm ci`, then `npm run typecheck`, `npm run lint`, `npm test -- --run` (`Test Files
+  4 passed (4)`, `Tests 182 passed (182)`), `npm run build` (`index-*.css 16.63 kB │ gzip: 2.89 kB`, 34 woff2 +
+  34 woff, `dist/assets` 1.2M; `grep -rl fonts.googleapis dist` → none). All exit 0.
+- `npm audit`: 12 moderate, all GHSA-g3hv-75wg-m249 (`minimatch` under eslint and typescript-eslint, dev only,
+  unchanged from Entry 127); `npm audit --omit=dev`: `found 0 vulnerabilities`.
+- `.venv/bin/python -m pytest -q` (Python 3.14.6): `1261 passed, 9 skipped` (unchanged; the pin guards in
+  `tests/web/test_web_scaffold.py` cover the two new exact pins).
+- No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
+the checks; the ui-ux-pro-max skill was used read-only as a checklist. The plan was approved before the build;
+the team reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 129 — Stage 18 PR 2: web image, A2 routes and A13 security headers (2026-11-01)
+
+**What:** on `feat/stage18-web-image` (Iheb, Part E; from `main` at `9a119d2`, not stacked), following the approved
+plan. Only `deploy/`, `docker-compose.yml`, `tests/deploy/` and docs change; no `api/`, `src/`, `configs/` or `web/`
+change; nothing from PR 3 or later (no API client, pages or components).
+- `deploy/web.Dockerfile`: build stage `node:26.13.0-alpine@sha256:c6ad9e9c…6d94` (index digest from `docker buildx
+  imagetools inspect`, 2026-11-01), `npm ci` (engine-strict kept by `web/.npmrc`) then `npm run build`; final stage
+  the unchanged `nginx:1.30.6-alpine@sha256:0e52bd05…97949` (re-inspected: same index digest), with `dist/` at
+  `/usr/share/vsd-web`, `deploy/nginx.conf` and `deploy/nginx_security_headers.conf` only.
+- `deploy/web.Dockerfile.dockerignore`: BuildKit per-Dockerfile allowlist (`web/`, the two confs; no
+  `node_modules`, `dist`, `.env`, `.venv`, `var`, `data`, audio). The root `.dockerignore` (api) is unchanged.
+- `docker-compose.yml` `web`: `build:` replaces `image:`; the `nginx.conf` bind mount is dropped (the config is in
+  the image; a mount would mask it). Ports, tmpfs, environment, `depends_on` unchanged.
+- `deploy/nginx.conf` (team decision A2, 2026-11-01): `absolute_redirect off` (otherwise `Location` names port 80,
+  not 8001); `= /` → `302 /analyze`; one regex for `/signin`, `/analyze`, `/history`, `/history/req_<32 hex>`,
+  `/overview`, `/status` → `index.html`, `Cache-Control: no-cache`; `^~ /assets/` files only (`try_files $uri
+  =404`), `public, max-age=31536000, immutable`; Cache-Control without `always`, so no 404 is cached. `/index.html`
+  directly, `/history/foo`, `/docs` and any other path stay the JSON 404 (one canonical URL per page). The `/api/`
+  blocks keep their rate limit, pass-through and untouched `Origin`; they only gain the headers include.
+- Security headers (team decision A13, 2026-11-01) in `deploy/nginx_security_headers.conf`, `always`, included in
+  every location (named ones too) because a location with its own `add_header` drops inherited ones:
+  `Referrer-Policy: strict-origin-when-cross-origin` (never `no-referrer`: the browser would send `Origin: null`),
+  `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action
+  'self'; frame-ancestors 'none'; object-src 'none'`. The build needs nothing more: `dist/index.html` has no inline
+  script or style, CSS has no `data:` URL, fonts are same-origin under `/assets/` (A14).
+- **Found and fixed during the live check:** nginx's JSON 404 for a path with an extension (`/index.html`,
+  `/assets/missing.js`, also `/favicon.ico` before this PR) was sent as `text/html` / `application/javascript`:
+  the type comes from `mime.types` by extension even in `@not_found`. An empty `types { }` in the four JSON
+  error locations makes `default_type application/json` apply; pinned in `test_nginx_conf.py`.
+
+**Tests (static, no Docker in CI):**
+- `test_nginx_conf.py`: the parser expands includes of files the web Dockerfile COPYs (the container→repo map is
+  read from its COPY lines); `resolve(path)` emulates nginx location choice. New: app routes → `index.html`
+  no-cache; `/history/foo`, `req_` + 31 / 33 / uppercase hex, `/signinx`, `/analyze/`, `/Analyze`, `/index.html`,
+  `/history/`, `/docs`, `/favicon.ico` → catch-all; `/` → `302 /analyze` with `absolute_redirect off`; `/assets/`
+  `$uri =404`, immutable, Cache-Control only in those two locations; all three headers with `always` in every
+  location (effective set per nginx's inheritance rule); no `no-referrer`; `/api/` blocks unchanged but for the
+  headers; empty `types` in the JSON locations; an in-suite planted failure (CSP removed from `@not_found` only →
+  `['@not_found']`).
+- **Removed, with reasons:** `test_only_api_paths_are_proxied_and_root_is_the_placeholder` → the `= /` `return 200`
+  assertion (placeholder gone; renamed `…_root_redirects_to_analyze`, the proxied-set assertion kept);
+  `test_web_image_is_pinned_by_tag_and_digest` (`WEB["image"]` regex and `"build" not in WEB`: the pin moved to the
+  Dockerfile, now `test_deploy_web_image.py`); `WEB["volumes"] == [nginx.conf:ro]` (mount dropped).
+- New `test_deploy_web_image.py` (4): both FROMs by tag + digest (Node = `web/.nvmrc`, nginx = the 8b pin);
+  `npm ci` before `npm run build`, no `npm install`, no engine bypass; final stage COPYs only `dist` and the two
+  confs, no RUN/ADD; ignore file allowlist and exclusions.
+- Manual planted failure on a scratchpad copy: include removed from `^~ /assets/` (which keeps its own
+  Cache-Control) → `without_security_headers` returns `['^~ /assets/']`; real file → `[]`.
+
+**Evidence [verified]:**
+- Baseline: `node --version` `v26.13.0`, Docker `28.5.2`, Compose `2.40.3`; `git log --oneline -1 main` `9a119d2
+  Merge pull request #89 …`; `pytest -q` `1261 passed, 9 skipped`.
+- `.venv/bin/python -m pytest -q` (Python 3.14.6): `1272 passed, 9 skipped` (1261 + 11 new deploy tests).
+- `web/`: `npm ci`, `npm run typecheck`, `npm run lint`, `npm test -- --run` (`Test Files 4 passed (4)`, `Tests
+  182 passed (182)`), `npm run build` (`✓ built`); all exit 0. `web/package-lock.json` unchanged.
+- `docker compose build --no-cache --progress=plain web`: `transferring context: 159.09kB` (repo 848 MB without
+  `.git`; `web/node_modules` 173 MB; tracked `web/` + `nginx.conf` 155,538 B), so the per-Dockerfile ignore applied.
+  `docker compose exec web nginx -t`: syntax ok, test successful.
+- Running image: `/usr/share/vsd-web` = `assets index.html`; 70 assets (= local `web/dist/assets`; 68 font files,
+  JS, CSS); `no node`; `ls -a /` matches only `.dockerenv` (Docker's marker, not a `.env`); `/etc/nginx` = image
+  defaults + `nginx.conf` + `vsd_security_headers.conf` (`conf.d/` present, never included).
+- curl on `:8001`: `/` → 302 `Location: /analyze`; `/analyze`, `/history`, `/history/req_` + 32 zeros, `/signin` →
+  200 `text/html`, `no-cache`; `/history/foo`, `/index.html`, `/assets/missing.js`, `/favicon.ico` → 404
+  `application/json` §6 body, no Cache-Control; `/assets/index-DJC7cMit.js` → 200 immutable; `/api/health` →
+  `{"ok":true}`; `POST /api/session` with `Origin: http://localhost:8001` and bad credentials → 401
+  `invalid_credentials` (Origin still passes); burst → 6 × 401 then 429; 23 MiB upload → nginx 413. The three
+  headers present on the 302, 200s, 404s, 413, 429, the `/api/` 200 and 401. The 503 was not run live (it needs
+  `docker compose stop api`); `@unavailable` is covered by the static header test.
+- No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
+
+**ui-ux-pro-max (checklist only; no `--design-system`, no `--persist`):** viewport meta `width=device-width,
+initial-scale=1` without zoom lock, `lang="en"`, `font-display: swap` (34 rules in the built CSS) and deep links
+for every app route: pass. No-cache shell with immutable hashed assets: no stale-UI risk after a deploy. For later
+PRs, not blockers: a mistyped app URL shows nginx's raw JSON 404 rather than an in-app page (`empty-nav-state`); a
+saved light/dark choice opposite to the system may flash before `main.tsx` runs, and a pre-paint inline script
+would need a CSP change by decision (PR 6).
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
+the checks; ui-ux-pro-max was used as a read-only checklist. The plan was approved before the build; the team
+reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 130 — Stage 18 PR 3a: API client, error type and API types (2026-11-01)
+
+**What:** on `feat/stage18-api-client` (Iheb, Part E; from `main` at `d352bad`, not stacked), following the approved
+plan. The plan's PR 3 (API layer, session state, 401 handler, route guard) is about 1,300 lines without the lockfile,
+so it is split into three PRs, each from `main` after the previous one merges: **3a** (this one: client, errors,
+types, lint rule), **3b** (session state, the handler registration, `checkSession` on load) and **3c** (react-router,
+route list, `next` check, guard, stub pages). Only `web/` and docs change; no `api/`, `src/`, `configs/` or `deploy/`
+change; no new dependency (`package.json` and `web/package-lock.json` unchanged).
+- `web/src/api/client.ts`: `apiFetch<T>(path, { method, json | body })`. Only relative paths starting with `/api/`;
+  refused before sending: absolute or protocol-relative URLs, `//`, `\`, `.`/`..` segments (also `%2e`), `#`,
+  whitespace and control characters. `credentials: 'same-origin'`, `Accept: application/json`; `Content-Type:
+  application/json` only for a `json` body; a `FormData` body is passed as is (the browser sets the boundary). No
+  Origin, Cookie or auth header is set: the browser sends Origin on same-origin POST, PUT and DELETE, which the CSRF
+  check needs. A 204 returns `undefined`; a 2xx that is not JSON is `internal_error`; a fetch `TypeError` is a network
+  error; anything else (e.g. `AbortError`) is rethrown.
+- Expired session: `setSessionExpiredHandler` (registered by session state in 3b) is called on `session_expired`
+  except for the `/api/session` calls, which handle their own 401, and `POST /api/analyses`, whose expired session is
+  the HANDOFF S5 error state with "Sign in again" (`HANDOFF.md` l.27, flow l.55); that button will call
+  `session.expire()` (PR 10). Any other call, `GET /api/analyses` included, calls the handler.
+- `web/src/api/errors.ts`: `ApiError` with `kind` (`http` | `network`), `status`, `code` (§6 union; `null` for a
+  network error) and `requestId` (from the body, `req_` form or `null`; `undefined` when there was no response).
+  The guards `isHttpError` / `isNetworkError` narrow all four fields together (`code` is `ErrorCode` or `null`),
+  because checking `kind` alone does not. The server `message` is never kept; `.message` is a fixed `API error
+  <status> <code>` or `Network error`. A body
+  that is not JSON, not the §6 shape, or has an unknown code or a malformed `request_id` → `internal_error`, `null`.
+- `web/src/api/types.ts`: §2/§4/§5/§6 request and response types; `AnalysisResponse` = the 8 §11 fields; the
+  17-code `ErrorCode` union. Types follow the §4 examples, checked field by field against `api/schemas.py`
+  (all match; differences in the contract text are open items below).
+- `web/eslint.config.js`: `no-restricted-syntax` on `setTimeout`/`setInterval` in `src/api/**` (no polling, team
+  decision 2026-11-01); `src/routing/**` joins in 3c.
+- `web/vite.config.ts`: under Vitest only, `server.fs.allow` admits `../api` and `../docs` so the contract test can
+  read `api/schemas.py` and `docs/api_design.md` with `?raw` (a file entry does not admit a `?raw` import). The dev
+  server keeps Vite's default: `GET /@fs/…/api/schemas.py?raw` → 403. `tsconfig.node.json` includes the lint test.
+
+**Decisions recorded (Iheb's Part E decisions, 2026-11-01; user-reported):**
+- A15 routing with `react-router` (exact pin; `npm view react-router version` → `8.5.1`, published 2026-10-27,
+  peers met), data router so that `useBlocker` is available for D1; installed in 3c.
+- A19 applied to `GET /api/session`: 500, 503 or no answer → Unavailable, never signed-out (3b).
+- A23 an expired session returns to the same place with the file and the note draft kept in memory: navigation
+  goes through the router (no reload); the `File` (PR 8, upload) and the note draft (PR 11, note) live in a module
+  store, not in component state, so they survive the guarded page unmounting.
+
+**Tests (Vitest, 4 new files, 84 tests):** `client.test.ts` (accepted and refused paths, headers per body kind,
+no Origin/Cookie/Authorization for GET/POST/PUT/DELETE, 204, non-JSON 2xx, network and abort errors, the handler
+called for 6 routes and not for the 3 `/api/session` calls, `POST /api/analyses`, `invalid_credentials` or a
+malformed 401); `errors.test.ts` (API body, the 4 nginx bodies verbatim from `deploy/nginx.conf`, 10 malformed
+shapes, HTML/empty/truncated bodies, server message absent from `.message`, `JSON.stringify`, values and
+`String()`); `types.test.ts` (field list = Pydantic `AnalysisResponse`, in order; codes = the §6 table, 17;
+`expectTypeOf` exact keys); `web/eslint.config.test.ts` (timer bare, via `window` and `globalThis` → error in
+`src/api`; allowed in `src/theme.ts`).
+
+**Planted failures (not committed):** `window.setTimeout` in `src/api/planted.ts` → `npm run lint` `✖ 1 problem (1
+error)`, `No timers in src/api (no polling)`; `notice` dropped from `ANALYSIS_RESPONSE_FIELDS` → `types.test.ts`
+`Tests 1 failed | 3 passed`, and `tsc -b` error TS2344 on the `expectTypeOf` line. Restored: all pass.
+
+**Evidence [verified]:**
+- Baseline: `node --version` `v26.13.0`; `git log --oneline -1 main` `d352bad Merge pull request #90 …`;
+  `python -m pytest -q` `1272 passed, 9 skipped`.
+- `web/`: `npm run typecheck`, `npm run lint`, `npm test -- --run` (`Test Files 8 passed (8)`, `Tests 266 passed
+  (266)`), all exit 0. `npm audit`: 12 moderate, the known dev-only `minimatch` item (Entry 127); `npm audit
+  --omit=dev`: `found 0 vulnerabilities`.
+- No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
+the checks. The plan was approved before the build, with the user's changes (S5 exception for uploads, the split,
+PR references); the team reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 131 — Stage 18: non-text contrast fixed for WCAG 1.4.11 (2026-11-03)
+
+**What:** on `fix/stage18-contrast` (Iheb, Part E; from `main` at `b6f09d6`, not stacked), following the approved
+plan and the team decision of 2026-11-01 to fix the 4 non-text pairs below 3:1 left open in Entry 128 in one PR.
+Each colour keeps its HSL hue and saturation; only the lightness changes, by the minimum that reaches 3:1 against
+every background the prototype puts it on: `--surface`, `--bg`, `--surface-2` and, for marks, their tint. Only
+`web/src/styles/` and docs change; no `api/`, `src/`, `configs/` or `deploy/` change; no dependency change.
+
+| Token | Theme | Old → new | `--surface` | `--bg` | `--surface-2` | Tint |
+|---|---|---|---|---|---|---|
+| `--line-strong` | light | `#B4BFCC` → `#7C8FA6` | 1.86 → 3.31 | 1.69 → 3.01 | 1.77 → 3.14 | – |
+| `--line-strong` | dark | `#3A5070` → `#52729F` | 1.99 → 3.32 | 2.23 → 3.72 | 1.81 → 3.02 | – |
+| `--unc-mark` | light | `#D08A0C` → `#BF7E0B` | 2.87 → 3.38 | 2.60 → 3.07 | 2.72 → 3.21 | `--unc-bg` 2.55 → 3.01 |
+| `--warn-mark` | light | `#D08A0C` → `#BF7E0B` | 2.87 → 3.38 | 2.60 → 3.07 | 2.72 → 3.21 | `--warn-bg` 2.55 → 3.01 |
+
+- Where they are used (prototype, for the component PRs): `--line-strong` for input, textarea, select and chip
+  borders, the drop area, chart axis and "at or below" bars, tooltip, the network-error and loading bars, and the
+  quiet-button border (on `--bg` in the page head, hover `--surface-2`); `--unc-mark` for the verdict top bar on
+  `--unc-bg`, the required-action bar on `--surface-2` and the chart swatches; `--warn-mark` for the input-error
+  and Degraded bars.
+- `web/src/styles/tokens.css`: the 4 values (both dark blocks, kept identical), each with "changed for WCAG
+  1.4.11, Entry 131" and the old value in its citation; the header says the H values are copied exactly except these.
+- `web/src/styles/tokens.test.ts`: the named exception list and its "still below 3:1" branch are removed. The
+  non-text pairs now check `--line-strong` on `--surface`, `--bg`, `--surface-2` and every `*-mark` on those three
+  plus its own tint: 11 → 31 pairs per theme, all ≥ 3:1 with no exception (168 → 208 tests).
+- `docs/design/HANDOFF.md` §4: the new values (line 103, 111; `--warn-mark` on the status row) and a one-line note
+  of the change and why. `docs/design/analyst-console-prototype.html` is not edited and **keeps the old values**;
+  HANDOFF and `tokens.css` win.
+
+**Side checks [verified, WCAG 2.x formula and CIEDE2000, scratch script]:**
+- No text pair changes: none of the 4 tokens is a text colour or a background under text.
+- Every other mark (syn, auth, ok, err) in both themes is already ≥ 3:1 on all four backgrounds (lowest light
+  `--ok-mark` on `--ok-bg` 3.08).
+- Marks stay distinct, light theme (dark unchanged), contrast / ΔE2000: syn/unc 1.77 / 27.2 (was 2.08 / 30.6),
+  unc/auth 1.36 / 48.1 (was 1.60 / 49.8), syn/auth 1.30 / 52.1. `--unc-mark` and `--warn-mark` stay identical
+  (ΔE 0), as in the prototype and Entry 128: one is a verdict, the other a system state, never shown together;
+  they remain separate tokens (approved with the plan). HANDOFF §7 already requires icon and text with every colour.
+- For the chart PR: "at or below" bars (`--line-strong`) vs "above" bars (`--ink-2`) drop from 5.31 to 2.99
+  (light) and 5.15 to 3.09 (dark); the "above" bars also carry their value label. Focus ring vs input border drops
+  4.19 → 2.36, but the ring has a 2 px offset (`base.css:17`), so it sits on `--surface` (tested ≥ 3:1).
+- ui-ux-pro-max as a review checklist only (non-text contrast, colour not alone, border visibility in both themes,
+  chart data ≥ 3:1): no finding; HANDOFF wins.
+
+**Planted failure (not committed):** light `--line-strong` back to `#B4BFCC` → `Tests 3 failed | 205 passed (208)`
+(`light: non-text --line-strong on --surface / --bg / --surface-2 is at least 3:1`). Restored → `Tests 208 passed (208)`.
+
+**Evidence [verified]:**
+- Baseline: `node --version` `v26.13.0`; `git log --oneline -1 main` `b6f09d6 Merge pull request #91 …`;
+  `python -m pytest -q` `1272 passed, 9 skipped`.
+- `web/`: `npm ci`, `npm run typecheck`, `npm run lint`, `npm test -- --run`, `npm run build`, all exit 0 (output in
+  the PR report).
+- No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, computed the values, made the edits and this
+entry, and ran the checks. The plan was approved before the build; the team reviews the diff and does the visual
+check. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 132 — Stage 18 PR 3b: session store, expiry handler, `checkSession` (2026-11-03)
+
+**What:** on `feat/stage18-session-store` (Iheb, Part E; from `main` at `c8c047e`, not stacked), following the
+approved plan (user's answers to Q1–Q8 folded in). Only `web/` and docs change; no `api/`, `src/`, `configs/` or
+`deploy/` change; no new dependency (`package.json` and `web/package-lock.json` unchanged).
+- `web/src/session/session.ts`: a module store read through `useSyncExternalStore(subscribe, getSnapshot)`. States
+  `checking` (initial) | `signedIn {username}` | `signedOut {reason: 'none' | 'expired'}` | `unavailable`, from
+  HANDOFF §1 S1 (default, expired session, sign-in service unavailable) and §4.8 (`GET /session` on load). The
+  same snapshot object is kept while unchanged; a no-op transition notifies no one. Notify iterates a copy of the
+  listeners; a throwing listener does not stop the others or the caller, and its error is rethrown in a
+  `queueMicrotask` (`reportError` is not in Node or jsdom).
+- `checkSession()` (`GET /api/session` through `apiFetch`, never rejects): 200 → `signedIn` (typed `SessionInfo`,
+  no runtime check); 401 → `signedOut {expired}` if the state was `signedIn`, otherwise `signedOut {none}` (the
+  load-time 401 is not the S1 notice, §4.8 "Errors for S1"); 403, 500, 503, any other status, a non-JSON 2xx, a
+  network error or any other throw → `unavailable` (A19: only a 401 signs out). Concurrent calls share one
+  request. A generation counter, bumped by every transition (also a no-op one), drops a result that arrives after
+  a newer change; a transition also drops the shared request, so the next call sends a fresh one. Retry from
+  `unavailable` stays `unavailable` until the answer (no `checking`).
+- `expire()` (the `setSessionExpiredHandler` target, and PR 10's S5 "Sign in again"), `markSignedIn(username)`
+  (PR 4), `markSignedOut()` (PR 6), `startSession()` (registers `expire`, then `checkSession`). The client's
+  handler slot is single, so registering twice cannot double-fire. No navigation (PR 3c).
+- `web/src/main.tsx`: `startSession()` at module level, not in an effect, so StrictMode cannot run it twice.
+- No test reset in the module: tests use `vi.resetModules()` and a fresh `import()`; a test pins the export list.
+- A23: 3b creates no draft store and clears nothing; the file and note draft stores stay in PR 8 and PR 11.
+- `web/eslint.config.js`: the no-timer rule (`no-restricted-syntax`) now covers `src/api/**` and `src/session/**`,
+  tests included. A second block, `src/session/**` without `*.test.ts`, bans `localStorage`, `sessionStorage` and
+  `console` (`no-restricted-globals`; also on `window`, `globalThis` and `self` via `no-restricted-properties`)
+  and `document.cookie`. Different rule names, so flat config's per-rule replacement cannot make one ban cancel
+  the other; `calculateConfigForFile`: `src/api/client.ts` → syntax; `src/session/session.ts` → syntax, globals,
+  properties; `src/session/session.test.ts` → syntax. `window.document.cookie` is not matched by the lint rule;
+  the cookie spy test covers it.
+
+**Tests (Vitest):** `src/session/session.test.ts`, 38 tests: export list; initial `checking`; request shape;
+every mapping above (401 with a malformed body; 403, 500, 503, nginx 503, 400, 404, 429, 502, 504, 200 HTML;
+`TypeError` and `AbortError`); 401 from `signedIn` / `unavailable` / `signedOut {expired}`; Retry without
+notify; dedupe (one fetch for two calls, a new one after); stale guard (expiry via a real `apiFetch` 401 on
+`/api/limits`, `markSignedOut`, a no-op `expire()`, a fresh request after the expiry); expiry on `GET
+/api/limits` and not on the three `/api/session` calls or `POST /api/analyses`; `startSession` twice → one
+notify; unsubscribe during notify; throwing listener; snapshot identity; `useSyncExternalStore` via `renderHook`;
+no `Storage.prototype`, `document.cookie` or `console` call through every transition. `web/eslint.config.test.ts`:
++15 (timers, storage bare / `window.` / `globalThis.` / `self.`, cookie, console in `src/session`; a timer and
+storage in one file report both rules; console allowed and a timer refused in a session test file; allowed in
+`src/theme.ts`).
+
+**Planted failures (not committed):** generation check removed → `Tests 4 failed | 34 passed (38)` (the 4 stale-guard
+tests); dedupe removed → `1 failed | 37 passed`; try/catch in notify removed → `1 failed | 37 passed` (throwing
+listener). Restored → `38 passed (38)`.
+
+**Size:** code and tests 554 lines added (`session.ts` 135, `session.test.ts` 341, ESLint 35 + 44, `main.tsx` 3),
+above the plan's ~435 for those files: the test file is larger than estimated. Tests were not cut.
+
+**Evidence [verified]:**
+- Baseline: `node --version` `v26.13.0`; `git log --oneline -1 main` `c8c047e Merge pull request #92 …`.
+- `python -m pytest -q` `1272 passed, 9 skipped`.
+- `web/`: `npm ci`, `npm run typecheck`, `npm run lint`, `npm test -- --run` (`Test Files 9 passed (9)`, `Tests
+  370 passed (370)`), `npm run build`, all exit 0; `npm audit --omit=dev` `found 0 vulnerabilities`.
+- No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
+the checks. The plan was approved before the build, with the user's answers and the lint-layout fix; the team
+reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 133 — Stage 18 PR 3c: routing, route guard, `next` check, stub pages (2026-11-03)
+
+**What:** on `feat/stage18-routing` (Iheb, Part E; from `main` at `ee5fd50`, PR #93, not stacked), following the
+approved plan (user's revisions: query rule, test-file lint glob, answers Q1–Q2, one PR). Only `web/` and docs
+change; no `api/`, `src/`, `configs/` or `deploy/` change.
+- `react-router` `8.5.1`, exact (A15). `npm view react-router version` → `8.5.1` (published 2026-10-27; peers react
+  and react-dom `>=19.2.7`, we have 19.3.1); `npm view react-router-dom version` → `7.18.5`: the package's own docs
+  (`docs/upgrading/v7.md`) say v8 removes `react-router-dom`, DOM APIs come from `react-router/dom`. Data router
+  (A15, for D1's `useBlocker`): `createBrowserRouter(routes)` once at module level in `main.tsx`, next to the
+  unchanged `startSession()`. API read from the 8.5.1 package and its bundled docs; Context7 not used.
+- `web/src/routing/routes.ts`: `APP_ROUTES` = `/signin`, `/analyze`, `/history`, `/history/:requestId`,
+  `/overview`, `/status` (HANDOFF §12); `appRoute()` matches as nginx does: exact, case-sensitive, no trailing
+  slash, `/history/` + `req_` and 32 lowercase hex only (api_design §2).
+- `web/src/routing/next.ts`: `safeNext(raw)`, rejected → `/analyze`. The path must be one of the 5 protected app
+  routes exactly (not `/signin`, not `/`): this is the open-redirect defence and refuses absolute URLs, `//`,
+  schemes, backslashes, `%2F%2F`, `%5C` and double encoding in the path. The query is refused only for control
+  characters (`00–1F`, `7F`), whitespace or `#`, plus the 512-character cap (the longest real value, `/history`
+  with every filter, is ~150); otherwise it is kept byte-for-byte. Why: once the path is a fixed same-origin
+  route the query cannot change the destination, and a stricter rule would drop real filters (e.g. a raw `:` in
+  a time) and break HANDOFF §9 ("returns to the same place"). `signInPath()` builds `/signin?next=<path+query>`.
+  `next` lives only in the URL; nginx logs `$uri`, not the query.
+- `web/src/routing/guard.tsx` (component, not a loader: `expire()` can fire mid-page without a navigation):
+  `checking` → a "Checking your session…" status line, neither S1 nor the page (no sign-in flash); `signedIn` →
+  the page; `signedOut {none | expired}` and `unavailable` → `Navigate replace` to `/signin?next=…` (Q1: also for
+  `unavailable`). On `/signin`: `checking` → the same line; `signedIn` → `safeNext(next)`; otherwise the S1 stub
+  with its variant (default / expired session / sign-in service unavailable, HANDOFF §1). A path that is not an
+  app route (`/analyze/`, `/Analyze`, `/history/foo`, …) → a NotFound stub for every state; in-app `/` →
+  `/analyze`, as nginx's 302. The guard only navigates: no session call, no fetch, no storage, nothing cleared
+  (A23: the draft stores, PR 8 and PR 11, are module-level and survive navigation).
+- `web/src/session/useSession.ts`: `useSyncExternalStore(subscribe, getSnapshot)`, no state of its own.
+- `web/src/pages/`: 8 stubs (h1 + one line; Checking has no h1). Placeholder `App.tsx` and its test removed.
+- `web/eslint.config.js`: `src/routing/**` joins the no-timer rule (tests included) and the storage/console ban;
+  that ban's test exclusion is now `*.test.{ts,tsx}` in `src/session` and `src/routing`. `vite.config.ts`: Vitest
+  `fs.allow` adds `../deploy` for the route contract test.
+- React Router reads `sessionStorage` key `remix-router-transitions` when the router is created and writes it
+  only after a view transition, which the app does not use (`lib/router/router.js`). It is the router's own, not
+  route state; the guard test pins that this read is the only storage access and that nothing is written.
+
+**Decision recorded:** Part E decision (user-reported, agreed 2026-11-01): HANDOFF's ?v=a,b format is translated to
+repeated verdict= params (api_design §4.4); applied in PR 12; 3c's next keeps repeated params intact.
+
+**Tests (Vitest):** `next.test.ts` 65 (14 accepted, 39 rejected, the 512/513 cap; round trip of 10 `/history`
+and details URLs from the §4.4 params — repeated `verdict`, `q`, `from`/`to` incl. a `:` time, which §4.4 itself
+does not accept, `page` — through `signInPath` → `URLSearchParams.get` → `safeNext`, unchanged);
+`routes.test.ts` 22 (route list = `deploy/nginx.conf` app regex, same request-ID fragment, `= /` → `302 /analyze`,
+router paths = the list; `appRoute` cases); `guard.test.tsx` 35 (each state × protected route and `/signin`,
+expired → `?next=%2Fhistory%3Fverdict%3Da%26verdict%3Db`, signed in on `/signin?next=/history?verdict=a&verdict=b`
+→ `?verdict=a&verdict=b`, rejected next → `/analyze`, no S1 while checking, expiry mid-page, 9 non-routes ×
+5 states → NotFound, one h1 per page, no side effects); `eslint.config.test.ts` +7 (`src/routing` bans; console
+allowed and a timer refused in `.test.tsx` under `src/routing` and `src/session`). `colours.test.ts`: its
+sanity list named the removed `App.tsx`; now a page and the guard.
+
+**Planted failures (not committed):** `safeNext` returns a `//` value as is → `next.test.ts` `Tests 2 failed | 63
+passed (65)` (scheme-relative cases); the guard's `checking` branch removed → `guard.test.tsx` `Tests 4 failed | 31
+passed (35)` (the checking and no-flash tests). Restored: all pass.
+
+**Size:** `web/` code and config +250 / −28, tests +456 / −17; lockfile +47 / −4; docs +85 / −4. Total without the
+lockfile 791 added, with it 838: over 500 because of the tests (user-approved, one PR).
+
+**Evidence [verified]:**
+- Baseline: `node --version` `v26.13.0`; `git log --oneline -1 origin/main` `ee5fd50 Merge pull request #93 …`.
+- `python -m pytest -q` `1272 passed, 9 skipped`.
+- `web/`: `npm run typecheck`, `npm run lint`, `npm test -- --run` (`Test Files 11 passed (11)`, `Tests 510 passed
+  (510)`), `npm run build`, all exit 0; `npm audit --omit=dev` `found 0 vulnerabilities`.
+- Live: the branch's `web` image on `127.0.0.1:8002` (beside the running 8001 stack, same network): `/` → 302
+  `/analyze`; the 6 app routes and a full-ID details path → 200 `text/html`; `/history/foo`, an uppercase ID,
+  `/analyze/`, `/Analyze` → 404 `application/json`; `GET /api/session` → 401.
+- Live browser check on localhost:8001 (user-run, Opera private window, bundle index-DE6bsd3T.js; values read with
+  location.href because Opera hides the query in the address bar):
+  - signed out, /history?verdict=synthetic&verdict=uncertain →
+    http://localhost:8001/signin?next=%2Fhistory%3Fverdict%3Dsynthetic%26verdict%3Duncertain, stub 'default';
+  - api stopped (GET /api/session 503) → stub 'sign-in service unavailable', next kept;
+  - signed in via POST /api/session (analyst01 created in the Docker volume; an earlier lockout from attempts before
+    the account existed cleared with api.admin unlock), /signin?next=%2Fhistory%3Fverdict%3Da%26verdict%3Db →
+    http://localhost:8001/history?verdict=a&verdict=b, no console error.
+- No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
+the checks. The plan was approved before the build, with the user's revisions; the team reviews the diff.
+Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 134 — Stage 18 PR 4: S1 Sign in (2026-11-03)
+
+**What:** on `feat/stage18-sign-in` (Iheb, Part E; from `main` at `b06df7b`, PR #94, not stacked), following the
+approved plan (user's revisions: the API checks below, answers Q1–Q6, `chore(web)` for the dependency, one PR).
+Only `web/` and docs change; no `api/`, `src/`, `configs/` or `deploy/` change.
+- Design sources: `docs/design/HANDOFF.md` and the prototype v4 `docs/design/analyst-console-prototype.html`
+  (v4 per `docs/design/README.md` line 9); the plan maps each element to its lines. ui-ux-pro-max was a review
+  checklist only (`--domain ux`, `--stack react`; no `--design-system`, no `--persist`, no files written).
+- `web/src/pages/SignIn.tsx` replaces the 3c stub: brand, `h1` "Sign in to the analyst console" (`tabindex=-1`),
+  Analyst ID (`name=username`, `autocomplete=username`; log lines 3482, 3842), Password (`type=password`,
+  `autocomplete=current-password`, Show/Hide with `aria-pressed`), field errors "Enter your analyst ID." / "Enter
+  your password." with `aria-invalid` + `aria-describedby`, "Sign in" / "Signing in…" (spinner, `disabled`,
+  `aria-busy`), the four error banners (`role="alert"`, HANDOFF line 143), the expired notice (`role="status"`),
+  Retry, and "Forgot your password? Ask your administrator." (log line 3844). Removed from the prototype: the
+  open-decision banner (log line 3481) and the demo button (prototype only).
+- `POST /api/session` through `apiFetch`; on 200, `markSignedIn(<the server's username>)`; the guard
+  (`SignInGate`) then lands on `safeNext(next)` or `/analyze`. S1 has no navigation code and never reads `next`.
+- `web/src/pages/signInOutcome.ts`: exact status + code → `401 invalid_credentials` and `400 invalid_request`
+  → invalid; `403 access_denied` → denied; `429 account_locked` → locked; everything else (nginx 429/503, API
+  503, network error, 500, 403 `origin_not_allowed`, malformed bodies, any other status or code, a 200 without a
+  username) → unavailable, so no unknown answer reads as a wrong password. 400 `invalid_request` is answered
+  before the account lookup and is the same for every username (`api/routers/session.py` lines 87–96): a
+  password the server refuses to check cannot be correct, and nothing about the account is revealed. Copy:
+  prototype lines 834–837; the server's message is never shown.
+- Password lifecycle: component state only; sent only in the POST body; `<form method="post" noValidate>`, so a
+  native submit could never put it in a query string. Cleared (and Show reset) after every failed answer, as the
+  prototype keeps only the Analyst ID (line 1444). Gone on unmount (success unmounts S1). One request at a time:
+  a ref set before any await, plus disabled buttons.
+- Focus: field errors → first empty field (prototype line 1439); invalid → Analyst ID; denied, locked,
+  unavailable → `h1` (line 1444, Q5). A repeated failure re-mounts the alert so it is announced again.
+- Retry (Q1): only for the store's `unavailable` (the check on load failed); calls `checkSession()`; the store
+  stays `unavailable` until the answer, so the button shows "Checking…" (HANDOFF line 166), disabled, `aria-busy`,
+  and the form is blocked too. Signed out after Retry → the same S1 instance, Analyst ID kept and focused.
+- `web/src/pages/SignIn.css` (prototype lines 103–120, 206–207, 261–286, 443), tokens only for colour, type,
+  radius, space and motion. `web/src/components/Icon.tsx`: 4 icons from prototype lines 668–684. `base.css`:
+  `.sr` (prototype line 84).
+- `web/eslint.config.js`: `src/pages/SignIn*.{ts,tsx}` and `src/pages/signInOutcome*.{ts,tsx}` join the timer
+  ban (tests included; no lockout countdown) and the storage / `document.cookie` / console ban (tests exempt).
+  Other pages stay unbanned (later ones may need a timer, e.g. the toast).
+- `@testing-library/user-event` `14.6.8`, dev, exact (`npm view` → `14.6.8`, published 2026-10-13, peer
+  `@testing-library/dom >=7.21.4`, no dependencies): Tab order, Enter submission and double click in tests.
+
+**Decisions recorded (user answers to the plan, 2026-11-03):** Q1 Retry only for the store's unavailable, label
+"Retry", loading "Checking…". Q2 400 `invalid_request` → invalid. Q3 the password is **kept** on a client field
+error (nothing was sent); this deliberately differs from prototype line 1439, which empties it. Q4a the
+prototype's raw 22 px `h1` and 18 px brand name use the nearest tokens `--fs-lg` and `--fs-md` (HANDOFF line 93);
+the banners' raw 14 px likewise uses `--fs-sm`. Q4b "Signing in…" (HANDOFF line 161, prototype line 850) over
+HANDOFF line 137 "Loading keeps the label". Q5 focus the `h1`. **Q6, deliberate deferral:** HANDOFF line 133
+asks for `Button`, `TextField` and `Banner` components in `web/src/components/`; S1's markup stays inline in
+`SignIn.tsx` / `SignIn.css` (class names as in the prototype) and is extracted in PR 8, when a second screen
+needs them (Open item).
+
+**Findings, not changed:**
+- Lockout count [verified]: the brief expected the 5th wrong attempt to answer 429. The code checks the lock
+  before the password (`api/routers/session.py` lines 57–66) and answers the failure that reaches the threshold
+  with 401 while setting the lock (`api/repository.py` lines 428–433), so a fresh count gives 401 ×5, then 429 —
+  confirmed live below, and as in Entries 123 and 126. An earlier "401 401 401 429" run fits a count that already
+  held failures (Entry 133: attempts made before analyst01 existed).
+- A burst with one unknown username mixes the API's lockout into nginx's limit (the 6th 429 is the API's
+  `account_locked`, as in Entry 126); distinct usernames show nginx's own 429.
+- Touch target, fixed (reviewer's decision, HANDOFF over the prototype): the Show/Hide toggle is 36 px high
+  (prototype line 277), but HANDOFF line 86 asks for every target ≥ 44 × 44 px at ≤ 640 px. `SignIn.css` now
+  gives it `height` and `min-width` `var(--target)` (44 px) inside `@media (max-width: 640px)`, and keeps 36 px
+  above. `SignIn.css.test.ts` (2 tests) checks both rules as text, since jsdom applies no media queries.
+
+**ui-ux-pro-max (review checklist):** met: accessible authentication (paste and password managers, autocomplete),
+password toggle, `role="alert"` errors, errors below fields with `aria-describedby`, loading button, `<form
+onSubmit>`. Kept HANDOFF/prototype over the checklist: focus to the field / `h1` rather than an error summary,
+no error summary (two fields), no required asterisks, validation on submit not on blur, body text 15 px (16 px
+inputs only, B4).
+
+**Tests (Vitest):** `signInOutcome.test.ts` 31 (the whole path through `apiFetch`: the 4 errors, 400, nginx
+429/503/404 verbatim from `deploy/nginx.conf`, network, 12 other status/code pairs, 4 malformed 401 bodies, 2xx
+non-JSON, non-ApiError throws, the copy); `SignIn.test.tsx` 32 (default attributes and the recovery line, Tab
+order, Show/Hide, field errors and focus, loading, the exact request body and the server username, a 200 without a
+username, 9 failure answers with alert / cleared password / kept ID / focus / aria, network, re-announcement,
+expired notice, unavailable with Retry pending / signed out / still unavailable, no double submit by double click
+and by two submit events, landing on a valid next and on `/analyze` for 3 rejected ones, the password absent from
+console, storage, cookies, history, the router location and the page text); `guard.test.tsx` reads the real S1
+instead of the stub text; `eslint.config.test.ts` +3 (S1 bans; Analyze not banned); `colours.test.ts` must-scan
+list + `SignIn.css`, `signInOutcome.ts`, `Icon.tsx`.
+
+**Planted failures (not committed):** unknown answers mapped to `invalid` (`?? 'invalid'` in `signInOutcome.ts`)
+→ `Test Files 2 failed (2)`, `Tests 26 failed | 37 passed (63)`; the in-flight ref and the submit button's
+`disabled` removed → `× double click sends one request`, `× two submit events in a row send one request`, `Tests
+2 failed | 30 skipped (32)`. Restored: `Tests 63 passed (63)`.
+
+**Size:** `web/` code and config +380 / −20, tests +543 / −8; lockfile +15; docs +122 / −4. Code ≈ 380 lines, over
+the planned ~330 split line; kept as one PR because the planned split would merge a half-built S1 and the
+overrun is JSX layout, not logic (reviewer's decision). The toggle fix adds 3 lines of CSS and a 2-test file.
+
+**Evidence [verified]:**
+- Baseline: `node --version` `v26.13.0`; `git log --oneline -1 origin/main` `b06df7b Merge pull request #94 …`.
+- `python -m pytest -q` `1272 passed, 9 skipped`.
+- `web/`: `npm run typecheck`, `npm run lint`, `npm test -- --run` (`Test Files 13 passed (13)`, `Tests 585 passed
+  (585)`; after the toggle fix `Test Files 14 passed (14)`, `Tests 587 passed (587)`), `npm run build`, all exit 0; `npm audit --omit=dev` `found 0 vulnerabilities` (the full `npm audit`
+  shows 12 moderate in dev dependencies, `minimatch`, the same before this change).
+- Live, server side, on localhost:8001 with the branch's `web` image (`docker compose build web && up -d`; served
+  bundle `index-CTaE4bZb.js` = the local build) and a scratch account `pr4check` (generated password, never
+  printed; disabled at the end): sign-in 200; after `unlock`, 5 wrong passwords 7 s apart → `401 401 401 401 401`,
+  6th with the right password → `429`; `disable` → right password `403`, then `enable`; a 129-character password →
+  `400`; after 61 s, 8 rapid sign-ins as `nobody01`…`nobody08` → 6 × `401 invalid_credentials`, 2 × `429
+  too_many_requests`.
+- Live in a browser: not run by the agent (no browser here); the user-run checklist is in the PR report.
+- Live browser check on localhost:8001 (user-run, Opera private window, bundle index-Bru4mD4n.js; URL and focus
+  read with location.href and document.activeElement):
+  - empty submit → both field errors, focus #si-user (aria-invalid=true);
+  - wrong password → invalid banner, password cleared, Analyst ID kept, focus #si-user;
+  - api.admin disable → 403 → denied banner (lock icon), focus h1 #si-h; enable after;
+  - unlock, 5 wrong (~6 s apart) → 5 × 401, 6th with the right password → 429 → locked banner (lock icon), no
+    countdown, focus h1; unlock after;
+  - api stopped → GET /api/session 503 → unavailable banner + Retry; api started, Retry → 'Checking…' → default form;
+  - fresh private window, /history?verdict=synthetic → sign in through the form →
+    http://localhost:8001/history?verdict=synthetic; GET /api/session 200 and a reload stays on the page (cookie
+    Path=/api is hidden in DevTools' cookie table on /history);
+  - Local storage empty, Session storage empty or only remix-router-transitions, password not in the page HTML.
+- Unit-only, and why: `503 sign_in_unavailable` (needs an account store the API cannot read; not safe to
+  provoke); the expired notice (only `expire()` after a signed-in API call produces it, and no page calls the API
+  yet); malformed bodies, unknown statuses, 2xx non-JSON, 422 (nginx and the API never send them).
+- No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
+the checks. The plan was approved before the build, with the user's revisions; the team reviews the diff.
+Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 135 — Stage 18 PR 5a: e2e harness and sign-in flows on the real stack (2026-11-03)
+
+**What:** on `chore/stage18-e2e-harness` (Iheb, Part E; from `main` at `1d41512`, PR #95, not stacked), following the
+approved plan (user's revisions: JSON instead of HTML report, the 5a/5b split, answers Q1–Q7, the unquoted project
+filter, the budget rule below). D23 has no `test/` type, hence `chore/`. No `api/`, `src/`, `configs/` or app change.
+- **Target: the real stack only**, nginx on `http://localhost:8001` in front of the API (Compose). Never the Vite dev
+  server: its proxy rewrites `Origin` to 8001 (A12, Entry 127; `web/vite.config.ts` `proxyReq`), so it would hide
+  exactly the Origin and cookie bugs this suite exists to catch.
+- `@playwright/test` `1.64.1`, dev, exact (`npm view @playwright/test version` → `1.64.1`, published
+  2026-10-14T11:58Z, deps `playwright` 1.64.1 → `playwright-core` 1.64.1; nothing newer but `1.65.0-alpha`).
+  `@axe-core/playwright` is 5b.
+- `web/playwright.config.ts`: `testDir: e2e`, `baseURL` 8001, `timezoneId` Africa/Tunis; trace, video and screenshot
+  `off`; `retries: 0`, `workers: 1`; reporters `list` + `json` (`web/playwright-report/results.json`, a sibling of
+  `test-results/`, which Playwright empties at each start; already gitignored). Projects `<browser>-setup` →
+  `<browser>` for chromium and firefox.
+- `web/e2e/run.ts` (scripts `test:e2e` = chromium, `test:e2e:firefox`; plain Node 26 type stripping): one browser
+  per run; makes the password (48 hex, always valid under §4.8: hex holds no letter of `vsd`/`voice`/`spoof` and no
+  `-` of an `e2e-` username) or takes `VSD_E2E_PASSWORD`; a `mkdtemp` folder for the storage state; both only in
+  the child's env. Spawns Playwright without a shell with `['test', '--project=<browser>*']` (`support/args.ts`; a
+  quote would reach Playwright literally). Redacts the child's output line by line; after the run, a plain-text scan
+  of every file under `test-results/` and `playwright-report/` for the password, the saved cookie values and any
+  `vsd_session=<43 chars>` → exit 3 naming the file, never the value; `scan=clean` to `$GITHUB_OUTPUT`. Deletes the
+  state folder in every case.
+- **Sign-in budget (nginx 10/min, burst 5 → 6 at once from a fresh zone):** global setup restarts `web` (a new nginx
+  process, a new zone); a run makes 3 sign-in POSTs (setup, invalid, denied). `run.ts` records the `--since` time
+  itself before spawning Playwright, reads `docker compose logs web` after it and applies `support/budget.ts`: a
+  green run must show **exactly** 3 `"POST /api/session"` lines and 0 × 429 (0 lines fails: the check would be
+  reading nothing); a failed run at most 3 and 0 × 429; a broken budget turns a green run into exit 1 (user's rule).
+- Seeding (`support/stack.ts`, global setup): `e2e-main`, `e2e-invalid`, `e2e-denied` (one per mutating scenario;
+  `analyst01` never touched): `docker compose exec -T api python -m api.admin create-account` with the password twice
+  on stdin (`api/admin.py` l.38–39 call `getpass` twice; without a TTY it falls back to stdin without echo; verified
+  with a piped `printf … | python3 -c 'getpass×2'` and in Entry 125); "already exists" → `set-password`; then
+  `enable`, `unlock`. Teardown, also after failures: `enable`, `unlock`, `disable` each (disable ends its sessions).
+- **Finding [verified]: Playwright's step titles render typed text** (`playwright-core@1.64.1` `coreBundle.js`:
+  `Fill "{value}"` l.4275, `Type "{text}"` l.4303, `Insert "{text}"` l.4410–4411; `Evaluate` l.4273 renders no
+  argument), and the JSON report keeps them. The password is therefore typed with `typeSecret()` (`execCommand
+  ('insertText')` inside `locator.evaluate`, the paste path React sees); assertions on secrets are booleans (a failing
+  expect prints its arguments); cookies are compared without their value.
+- `support/secret-guard.ts` (not `secrets.ts`: `.gitignore` l.12 `secrets.*` would have dropped it from git).
+  `deploy/web.Dockerfile.dockerignore` excludes `web/test-results` and `web/playwright-report` from the web image's
+  build context (its deploy test lists them).
+- `vite.config.ts`: Vitest excludes `e2e/**` (`configDefaults.exclude`); the `/// <reference types="vitest/config">`
+  line became the `vitest/config` import. `tsconfig.e2e.json` (same strict flags, `erasableSyntaxOnly`) joins `tsc -b`.
+- ESLint block for `e2e/**`: no `setTimeout`/`setInterval`/`waitForTimeout`; `accountPassword()` or an identifier
+  `password*`/`cookie*` refused as an argument of `fill`/`type`/`pressSequentially`/`insertText`/`expect`;
+  `react-hooks/rules-of-hooks` off (fixtures call Playwright's `use()`; not React code).
+- CI: new `e2e` job (Chromium only): Node from `web/.nvmrc`, `npm ci`, a per-run key `openssl rand -hex 32`
+  (masked, `$GITHUB_ENV`; no repo secret), `docker compose up -d --build --wait`, `npx playwright install
+  --with-deps chromium` (not cached: OS packages cannot be, and restoring the browser costs about the download),
+  `npm run test:e2e`, upload of `results.json` only `if: failure() && steps.e2e.outputs.scan == 'clean'`, logs on
+  failure, `down -v` always. Not required on `main` yet (Open item).
+
+**Decisions recorded:** Chromium in CI, Firefox locally (user-reported Part E decision, agreed 2026-11-01; no earlier
+record). PR 5 split into 5a (this) and 5b (axe, HTTP/Origin matrix, lockout, outage). Two `restart web` per run in
+5b (accepted). `e2e` required after 5 green PR runs in a row. Teardown disables the e2e accounts. In 5b no
+`bypassCSP`: a CSP block of axe is reported.
+
+**Specs (6 tests per browser):** `signin.setup.spec.ts` (from `/history?verdict=a&verdict=b` → S1 → form sign-in →
+lands on next; the POST carries `Origin: http://localhost:8001` and answers 200; Set-Cookie attributes HttpOnly,
+Secure, SameSite=strict, Path=/api, no Domain/Max-Age/Expires; `context.cookies()` the same; `document.cookie` on
+`/api/session` (inside Path=/api) without `vsd_session`; reload stays signed in; localStorage empty, sessionStorage
+only `remix-router-transitions`; password not in the page; state saved). `signed-out.spec.ts` (exact
+`/signin?next=%2Fhistory%3Fverdict%3Da%26verdict%3Db`, S1 default; signed in on that URL → next). `signin-errors.spec.ts`
+(field errors with aria-invalid and focus, no POST; invalid: banner, password cleared, ID kept and focused; denied:
+`disable` → 403 banner, focus h1, `enable` in `finally`). Sources: Entry 133 and 134 live checks, §4.8.
+
+**Guards:** `web/playwright.config.test.ts` (Vitest, 13: reporters, artifacts off, retries/workers, baseURL, projects;
+`playwrightArgs` exact for both browsers, no quote, webkit refused; the budget: green exact, green 0 lines fails,
+failed ≤ 3, 429). `eslint.config.test.ts` +10. `tests/web/test_web_scaffold.py` +6 (the `e2e` job: `.nvmrc`, Chromium
+only, upload only the JSON on failure with a clean scan, no html; 5 planted cases).
+
+**Planted failures (not committed):** guard redirect without the query → `[chromium-setup] … ✘` `Expected:
+"…/signin?next=%2Fhistory%3Fverdict%3Da%26verdict%3Db"`, `Received: "…/signin?next=%2Fhistory"`, `1 failed, 5 did not
+run`, `sign-in POSTs through nginx: 0 (planned 3)` on a failed run, exit 1; Vitest `guard.test.tsx` `5 failed | 30
+passed (35)`. `console.log(accountPassword())` in the setup spec → `[redacted: a line held a password]`, `secret scan:
+password found in …/playwright-report/results.json`, exit 3, 0 copies of the password in the console log. Global
+setup refusing (`COMPOSE_PROJECT_NAME=vsd-nonexistent`) → `The api container is not healthy`, exit 1. Restored
+(web image rebuilt): all green.
+
+**Size (lines added):** config and deploy +99 (`playwright.config.ts`, `tsconfig.e2e.json`, ESLint, Vite, `package.json`,
+`tsconfig.json`, the dockerignore); harness and specs (`web/e2e/`) +628; guards +170; CI +57; docs +154; lockfile +46.
+Total without the lockfile 1,108, with it 1,154; over the plan's ≈ 971 by the budget function and its tests (user's
+revision) and the denser harness.
+
+**Evidence [verified]:**
+- Baseline: `node --version` `v26.13.0`; `git log --oneline -1 origin/main` `1d41512 Merge pull request #95 …`.
+- `python -m pytest -q` `1278 passed, 9 skipped` (+6).
+- `web/`: `npm run typecheck`, `npm run lint`, `npm test -- --run` (`Test Files 15 passed (15)`, `Tests 610 passed
+  (610)`), `npm run build`, exit 0; `npm audit --omit=dev` `found 0 vulnerabilities` (full `npm audit` 12 moderate,
+  the known dev-only `minimatch`, unchanged).
+- Live, local stack (Docker 28.5.2, Compose 2.40.3): `npm run test:e2e` → `6 passed (1.8m)`, `sign-in POSTs through
+  nginx: 3 (planned 3), 429: 0`, `secret scan: 0 matches in 2 files`, exit 0; `npm run test:e2e:firefox` → `6 passed
+  (2.2m)`, the same counts, exit 0. Chromium 156 / Firefox 157 (Playwright builds; Firefox from the ubuntu24.04
+  fallback). **Secure on http://localhost: accepted by both** (`secure: true` in the jar, reload stays signed in).
+- Independent grep with a chosen `VSD_E2E_PASSWORD`: `grep -rlF` over `test-results` and `playwright-report` → no
+  file; the run's console log → 0; `grep -rlE 'vsd_session=[A-Za-z0-9_-]{43}'` → no file; no `vsd-e2e-` temp folder
+  left.
+- CI job not run (no push; `act` not installed).
+- No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
+the checks. The plan was approved before the build, with the user's revisions; the team reviews the diff. Context7
+was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 136 — Stage 18 PR 5b: axe, HTTP/Origin matrix, lockout and outage in e2e (2026-11-03)
+
+**What:** on `chore/stage18-e2e-axe` (Iheb, Part E; from `main` at `880ec2b`, PR #96, not stacked), following the
+approved plan. The scope is Entry 135's "next PR (5b)" list, unchanged. No `api/`, `src/`, `configs/`, `deploy/` or CI
+change; only `web/e2e/`, the Playwright and ESLint configs, their guards and docs.
+- `@axe-core/playwright` `4.14.0`, dev, exact (`npm view` → latest `4.14.0`, published 2026-10-15T13:33Z, dependency
+  `axe-core ~4.14.0` → 4.14.0 in the lockfile, published 2026-10-05; MPL-2.0; peer `playwright-core >= 1.0.0`).
+- `e2e/support/axe.ts`: `expectNoAxeViolations(page, state, exclusions)` scans in light then dark (`emulateMedia`
+  `colorScheme`; the app's default theme is "system") with `reducedMotion: 'reduce'`, so `SignIn.css`'s button colour
+  transition is off (`base.css` l.24) and no colour is read mid-transition; tags `WCAG_TAGS` = `wcag2a`, `wcag2aa`,
+  `wcag21a`, `wcag21aa`, `wcag22a`, `wcag22aa` (HANDOFF l.297); 0 violations expected. A failure shows only `{ id,
+  impact, target }` per node, never `html` or `failureSummary` (a node could hold typed text). Exclusions: exact `{ rule,
+  target, reason }` passed in the spec, filtered after the scan; one that matches nothing fails. **Exclusions in this
+  PR: none.** ESLint (`e2e/**`) refuses `disableRules`, `exclude`, `include`, `withRules`, `options`, `withTags` without
+  `WCAG_TAGS`, and `bypassCSP`.
+- Projects `<b>-setup` → `<b>` → `<b>-last` per browser, by `dependencies` (`LAST` = `locked.spec.ts`, `outage.spec.ts`);
+  `--project=<b>*` already matched the new one. CI still runs Chromium only (job unchanged).
+- `e2e-locked` joins `ACCOUNTS` (seeded, unlocked and disabled by the existing loops). `stack.ts`: `stopApi()`,
+  `ensureApiUp()` (start if not healthy, then `waitHealthy()` through nginx, `expect.poll`); the global teardown calls
+  `ensureApiUp()` first, since its `api.admin` calls need the api.
+- `e2e/support/nginx-headers.ts`: the expected security headers are read from `deploy/nginx_security_headers.conf`;
+  an `add_header` line it cannot read throws.
+- **Both restarts are proven** (user's revision after planted failure 3 stayed green): `stack.ts` `webStartedAt()` reads
+  the web container's `State.StartedAt` (`docker compose ps -q web`, then `docker inspect -f '{{.State.StartedAt}}'`);
+  the global setup and `locked.spec`'s `beforeAll` read it, call `restartWeb()`, read it again and assert the new time
+  is later. A missing restart now fails whatever the timing; the budget remains the check on the POSTs themselves.
+
+**Sign-in POST budget** (nginx 10/min, burst 5 → 6 at once per fresh zone; every POST to `location = /api/session`
+counts, whatever the API answers):
+
+| Segment | Zone opened by | POSTs | Answers |
+|---|---|---|---|
+| A: setup + main | global setup `restart web` | setup 1, invalid 1, denied 1, http.spec no Origin 1, foreign 1 = 5 | 200, 401, 403, 403, 403 |
+| B: last | `locked.spec` `beforeAll` `restart web` | 5 wrong + the right password = 6 | 401 ×5, 429 `account_locked` |
+| Total | | 11 | one 429 |
+
+`budgetProblem`: green run = exactly 11 POSTs and exactly one 429; failed run ≤ 11 and ≤ one 429. nginx's log cannot
+tell its 429 from the API's, so `locked.spec` also checks the body code `account_locked` and the locked banner (nginx's
+`too_many_requests` shows the unavailable one). POST /api/session gets no `Origin: null` case (segment A would be 6);
+the three other routes cover `null`.
+
+**Specs (31 tests per browser, was 6):** `http.spec.ts` 18 (request context, no cookie: POST /api/session without and
+with a foreign Origin → 403 `origin_not_allowed`; DELETE /api/session, POST /api/analyses, PUT
+/api/analyses/req_<32 hex>/note × none / foreign / `null` → 403; **control** the same three with `Origin:
+http://localhost:8001` → 401 `session_expired`, so the 403s come from the Origin check; the 6 app routes 200 `text/html`
+with the conf's headers; `/nope`, `/index.html`, `/docs` → 404 `application/json` `not_found`, `request_id: null`, with
+the headers). `pages.spec.ts` 5 (signed in: Analyze, History, Analysis details, Overview, System status: one h1 each,
+axe). axe added to `signed-out` (default) and `signin-errors` (field errors, invalid, denied). `locked.spec.ts` 1
+(5 wrong → 401 and the invalid banner each, ID kept, password cleared; 6th with `typeSecret()` → 429 `account_locked`,
+locked banner, no digit in it, focus on the h1, axe; `unlock` in `finally`). `outage.spec.ts` 1 (`stop api` → GET
+/api/session 503 `analysis_unavailable`, unavailable banner + Retry, axe; `ensureApiUp()` → Retry → 401, no alert,
+no Retry, form enabled; `ensureApiUp()` in `finally`). Sources: §4.8 CSRF and Lockout, §6, `api/session_guard.py`
+l.93–148, `deploy/nginx.conf`, Entry 134 live checks, HANDOFF l.186 and l.297.
+
+**Findings [verified]:**
+- **The outage takes 5 s to show.** With `api` stopped, nginx answers GET /api/session with 503 only after
+  `proxy_connect_timeout` (log: `"GET /api/session" 503 109 5.005`): the stopped container's address is silent, not
+  refused. Until then S1 shows "Checking your session…". The first run failed on the 5 s default expect timeout; the
+  spec now waits for that response (an event, no sleep). Not changed in `deploy/`: users see the same 5 s.
+- **nginx found the api again after `stop`/`start api`** in every run (Chromium, Firefox, CI dry run): the plan's
+  static-upstream risk (plan Q2) did not occur here.
+- **`wcag22a` tags no rule in axe-core 4.14.0** (node count of quoted tags in `axe.js`: `wcag2a` 62, `wcag2aa` 3,
+  `wcag21a` 1, `wcag21aa` 3, `wcag22a` 0, `wcag22aa` 1). Kept so the list matches HANDOFF l.297 (plan Q1).
+- **axe runs under the A13 CSP** in Chromium and Firefox (no `bypassCSP`; no CSP error).
+- **axe found no violation** in any S1 state or stub page, light or dark: no app change.
+- **The second restart guards a zero margin.** In the planted run without it, segment A's last POST was at 11:55:29
+  and B's six ran 11:55:39–41; the 10 s drained the bucket and the six fit the burst exactly, so the run stayed green.
+  One more POST, or a faster run, would trip nginx's limit; the restart keeps B independent of A's pace.
+
+**Guards:** `playwright.config.test.ts` 21 (was 13): the 6 projects and dependencies; every `e2e/*.spec.ts` in exactly
+one project per browser, `LAST` exact; no `bypassCSP` in `use` or any project; the filter matches 3 projects; budget:
+segments ≤ 6, plan 11/1, green exact (fewer, more, no 429, two 429s), green with 0 lines, failed ≤; axe findings keep
+only id/impact/target (a planted node HTML never appears), exact exclusion and stale exclusion; the tags; the header
+parser reads every `add_header` line and throws on an unreadable one. `eslint.config.test.ts` +5 (4 refused, 1
+allowed). `tests/web/test_web_scaffold.py` unchanged (CI unchanged; exact pins and lockfile root already guarded).
+
+**Planted failures (not committed):**
+1. Light `--muted` `#576476` → `#9AA9BC` (web image rebuilt): `[chromium]` 4 ✘ (`S1 default (light)`, `S1 field errors
+   (light)`, `S1 invalid (light)`, `S1 denied (light)`), each `"id": "color-contrast"`, `"impact": "serious"`, targets
+   `.signin-sub` and `.signin-help`; `4 failed, 2 did not run, 25 passed`; `sign-in POSTs through nginx: 5 (planned 11),
+   429: 0 (planned 1)`; exit 1. Vitest `tokens.test.ts` also: `× light: text --muted on --bg is at least 4.5:1` (+2),
+   `Tests 3 failed | 229 passed (232)`.
+2. The control expecting `403` with the allowed Origin: 3 ✘ (`DELETE /api/session`, `POST /api/analyses`, `PUT …/note`,
+   `Expected: 403`, `Received: 401`); `3 failed, 2 did not run, 26 passed`; exit 1.
+3. The second restart removed from `locked.spec.ts`:
+   - First attempt (`beforeAll(restartWeb)` commented out, before the start-time check): **did not fail**: `31 passed
+     (3.0m)`, `11 (planned 11), 429: 1 (planned 1)`, exit 0 (see the zero-margin finding). The budget rule itself is
+     proven by the unit tests (`2 sign-in POST(s) answered 429, more than the planned 1`).
+   - Second attempt (with the start-time check; only `await restartWeb()` commented out in the `beforeAll`): `✘ 30
+     [chromium-last] › e2e/locked.spec.ts:21:1 › 5 wrong passwords → …`, `Error: the web container restarted before the
+     lockout`, `expect(received).toBeGreaterThan(expected)`, `Expected: > 1793707829873`, `Received:   1793707829873`;
+     `1 failed, 30 passed (6.0m)`; `sign-in POSTs through nginx: 5 (planned 11), 429: 0 (planned 1)`; exit 1.
+Restored (web image rebuilt after 1): all green.
+
+**Size (lines added / removed):** harness and config (`web/e2e/support`, `run.ts`, teardown, `playwright.config.ts`,
+`eslint.config.js`, `package.json`) +147 / −24; specs +184 / −4; guards +102 / −22; CI 0; docs +136 / −9; lockfile +27.
+Total added without the lockfile 569, with it 596 (plan ≈ 520 / 545: denser guards and a longer entry); the restart
+check then added 29 lines of harness and spec and 21 of this entry.
+
+**Evidence [verified]:**
+- Baseline: `node --version` `v26.13.0`; `git log --oneline -1 origin/main` `880ec2b Merge pull request #96 …`.
+- `.venv/bin/python -m pytest -q` `1278 passed, 9 skipped` (unchanged).
+- `web/`: `npm run typecheck`, `npm run lint`, `npm test -- --run` (`Test Files 15 passed (15)`, `Tests 623 passed
+  (623)`, +13), `npm run build`, exit 0; `npm audit --omit=dev` `found 0 vulnerabilities`.
+- Live, local stack (Docker 28.5.2, Compose 2.40.3, images rebuilt from this branch): `npm run test:e2e` → `31 passed
+  (2.6m)`, `sign-in POSTs through nginx: 11 (planned 11), 429: 1 (planned 1)`, `secret scan: 0 matches in 2 files`, exit
+  0; `npm run test:e2e:firefox` → `31 passed (4.7m)`, the same counts, exit 0.
+- Independent grep with a chosen `VSD_E2E_PASSWORD` (Chromium, `31 passed (2.9m)`, exit 0): `grep -rlF` over
+  `test-results` and `playwright-report` → 0 files; the run's console log → 0; `grep -rlE 'vsd_session=[A-Za-z0-9_-]{43}'`
+  → 0 files; `vsd-e2e-` temp folders left → 0.
+- CI dry run on a fresh project: default stack stopped; `COMPOSE_PROJECT_NAME=vsd-ci`, a fresh `openssl rand -hex 32`
+  key; `docker compose -p vsd-ci up -d --build --wait --wait-timeout 240`; `npm ci`; `npx playwright install chromium`;
+  `npm run test:e2e` → `31 passed (2.9m)`, `11 (planned 11), 429: 1 (planned 1)`, scan clean, exit 0; `down -v`; default
+  stack started again. The GitHub job itself is not run (no push).
+- After the start-time check (one run, Chromium): `npm run test:e2e` → `31 passed (4.5m)`, `sign-in POSTs through
+  nginx: 11 (planned 11), 429: 1 (planned 1)`, `secret scan: 0 matches in 2 files`, exit 0. Run times on this machine
+  vary (2.6–6.0 min for the same 31 tests; `access denied` 10–23 s), so they are not compared between runs.
+- The outage spec waits on the 503 response itself (`page.waitForResponse` for GET /api/session, then status 503 and
+  code `analysis_unavailable`); `playwright.config.ts` sets no timeout, and `e2e/**` bans `setTimeout`,
+  `setInterval` and `waitForTimeout` by lint.
+- No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
+the checks. The plan was approved before the build; the open questions were taken at the plan's recommendations
+(Q1 keep `wcag22a`, Q5 tick 5a and list 5b as awaiting review). The team reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 137 — Stage 18 PR 6a: app shell, rail, drawer and page-change rules (2026-11-03)
+
+**What:** on `feat/stage18-shell` (Iheb, Part E; from `main` at `3963f5e`, PR #97, not stacked), following the
+approved plan. PR 6 is split (code over the ~330-line limit): **6a** (this PR) is the layout, rail, mobile top bar
+and drawer, skip link, landmarks and page-change rules; **6b** (rail footer: Analyst ID, theme control, sign-out, the
+`e2e-signout` account) gets its own plan and branches from `main` after 6a merges, never stacked. No `api/`,
+`deploy/`, `configs/` or CI change. Design sources: HANDOFF (H) and `analyst-console-prototype.html` (P) only.
+- `web/src/shell/Shell.tsx` + `Shell.css`, a layout route under `RequireSession` (the guard stays the only access
+  check; `/signin` and Checking never render it): skip link "Skip to main content", first focusable, focuses the h1
+  (H l.173, P l.450, l.1398); `header.topbar` (≤ 860 px: Menu with `aria-expanded`/`aria-controls="rail"`, New
+  analysis; H l.85, P l.805–806); `aside#rail "Main menu"` with the brand, New analysis (48 px, H l.245) and
+  `nav "Pages"`: Analyze, History, Overview, System status (H l.40, P l.811; `NavLink` sets `aria-current="page"`,
+  History stays current on details, P l.799; bar + bold, P l.137); an empty `rail-foot` (status line PR 7, footer
+  6b); `main#main > .wrap > Outlet` (H l.175). Drawer (H l.176, P l.403–411, 804–807, 1402–1403, 1480–1483): focus
+  to the first page link, top bar and main `inert`, Escape or scrim close and return focus to Menu; its open state is
+  the location key it was opened at, so any navigation, Back included, closes it (P l.757, 773); `useNarrow`
+  (`matchMedia('(max-width: 860px)')`, an event) keeps the page from being left inert when the window widens. New
+  analysis navigates to `/analyze`; the reset of the current analysis (P l.762) comes with PR 8.
+- `web/src/shell/PageChange.tsx`, rendered once in the root layout (`Root.tsx`), so the shell, S1 and Page not found
+  share one rule: a `useLayoutEffect` on `[location.key, pathname, navigationType, session]` (after the commit,
+  before paint, so the new page is never painted at the old scroll position). A page is on screen when an h1 is.
+
+| Trigger | Focus | Announcement (polite) | Title | Scroll |
+|---|---|---|---|---|
+| First page of a load, load-time redirects included | none | none | set | none |
+| Checking (no h1) | none | none | unchanged | none |
+| Another pathname by link, redirect (S1 → next) or Back/Forward | h1 (`preventScroll`) | "<Page> page" | set | top |
+| Back/Forward to `/history` | h1 | "History page" | set | untouched (PR 12) |
+| Query-only change, link to the current page | none | none | unchanged | none |
+| Expiry → `/signin` | S1 h1 | "Your session expired. Sign in again to continue." (P l.1385, polite: Q10) | set | top |
+
+  Names and titles `<name> · Voice Check analyst console` (P l.720, 789): Analyze a recording, History, Analysis
+  details, Overview, System status, Sign in, Page not found. The message goes into a new node of the live region
+  through a ref: the same text is announced again (details → details) with no timer (P l.659 used 40 ms) and no state
+  set in an effect.
+- Stubs: no `<main>` of their own (the shell owns it), `h1 tabIndex={-1}` (H l.70); Analyze's h1 is "Analyze a
+  recording" (P l.868). Checking and Page not found keep a plain `main` (`.plain`, the old placeholder rule).
+- Icons upload, plus, history, grid, server, menu (P l.663–672). ESLint: `src/shell/**` joins the timer ban and the
+  storage/console ban (the theme is stored by `theme.ts` only).
+
+**Decisions (Iheb, on the plan, 2026-11-03; user-reported):** Q1 **revision:** the earlier "theme control in the top
+bar" (2026-11-01) is revised to follow the design source. Analyst ID, theme control and sign-out go in the rail
+footer, inside the drawer on mobile: H l.85 and P l.150 have no desktop top bar (≤ 860 px: Menu and New analysis
+only, P l.805–806), P l.812–813 puts the analyst and Sign out in the rail footer, and api_design.md l.66 says "Rail
+sign-out". Q2 native `<select>` (P l.485). Q3 the rail status line, its "(mock)" tag from `/status.mock` and the
+degraded notice → PR 7 (one status store with S10). Q4 New analysis rendered, navigates to `/analyze`, reset in
+PR 8. Q5 no `next` after an explicit sign-out; expiry keeps it. Q6 a failed DELETE keeps the analyst signed in, with
+the plan's copy marked as a proposal. Q7 an Open item, below. Q8 username + "Analyst ID". Q9 "Analyze a recording"
+h1 and title, "System status" rail label. Q10 polite. Q11 6b from `main` after 6a merges, never stacked. Q5, Q6 and
+Q8 are built in 6b.
+
+**ui-ux-pro-max (review checklist only; no `--design-system`, no `--persist`):** skip link, focus on route change,
+`aria-current` + bar + bold, reduced motion (drawer transition off by `base.css`), no side scroll, decorative icons
+`aria-hidden`: applied. Focus ring in the rail and top bar `--nav-indicator`: 7.39 / 8.85:1 on `--nav`, 6.19 /
+7.01:1 on `--nav-2` (light / dark) [verified, WCAG 2.x formula]. `--nav-line` borders are 1.49 / 1.51:1, kept only
+on the text-labelled Menu button as in P l.409; 6b's select needs `--nav-muted` (7.33 / 7.53:1). "Confirm before
+logout" is not applied: §4.8 says sign-out asks for no confirmation, and D1 covers an unsaved note (PR 11).
+`100dvh` in place of the prototype's `100vh - 40px` (its own banner).
+
+**Size:** added lines (`git diff --numstat`): code +432, comments included (estimate 320, over by the comment density and the drawer edge cases); Vitest +492; e2e +114.
+
+**Tests [verified]:**
+- `cd web && npm run typecheck` → exit 0; `npm run lint` → 0 problems; `npx vitest --run` → `Test Files 17 passed
+  (17)`, `Tests 675 passed (675)` (was 628). New: `PageChange.test.tsx` 19 (first load ×5, StrictMode included;
+  links ×6, details → details in a new node, query-only, same page; Back/Forward, Back to History without scroll;
+  S1 → page; expiry), `Shell.test.tsx` 21 (landmarks, rail order and hrefs, empty footer, `aria-current` ×6, skip
+  link, wide Tab order, New analysis ×2, drawer ×8). `colours.test.ts` scans the three shell files; +6 lint tests.
+  jsdom applies `Shell.css` but not its media queries, so the narrow layout is checked in e2e.
+- `npm run build` → exit 0. `.venv/bin/python -m pytest -q` → `1278 passed, 9 skipped`.
+- Stack rebuilt from this branch: `npm run test:e2e` → `40 passed (2.6m)`, `sign-in POSTs through nginx: 11
+  (planned 11), 429: 1 (planned 1)`, `secret scan: 0 matches in 2 files`; `npm run test:e2e:firefox` → `40 passed
+  (5.2m)`, the same counts. New: `shell.spec.ts` 9 (first load; rail link, Back and Forward; New analysis; no side
+  scroll at 1440/1024/768/640/390; 390 px top bar, 44 px targets, drawer focus, `inert`, Escape, axe light and dark
+  with the drawer closed and open); `pages.spec.ts` now checks one `main`, the title and the current item. No sign-in
+  POST added: the budget stays 11 with one 429, as approved for 6a.
+- CI dry run: default stack stopped; `COMPOSE_PROJECT_NAME=vsd-ci`, a fresh `openssl rand -hex 32` key; `docker
+  compose -p vsd-ci up -d --build --wait --wait-timeout 240`; `npm ci`; `npx playwright install chromium`; `npm run
+  test:e2e` → `40 passed (3.4m)`, `11 (planned 11), 429: 1 (planned 1)`, scan clean (exit code not captured
+  separately); `down -v`; default stack started again. The GitHub job itself is not run (no push).
+- Planted failures (not committed, reverted): `h1.focus()` removed → 12 of 40 shell tests fail; `background: #13233A`
+  in `Shell.css` → `colours.test.ts` "/src/shell/Shell.css has no raw colour value" fails. Restored: 675 passed. The
+  sign-out plant belongs to 6b.
+- Live on :8001 through the e2e suite (real nginx, both browsers). **Not done:** a real screen-reader pass (H l.303),
+  still required.
+- Keyboard pass on localhost:8001 (user-run, signed in as analyst01, this branch's build): skip link is the first
+  Tab and Enter focuses the h1; Tab order skip → New analysis → Analyze → History → Overview → System status; a rail
+  click and Back move focus to the h1 and set the title; a reload does not move focus; at 390 px the top bar shows
+  Menu and New analysis, no horizontal scroll, Menu opens the drawer with focus on its first link, Escape closes it
+  and returns focus to Menu, a drawer link closes it and focuses the new h1; focus ring visible throughout.
+  Screen-reader pass (Orca) is due in PR 15.
+- No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
+the checks; ui-ux-pro-max was used as a read-only checklist. The plan was approved before the build, with the
+answers above. The team reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 138 — Stage 18 PR 6b: rail footer, theme control and sign-out (2026-11-03)
+
+**What:** on `feat/stage18-shell-signout` (Iheb, Part E; from `main` at `a16d8ef`, PR #98 merged, not stacked),
+following the approved 6b plan and the Entry 137 answers (Q1, Q2, Q5, Q6, Q8, Q11). No `api/`, `deploy/`, `configs/`
+or CI change: `DELETE /api/session` (204, 401 without a session, Origin required) already exists, and nginx limits
+only POST on `/api/session`. Design sources: HANDOFF (H) and `analyst-console-prototype.html` (P) only.
+- `web/src/session/session.ts`: `signedOut` gains the reason `'signOut'`. `markSignedOut()` (no caller but this path)
+  sets it; a 401 on load stays `'none'`. `signOut(): Promise<boolean>` sends `DELETE /api/session` through
+  `apiFetch`. Concurrent calls share one in-flight promise, so a double click sends one DELETE. 204 or any 401 →
+  `markSignedOut()`, true. Anything else (503, 5xx, 403, network, non-JSON) → state unchanged, false. It never
+  rejects. Generation guard: a transition during the DELETE wins, so an `expire()` from another request's 401 during
+  the DELETE ends on S1 "expired" with `next` (plan OQ1, kept as specified).
+- `web/src/routing/guard.tsx`: `reason 'signOut'` → `<Navigate to="/signin" replace />` with **no** `next`, so S1
+  shows the default variant. Expiry still keeps `next` (§9).
+- `web/src/shell/PageChange.tsx`: the move to `/signin` after a sign-out announces "Signed out." (P l.1496, polite),
+  with the usual h1 focus, title and scroll.
+- `web/src/shell/RailFoot.tsx` (new, in the rail, so it sits inside the drawer on mobile; H l.41, P l.144–149,
+  812–813):
+  - Identity: the username with the sub-label "Analyst ID".
+  - Theme: a native `<select>` labelled "Theme", with "Follow the system setting" / "Light" / "Dark" (P l.485). It
+    reads and writes through `theme.ts` only. System removes `data-theme`, and the CSS follows the OS live (no
+    listener).
+  - Sign out: no confirmation (§4.8). While busy it keeps the label, adds the spinner, and sets `disabled` and
+    `aria-busy` (H l.137). On failure the alert "Sign-out did not complete. You are still signed in. Try again."
+    (**copy proposal**, pending review) is re-keyed per failure, and focus returns to Sign out.
+- `Shell.css` (tokens only): the select border is `--nav-muted`, 7.33 / 7.53:1 (1.4.11). Sign out is `--target` (44
+  px, the 6a rule) rather than P's 40 px, and keeps the `--nav-line` border (text-labelled, like Menu; plan OQ3).
+  `.btn`, `.spin` and `.banner-err` still come from SignIn.css until PR 8.
+- Drafts: rule only. An explicit sign-out clears the `File` and note drafts in PR 8/11; expiry does not. No code
+  here.
+- Vitest setup (`web/src/test/setup.ts`, `setupFiles`): a `window.scrollTo` spy before each test, skipped in
+  node-environment files. "Not implemented: Window's scrollTo()" lines: 8 on `main`, 0 here. The PageChange scroll
+  assertions still pass.
+- Lint: no config change. `src/shell/**` and `src/session/**` already carry the timer and storage/console bans; one
+  new lint test names `RailFoot.tsx` and `session.ts`.
+- e2e:
+  - `signout.spec.ts` (main project): its own account `e2e-signout` (joins `ACCOUNTS`, so it is seeded and disabled
+    in teardown) in its own context, with 1 sign-in POST. A double click sends one DELETE, with `Origin
+    http://localhost:8001`, answered 204. Then: exactly `/signin`, the h1 focused, "Signed out.", the cookie gone; a
+    reload stays on S1 (401); the old cookie added back → `GET /api/session` 401; axe on S1. Cookie values stay in
+    memory and are asserted only as booleans.
+  - `signout-failed.spec.ts`: its own spec in the last project (after `outage.spec`, which is the signed-out S1
+    story), on e2e-main's saved state, 0 POSTs. The shell loads with the api up; then the api is stopped and Sign out
+    gets nginx's 503 `analysis_unavailable` with no `Set-Cookie`. The alert shows, Sign out is focused and enabled,
+    and the URL is unchanged. The api is started in `finally`.
+  - **How the plan proves e2e-main's session survived:** a reload once the api is back → `GET /api/session` 200 with
+    the same cookie, which is only possible if the DELETE never reached the API. The fixture now takes the storage
+    state for `<browser>-last` too.
+  - `theme.spec.ts`: Dark survives a reload (`data-theme="dark"`, the select shows Dark). System + `emulateMedia` dark
+    ↔ light changes the body background live. Axe on the shell with the footer, light and dark.
+- Budget: A = 6, B = 6, so a green run shows exactly 12 POSTs and one 429. **Segment A is now full, like B: any later
+  sign-in POST needs its own segment and a `restart web`.**
+
+**Size:** added lines (`git diff --numstat`, comments included): code +186 (estimate ≈ 175; the PR 6 plan said ≈ 165;
+the fixture fix and comments). Vitest +359 (estimate 260, over: the signOut matrix and RailFoot cases). e2e +169.
+
+**Tests [verified]:**
+- `cd web && npm run typecheck` → exit 0. `npm run lint` → 0 problems. `npx vitest --run` → `Test Files 18 passed
+  (18)`, `Tests 706 passed (706)` (was 675), with 0 "Not implemented" lines. `npm run build` → exit 0.
+  `.venv/bin/python -m pytest -q` → `1278 passed, 9 skipped`.
+- Stack rebuilt from this branch:
+  - `npm run test:e2e` → `45 passed (3.6m)`, `sign-in POSTs through nginx: 12 (planned 12), 429: 1 (planned 1)`,
+    `secret scan: 0 matches in 2 files`.
+  - `npm run test:e2e:firefox` → `45 passed (6.9m)`, the same counts.
+  - The first Chromium run failed `signout-failed.spec` (no storage state for `chromium-last`); `fixtures.ts` was
+    fixed before the runs above.
+- CI dry run: the default stack stopped, `COMPOSE_PROJECT_NAME=vsd-ci`, a fresh `openssl rand -hex 32` key, `up -d
+  --build --wait`, `npm ci`, `npx playwright install chromium`, `npm run test:e2e` → `45 passed (4.0m)`, `12 (planned
+  12), 429: 1`, scan clean. Then `down -v` and the default stack started again. The GitHub job itself is not run (no
+  push).
+- Planted failures (not committed, reverted; the web image rebuilt for each e2e plant and after):
+  1. `signOut()` signs out on a 503 → session.test "503 → still signed in, false" and the concurrent-call test fail,
+     and `signout-failed.spec` fails (no alert).
+  2. The guard keeps `next` after `'signOut'` → 3 Vitest cases fail (guard ×2, RailFoot success), and `signout.spec`
+     fails: `Received: "http://localhost:8001/signin?next=%2Fanalyze"`.
+  3. `color: #E2E9F2` in the footer CSS → `colours.test.ts` "/src/shell/Shell.css has no raw colour value" fails.
+  After the reverts: 706 passed.
+- Live check on localhost:8001 (user-run, signed in as analyst01, this branch's build): rail footer shows analyst01
+  / 'Analyst ID' / Theme / Sign out; Dark kept after a reload; System follows prefers-color-scheme live (DevTools
+  Rendering); Sign out from /history?verdict=a → /signin with no next, a reload stays on S1; with the api stopped,
+  Sign out → after ~5 s the alert, still in the shell; api started, a reload stays signed in (session survived); Tab
+  order Theme → Sign out with a visible focus ring, also inside the 390 px drawer. CI dry run on -p vsd-ci: 45
+  passed, 12/1, scan clean, exit 0.
+- **Not done:** a real screen-reader pass (Orca, PR 15) and a user-run keyboard pass on :8001 for the footer.
+- No audio, dataset or DEEP-VOICE path touched; no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
+the checks. The plan was approved before the build. The team reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 139 — Stage 18 PR 7a: status store and rail status line; required checks on main (2026-11-03)
+
+**What:** on `feat/stage18-status` (Iheb, Part E; from `main` at `fd034dd`, PR #99 merged, not stacked). PR 7 is split
+(answer OQ1): **7a** is the status store and the rail status line. **7b** (S10 with Check now) gets its own plan from
+`main` after 7a merges. No `api/`, `deploy/`, `configs/` or CI change. Design sources: HANDOFF (H) and
+`analyst-console-prototype.html` (P) only; ui-ux-pro-max as a review checklist only (no `--design-system`, no
+`--persist`).
+- **Required checks (Part E record):** `checks`, `web` and `e2e` made required on main (branch up to date, 1 approval,
+  no bypass) on 2026-11-03, after 4 green e2e PR runs (#96–#99); decided by Iheb. Required after 4 green runs
+  (#96–#99), a deliberate change by Iheb from the planned 5 (Entry 135 Open item). User-reported; settings not read
+  by the agent.
+- `web/src/status/status.ts` (new): the one store behind the rail line and S10, the session store's pattern
+  (module-level snapshot, `subscribe`/`getSnapshot`, `notify()` that isolates a throwing listener, a shared in-flight
+  request, a generation guard, no timers, no reset export). State `{ checking, result }`; the last result stays while
+  a new check runs (P l.1190). `checkStatus()` sends `GET /api/status` through `apiFetch` and never rejects:
+  - a valid 200 (`parseStatus`, field by field): `ready` → ready; `degraded` → **ready with a notice** and the parts
+    whose check is `unavailable` (team decision 2026-11-01); `unavailable` → unavailable from the service, with the
+    failing checks. Mock flag, versions, manifest and `deferral_on_fit` kept for S10. `timeSource: 'api'`, time =
+    `checked_at`.
+  - 500, 503, any other status, a malformed 200 or a network failure → unavailable, no answer, `timeSource:
+    'browser'` (answer OQ4: S10 will say "Last attempt" for it, "Last checked" only after a valid 200; 7b).
+  - 401: `apiFetch` already calls `expire()`. The store subscribes to the session and, once it is not `signedIn`,
+    forgets its result and drops a check in flight (the generation guard), so the next sign-in starts at Checking with
+    its own request.
+  - Called only from the shell's mount effect (signed in only, api_design §4.8; StrictMode's second run shares the
+    request) and, in 7b, S10's Check now. Never on a timer, focus or visibility; entering `/status` does not check
+    (P l.1180, l.1425).
+- `web/src/shell/RailStatus.tsx` (new), first in `.rail-foot` above the analyst (P l.812), so also in the drawer.
+  A link to `/status` that reads the store and never fetches. "Checking…" with the spinner until the first answer;
+  dot + "Ready for analysis"; alert + "Ready for analysis" + ", with a notice" (sr) when degraded (Q1); x +
+  "Unavailable". Visible "(mock)" when the API says mock (Q2). The name is the content, not an `aria-label`
+  ("Service status: Ready for analysis (mock)"), so it holds the visible text; P l.803's `aria-label` hid its
+  "(mock)". Not a live region. The text is one inline span with its spaces in text nodes, so the computed name keeps
+  them.
+- Tokens: `--nav-ok #3DBB6F`, `--nav-warn #E3A32C`, `--nav-err #F0857A` (P l.143's literal values, the same in both
+  themes), tested ≥ 3:1 on `--nav` and `--nav-2` in light and dark. `.svc` is `--target` high (P l.139 has 32 px; the
+  6a rule, H l.86). Icons `dot` and `x` added (P l.680, l.660–684).
+- Lint: the timer and storage/console bans now cover `src/status/**`, with lint tests.
+- Conflicts stated in the plan: H §13 is the verification report, not a time rule (the time format for 7b is P
+  l.644/650, browser zone with offset); P "Degraded" vs the team decision (decision wins, Q1); P "Checking…" button
+  vs H l.137 (H wins, Q3, 7b); P's `aria-label` (Q2); P's raw rail colours vs H l.93 (tokens).
+- Answers (Iheb, in the plan's question dialog, 2026-11-03): Q1 Ready + warn icon; Q2 visible "(mock)"; Q3 Check now
+  keeps its label (7b); Q4 no stale-status banner (Open item). OQ2 a second polite region on S10 (7b); OQ3 the three
+  S10 copy proposals → one Open item; OQ6 nothing else excluded.
+- **Degraded on the real stack:** not producible without an `api/` change. `derive_state` (`api/routers/status.py`)
+  never returns `degraded` and the MockAnalyzer is always ready; a database failure makes the session check answer
+  500 before `/status` runs. So the stack shows Ready (and, with S10 in 7b, no answer); Ready with a notice and
+  unavailable from the service are unit-only, with a stubbed `fetch`.
+- ui-ux-pro-max (review only): "contextual live badge updates" → the rail line is not live, a full phrase is
+  announced (7b); "disabled states" → H l.137 already matches; colour never alone, icons `aria-hidden` beside text,
+  44 px targets, tokens only. The "loading button" search came back off-topic (Back Button); no further match.
+- e2e `status.spec.ts` (main project, e2e-main's saved session, 0 sign-in POSTs): one `GET /api/status` on load, the
+  line matches the answer ("(mock)" exactly when `mock`), 44 px; five rail navigations, Back/Forward and the line
+  itself → still one request, a reload → two; axe light/dark on the rail wide and in the 390 px drawer. No outage
+  spec in 7a: without Check now, a re-check needs a reload, and with the api down that lands on S1 unavailable.
+  Budget unchanged: 12 POSTs, one 429.
+- Tests changed by the new request: SignIn (3 calls, the third `GET /api/status` with no body), guard (its only
+  fetches are the shell's `GET /api/status`), Shell (Tab order gains the status line; fetch stubbed).
+
+**Size:** added lines (`git diff --numstat` and new files, comments included): code +287 (estimate ≈ 220; over: the
+field-by-field body check, the session subscription and comments). Vitest +642 (estimate 455; the no-answer and
+session matrices). e2e +81 (estimate 55). Docs as in this commit.
+
+**Tests [verified]:**
+- `cd web && npm run typecheck` → exit 0. `npm run lint` → 0 problems. `npx vitest run` → `Test Files 20 passed (20)`,
+  `Tests 790 passed (790)` (was 706). `npm run build` → exit 0. `.venv/bin/pytest -q` → `1278 passed, 9 skipped`.
+- Stack rebuilt from this branch (`docker compose up -d --build --wait`):
+  - `npm run test:e2e` → `48 passed (5.1m)`, `sign-in POSTs through nginx: 12 (planned 12), 429: 1 (planned 1)`,
+    `secret scan: 0 matches in 2 files`, exit 0.
+  - `npm run test:e2e:firefox` → `48 passed (5.5m)`, the same counts, exit 0.
+- CI dry run: the default stack stopped, `COMPOSE_PROJECT_NAME=vsd-ci`, a fresh `openssl rand -hex 32` key, `up -d
+  --build --wait --wait-timeout 240`, `npm ci`, `npx playwright install chromium`, `npm run test:e2e` → `48 passed
+  (4.9m)`, `12 (planned 12), 429: 1`, scan clean, `exit 0`. Then `down -v` and the default stack started again. The
+  GitHub job itself is not run (no push).
+- Planted failures (not committed, reverted from a backup, full suite green after):
+  1. A 503 mapped to ready in `status.ts` → `status.test.ts` "503 analysis_unavailable (nginx, api down)" and "a
+     re-check keeps the previous result" fail (2 failed, 35 passed).
+  2. `RailStatus` calls `checkStatus()` in its own effect → RailStatus "rendered alone, it starts no check and sends
+     no request" and "the one check is the shell mount, not the line" fail. The Shell "one GET per shell mount" test
+     stays green: the line's call shares the shell's in-flight request, so the request count does not change; the
+     plan expected it to fail too.
+  3. `.svc-ready svg { color: #3DBB6F; }` in `Shell.css` → `colours.test.ts` "/src/shell/Shell.css has no raw colour
+     value" (and "scans the source files", which expects `var(--nav-ok)`) fail.
+- Live check on localhost:8001 (user-run, signed in as analyst01, this branch's build): the rail footer shows 'Ready
+  for analysis (mock)' above analyst01 and links to /status; a reload makes exactly one GET /api/status (200);
+  navigating History → Overview → Analyze and Back makes none; the line is in the 390 px drawer; focus ring visible and
+  the line ≥ 44 px at 390 px.
+- **Not done:** a real screen-reader pass (Orca, PR 15). No DEEP-VOICE path, audio or dataset touched; no secret in
+  the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
+the checks. The plan and the 7a scope were approved before the build. The team reviews the diff. Context7 was not
+used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 140 — Stage 18 PR 7b: S10 System status page (2026-11-03)
+
+**What:** on `feat/stage18-status-page` (Iheb, Part E; from `main` at `f6324fb`, PR #100 merged, not stacked). The
+second half of PR 7 (Entry 139): S10 replaces the `/status` stub. No `api/`, `deploy/`, `configs/` or CI change.
+Design sources: HANDOFF (H) and `analyst-console-prototype.html` (P) only. Built from the approved plan; its five
+open questions were approved with the plan's recommendations (below), not answered one by one.
+- `web/src/pages/statusView.ts` (new): the copy for each store state, pure (the `signInOutcome.ts` pattern).
+  Checking… (P l.1190; "The previous status stays valid…" only when there is one); Ready for analysis; Ready with a
+  notice (degraded, team decision 2026-11-01): the warn summary and a `.banner-warn` notice with no role (H l.143)
+  naming the failing checks, plus the open-decision-7 line; Unavailable from the service, its text naming the
+  failing checks; Unavailable with no answer (P l.691). Items Connection / Analysis / History and statistics from
+  the body's checks (the browser derives nothing); the Analysis item ignores upload limits (`/limits` is PR 8).
+- `web/src/pages/Status.tsx`: head (h1, sub, "Mock status values" tag when the result says mock; none without an
+  answer), the time and Check now, summary (no `role`, `aria-busy` while checking), "What is checked" (icon + pill
+  text, icons `aria-hidden`), Technical details in a closed `<details>` (versions, `deferral_on_fit`, manifest
+  SHA-256 or "Not available until the bundle is frozen."), not rendered without an answer.
+- `web/src/status/checkedAt.ts` (new): `formatCheckedAt`, P l.644's options, browser zone, absolute; a non-date is
+  shown as given (P l.649). "Last checked" only when `timeSource` is `api` (a valid 200, unavailable from the
+  service included); "Last attempt" for `browser` (no answer).
+- Check now: refresh icon; busy keeps the label "Check now" (H l.137) with the spinner, `disabled`, `aria-busy`;
+  44 px at ≤ 640 px. One request: the button is disabled while the store checks, and the store shares its in-flight
+  request. Entering `/status` does not check (P l.1180): the shell's mount check is the only other one.
+- Announcement: "Status checked: <label>." (", with a notice" when degraded, like the rail's sr text) in a second
+  polite region local to S10 (`#status-announcer`), as a new node, no timer. **Change from the plan:** the plan had
+  the click handler write it after `await checkStatus()`; built, the press arms a ref and an effect writes it after
+  React's commit, because the store's notify and React's re-render are not ordered for the handler (the button
+  could still be disabled when focus returns). Only a press arms it, so a mount, a re-render or the shell's check
+  never announce (tests below). Focus returns to the button when it is on the button or `body` (Chromium drops focus
+  from a disabled button), never from elsewhere.
+- `Status.css` (new): P's status, panel, tag, quiet/small button, disclosure, key-value, warning and decision styles,
+  tokens only; `.check-*` where P says `.svc-*` (Shell.css owns `.svc-*`). `.btn`/`.spin` come from `SignIn.css`
+  (one bundle), as in 7a. Icons `check`, `refresh`, `decision` added (P l.670, 676, 681).
+- Lint: `src/pages/Status*` and `statusView*` join the timer and storage/console bans (tests exempt), with lint tests.
+- Plan questions, approved with the plan: (1) Technical details omit P's "Verified at startup (mock)" and "Bundle"
+  row: `/api/status` reports neither. (2) Connection on no answer: "Unreachable", "This console cannot reach the
+  analysis service." (P's "Check your network connection." is wrong for nginx's 503). (3) A failing check is
+  "Unavailable" (err), not P's "Partly unavailable": the checks are binary. (4) Degraded announcement as above.
+  (5) First-load Checking copy as above. The open-decision line keeps P l.1192's first sentence; its second ("The
+  prototype shows it when…") becomes "The service reports it; this console shows it as Ready for analysis with a
+  notice." (proposal).
+- Not built (named): the "Audio and stored data" panel (P l.1202–1205, `/limits.audio_deletion`, PR 8); the Analyze
+  limits Mock tag (PR 8); the stale-status banner (Open item); open decision 7; polling; toasts.
+- e2e: `status.spec.ts` (main project) gains S10 Ready (mock tag exactly when `mock`, the three pills, "Last checked"
+  equal to the body's `checked_at` formatted in Africa/Tunis, details closed then open with the body's values, axe
+  light/dark both ways), Check now with a held route (label kept, disabled, `aria-busy`, spinner, Checking… → Ready,
+  focus back, the announcement, 2 GETs in all) and a double click (one more GET; ≥ 44 px at 390 px).
+  `status-outage.spec.ts` (new, last project, after locked → outage → signout-failed, each restoring the api in
+  `finally`): load `/status` → Ready; api stopped → Check now → nginx 503 → Unavailable, Unreachable / Unavailable /
+  Unavailable, "Last attempt … GMT+1", no "Last checked", no details, no mock tag, announced, focus back, the rail
+  line "Service status: Unavailable", still `/status` in the shell; axe; api started in `finally` → Check now → 200
+  → Ready, "Last checked". 0 sign-in POSTs; budget unchanged: 12, one 429.
+
+**Size:** added lines (`git diff --numstat` and new files, comments included): code +407 (estimate ≈ 283, ceiling
+~330; over: `Status.css` 97 (est. 60), the prototype's panel, tag, button, disclosure and key-value styles not yet
+shared, and the 640 px block; `Status.tsx` 146 (est. 110) and `statusView.ts` 126 (est. 85), header comments and the
+proposal notes). Vitest +594 (estimate 495). e2e +171 (estimate 142). Docs as in this commit.
+
+**Tests [verified]:**
+- `cd web && npm run typecheck` → exit 0. `npm run lint` → 0 problems. `npx vitest run` → `Test Files 24 passed (24)`,
+  `Tests 836 passed (836)` (was 790). `npm run build` → exit 0. `.venv/bin/pytest -q` → `1278 passed, 9 skipped`.
+- Stack rebuilt from this branch (`docker compose up -d --build --wait`):
+  - `npm run test:e2e` → `52 passed (6.0m)`, `sign-in POSTs through nginx: 12 (planned 12), 429: 1 (planned 1)`,
+    `secret scan: 0 matches in 2 files`, exit 0.
+  - `npm run test:e2e:firefox` → `52 passed (7.8m)`, the same counts, exit 0.
+- CI dry run: the default stack stopped, `COMPOSE_PROJECT_NAME=vsd-ci`, a fresh `openssl rand -hex 32` key, `up -d
+  --build --wait --wait-timeout 240`, `npm ci`, `npx playwright install chromium`, `npm run test:e2e` → `52 passed
+  (6.2m)`, `12 (planned 12), 429: 1`, scan clean, `exit 0`. Then `down -v` and the default stack rebuilt from the
+  reverted source. The GitHub job itself is not run (no push).
+- Planted failures (not committed, reverted from a backup, full suite green after):
+  1. `armed = useRef(true)` (announce on mount) → Status.check "only after Check now finishes…" and "a check started
+     elsewhere does not announce" and Status "mounting starts no check…" and "a store change from elsewhere…" fail
+     (4 failed, 32 passed).
+  2. `timeLabel` gives "Last checked" for `timeSource: 'browser'` → 6 Vitest tests fail (statusView `timeLabel`,
+     Status "no answer: … Last attempt", "a re-check … keeps the previous time label", Status.check "no answer →
+     Unavailable with Last attempt" and two that find "Last attempt"); with the web image rebuilt, `npm run test:e2e`
+     → `status-outage.spec.ts` fails (`Received string: "Last checked 3 Nov 2026, 18:33 GMT+1"`), 51 passed, exit 1.
+  3. `.sp-ok { color: #1F7A45; }` in `Status.css` → `colours.test.ts` "/src/pages/Status.css has no raw colour
+     value" fails (1 failed, 37 passed).
+- Live check on localhost:8001 (user-run, signed in as analyst01, this branch's build): S10 Ready with 'Mock status
+  values' and 'Last checked'; Technical details opens and closes; Check now keeps its label, shows a spinner, is
+  disabled, then focus returns to it; api stopped → Check now → after ~5 s Unavailable, Connection 'Unreachable',
+  'Last attempt', rail line Unavailable, still in the shell; api started → Check now → Ready and 'Last checked'.
+- **Not done:** a real screen-reader pass (Orca, PR 15). No DEEP-VOICE path, audio or dataset touched; no secret in
+  the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran
+the checks. The plan was approved before the build. The team reviews the diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 141 — Stage 18 PR 8a: shared Button, TextField, Banner and Spinner (2026-11-03)
+
+**What:** on `feat/stage18-shared-components` (Iheb, Part E; from `main` at `13e7b84`, PR #101 merged, not stacked).
+PR 8 is split in four sequential PRs (user decision on the plan, 2026-11-03): 8a components; 8b File draft store,
+pre-upload checks, New analysis reset; 8c `/limits`, S2, the Mock tag, the S10 "Audio and stored data" panel; 8d S3.
+8a extracts the components deferred in PR 4 (Entry 134 Q6; H l.137, 138, 143, 149) into `web/src/components/` and
+moves S1, S10 and the shell's New analysis onto them. No `api/`, `deploy/`, `configs/` or CI change. Design sources:
+HANDOFF (H) and `analyst-console-prototype.html` (P) only.
+- `Button`: a native `<button>`, variants primary / secondary / quiet / destructive (`btn-danger`) / link, sizes md /
+  sm, `type` "button" unless given. Busy sets `disabled` and `aria-busy` and shows the spinner in place of the icon;
+  the label comes from the caller (S1's "Signing in…" / "Checking…", Entry 134 Q4b; S10 keeps "Check now"). Every
+  busy call site already set `aria-busy` (SignIn.tsx l.146, l.203; Status.tsx l.79), so the markup is unchanged.
+- `TextField`: label, input, `<id>-err` with the alert icon S1 already had, `aria-invalid`, `aria-describedby` (an
+  error replaces `describedBy`, S1's `si-banner`; a hint comes first), and an action slot inside the input (S1's
+  Show/Hide). No `type` unless given; no font size (base.css `--fs-input`, B4). Hover uses `:where(:not([disabled]))`
+  so it keeps 0,2,0 and `:focus` / `[aria-invalid]` still win, as before.
+- `Banner`: info / warn / err, icon required, the role given by the caller with no default (H l.143), so S1's alert
+  and status and S10's notice without a role announce as before. `Spinner`: `span.spin aria-hidden`.
+- CSS moved: `.btn*`, `.spin`, `.banner-err/-info`, `.field`, `.input`, `.field-err`, `.pw` out of SignIn.css;
+  `.btn-quiet`, `.btn-sm`, `.banner-warn` out of Status.css (`.decision` stays: S10 uses it). SignIn.css keeps S1's
+  layout with `.signin-card .btn-secondary { align-self: flex-start; }`. RailFoot is unchanged; its `.spin` and
+  `.banner-err` now come from Spinner.css and Banner.css. `src/components/**` joins the timer and storage/console
+  lint bans. `SignIn.css.test.ts` moved to `components/TextField.css.test.ts`; colours.test.ts scans the new files,
+  and its two sanity checks now find `--err-bg` in Banner.css.
+- **One declared visual change [verified]:** S10's Check now was a 44 px button with 16 px padding, 15 px text and a
+  transparent border, because SignIn.css's `.btn` came after Status.css's `.btn-sm` / `.btn-quiet` in the single CSS
+  bundle (byte offsets 25675 vs 17524 in `index-CN7_3JgQ.css`; measured in Chromium on a main build). Button.css puts
+  `.btn` first, so it is now P's quiet sm: 36 px (44 px at ≤ 640 px), 12 px padding, 13 px text, a `--line-strong`
+  border. No other element changes: of the btn-* users, only Check now has a rule that came before `.btn` (`git grep
+  -n -E "btn-(quiet|sm|secondary|primary|danger|link|out)" web/src`); New analysis is styled by 0,2,0 context rules,
+  Sign out has no `.btn`. User decision: fix in 8a, declared.
+- Bundle [verified]: no `React.lazy` or `import()`; one CSS file before (`index-CN7_3JgQ.css`) and after
+  (`index-D2mJDoo7.css`), linked from `index.html`, so every rule loads before any route renders.
+- Plan decisions (user, 2026-11-03): Q1 New analysis included; Q2 `.btn-secondary:active` (P l.112) deferred, Open
+  item; Q3 four PRs; Q4 (8b) a different username after expiry clears the File draft, the same username keeps it.
+  **Open, for 8b-8d:** Q5 RailFoot's alert onto Banner (adds an icon); Q6 the Mock tag source (`/limits` has no
+  `mock`: static until open decision 2, `/status.mock`, or a contract change); Q7 picking a file between 8c and 8d
+  shows nothing, or Choose recording stays disabled until 8d; Q8 the S10 panel copy vs `audio_deletion`, and P's
+  "Upload limits could not be loaded" in S10's Analysis item vs Entry 140; Q9 the duration read's 3 s timer vs the
+  pages' timer ban; Q10 H l.280 "component state only" vs A23's module store (8b assumes A23).
+- Findings for later PRs: no 413/415/422 → input-kind mapping exists in the client yet (S5, PR 10); `GET /api/limits`
+  has exactly the four config fields, no `mock` (`test_limits_have_exactly_the_section_4_2_fields`).
+
+**Size:** added lines (`git diff --numstat` and new files, comments included): code +289 / −159 (estimate ≈ 255,
+ceiling ~330); tests +329 / −4 (estimate ≈ 360). Docs as in this commit.
+
+**Tests [verified]:**
+- `cd web && npm run typecheck` → exit 0. `npm run lint` → exit 0. `npx vitest run` → `Test Files 29 passed (29)`,
+  `Tests 881 passed (881)` (was 836; +45: Button 14, Button.css 3, TextField 8, TextField.css +1, Banner 8, Spinner
+  1, colours +8, lint 2). `npm run build` → exit 0. `.venv/bin/pytest -q` → `1278 passed, 9 skipped`.
+- Stack rebuilt from this branch (`docker compose up -d --build --wait`): `npm run test:e2e` → `52 passed (3.5m)`,
+  `sign-in POSTs through nginx: 12 (planned 12), 429: 1 (planned 1)`, `secret scan: 0 matches in 2 files`, exit 0;
+  `npm run test:e2e:firefox` → `52 passed (4.8m)`, the same counts, exit 0.
+- DOM and computed-style diff, dry run (agent-run on `vite preview` of a main build and of this branch, not :8001;
+  scratch files in `/tmp/pr8a-verify`, outside the repo; every `/api` call answered in the browser): 258 keys (S1 8
+  states, S10 ready / checking / degraded with `.decision`, New analysis in the rail and top bar, Menu, RailFoot at
+  /analyze rest / failed / busy; 375 and 1280 px, light and dark; rest, hover, keyboard focus). `diff.mjs` → `258
+  keys, 20 differ`, all `S10 … checkNow` (rest, hover, focus, busy, its spinner) on border colours, font size, line
+  height, padding, min-height and height (1280), width and rect; **no DOM difference**. A first run also showed ±1 px
+  rects on rotating spinners (an angle effect); the spec now pauses animations at 0 before measuring.
+  `check-css.mjs` → one CSS file, `.btn{` before `.btn-sm{`, `.btn-quiet{`, `.page-head{`, `.skip{`, `.signin{`;
+  `ALL OK`.
+- Comparison on :8001 (user-run, 2026-11-03): snap 12/12 on main (image e70722b4) and branch (image b9935254);
+  diff.mjs → 258 keys, 20 differ, all S10 checkNow (rest/hover/focus/busy/spin × 375/1280 × light/dark): padding
+  16→12 px, font 15→13 px, border transparent → --line-strong (rgb(124,143,166) light / rgb(82,114,159) dark), height
+  44→36 px at 1280 and 44 px kept at 375; DOM diff empty. check-css.mjs → one CSS file (index-D2mJDoo7.css), all
+  order checks ok, ALL OK; @keyframes spin present.
+- Planted failures (not committed, reverted from a backup, full suite green after, 881): (1) `aria-busy` dropped from
+  Button → 6 failed (Button busy; SignIn Retry ×2 and submit loading; Status.check busy; Status checking); (2)
+  `.btn-sm` before `.btn` in Button.css → Button.css "`.btn` comes before…" fails; (3) `.btn-sm` 40px → Button.css
+  "above 640 px .btn-sm is 36 px high" fails.
+- **Not done:** a real screen-reader pass (Orca, PR 15). No DEEP-VOICE path, audio or dataset touched; no secret in
+  the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests, the scratch checks and this
+entry, and ran the checks. The plan was approved before the build (three review rounds). The team reviews the
+diff. Context7 was not used.
+
+**Gate:** team review of this PR. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 142 — Execution Plan v2.2 draft for team review (2026-11-03)
+
+- **Owner:** Khalil Dridi.
+- **Change:** Added editable Markdown and PDF under `docs/reference/`. The draft summarizes approved decisions and Stage 17/18 progress through PR #102. Team adoption is pending.
+- **Verification:** Visually reviewed the regenerated 12-page PDF and matched its embedded Markdown SHA-256.
+- **AI assistance:** Codex helped draft the plan and verify the PDF. Team review is tracked in [PR #103](https://github.com/kahlanzzi/voice-spoofing-detection/pull/103).
+
+---
+
+
+### Entry 143 — Stage 18 PR 8b: File draft store, pre-upload checks, New analysis reset (2026-11-04)
+
+**What:** on `feat/stage18-file-draft` (Iheb, Part E; from `main` at `c35de88`, not stacked). No UI screen; no `api/`,
+`deploy/`, `configs/` or CI change; no new dependency. Design sources: HANDOFF (H) and
+`analyst-console-prototype.html` (P) only.
+- `web/src/upload/fileDraft.ts` (A23): the `File` and its owner, in memory only. An explicit sign-out clears it;
+  expiry, `unavailable` and `signedOut('none')` keep it; a sign-in with another username clears it (Entry 141 Q4).
+  It subscribes to the session, which never imports it, so there is no circular import (as `status.ts`).
+- `web/src/upload/checks.ts`: `runChecks` matches P l.898-913, with limits from `LimitsResponse`. Departures, each so
+  the client never accepts what the server refuses: `fileExtension` follows `api/intake.py:149`, because P l.900
+  accepts `wav` and `.wav`, which the server refuses; a duration of 0 fails (Q13).
+- New analysis clears the draft. On /analyze it replaces the entry and repeats the page-change rules (P l.755-759):
+  focus on the h1, scroll to the top, "Analyze a recording page", and on a narrow screen the drawer closes.
+- Fix of P l.657, not a copy change: `formatDuration` rounds before splitting at 60 s and over, so 119.6 s reads
+  "2 min 0 s", not "1 min 60 s" (Q18).
+- `src/upload/**` joins the timer and storage/console lint bans. H l.280 now says module store (Q10).
+- Plan decisions (user, 2026-11-04): Q10 H l.280 now says module store (A23); Q11 a no-extension file gets new text, a
+  copy proposal for team review; Q12 the client refuses `..wav` on both Python versions; Q13 duration 0 fails with P's
+  Empty text; Q14 an expiry during the DELETE keeps the File, pinned by a test; Q15 PR 10 sends `upload.<ext>`; Q16
+  the same-page restart uses a constant in `location.state`; Q17 `src/upload/**` is under the timer ban, Q9 stays open
+  for 8d; Q18 above.
+- Q19: one baseline run on `main` at `c35de88` failed 1 of 881; its output was cut, so the test is unknown. 17 other
+  runs passed, including a 10-run hunt (10/10). Not reproduced, cause unknown; full logs kept on every 8b run.
+
+**Size:** added lines (`git diff --numstat` and new files, comments included): code +220 / −15 (estimate ≈ 193,
+ceiling ~330); tests +702 (estimate ≈ 509: the `it.each` tables and the extra matrix cases). Docs as in this commit.
+
+**Tests [verified]:**
+- `cd web && npm run typecheck` → exit 0. `npm run lint` → exit 0. `npm run build` → exit 0. Final Vitest result:
+  `1002 passed (1002)`, 31 files (was 881, +121, estimate +75: `it.each` rows count singly); user-run at `003df56` and
+  HEAD, identical test names. `.venv/bin/pytest -q` → `1278 passed, 9 skipped`.
+- Planted failures (agent-run, one at a time, restored, checksum equal after; `src/upload`, `src/shell` and the lint
+  tests, 264 in all): expiry clears → 6 failed; no username branch → 6; session subscription inert → 11; size at the
+  limit rejected → 2; duration at the limit rejected → 2; P's `split('.').pop()` → 8; unreadable fails → 3; duration 0
+  passes → 1; Shell does not clear → 3; Shell drops `replace` → 1; PageChange ignores the restart → 4; no key guard →
+  1; `src/upload/**` out of the lint bans → 7.
+- e2e (user-run, 2026-11-04, on the 8b build, web image `d32f8e95`): Chromium `52 passed`, Firefox `52 passed`;
+  `sign-in POSTs through nginx: 12 (planned 12), 429: 1 (planned 1)`; secret scan 0 matches.
+- Live check on :8001 (Iheb, 2026-11-04, same build): New analysis from History → /analyze, and Back returns to
+  History; on /analyze, New analysis keeps `history.length`, focus on the h1, scroll to the top; at ≤ 860 px the
+  drawer's New analysis closes the drawer and focuses the h1. The draft clearing itself is not visible until 8c/8d
+  (unit-tested).
+- Q19 flake hunt on `main` (`c35de88`): 10/10 runs `881 passed (881)`, no failure; on 8b: 1002 passed at `003df56` and
+  at HEAD (user-run). The earlier agent-run 1000-test runs (11:42-11:43) were not a different test set: no test file
+  changed after 11:38:41. `colours.test.ts` makes one test per source file through `import.meta.glob`, and Vitest's
+  module cache (`node_modules/.vitest-cache`) kept an older glob. The two tests are `/src/upload/checks.ts has no raw
+  colour value` and `/src/upload/fileDraft.ts has no raw colour value`. Cache effect reproduced with a throwaway
+  source file: unseen with the cache, seen with `--experimental.fsModuleCache=false`. The old logs hold no test names.
+  Logs kept in `/tmp`.
+- **Not done:** a real screen-reader pass (Orca, PR 15). No DEEP-VOICE path, audio or dataset touched; no secret in
+  the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the files, the tests and this entry, and ran the
+checks. The plan was approved before the build (two review rounds). The team reviews the diff. Context7 was not used.
+
+**Gate:** review of this PR by Donia. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+
+### Entry 144 — Stage 18: colour scan independent of Vitest's module cache (2026-11-04)
+
+**What:** on `fix/stage18-vitest-cache` (Iheb, Part E; from `main` at `1470254`). Test file only; no `api/`, `deploy/`,
+`configs/`, CI or app change, so no e2e.
+- Cause [verified]: Vitest 5.0.5's `fsModuleCache` is on by default (`node_modules/.vitest-cache`) and skips files
+  holding the plain glob call by string match (`cli-api` `generateCachePath`). `colours.test.ts` had a type argument
+  on that call, so the match missed and its file list was cached, keyed on the test file's own content. New source
+  files went unscanned on a warm cache. The online docs were not checked (Context7: invalid API key).
+- Fix: no type argument on the call, and `scans every source file on disk` compares the list with a fresh listing.
+- **Correction to Entry 143:** the 1000-test runs lacked two tests, so "were not a different test set" was wrong. The
+  cache explanation there stands, and is now shown: warming a cache at `c35de88` and stepping to `003df56` gives 1000
+  twice, against 1002 with the cache off, the difference being exactly `/src/upload/checks.ts has no raw colour value`
+  and `/src/upload/fileDraft.ts has no raw colour value`. The logs in `/tmp` hold no test names, so this comes from the
+  replay, not from them. What refreshed the cache after 11:43 is not established.
+- Q19: likely, unproven. `SignIn.test.tsx:384` (`expected "vi.fn()" to be called 3 times, but got 2 times`) failed in 2
+  of 7 empty-cache runs and in no warm run. The Q19 failure was also one test on a first run, but its name was lost.
+  The mechanism (the assertion races the shell's status fetch) is a [hypothesis]. Not fixed here: Open item.
+
+**Size:** `web/src/styles/colours.test.ts` +19 / −2 (estimate +19 / −2), test file only. Docs as in this commit.
+
+**Tests [verified]:**
+- Reproduction with its own cache directory, on the real tree. Before (`1470254`): warm-up 48; cache on + dummy source
+  file 48, no dummy row; cache off + dummy 49, dummy row. After: warm-up 49; cache on + dummy 50, dummy row; cache off +
+  dummy 50, dummy row; failed 0 in each.
+- `cd web && npm run typecheck` → exit 0. `npm run lint` → exit 0. `npx vitest run` × 3 → `Test Files 31 passed (31)`,
+  `Tests 1003 passed (1003)` each (was 1002; +1, the new test). `.venv/bin/pytest -q` → `1278 passed, 9 skipped`.
+- Planted failure (not committed, restored): type argument back, dummy file on a warm cache → 49, `failed 1`, no dummy
+  row: the new test fails.
+- No DEEP-VOICE path, audio or dataset touched; no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) found the cause, wrote the change, the tests and this entry, and
+ran the checks. The team reviews the diff. Context7 was tried and failed (invalid API key).
+
+**Gate:** review of this PR by Donia. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 145 — Stage 18 PR A: limits store, S2, S3 and the duration read (2026-11-04)
+
+**What:** on `feat/stage18-upload` (Iheb, Part E; from `main` at `898b7c6`, not stacked). 8c-1, 8c-2 and 8d merged into this
+one PR for the MVP (deadline 2026-11-07 23:59). The team agreed on the mock analyzer. `/analyze` is real up to the point of
+sending: Analyze recording stays disabled until PR B. No `api/` or `configs/` change; no new dependency. Design sources:
+HANDOFF (H) and `analyst-console-prototype.html` (P) only.
+- **MVP process exception, proposed to Donia.** Kept: required CI checks, pytest and Vitest green, token grep, Donia's review,
+  log entry and CHANGELOG per PR, quick live check. Changed: ~330-line limit lifted, one plan-review round, local Firefox e2e
+  once before the demo, no CI dry runs or computed-style comparisons.
+- `web/src/upload/limits.ts` (`status.ts` pattern). Q20: one GET per signed-in session of the shell. StrictMode's double mount,
+  navigation and a remount add none; sign-out or expiry then sign-in sends one more; failed waits for Retry. Pinned on the real
+  stores in `Shell.limits.test.tsx`, because `Shell.test.tsx`'s session stand-in never changes.
+- S2: page head, notice, limits loading / ready / failed, privacy text, one hidden input, Choose recording. S3: file card,
+  checks, Input error alert, Choose another file, Remove file. `.tag`, `.page-head`, `.panel` moved to `styles/page.css` (Q25).
+- **CSP change to A13: `media-src 'self' blob:`, approved by Donia, 2026-11-04, before build.** Her PR review confirms it against
+  the diff (own commit). `default-src 'self'` does not cover `blob:`, so the read failed and every file read as "Duration could
+  not be read", quietly, since unreadable counts as valid. It covers audio and video elements only, adds no network origin,
+  and leaves scripts at `'self'`. The value lives only in `deploy/nginx_security_headers.conf`, which all 10 nginx locations
+  include; `index.html` and Vite set no CSP. Probe on the live stack with P's read [verified]:
+
+  | Browser | CSP | Valid 1 s WAV | Garbage bytes |
+  |---|---|---|---|
+  | Chromium | live header | `error` code 4, 6 ms, CSP message | `error` |
+  | Chromium | + `media-src 'self' blob:` | `loadedmetadata`, duration 1, 149 ms | `error`, 18 ms |
+  | Firefox | live header | `error` code 4, 6 ms, CSP message | `error` |
+  | Firefox | + `media-src 'self' blob:` | `loadedmetadata`, duration 1, 8 ms | `error`, 3 ms |
+
+- Plan decisions (user, 2026-11-04): Q6a static Mock tag, tied to open decision 2. **Q7 accepted:** picking a file between 8c and
+  8d shows nothing, rather than keeping Choose recording disabled until 8d. Q8 deferred to after the MVP. Q9 one 3 s fallback timer
+  (P l.1294) behind a single `eslint-disable-next-line`: it is one-shot, not polling, and a false `unreadable` is safe because the
+  service re-checks, while no timer could leave Analyze disabled for good. Q20 above. Q21 Check now does not reload the limits and
+  S10 has no limits Retry. Q22 `role="alert"` only. Q23 no Demo scenarios panel. Q25 above.
+- P departures: the S2 h2 "Choose the recorded segment" and line "Browse for it on your computer." replace "Drop the recorded
+  segment here", since drag-and-drop is out (copy proposal); the announcement waits for the read, because P l.1281 fires first
+  and says "Some checks did not pass" for a good file; Retry moves focus to the heading. Declared visual change: S10's Mock tag
+  takes P's 1 px transparent border, +2 px.
+- **Known gap (Q8):** with failed limits, S2 says analysis is off while the rail and S10 still say Ready.
+- **Flaky test:** `SignIn.test.tsx:384`, the known flake, had its expected count changed 3 → 4, because the shell now also sends
+  `GET /api/limits`. The race itself is unchanged and the Open item stays.
+
+**Size:** added lines (`git diff --numstat`, comments included): code +651 / −35 (estimate ≈ 563); tests +1031 / −6 (estimate ≈ 941).
+Over the estimate, and the ~330-line limit is lifted (exception above). Docs as in this commit.
+
+**Tests [verified]:**
+- `npm run typecheck` → exit 0. `npm run lint` → exit 0. `npm run build` → exit 0. Vitest: `Test Files 35 passed (35)`, `Tests 1107
+  passed (1107)` (was 1003; +104). `.venv/bin/pytest -q` → `1278 passed, 9 skipped`.
+- Two Vitest tests stop short of the real thing, both accepted by the user, who checks them in the live check: the focus test uses
+  `fireEvent`, because `userEvent.upload` refocuses the input after its stand-in dialog, so a real picker closing is not covered;
+  "sign-out clears S3" runs on a session stand-in.
+- Planted failures (agent-run, one at a time, restored; `src/upload`, `src/shell`, `Analyze.test.tsx`, 275 tests): no `inFlight` share
+  → 2 failed; loads from ready → 2; no generation check → 1; no session subscription → 7; 401 as failed → 1; upper-case formats → 1;
+  Shell without `loadLimits` → 3; no timer → 2; no URL revoke → 4; announcement ignores the wait → 1; Analyze enabled when valid → 1.
+  CSP line reverted → `tests/deploy` 2 failed.
+- Chain (user-run, at `93ce679`, tree clean, from the repo root, empty cache after `npm ci`): typecheck, lint, build clean; Vitest `Test
+  Files 35 passed (35)`, `Tests 1107 passed (1107)`, exit 0, no re-run needed; `npm audit --omit=dev`: 0 vulnerabilities; pytest `1278
+  passed, 9 skipped`; token grep 0.
+- Live CSP (user-run): `Content-Security-Policy: default-src 'self'; media-src 'self' blob:; base-uri 'self'; form-action 'self';
+  frame-ancestors 'none'; object-src 'none'`.
+- e2e Chromium (user-run): `59 passed (2.6m)`; `sign-in POSTs through nginx: 12 (planned 12), 429: 1 (planned 1)`; secret scan 0 matches.
+- CSP plant (user-run; conf reverted to `a187fbe^`, web image rebuilt): exit 1; exactly 2 failed, `analyze.spec.ts:93` (valid WAV) and `:105`
+  (61 s WAV), both receiving "Duration could not be read in the browser; the service will check it"; the other 5 analyze tests passed;
+  4 did not run; POSTs 6, 429 0, no `sign-in budget:` line (failed-run rule); secret scan 0 (4 files, failure artifacts included).
+  Restored: conf = HEAD, `git status` clean, web image `sha256:9fa3f610…` = the green run's image, so no re-run.
+- Agent build note: an earlier `--network=none` image build failed at `RUN npm ci` (`EAI_AGAIN`), so the agent ran no e2e.
+- Live check on :8001 (user-run): OK. The real picker closing and sign-out clearing S3 were left to this check.
+- Not done: a real screen-reader pass (Orca, PR 15). Firefox e2e: not run (MVP exception; once before the demo). No DEEP-VOICE path, audio or dataset touched;
+  no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the code, the tests and this entry, and ran the agent checks above. The
+plan was approved before the build. The user ran the final chain, the e2e, the CSP plant and the live check. The team reviews the diff. Context7 was not used.
+
+**Gate:** review of this PR by Donia, who confirms the CSP change against the diff. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 146 — Stage 18 PR B: Analyze recording, S4, the result card and S5 (2026-11-04)
+
+**What:** on `feat/stage18-analyze` (Iheb, Part E; from `main` at `ee43400`, not stacked). Old PRs 9 and 10, MVP cut, on the mock analyzer: sign in → upload → verdict now works. No `api/`, `configs/`, `deploy/` or dependency change. Design sources: HANDOFF (H) and `analyst-console-prototype.html` (P) only.
+- **MVP process exception: agreed by Donia, 2026-11-04** (Entry 145 says "proposed"). Same terms as Entry 145.
+- **S2 copy accepted by Donia, 2026-11-04:** "Choose the recorded segment" and "Browse for it on your computer."
+- `web/src/upload/analysis.ts` (`limits.ts` pattern, memory only). `submitting` is set before `apiFetch`, so a double click sends one POST; a start is allowed only from idle or error. One part, `file`, named `upload.<ext>`. `parseAnalysis` on every 2xx. An analysis lives as long as its draft.
+- Enable rule (P l.911, l.938): no failed and no waiting check. An unreadable duration does not block it; status Unavailable only warns (P l.940, H l.163); limits not ready show no button (P l.915).
+- New analysis during the POST keeps the draft and S4; only the navigation happens (P l.762, H l.276). It moved to `shell/useNewAnalysis.ts`, shared with the result head.
+- Draft rule (MVP): the File stays after a result (P l.992) until New analysis, sign-out or another analyst. PR 11 moves the clear behind D1.
+- ResultCard, ErrorPanel, Stages in `web/src/components/`; `.kv`, `details.more` moved to `page.css` (Q25), no change to S10. New token `--fs-verdict-sm` (H l.86, P l.418).
+- Plan decisions (user, 2026-11-04):
+  - **Q26:** Mock result tag when `model_version === 'mock'`. The server's flag is `MockAnalyzer.info()` `mock=True`, stored as `is_mock` and never returned; `MOCK_VERSIONS` feeds both, so this is its one visible sign.
+  - **Q27:** two stages, "Validating" and "Uploading and analyzing": `fetch` cannot see where the upload ends, and timers are banned.
+  - **Q28:** four S5 kinds for a check the service repeats, as copy proposals. An unreadable duration can really end in `recording_too_long`.
+  - **Q29:** no Copy button (P's needs a timer). **Q30:** "Record what you did in the analyst note." kept verbatim (H l.225-226). **Q31:** the analysis survives expiry (H l.211; P l.1380-1386).
+- **P departures (14):** (1) l.918-924 two stages, Q27; (2) l.924 "and you will be notified" cut, no toast; (3) l.939, l.1349 no Cancel, agreed 2026-11-01; (4) l.946 late-result sentences cut, a 504 stores nothing (§4.3); (5) l.1318 focus on `#file-h`, the button is disabled; (6) l.860, l.991 no time, Analyzed or Processing time, not in the response; the head line reads "New result" (copy proposal); (7) l.968-970 no Copy, Q29; (8) l.980, l.1000-1003 one column, notes are PR 11; (9) l.984 risk and mock from `risk_level` and `model_version`; (10) l.998 versions from the response; (11) l.1302, l.1343 no toast; (12) l.1324 a failed POST leaves the status store as it was; (13) H l.178 one announcement, Q27; (14) four added S5 kinds, Q28. Also: the size title uses P's curly apostrophe, "service’s".
+- **How S4 ends, with no client timer:** analyzer 30 s → 504, timeout variant (`configs/api.yaml:8`). API refused at once, unreachable 5 s, silent 60 s → nginx 503, service variant, ID None (`deploy/nginx.conf:47-49`). Worst case about 65 s once nginx holds the body, plus the transfer. **No bound of ours** if the browser-to-nginx link dies silently: only the browser or OS ends it, and a reload is the way out (not measured). An API answer after nginx's 60 s can store a record behind S5.
+- **For PR C (not built here):** History rows must not link to the S8 stub, or must accept it explicitly. e2e creates rows: 6 per green run, sent as `e2e-main` and stored with no analyst, so every analyst sees them.
+
+**Size:** added lines (`git show --numstat`, comments included), per commit, code / tests: `4577abb` 203 / 304; `a45c970` 130 / 379; `b1b48e0` 386 / 323; `8ab953c` 246 / 184; `b1e67bf` 0 / 228. Total 965 / 1418 (estimate 930 / 1400). The ~330-line limit is lifted (exception above). Docs as in this commit.
+
+**Tests [verified]:**
+- `npm run typecheck`, `npm run lint`, `npm run build`: exit 0. Vitest after `npm ci`: `Test Files 40 passed (40)`, `Tests 1287 passed (1287)`, exit 0 (was 1107; +180). `npm audit --omit=dev`: 0 vulnerabilities. `.venv/bin/pytest -q`: `1278 passed, 9 skipped`. Token grep 0.
+- The plan said 1273. 167 hand-written, not 166: the Guard group has 15 tests, not 14. The other 13 are rows the existing `colours.test.ts` (+12) and `tokens.test.ts` (+1) generate for the new files and token.
+- `SignIn.test.tsx:384`, the known flake, failed once in 3 full runs (`expected "vi.fn()" to be called 4 times, but got 2 times`). Not changed here; the Open item stays.
+- e2e Chromium (agent-run, at `b1e67bf`): `68 passed (6.4m)` (was 59; +9); `sign-in POSTs through nginx: 12 (planned 12), 429: 1 (planned 1)`; secret scan 0 matches. The real POST answered 201 through `route.continue()`, so the fallback gate was not needed.
+- Planted failures (agent-run, one at a time, restored, tree clean after; 231 tests): submitting set after a tick → 7 failed; no status check → 4; real filename → 7; result on a 500 → 16; 2xx without `parseAnalysis` → 2; notice dropped → 2; risk from prediction → 4; number on the main card → 1; Analyze enabled on a failed check → 6; disabled on Unavailable → 1; disabled on unreadable → 1; New analysis without the guard → 2; no generation check → 2; session error not reset → 2; error focus removed → 1; `role="alert"` on the result → 34; timeout History sentence → 2.
+- Scope (user-run): `git diff --stat` empty for `api/`, `configs/`, `deploy/`, `tests/` and the lockfile.
+- `project_log` (user-run): 6 removed lines (5 Open items + Current status), none from an entry body; 15 `+- [` lines, the PR C and demo-database items included.
+- Chain (user-run, after `npm ci`, empty cache): typecheck, lint, build clean; Vitest `Test Files 40 passed (40)`, `Tests 1287 passed (1287)`, exit 0, on the first run after `npm ci`, no re-run needed; audit 0; token grep 0; pytest `1278 passed, 9 skipped`.
+- e2e Chromium (user-run): 68 passed; sign-in POSTs 12 (planned 12), 429: 1 (planned 1); secret scan 0.
+- Live check on :8001 (user-run): OK.
+- Code checks (user-run, at `5f5392c`): `MOCK_VERSIONS` in `api/analyzer.py`: `model_version` "mock" is the only field that differs from a real bundle, and the browser checks exactly that; `api/intake.py:149` `PurePath(...).suffix.lower()` accepts any case; `configs/api.yaml` `analysis_timeout_s` 30; `deploy/nginx.conf` `proxy_read_timeout` 60s, `proxy_send_timeout` 60s, `proxy_connect_timeout` 5s; `web/eslint.config.js` l.25 and l.47 include `src/components/**`.
+- `CALL.WAV` part name (agent-checked): sent as `upload.wav`. The user's live check confirms `CALL.WAV` gives a real result.
+- Overlap tests (user decision): all five kept.
+- Not done: a real screen-reader pass (Orca, PR 15). Firefox e2e: not run (MVP exception; once before the demo). No DEEP-VOICE path, audio or dataset touched; no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the code, the tests and this entry, and ran the agent checks above. The plan was approved before the build. The user ran the final chain, the e2e and the live check. Against the brief, it ran `npx --no-install vitest --version` once (the repo's own binary, nothing downloaded). Context7 was not used. The team reviews the diff.
+
+**Gate:** review of this PR by Donia, who also reviews the copy proposals. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+
+### Entry 147 — Stage 18 PR C: S7 History, the MVP cut (2026-11-05)
+
+**What:** on `feat/stage18-history` (Iheb, Part E; from `main` at `308ebd1`, not stacked). Old PR 12, MVP cut, on the mock analyzer, for FR-10 (backlog l.38): the path sign in → upload → verdict → History now works. No `api/`, `configs/`, `deploy/`, `tests/` or dependency change. Design sources: HANDOFF (H) and `analyst-console-prototype.html` (P) only.
+- **MVP process exception:** same terms as Entries 145 and 146.
+- **PR B copy accepted by Donia, 2026-11-05:** stage "Uploading and analyzing"; the four S5 texts for `unsupported_format`, `file_too_large`, `recording_too_long`, `empty_file`; the result head "New result". No code change.
+- `web/src/history/history.ts`: `GET /api/analyses`, no query; `parseHistory` checks each field the page uses, and one bad record rejects the body (`parseAnalysis` reused); shared in-flight request; generation guard on session end. `analyzedAt.ts`: `created_at` in the browser zone (P l.645), zone in the column header (P l.655).
+- `web/src/pages/History.tsx`, `History.css`, `components/VerdictPill.tsx`, `VerdictPill.css`: table, cards at ≤ 640 px, loading, empty, failed with Retry. `resultText.ts` gains `VERDICT_SHORT` and `isMockResult`, which ResultCard now uses. Skeleton, empty and error states stay in `History.tsx` until PR 14 needs them too (H l.149-150).
+- **Fetch rule:** one GET per entry, in the mount effect; never a timer. A query change or the rail link on `/history` sends nothing. Edge: an entry joining a GET that began before a POST finished can miss that record until the next entry.
+- **Count wording:** the count line and the announcement use `total` (P l.1065, l.1081); "Showing" ends at the rows on screen (P l.1075). Total 37 with 10 rows: "37 results", "Showing 1–10 of 37", "History loaded. 37 results."
+- **Time zone in tests:** `checkedAt.test.ts:8-18` computes in the machine's zone, so a hard-coded UTC passes it in CI (`ubuntu-latest`, UTC). S10 is held only by `status.spec.ts:88`; not changed here. `analyzedAt.test.ts` and `History.test.tsx` set `TZ=Africa/Tunis` through `vi.hoisted` + `vi.stubEnv` before the formatters are built, assert literals, and each has a guard test. It works because Vitest runs forks on the main thread: in a `worker_threads` worker the assignment does nothing. e2e: `signedInPage` reads `testInfo.project.use.timezoneId` (`fixtures.ts:12`), so `test.use({ timezoneId })` would not reach it; `playwright.config.ts:32` already applies, and `history.spec.ts` proves the zone in the page.
+- **DST:** the header shows today's offset, so across a DST change an older row's time is right and its label is not (P l.655 too). Africa/Tunis has no DST, so the demo cannot show it. No code.
+- Plan decisions (user, 2026-11-05):
+  - **Q32:** first page only, the API default of 10 (`analyses.py:44`; maximum 50, `configs/api.yaml:9`). Older records cannot be reached in the UI; "Showing 1–10 of 37" says so.
+  - **Q33:** the pill uses `VERDICT_SHORT` and `risk_level` (H l.140, P l.594, l.686), not `VERDICT_TEXT` / `RISK_TEXT`.
+  - **Q34:** no fourth store: the state is the page's, so the list never outlives it (H l.68).
+  - **Q35:** no row link: S8 is a stub (H l.147, P l.1073; Entry 146). **Q36:** `?verdict=` ignored and left in the URL; the GET never forwards it.
+  - **Q37:** Mock result per row from `model_version` (Q26 rule). **Q38:** Analyst note column kept. **Q39:** skeleton on every entry, never old rows.
+  - **Q40:** failure text "The service did not return the stored results. No results were changed.", a copy proposal for Donia.
+- **P departures (11):** (1) l.1044-1056 no filters; (2) l.1075 no pager, a "Showing" line only, Q32; (3) l.1073 no link, Q35; (4) l.1078 subtitle cut to "Stored analysis results, newest first."; (5) l.1078 per-row tag instead of "Mock data.", Q37; (6) l.686 risk from `risk_level`, not the verdict (H l.270); (7) l.1083 reload per entry, Q39; (8) l.1060 failure sentence, Q40; (9) l.1060 no `tabindex` on the h2, nothing focuses it; (10) l.1421 Retry moves focus to the h1; (11) l.695 a failed History does not change the rail status.
+- **e2e rows:** each green run now adds 9 rows with no analyst (6 + 3 from `history.spec.ts`); the spec assumes no empty or fixed list.
+
+**Size:** added lines (`git show --numstat`, comments included), per commit, code / tests: `df67f02` 117 / 262; `d7c0a72` 250 / 498; `3e1dee3` 0 / 195; `e171e00` 0 / 9. Total 367 / 964 (estimate 380 / 970). The ~330-line limit is lifted (exception above). Docs as in this commit.
+
+**Tests [verified] (agent-run, at `e171e00`):**
+- After `npm ci`: typecheck, lint, build clean; Vitest `Test Files 44 passed (44)`, `Tests 1394 passed (1394)`, exit 0 (was 1287; +107); `npm audit --omit=dev`: 0 vulnerabilities; `.venv/bin/pytest -q`: `1278 passed, 9 skipped`; token grep 0.
+- The plan said 1393. The extra test is the 401 one below. `Shell.limits.test.tsx` needed no change, as assumed. Not planned: `eslint.config.test.ts:245` used `History.tsx` as its unbanned page, now `Overview.tsx`.
+- Six test files mock `history/history`, so their counts hold; `SignIn.test.tsx:384` is untouched.
+- `SignIn.test.tsx`, the known flake's test, failed once in one full run; uncaptured (its message was not kept). The next 4 full runs and the run after `npm ci` passed, and the user's 4 full runs found no repeat. The Open item stays.
+- e2e Chromium: `76 passed (2.9m)` (was 68; +8); `sign-in POSTs through nginx: 12 (planned 12), 429: 1 (planned 1)`; secret scan 0 matches.
+- Planted failures (one at a time, restored, tree clean after; 94 targeted tests unless stated): bad items filtered → 18 failed; effect on `location.search` → 1; row link → 1; timer → 1, and lint exit 1; `search` forwarded → 2; no generation check → 2; no shared in-flight → 2; `confidence` in the row → 3; risk from the verdict → 1; no alert on the failure → 4; client-side sort → 1; Retry without the focus move → 1; count from rows → 1; announcement from rows → 1.
+- **Two plants survived at first, and the tests were changed (`e171e00`):** `role="alert"` on the list (0 failed), and 401 → failed (0 failed: `expire()` bumps the generation, so the answer was dropped before that branch mattered). After the fix: 1 failed each.
+- Hard-coded UTC, plain full Vitest run: cell format → `3 failed` under `TZ=UTC`, `3 failed` under `TZ=Africa/Tunis`; label format → `3 failed` under both (first run under Tunis `4 failed`, the fourth uncaptured; 3 in two re-runs, the same three tests as under UTC; the user's 4 full runs found no repeat).
+- Both UTC plants in one rebuild, e2e: 2 failed, both `history.spec.ts` (header `Analyzed (GMT+1)` not found; `Expected "3 Nov 2026, 10:14"`, `Received "3 Nov 2026, 09:14"`), 4 did not run, exit 1.
+- Scope (user-run): `git diff --stat` empty for `api`, `configs`, `deploy`, `tests` and `web/package-lock.json`.
+- `project_log` (user-run): 5 removed lines (the 4 planned + the PR B copy item), none from an entry body; 7 `+- [` lines.
+- Chain (user-run, at `3c339da`, after `npm ci`, empty cache): typecheck, lint, build clean; Vitest `Test Files 44 passed (44)`, `Tests 1394 passed (1394)`, exit 0; then 3 more full runs, all green, no failure captured; `npm audit --omit=dev` 0; token grep 0; pytest `1278 passed, 9 skipped`.
+- e2e Chromium (user-run): 76 passed; sign-in POSTs 12 (planned 12), 429: 1 (planned 1); secret scan 0.
+- Live check on :8001 (user-run, Iheb): OK.
+- Not done: a real screen-reader pass (Orca, PR 15); Firefox e2e (not run; MVP exception; once before the demo). No DEEP-VOICE path, audio or dataset touched; no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the code, the tests and this entry, and ran the checks above. The plan was reviewed and approved by the user before the build. The user ran the final chain, the e2e and the live check. Context7 was not used. The team reviews the diff.
+
+**Gate:** review of this PR by Donia, who also reviews the Q40 copy proposal. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 148 — Stage 18: MVP README, tested from a fresh clone (2026-11-06)
+
+**What:** on `docs/stage18-mvp-readme` (Iheb, Part E; from `main` at `901e999`, not stacked). Documentation only, for the deliverable "a README explaining install and run, tested from a fresh clone" and NFR-10 (backlog l.63). No `api/`, `web/`, `configs/`, `deploy/`, `tests/`, `docs/setup.md` or CI change.
+- **MVP process exception:** same terms as Entries 145 to 147.
+- `README.md`: new section "MVP: install and run", a pure insertion before "Getting started" (`6ad2516`): prerequisites, clone with the folder-name warning, sign-in key, start, first account, the four steps and limits, a 1-second test tone made in the api container, mock results, "Not in this MVP", clean database, stop and reset, tests, troubleshooting. Details stay in `docs/setup.md`, linked, not copied.
+- **12 status lines updated (`2cecd78`):** README lines 8, 11, 12, 31, 74, 75, 77-80, 96, 97, all Khalil's (`1ddb86f`). **OK given by Donia and Khalil, 2026-11-06.** Line 73 and the generated structure block are unchanged.
+- **Real-model wording:** the brief's "Stage 19" was wrong, corrected by the user; the README says the ModelBundle is Stage 12 (`AGENTS.md`, `api/analyzer.py:4`, `api_design.md` l.573).
+- **Overview: option A:** Overview stays a stub page with its rail link, listed under "Not in this MVP". The demo video does not open it.
+- **Compose project name [verified]:** the compose file has no `name:`, so the project comes from the folder. A clone in any folder named `voice-spoofing-detection` is the same project as the main stack and shares its `vsd-var`; `down -v` there deletes it. The README warns about this, and the test cloned straight into `/tmp/vsd-fresh`, its one declared departure from the README's clone step.
+- **CI [verified]:** `ci.yml` has no path filter, so `checks`, `web` and `e2e` all run on this docs PR, as they did on #103; no required check can wait forever. Pushing the branch runs nothing: `push` covers `main` only.
+
+**Fresh-clone test (user-run, Iheb, 2026-11-06; branch at `2cecd78`, `/tmp/vsd-fresh`, project `vsd-fresh`):**
+- Captured output:
+  - Step 1: bare clone OK.
+  - Step 2: Docker 28.5.2+dfsg4, Compose 2.40.3-3, git 2.47.2, OpenSSL 3.6.3.
+  - Step 3: `grep -c` printed 1; the key was never shown. Extra: a build before the key was refused with "set VSD_SIGNIN_HMAC_KEY in .env (see .env.example)", matching the README's troubleshooting item.
+  - Step 4: cold build (`docker compose build --no-cache`) 116 s.
+  - Step 5, guard: project `vsd-fresh`, volume `vsd-fresh_vsd-var`.
+  - Step 6: `docker compose ps` api "Up (healthy)", web "Up"; health `{"ok":true}`, matching the README comment.
+  - Step 7: prompts "New password:" and "Repeat the password:", then "Account analyst01 created."
+  - Step 9: tone file 32044 bytes, RIFF WAVE, PCM 16-bit mono 16 kHz.
+  - Step 15: `down` keeps `vsd-fresh_vsd-var` and the account.
+  - Cleanup: `-p vsd-fresh down -v --rmi local`; `docker volume ls` identical before and after; main stack healthy.
+- Reported OK by Iheb (browser steps, and a second short fresh-clone run for the clean-database procedure):
+  - Step 8: sign-in.
+  - Step 10: limits wav/flac/mp3, 20 MB, 60 s; verdict with the Mock result tag.
+  - Step 11: History row with the tag.
+  - Step 12: clean-database procedure.
+  - Step 13: old session ended.
+  - Step 14: reseeded `analyst01`, History "No analyses yet".
+- **One README deviation:** step 3 of "Use the MVP" promised a confidence score, but the main card shows no number (H; PR B's tests forbid score wording on the card). Fixed in `052bc19`: the output value is under Technical details.
+- **Limits:** a fresh clone on the developer's Linux machine, not a fresh machine, so NFR-10 is only partly evidenced (Open item). macOS and Windows not tested.
+- **Fixes for graders on other systems:** the portable `sed -i.bak` key line and the Git Bash sentence came from review for graders on other systems, not from the fresh-clone test. The `sed` line was re-tested on Linux by Iheb; macOS and Windows remain untested (the NFR-10 Open item).
+- **Base-image platforms (checked by Iheb with `docker buildx imagetools inspect`):** `nginx:1.30.6-alpine`, `node:26.13.0-alpine` and `python:3.13.15-slim-trixie` are pinned to multi-arch index digests that include linux/amd64 and linux/arm64/v8, so Apple Silicon builds natively. Checked, not tested on a Mac.
+
+**Size:** per commit, added / removed in `README.md`: `6ad2516` 199 / 0 (estimate 165: the one-line-per-item list and the tests and troubleshooting text); `2cecd78` 12 / 12; `052bc19` 2 / 2.
+
+**Tests [verified] (agent-run, at `052bc19`):** `.venv/bin/python -m pytest -q`: `1278 passed, 9 skipped`; governance test `3 passed`; token grep: no token found; link check on the new section `links: 11 broken: 0` (at `2cecd78` also "What can run from this snapshot", `links: 9 broken: 0`). No web chain or e2e by the agent: no code changed. No DEEP-VOICE path, audio or dataset touched; no secret in the diff.
+
+**AI assistance:** **Claude Code** (Claude Opus 5.5) wrote the plan, the README text and this entry, and ran the checks above. The user reviewed the plan before the build, ran the fresh-clone test and reported its results; the agent ran no Docker step of it. Context7 was not used. The team reviews the diff.
+
+**Gate:** review of this PR by the team. AI agents do not merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 149 — Midterm backlog refreshed from merged Stage 17–18 evidence (2026-11-07)
+
+**What:** documentation-only refresh on `docs/stage19-backlog-refresh-malak`, based on
+`origin/main` at `f2f44cc` (PR #109 merged). The closed SRS requirement list, priorities, owners and
+acceptance criteria are unchanged. `docs/midterm/backlog.md` now distinguishes work completed by the
+labelled mock MVP from real-model work that still depends on Stages 11–12.
+
+**Merged evidence recorded:** Stage 17 PRs #77–#87 and Stage 18 PRs #88–#109 support the
+authenticated upload API, input errors, metadata-only SQLite storage, immediate temporary-audio
+deletion, History, notes API, stats/status, Docker/nginx deployment, React sign-in/upload/result and
+History, required CI and the tested README. Accordingly, FR-01–FR-03, FR-09–FR-10 and
+NFR-03/NFR-05–NFR-08 are marked Done or Done (mock MVP); FR-08, FR-11, FR-20 and the release/privacy
+checks remain Partial. FR-04–FR-07, NFR-09 and NFR-11 remain Partial/In progress until the one Stage
+11 run, Stage 12 F4 freeze and production-analyzer integration are complete.
+
+**Windows verification reported by Malak:** WSL 3.0.3, Docker Desktop 4.98.0, Engine 29.9.2 and
+Compose 5.6.1; a fresh clone built both images, both containers became healthy,
+`GET /api/health` returned `{"ok":true}`, and account `analyst01` was created. Browser sign-in,
+upload, result and History were not yet recorded in this verification, so NFR-10 stays Partial / in
+verification. No unmerged implementation or verbal completion report is counted as Done.
+
+**AI assistance:** **Codex** reviewed the current merged code, tests, PR history and existing backlog,
+then prepared this evidence-only status update. It did not add requirements, change priorities, push,
+approve or merge. The team reviews the classifications.
+
+**Checks [verified]:** after synchronizing the existing local virtual environment with the pinned
+`requirements.txt`, `python -m pytest -q` passed with **1278 passed, 9 skipped in 164.26 s**;
+the DEEP-VOICE governance test passed **3/3**; `git diff --check` passed; token grep found no token.
+
+**Gate:** human review of the evidence and status classifications; green required CI before merge.
+**WAITING FOR HUMAN REVIEW.**
+
+---
+
+### Entry 150 — Professor feedback: model v2 track, live analysis and infrastructure decisions proposed (2026-11-09)
+
+**Authorship:** requested and specified by Donia Mabrouk after the team's midterm meeting with the
+professor (2026-11-09). The proposals were drafted by **Claude** (claude.ai, Claude Opus 5.5), an AI
+tool, from the repository at `48e72f5` (PR #110 merged), the SRS v3.0, SDD v1.0 and Execution Plan
+v2.1 PDFs and the professor's feedback; Donia reviews before push.
+
+**Professor's feedback (as reported by Donia):** methodology, branches, commits and PRs are what was
+needed. Problems and requests: the platform cannot be tested because it runs on mock data; the
+interface looks generic and must be redesigned; the confidence-score decisions must be shown and
+justified; add a live check (calls, WhatsApp, possibly an extension) with free tools; plan the
+infrastructure (uploads, CPU/GPU inference, database, bottlenecks, a justified concurrency limit);
+move beyond the CNN towards temporal or voice-specific models; augment the clean training data for
+real-world audio; set up staging and production environments.
+
+**What (docs only, no code, no data access):** on `docs/stage11-v2-track-decisions`, decisions
+**D48–D55** proposed in `docs/decisions/README.md` with ADRs 0012–0015, and hypotheses **H8** (v2 vs v1
+on DEEP-VOICE) and **H9** (augmentation vs the held-out white-noise family) pre-registered:
+- D48 / ADR 0012: v1 continues to F4 and replaces the mock; Stage 13 is held and runs once on v1, v2
+  and `baseline-v1` (amends D36, D41); cut-off 2026-12-04; v2 deployed by rule, not by test result;
+  the v2 design is approved before the v1 Stage 11 claim.
+- D49, D50 / ADR 0013: candidates `cnn-aug`, `crnn`, `aasist`; selection on mean val-A EER over a
+  clean-plus-degraded set; on-the-fly augmentation of REAL and FAKE alike, disjoint from the Stage 14
+  grid, white noise held out (amends AGENTS.md hard rule 3 and supersedes D10 for v2 only).
+- D51, D52 / ADR 0014: live microphone mode and `/api/live` (Must), Chrome tab-capture extension
+  (Should), mobile and native call capture (Won't, platform limit); live verdict = D34's file-level
+  rule on the stream so far after 3 kept windows (changes SRS WH-01).
+- D53, D54 / ADR 0015: CPU process pool with `503` + `Retry-After`, limits from a staging load test,
+  PostgreSQL; dev/staging/production with images promoted from GHCR and a reviewed production gate.
+- D55: interface redesign (three directions, decision board, per-window timeline) with a moderated
+  usability test (SUS target ≥ 68).
+
+**Why now:** no test result exists for any model, so v2 can still be fixed blind; D35's dataset-wide
+Stage 13 key allows one external pass, so the joint run is the only way to compare v1 and v2 on
+DEEP-VOICE.
+
+**Checks:** see the PR description (real `pytest -q` output and `scripts/check-docs.sh`).
+
+**Gate:** approval by all four in this PR, then the approval commit (statuses to Approved, ADR
+statuses, AGENTS.md hard rule 3 and roadmap, Protocol addendum). **WAITING FOR APPROVAL.**
+
+---
+
+### Entry 151 — D48–D55 approved; approval commit (2026-11-10)
+
+**What:** PR #111 (`docs/stage11-v2-track-decisions`) was approved by Iheb, Malak and Khalil on
+2026-11-10 (Donia author), with the required checks green. This approval commit, on the same branch
+before merge:
+- sets D48–D55 to Approved and ADRs 0012–0015 to Approved; marks H8–H9 as pre-registered;
+- updates AGENTS.md hard rule 1 (external run after F4, and F5 or the D48 cut-off), hard rule 3
+  (model v2 candidates, XLS-R and other self-supervised front-ends still excluded, live analysis per
+  D51–D52) and the roadmap (rows V, L and P; Stages 12 and 13 per D48);
+- writes the Protocol addendum required by D48 (6) into §§1, 4, 6, 7, 8, 9 and 12, with a §14 row; v1
+  rules are unchanged.
+
+**Authorship:** Claude (claude.ai, Claude Opus 5.5) drafted this commit from the approved decision
+texts; Donia reviews before push. Approvals as reported by Donia; the PR's review record is the
+evidence.
+
+**Gate:** green CI, then merge PR #111. From the merge, the v1 Stage 11 claim may proceed once D46
+(PR #67) and the runner (PR #68) are approved and merged.
+
+---
+
+### Entry 152 — D46 proposed: Stage 11 run procedure (2026-10-31)
+
+**Numbering:** written as Entry 101 on 2026-10-31; renumbered to 152 when `main` was merged into
+`docs/stage11-d46-runtime` on 2026-11-10 (Entries 101–151 were taken on `main` in the meantime,
+including PR #111's D48–D55). The text below is unchanged from 2026-10-31.
 
 **Owner:** Donia Mabrouk.
 
@@ -2848,7 +5645,22 @@ review is still required. AI did not push, open or merge a PR.
 **WAITING FOR APPROVAL.**
 
 ---
+
 ## Open items
+
+**v2 track, live analysis and infrastructure (Entry 150)**
+- [x] Approve or revise D48–D55, ADRs 0012–0015 and H8–H9 (all four) before the v1 Stage 11 claim. (PR #111, 2026-11-10)
+- [x] Approval commit: statuses to Approved; AGENTS.md hard rule 3 (v2 candidates) and roadmap; Protocol addendum for §§4, 6, 7, 9, 12 (v2 values, F5, Stage 11/14 model sets, cut-off). (Entry 151)
+- [ ] Pin the noise and RIR corpora (licence, hash, 50/50 file split) and codec tools before any v2 training (D50 (5)).
+- [ ] Compute benchmark per v2 candidate; batch sizes in `configs/` before training (D49).
+- [ ] Extension authentication design and security review in SDD v2.0 before implementation (D51).
+- [ ] Choose the hosting provider and record it (D54 (9)); load test on staging, then record K, L, `analysis_timeout_s` and `L_MAX` (D53 (3)).
+- [ ] Write SRS v4.0, SDD v2.0 and Execution Plan v3.0 from D48–D55 (D48 (10)).
+- [ ] Stage 13 runner (D35) and Stage 11 runner (PR #68) accept the v2 model set (D48 (3), (7)).
+
+
+- [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
+- [ ] Review the sectioned documentation index (Entry 115); confirm existing entries and links remain available.
 
 - [x] Review synthetic clustered discrimination tests and obtain CI (Entry 83; PR #33, merged as `6d84d8b`)
 **Part C: external comparison (Entry 58)**
@@ -2967,7 +5779,7 @@ review is still required. AI did not push, open or merge a PR.
 - [x] 10a-2 part 2: notebook 05 and its tests (Entry 93): merged as PR #59 (`11c07fe`).
 - [x] 10a-2 part 2: official Colab run of notebook 05 (2026-10-28; Entry 94)
 - [x] Commit the Stage 10 evidence and results (Entry 94): merged as PR #60 (`ff0a226`)
-- [ ] Stage 11: plan runtime and environment recording (T4 image family; unpinned feature libraries) before any FoR test access (Entry 94): proposed as D46 (Entry 101), awaiting approval (all four)
+- [ ] Stage 11: plan runtime and environment recording (T4 image family; unpinned feature libraries) before any FoR test access (Entry 94): proposed as D46 (Entry 152, written as Entry 101; PR #67), awaiting approval (all four)
 - [x] Approve D45 (bundle-seed-only policy): approved via PR #57 (2026-10-28; Entry 91).
 
 **Stage 11 run registry (Entry 34)**
@@ -3083,11 +5895,126 @@ review is still required. AI did not push, open or merge a PR.
 - [ ] Stage 14 and 16 score readers: check the sidecar `run_id` against a completed `stage11_test` registry record and `manifest_sha256` against F2 (Entry 99)
 
 **Stage 17 API (Part E, Entry 100)**
-- [ ] Team review of the API contract `docs/api_design.md`, including the proposed `invalid_request` (400) code.
+- [x] Team review of the API contract `docs/api_design.md`, including the proposed `invalid_request` (400) code. (approved, PR #65, Donia, 2026-10-30; Entry 101)
 - [ ] Decide whether the approved API contract needs a D-ID (HANDOFF.md §11 item 10).
+- [x] Review and merge the API skeleton, including the 405 `invalid_request` row added to §6. (PR #66, `d9e8c4a`; Entry 101)
+- [x] `MockAnalyzer` and the analyzer seam (§8), `POST /analyses` with the §4.3 checks, storage (§7): on `feat/stage17-analyze`, awaiting review (Entry 116).
+- [x] Open decision 1 (authentication) decided: D47 / ADR 0011, contract in `api_design.md` §4.8 (Entry 121).
+- [x] Step 7b-1a: sign-in tables, argon2id (`argon2-cffi` 25.1.0 on 3.13 and 3.14), `VSD_SIGNIN_HMAC_KEY` loading, admin command, §9 keys: on `feat/stage17-signin`, awaiting review (Entry 122).
+- [x] Step 7b-1b: `POST`/`GET`/`DELETE /session`, `GET /health`, session + Origin middleware on the `/session` routes, refuse to start without the key, `--env-file` run command and `python-dotenv` pin; add the two agreed §4.8 sentences (disabled + right password neither counts nor resets the failure count; store error on `/session` → 503, session check elsewhere → 500) (Entry 122). (merged in PR #84, `2e42e1b`; Entry 123)
+- [x] §4.8 wording: "before a request ID is assigned" vs the agreed RequestId → SessionGuard order (refusals carry `X-Request-ID`, body `request_id: null`); approve a rewording or keep it (Entry 123). (reworded in §4.8 and §4.3, approved by Iheb; Entry 123)
+- [x] Lockout is checked before the password verify and counted after it, so parallel sign-in requests can pass the lock check together; nginx's per-IP limit (Step 8) bounds this. Do not expose the API without nginx (Entry 123). (nginx `limit_req` 10/min burst 5 `nodelay` on `POST /api/session`, the api publishes no port; Entry 126)
+- [x] Configure the `api` logger level under uvicorn so the INFO sign-in lines (failure without username, success with account ID) are written; with Step 8 logging (Entry 123). (`configs/api_logging.yaml` via `--log-config`; Entry 125)
+- [x] Step 7b-2: session + Origin middleware on every route, note `updated_by` with the migration of existing database files, existing tests signed in (Entry 122). (on `feat/stage17-protect-routes`, awaiting review; Entry 124)
+- [x] FastAPI's `/docs`, `/redoc` and `/openapi.json` are outside `/api` and need no session (no data, but they list the routes); decide with Step 8 / nginx whether to turn them off (Entry 124). (not routed by nginx, JSON 404; reachable only inside the container; Entry 126)
+- [x] Step 8b (new branch from `main` after 8a merges): nginx `web` service on `8001:80`, only `/api` proxied; body limit and proxy timeouts above `configs/api.yaml` (tested); `limit_req` 10/min burst 5 on `POST /api/session` with §6 JSON 429; no address in logs or forwarded headers (tested); `proxy_intercept_errors` off so the API's own 413/503/504 pass unchanged (tested), nginx's §6 JSON only for its own 413, 502/504 and 429; `/` placeholder; `api_design.md` gaps (nginx errors, error-log `client:` field, docs routes, HTTPS outside localhost, `nodelay`) (Entry 125). (merged in PR #87, `7f5cd0b`; Entry 126)
+- [x] Team confirms the §9 proposed sign-in values (idle 30 min, absolute 12 h, lockout 5 / 15 min, password 15–128, nginx 10/min burst 5, 32-byte session ID) (Entry 121). (confirmed unchanged, user-reported; Entry 122)
+- [ ] Accepted risk: anyone who knows a username can lock that analyst out for `lockout_minutes`; nginx's per-IP limit only slows this; the remedy is an admin unlock (D47, ADR 0011). Revisit if it happens in practice (Entry 121).
+- [x] Decide whether Step 7b adds the NIST SP 800-63B-4 §3.1.1.2 blocklist check of common or compromised passwords (Entry 121). (context check done in the admin command: no username, `vsd`, `voice`, `spoof`; Entry 122)
+- [ ] Common-password list for the admin command (e.g. SecLists, filtered to ≥ 15 characters): needs an explicit AGENTS.md rule 7 exception before any file is committed (Entry 122).
+- [x] Step 8: `GET /health` must write no log line (§4.8), but uvicorn's access log prints its request line; handle it with the uvicorn access-log item below (Entry 122). (`--no-access-log`, no `uvicorn.access` handler; Entry 125)
+- [ ] Stage 18: Map a 500 or no answer from GET /status to Unavailable (relates to open decision 7) (Entry 124).
+- [ ] Stage 18: remove the S1 "open product decision" banner; avoid background polling that keeps sessions from going idle (Entry 121).
+- [ ] Threat model §10.1 / §11 item 5: update the "unmitigated until access control is decided" wording once sign-in is implemented (Entry 121).
+- [ ] HTTPS outside `localhost`: the `Secure` cookie works over plain HTTP only on `localhost`; any other host needs TLS terminated in nginx first. Documented (`api_design.md` §2, `docs/setup.md`), not built (Entry 126).
+- [x] Stage 18: replace the nginx `/` placeholder in `deploy/nginx.conf` with the React build, keeping the routing and no-IP tests green (Entry 126). (merged in PR #90, `d352bad`; Entry 129)
+- [ ] Integration: before the real ModelBundle is served, the store starts empty (a fresh database file) or mock results and their notes are removed (`analysis_note` has a foreign key to `analysis_record`), so the figures never mix the two (§4.7 G6; Entry 120).
+- [ ] Routes other than `POST /api/analyses` and `PUT …/note` answer a Content-Length above `max_size_bytes` + 64 KiB with Starlette's plain-text 413, not the §6 shape (GET-only today) (Entry 119).
+- [ ] Shared helpers (utc_now_iso, REQUEST_ID, invalid_request) live in routers and are imported across routers; move to a shared module in a later refactor PR (Entry 119).
+- [ ] Integration: limit concurrent analyses; a timed-out analyzer thread keeps running (cannot be killed), so repeated timeouts with the real model could pile up (Entry 116). The container's `/tmp` tmpfs is sized for `x-vsd-concurrent-uploads: 4` (2 × body limit each); the limit should match that number (Entry 125).
+- [x] uvicorn's default access log prints the client IP; §1/§7 say no IP is stored. Decide for Stage 19 (e.g. `--no-access-log` or a log filter) (Entry 116). (`--no-access-log --no-proxy-headers` in the image and the documented local command; Entry 125)
+- [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
+
+**Stage 18 web (Part E, Entries 127–137)**
+- [x] PR 1a: `web/` scaffold, theme storage, CI `web` job, pytest pin guards (merged in PR #88, `86cc77d`; Entry 127).
+- [x] Add `web` as a required check on `main` after PR 1a merges (Iheb; Entry 127). (done 2026-11-03, Iheb; Entry 139)
+- [x] PR 1b: `tokens.css`, `base.css`, fontsource fonts, token, contrast and no-raw-colour tests (merged in PR #89, `9a119d2`; Entry 128).
+- [ ] Still open from Entry 127: the 9 s toast vs ui-ux-pro-max 3–5 s conflict.
+- [x] PR 2: `web` image (`deploy/web.Dockerfile`), A2 routes, A13 security headers, JSON 404 type fix (merged in PR #90, `d352bad`; Entry 129).
+- [x] PR 3a: API client, `ApiError`, API types, no-timer lint rule (merged in PR #91, `b6f09d6`; Entry 130).
+- [x] PR 3b: session store, expiry handler, `checkSession` on load, A19 on `GET /api/session`, storage and console lint ban in `src/session` (merged in PR #93, `ee5fd50`; Entry 132).
+- [ ] Map `GET /session` 403 when `access_denied` is implemented (now `unavailable`; Entry 132).
+- [x] PR 3c: `react-router` 8.5.1 (A15), route list synced with `deploy/nginx.conf`, `next` check, guard, stub pages (merged in PR #94, `b06df7b`; Entry 133).
+- [x] PR 4: S1 Sign in; `next` read by the guard with `safeNext` after `POST /api/session`, never stored or logged (merged in PR #95, `1d41512`; Entry 134).
+- [x] PR 5a: e2e harness and sign-in flows (merged in PR #96, `880ec2b`; Entry 135).
+- [x] PR 5b: axe (light/dark, HANDOFF l.297 tags) on S1 variants and stubs, HTTP/Origin matrix, security headers and JSON 404, lockout with a second `restart web`, outage + Retry (merged in PR #97, `3963f5e`; Entry 136).
+- [x] PR 6: 6a merged #98; 6b merged #99, `fd034dd` (app shell, rail, drawer, page-change rules: Entry 137; rail footer, theme control, sign-out: Entry 138).
+- [ ] Review the sign-out failure copy "Sign-out did not complete. You are still signed in. Try again." (proposal; Entry 138).
+- [x] PR 7: 7a merged #100 (`f6324fb`; status store, rail line: Entry 139); 7b merged #101 (`13e7b84`; S10: Check now, its polite region, "Last checked" / "Last attempt", status outage e2e: Entry 140).
+- [ ] PR 7b copy proposals, for review: unavailable from the service naming the failing checks; the degraded fallback "Some parts of the service are not fully available."; the Connection item's "Unreachable" when nginx answers 503 (Entry 139). Built in 7b with: "This console cannot reach the analysis service." for Unreachable; a failing check "Unavailable" with "Stored results and Overview figures cannot be loaded right now. Analysis is not affected." for History; the degraded notice "<checks> is/are not fully available."; the open-decision line's second sentence; "Status checked: Ready for analysis, with a notice." (Entry 140). PR 8b copy proposal, for review: "Unsupported format: this file has no extension. Use WAV, FLAC, MP3." for a file with no extension (P has no text for it; Entry 143 Q11). PR A copy proposal, accepted by Donia on 2026-11-04: S2 h2 "Choose the recorded segment" and line "Browse for it on your computer." (Entries 145, 146).
+- [ ] S10 stale-status banner (H l.32, l.166; P l.1194) not built: an honest one needs a clock tick, which the no-polling decision and the timer lint ban rule out (Q4, Entry 139).
+- [ ] Review the rail status tokens `--nav-ok` / `--nav-warn` / `--nav-err` (P l.143's values, the same in both themes; Entry 139).
+- [ ] PR 8b/11 rule: an explicit sign-out clears the `File` and note-draft stores; expiry does not (prototype l.770, l.1494; Entry 137); a different username after expiry clears the `File` (Entry 141 Q4). File part built in 8b (Entry 143). Note-draft part and D1 before sign-out with an unsaved note are PR 11.
+- [x] Stub window.scrollTo in the Vitest setup (jsdom 'Not implemented' noise; done in PR 6b, Entry 138).
+- [x] Add `e2e` as a required check on `main` after 5 green PR runs in a row (Iheb; Entry 135). (done 2026-11-03: required after 4 green runs (#96–#99), a deliberate change by Iheb from the planned 5; Entry 139)
+- [ ] nginx takes ~5 s to return 503 when the api is stopped (connect timeout); consider a lower proxy_connect_timeout in a deploy/ fix PR (Entry 136).
+- [x] PR 8: extract `Button`, `TextField` and `Banner` (HANDOFF line 133) from S1 into `web/src/components/` (deferred on purpose in PR 4; Entry 134). (8a merged in #102: Button, TextField, Banner, Spinner; S1, S10 and New analysis use them; Entry 141)
+- [ ] PR 8 split (Entry 141): 8b merged in #104 (`1470254`; Entry 143); 8c and 8d built together in PR A on `feat/stage18-upload`, awaiting review (Entry 145). Q5 and Q8 stay open below; Q6, Q7, Q9 decided (Entry 145).
+- [ ] MVP exception: `SignIn.test.tsx:384` fails on some empty-cache runs (`expected "vi.fn()" to be called 3 times, but got 2 times`; 2 of 7; the expected count is now 4, Entry 145), the likely Q19 flake: re-run in CI during the MVP. Proposed after it: a small `fix/` PR with `await waitFor(...)` around its fetch assertions. CI starts with an empty cache, so it can fail there (Entry 144).
+- [ ] Q5: RailFoot's alert onto Banner (adds an icon) (Entry 141).
+- [ ] MVP exception: Q8 deferred to after the MVP: the S10 "Audio and stored data" panel vs `audio_deletion`, and failed limits in S10 and the rail. Until then S2 says analysis is off while the rail and S10 say Ready (Entry 145).
+- [ ] MVP exception: drag-and-drop on S2 deferred (H l.177, optional); the S2 heading says "Choose", not "Drop" (Entry 145).
+- [ ] MVP exception: Firefox e2e not run per PR; once before the demo (Entry 145).
+- [ ] The Mock tag on S2 is static until open decision 2 (Q6a, Entry 145).
+- [x] PR B: P's analysis-unavailable warning on the file card (H l.163), built in PR B (Entry 146).
+- [ ] Button pressed state `.btn-secondary:active` (P l.112; `btn-danger:active` P l.118 with it), deferred from 8a to keep it zero-change (Entry 141 Q2).
+- [ ] PR 12: translate HANDOFF `?v=a,b` to repeated `verdict=` (Part E decision recorded in Entry 133). MVP exception: PR C ignores `?verdict=` and leaves it in the URL (Q36). P counts local days (l.1023), the API UTC days (§4.4): settle this with the date filter (Entry 147).
+- [ ] A23: the `File` store is built (PR 8b, Entry 143) and S5's "Sign in again" calls `session.expire()` (PR B, Entry 146); the note draft (PR 11) still goes in a module store, not component state (Entry 130).
+- [ ] PR 11: move the clear in `useNewAnalysis.ts` behind D1, since the blocker runs inside `navigate` (Entry 143). The `submitting` guard on it (P l.762) is built (PR B, Entry 146).
+- [x] PR 10: send the upload as `upload.<ext>` through `fileExtension`, so the real file name stays in the browser (§4.3, H l.280; Entry 143 Q15). Built in PR B (Entry 146).
+- [ ] MVP exception: no Copy button on the request ID (P l.968-970; its reset needs a timer; Q29, Entry 146).
+- [ ] MVP exception: no toast (T1) for an answer that arrives on another page; the S4 line's "and you will be notified" (P l.924) returns with it (Entry 146).
+- [ ] MVP exception: the result has no Analyzed or Processing time row (P l.991): the POST response has neither, so they need a contract decision (Entry 146).
+- [x] Copy proposals for Donia, PR B: stage "Uploading and analyzing" (Q27); the S5 texts for `unsupported_format`, `file_too_large`, `recording_too_long`, `empty_file` (Q28); the result head line "New result" (Entry 146). Accepted by Donia, 2026-11-05 (Entry 147).
+- [ ] MVP exception: "Record what you did in the analyst note." stays on the result while the note panel waits for PR 11; re-check before the demo (Q30, Entry 146).
+- [ ] PR 13: ResultCard's prop `fresh` and the stored-result storage line (H l.283, P l.992; Entry 146).
+- [ ] A failed POST does not refresh the status store (P l.1324 does), so the rail stays as last checked until Check now (Entry 146).
+- [ ] MVP exception: S4 has no bound of ours if the browser-to-nginx link dies silently (only the browser or OS ends it; a reload loses the File), and an API answer after nginx's 60 s can store a record behind S5. No timer added (Entry 146).
+- [x] PR C: History e2e must not assume an empty or fixed list: `history.spec.ts` finds its own records by request ID; each green e2e run now adds 9 rows with no analyst to `vsd-var` (Entries 146, 147).
+- [x] MVP exception / demo: the demo video must not show e2e rows in History. The README PR must give a clean-database procedure, and how analyst01 is reseeded after it (Entry 146). (done 2026-11-06: README "Clean database for a demo", steps 12-14 of the fresh-clone test passed; Entry 148)
+- [ ] MVP exception: History shows only the newest 10 records; older ones cannot be reached in the UI. PR 12 adds the pager (H l.213, P l.1075; Q32, Entry 147).
+- [ ] MVP exception: History rows do not link to S8, a stub. PR 13 adds the link (H l.147, P l.1073) and P's subtitle sentence (Q35, Entry 147).
+- [ ] PR 12: restore the scroll from `history.state` on Back to History (H l.69, l.76); PageChange leaves it alone on Back (Entry 147).
+- [ ] Copy proposal for Donia, PR C: History failure text "The service did not return the stored results. No results were changed." (P l.1060 names filters, which the MVP does not have; Q40, Entry 147).
+- [ ] API (owner: api): `api/intake.py:149` depends on the Python version for `..wav`: `PurePath.suffix` gives `.wav` on 3.13 (image) and `''` on 3.14 (venv). The client refuses it on both; no `api/` change in 8b (Entry 143 Q12).
+- [ ] Sign-out race: an expiry during the DELETE wins (`session.test.ts:322`), so `markSignedOut` never runs and the `File` stays after a real sign-out; a different username still clears it. Accepted for now, pinned by a test (Entry 143 Q14).
+- [ ] Contract: `api_design.md` §5 does not list the Status, Limits, History, Stats, Session and Note responses (the web types follow §4 and `api/schemas.py`) (Entry 130).
+- [ ] Contract: `ErrorDetail.code` is `str` in `api/schemas.py`; §6 is a closed list. Use a `Literal`? The app maps an unknown code to `internal_error` (Entry 130).
+- [ ] Contract: an unhandled exception in `POST /api/analyses` after the ID is assigned (e.g. `analyzer.info()`) answers 500 with body `request_id: null` (`api/errors.py` `_unhandled_error`); §6 expects the upload's ID (Entry 130).
+- [ ] Contract: constraints in Pydantic but not in the doc: `confidence` 0..1, the `request_id` pattern, `StatusChecks` value `unavailable` (Entry 130).
+- [ ] Contract: `deferral_on_fit` is not nullable (Status, MonitoringMarker) while §4.7 says a figure that cannot be computed is `null`; ask Donia (Entry 130).
+- [x] Non-text contrast below 3:1 (light `--line-strong`/`--surface` 1.86, dark 1.99, light `--unc-mark` and `--warn-mark` 2.87; Entry 128): fixed for WCAG 1.4.11, no exceptions left (merged in PR #92, `c8c047e`; Entry 131).
+- [ ] `npm audit`: 12 moderate (GHSA-g3hv-75wg-m249, `minimatch` 10.2.6 under eslint and typescript-eslint, dev only; production 0). Decide: wait for upstream, or an `overrides` pin to `minimatch` ≥ 11.0.1 by approval (Entry 127).
+- [ ] MVP exception: S8 Analysis details and S9 Overview are stub pages, listed under "Not in this MVP" in the README; Overview: option A, the stub keeps its rail link and the demo video does not open it (Entry 148).
+- [ ] NFR-10: Linux fresh-clone flow passed (Entry 148). Malak's Windows fresh clone reached healthy
+  containers, `{"ok":true}` and account creation (Entry 149); record browser sign-in, upload, result
+  and History to complete the Windows test. macOS remains untested.
+- [ ] `docs/setup.md` "End-to-end tests" omits `npm ci`; the README has it. Add it at the next `setup.md` change (Entry 148).
+
+**Midterm documentation (Entries 102–110)**
+- [ ] Review Khalil's initial refactor audit (Entry 108); agree on scope before any cache-helper implementation.
+- [x] Capture coverage, complexity and lint baseline outputs (Entry 109): 88.92% statement / 79.80% branch / 86.76% combined coverage; maximum CC 37; 2 Ruff findings.
+- [x] Implement the two low-risk lint cleanups and compare actual after-results (Entry 111); cache-helper restructuring remains deferred.
+- [x] Prepare the Part 6 report/PDF with the cleanup commit and after evidence (Entry 112).
+- [x] Publish Part 6 audit/cleanup: #73 integrated into #72; combined #72 approved by Donia and merged as `76c55aa`, CI passed.
+- [x] Review and merge the Part 6 status correction (Entry 113; PR #74, `ca45601`).
+- [ ] Confirm separate final editorial acceptance and inclusion in the team submission.
+- [ ] Finalize the refactor report after any approved code change and its checks; regenerate matching Markdown/PDF and obtain human review.
+- [x] Review and merge the prioritized backlog against the SRS and merged evidence. (PR #69,
+  `023bfa4`; Khalil approved; Donia validated requirements and priorities by team message)
+- [ ] Update backlog statuses only from merged evidence as implementation PRs land.
+- [ ] Iheb validates the canonical online component and UC-01 figures against Part E.
+- [ ] Donia validates the canonical shared-core, ModelBundle, preprocessing and risk-policy figures.
+- [ ] Khalil validates the canonical UC-08 and evaluation/governance figures.
+- [x] Review and merge the seven canonical UML sources and matching SVG exports with green CI.
+  (PR #70, `85829e1`)
+- [x] Malak confirmed the team AI-tool inventory; Donia approved the reflection's ethics and
+  requirements coverage by team message.
+- [x] Review and merge the AI ethics reflection (PR #71, `98fd8d7`).
+- [ ] Independently verify README setup and label mock versus real flows in the team demo; confirm final editorial acceptance and LMS submission.
 
 **Later stages (reminders)**
-- [ ] `configs/robustness.yaml` → Stage 14. `docker-compose.yml` → Stage 17.
+- [ ] `configs/robustness.yaml` → Stage 14. `docker-compose.yml` → Stage 17. (`docker-compose.yml` added with the `api` service; `web` in Step 8b; Entry 125) (`web` added; Entry 126)
 - [ ] Stage 17: verify the ModelBundle checkpoint hash at load (threat model §10, tampering recommendation).
 - [ ] Stage 6: re-run the shortcut screen *after* preprocessing (silence, bandwidth).
 - [ ] Stage 6: decide the silence / voice-activity detector explicitly (energy-based vs `silero-vad`) and record it as a decision; D17 depends on it.
@@ -3095,18 +6022,39 @@ review is still required. AI did not push, open or merge a PR.
 
 ---
 
-## Current status — updated 2026-10-31
+## Current status — updated 2026-11-10
 
-**Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 closed (Entry 96): run and results merged (PR #60; Entry 94), brief accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-28; Donia attended as author; no corrections; Q9 reading agreed), merged as PR #61 (`f166001`). Stage 11 is current: the D41 registry and per-clip storage implementation is merged (PR #62 as `877f2af`, Entry 99); the Stage 11 run procedure is proposed as D46 (Entry 101), awaiting approval (all four); next: the Stage 11 runner in its own PR; no FoR test access before both.
+**After the midterm review (Entries 150–151):** decisions D48–D55 (model v2 track with one joint Stage 13 run, live analysis, infrastructure, environments, interface redesign) and H8–H9 are approved in PR #111 (2026-11-10), with the Protocol addendum D48 (6) requires; the v1 Stage 11 claim may follow once D46 (PR #67) and the runner (PR #68) are merged.
 
-**Part E status:** Stage 17 API design note (Entry 100) merged as PR #65 (`af5d6e8`); no API code yet.
+**Documentation navigation:** Entry 115 groups the docs index by topic without moving files. The
+midterm backlog refresh in Entry 149 records merged Stage 17–18 evidence without changing the closed
+requirements, priorities or scope; it awaits PR/CI and human review.
+
+**Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 closed (Entry 96): run and results merged (PR #60; Entry 94), brief accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-28; Donia attended as author; no corrections; Q9 reading agreed), merged as PR #61 (`f166001`). Stage 11 is current: the D41 registry and per-clip storage implementation is approved (PR #62, Entry 99); the D46 runtime/environment plan is proposed in PR #67 and the Stage 11 runner is proposed in PR #68; both await review/merge. No FoR test access before the approved prerequisites are met.
+
+**Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
+(`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
+`GET /api/status`. `POST /api/analyses` with the
+MockAnalyzer, the §4.3 checks and SQLite storage merged in PR #77 (Entry 116). `GET /api/limits` and a real `GET /api/status` database check (provisional `derive_state`, open decision 7) merged in PR #78 (Entry 117). History (`GET /api/analyses`) and details (`GET /api/analyses/{request_id}`) merged in PR #79 (Entry 118). Notes (`PUT /api/analyses/{request_id}/note`, step 5b) merged in PR #80 (Entry 119). Stats (`GET /api/stats`, step 6) merged in PR #81 (`8558f66`; Entry 120). Open decision 1 is decided (D47 / ADR 0011): the sign-in contract (`api_design.md` §4.8) merged in PR #82 (`0e03e02`; Entry 121). Step 7b-1a (sign-in tables, argon2id, HMAC key, `python -m api.admin`, §9 keys) merged in PR #83 (`b067b8c`; Entry 122). Step 7b-1b (`/api/session`, `/api/health`, the session guard on the `/session` routes, start-up refusal without the key) merged in PR #84 (`2e42e1b`; Entry 123). Step 7b-2 (session on every `/api` route but sign-in and health, Origin on upload and note, note author `updated_by` with the migration of existing database files) merged in PR #85 (`ad236b0`; Entry 124). Step 8a (API image, `.dockerignore`, `docker-compose.yml` with the `api` service, logging config) merged in PR #86 (`45bd4ad`; Entry 125). Step 8b (nginx `web` service on `8001:80`: `/api/` proxied, API errors passed through, sign-in rate limit, no client IP in logs or headers) merged in PR #87 (`7f5cd0b`; Entry 126); with it the Stage 17 backend is complete, the ModelBundle integration aside. The Stage 18 React mock MVP is also merged: PRs #88–#108 provide sign-in, the shell, status, upload, result and History, and PR #109 merges the tested README. It remains explicitly mock-labelled; Overview and Details are stubs, the analyst-note UI and full History controls are not implemented, and the production analyzer still waits for F4. Malak's Windows check reached healthy containers, `{"ok":true}` and account creation; the browser flow remains to be recorded (Entry 149).
+
+**Midterm documentation status:** the prioritized backlog is merged in PR #69 (`023bfa4`) and the
+canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI ethics and usage reflection (Entry 107) merged in PR #71 as `98fd8d7`. The team tool inventory was confirmed and content reviewed; final demo, editorial acceptance and LMS submission still need team confirmation.
+
+**Midterm refactor audit:** Entries 108–110 record the initial report and baseline. Entry 111 implements two small lint cleanups on the stacked cleanup branch: 937 tests pass, governance 3 passed, scoped lint findings 2 to 0, coverage and complexity unchanged. No speedup is claimed. Entry 112 adds the measured report/PDF and after captures. The work merged via #73 into combined #72 (`76c55aa`) after recorded teammate approvals and successful CI. Entry 113 corrected stale report status and merged as PR #74 (`ca45601`); separate final editorial/course acceptance remains open. Evidence-sensitive restructuring stays deferred.
 
 **What was done:**
-- **D46 proposed** on `docs/stage11-d46-runtime` (Entry 101): the Stage 11 run procedure (T4
-  runtime, CPU scoring, environment gate and record, val-A log-Mel/MFCC reproduction gate, durable
-  claim on Drive, test features in memory only, rerun rule); docs only; awaiting approval (all four).
-- **Stage 17 API design note** on `docs/stage17-api-design` (Entry 100): `docs/api_design.md`,
-  the proposed `/api` contract for the web app (Iheb, Part E); no code.
+- **Midterm AI ethics and usage reflection** on `docs/stage11-midterm-ai-ethics-malak` (Entry 107):
+  documented tools, human oversight, corrected AI errors, privacy/data governance, bias and harm,
+  licensing, MCP security and academic responsibility; tool inventory confirmed and content approved
+  by Donia; merged as PR #71 (`98fd8d7`).
+- **Canonical midterm UML package** on `docs/stage11-midterm-uml-malak` (Entries 104–106): six
+  editable PlantUML sources, one fixed-layout draw.io source and seven SVG exports reconstructing SRS
+  Figure 1 and SDD Figures 1-6, with controlled D38/API-contract/D41 annotations and no parallel
+  model.
+- **Stage 17 API skeleton**, merged in PR #66 as `d9e8c4a` (Entry 101): `api/` package
+  (app factory, strict config, §6 error shape for every error, `X-Request-ID`, §5 schemas,
+  mock `GET /api/status`) and 50 tests (Iheb, Part E). The contract `docs/api_design.md` (Entry 100)
+  is approved (PR #65).
 - **Stage 11 prep, D41 registry and per-clip storage** on `feat/stage11-d41-registry-storage`
   (Entry 99): purpose-keyed registry with the closed purpose set and a keyword-only purpose;
   per-clip score files (CSV + sidecar, applicability by role from D41/D45, exact floats,
@@ -3237,7 +6185,10 @@ review is still required. AI did not push, open or merge a PR.
 - Stage briefs (`docs/stages/`, D32): 00–10 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), 07 (PR #43), 08–09 (PR #54), and 10 (PR #61).
 
 **Branches:**
-- `origin/main`: at `af5d6e8` (PR B1 merged as #47, PR B2 as #48, PR C as #49, PR #33 as `6d84d8b`, the tests shadowing fix as #50 (`9be2f25`), the UI prototype as #51 (`6c29486`), PR D as #52 (`ea26959`), D43 as #53 (`a022e7a`), the Stages 8–9 closeout as #54 (`e2374cc`), D44 as #55 (`9da66f1`), the D44 approval record as #56 (`4720bc2`), D45 as #57 (`13a7d38`), the risk-policy runner as #58 (`7556ac9`), notebook 05 as #59 (`11c07fe`), the Stage 10 results as #60 (`ff0a226`), the Stage 10 brief and closeout as #61 (`f166001`), the analyst console prototype v3 as #63 (`c5eebbb`), prototype v4 and design handoff as #64 (`e2e5eb6`), the D41 registry and storage implementation as #62 (`877f2af`), the Stage 17 API design note as #65 (`af5d6e8`)).
+- `origin/main`: checked at `ca45601` (Part 6 status correction PR #74 merged; includes combined Part 6 PR #72 and AI ethics PR #71).
+- `docs/stage11-midterm-ai-ethics-malak`: Entry 107 AI ethics and usage reflection, merged as PR #71 (`98fd8d7`).
+- `docs/stage11-midterm-uml-malak`: Entries 104–106, merged as PR #70 (`85829e1`).
+- `docs/stage11-midterm-backlog-malak`: Entry 102 backlog, merged as PR #69 (`023bfa4`).
 - `docs/stage8-cnn-selection`: merged as PR #52 (remote branch deleted).
 - `docs/stage16-d43-loudness-diagnostic`: D43 proposal and approval (Entry 87), merged as PR #53 (`a022e7a`) (remote branch deleted).
 - `feat/stage13-window-runner`: D35 per-window integration test; its log entry needs renumbering to 85.
@@ -3252,7 +6203,7 @@ review is still required. AI did not push, open or merge a PR.
 - `docs/stage18-ui-prototype-v4`: prototype v4 and design handoff (Entry 98), merged as PR #64 (`e2e5eb6`).
 - `feat/stage11-d41-registry-storage`: D41 registry and per-clip storage implementation (Entry 99), merged as PR #62 (`877f2af`).
 - `docs/stage17-api-design`: Stage 17 API design note (Entry 100), merged as PR #65 (`af5d6e8`).
-- `docs/stage11-d46-runtime`: D46 proposal (Entry 101), not pushed yet.
+- `docs/stage11-d46-runtime`: D46 proposal (Entry 152, written as Entry 101), open PR #67.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
@@ -3265,5 +6216,5 @@ review is still required. AI did not push, open or merge a PR.
 2. Before Stage 13, implement the approved file-level view, speaker-average convention and guarded
    runner; resolve the external-run governance allowlist.
 3. Stage 7 is closed (PR #43); Stages 8–9: the official run is complete (Entry 86), validation only; PR D merged as #52; D43 approved (PR #53, Entry 87; implementation only at Stage 16, after the D41 storage implementation); the 08–09 teach-backs are done (Entry 88); Stage 10 is closed (Entry 96); next: Stage 11 (FoR test, once), after its runtime and environment plan (Entry 94) and the reviewed D41 registry and storage implementation (D41, ADR 0010). Preserve the recorded validation-only scope of Entries 74 and 86.
-4. D41 and ADR 0010 are approved in PR #46; the closed-purpose registry and Stage 11 per-clip score storage are implemented on `feat/stage11-d41-registry-storage` (Entry 99), reviewed and approved in PR #62 (Khalil required, Malak requested), merged as `877f2af`. D46 (the Stage 11 run procedure) is proposed (Entry 101); next: its approval (all four), then the Stage 11 runner in its own PR; no FoR test access before both.
+4. D41/ADR 0010 registry and per-clip storage implementation merged in PR #62 (Entry 99). The D46 runtime/environment proposal is in open PR #67 and the Stage 11 runner in open PR #68; review and merge the required prerequisites before any FoR test access.
 5. Then run the real Part C work on the frozen F3 preprocessing profile; the W&B project is set up (entity `voice-spoofing-detection-must`, project `voice-spoofing-detection`, D40), and teammates' Member invites are pending (see Open items).

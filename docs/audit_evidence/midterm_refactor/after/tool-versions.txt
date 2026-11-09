@@ -1,0 +1,32 @@
+Name: coverage
+Version: 7.17.0
+Summary: Code coverage measurement for Python
+Home-page: https://github.com/coveragepy/coveragepy
+Author: Ned Batchelder and many others
+Author-email: ned@nedbatchelder.com
+License: Apache-2.0
+Location: C:\Users\dridi\Documents\voice_spoofing\voice-spoofing-detection\.venv\Lib\site-packages
+Requires:
+Required-by:
+---
+Name: radon
+Version: 6.0.1
+Summary: Code Metrics in Python
+Home-page: https://radon.readthedocs.org/
+Author: Michele Lacchia
+Author-email: michelelacchia@gmail.com
+License: MIT
+Location: C:\Users\dridi\Documents\voice_spoofing\voice-spoofing-detection\.venv\Lib\site-packages
+Requires: colorama, mando
+Required-by:
+---
+Name: ruff
+Version: 0.17.3
+Summary: An extremely fast Python linter and code formatter, written in Rust.
+Home-page: https://docs.astral.sh/ruff
+Author:
+Author-email: "Astral Software Inc." <hey@astral.sh>
+License-Expression: MIT
+Location: C:\Users\dridi\Documents\voice_spoofing\voice-spoofing-detection\.venv\Lib\site-packages
+Requires:
+Required-by:

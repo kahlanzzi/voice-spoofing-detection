@@ -1,0 +1,48 @@
+# Local run of the API and the web app (docs/setup.md "Running with Docker Compose"). nginx (web) is the only way
+# in, on http://localhost:8001; the api publishes no port. Never expose the API without nginx
+# (docs/api_design.md §4.8 rate limit).
+
+# Uploads that fit in /tmp at once. Each one uses /tmp twice (Starlette's spooled part, then the API's temp
+# copy), so the tmpfs must be at least 2 x (max_size_bytes + 64 KiB) x this. nginx buffers each body once
+# (client_max_body_size at most). The deploy tests check both.
+# Nothing enforces this count yet: see the "limit concurrent analyses" Open item (Entry 116).
+x-vsd-concurrent-uploads: 4
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: deploy/api.Dockerfile
+    environment:
+      # Read from the gitignored .env by Compose; only this key enters the container. Empty or unset: no start.
+      VSD_SIGNIN_HMAC_KEY: ${VSD_SIGNIN_HMAC_KEY:?set VSD_SIGNIN_HMAC_KEY in .env (see .env.example)}
+    expose:
+      - "8000"
+    volumes:
+      - vsd-var:/app/var   # SQLite store (database_path: var/api.sqlite); survives restarts
+    tmpfs:
+      - /tmp:size=192m,mode=1777   # temp uploads (temp_dir: null); in memory, gone at restart (NFR-03)
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+
+  web:
+    # nginx (pinned by tag and digest in the Dockerfile) with the built app and deploy/nginx.conf copied in;
+    # after a config edit, run docker compose build web.
+    build:
+      context: .
+      dockerfile: deploy/web.Dockerfile
+    ports:
+      - "8001:80"   # the port in allowed_origins (configs/api.yaml)
+    tmpfs:
+      - /var/cache/nginx:size=96m   # buffered request bodies (uploads); in memory, gone at restart (NFR-03)
+    environment:
+      NGINX_ENTRYPOINT_QUIET_LOGS: "1"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  vsd-var:

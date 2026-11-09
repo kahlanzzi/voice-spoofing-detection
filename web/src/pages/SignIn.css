@@ -1,0 +1,30 @@
+/* S1 Sign in (Stage 18 PR 4). Tokens only for colour, type, radius, space and motion; from the prototype
+   (docs/design/analyst-console-prototype.html): sign-in 280-285 and 443. Layout sizes with no HANDOFF token (440,
+   36 px) are the prototype's values. The prototype's 22 / 18 / 14 px text uses the nearest tokens (Entry 134).
+   Buttons, banners, fields and the spinner come from web/src/components/ (PR 8a, Entry 141). */
+
+.signin {
+  max-width: none; min-height: 100vh; min-height: 100dvh; display: grid; place-items: center;
+  padding-block: var(--sp-7); padding-left: max(var(--sp-4), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--sp-4), env(safe-area-inset-right, 0px));
+}
+.signin-card {
+  width: 100%; max-width: 440px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: var(--sp-6); display: flex; flex-direction: column; gap: var(--sp-4); box-shadow: var(--elev-2);
+}
+.signin-card h1 { font-size: var(--fs-lg); }
+.signin-card h1:focus { outline: none; }
+.signin-brand { display: flex; align-items: center; gap: var(--sp-3); }
+.signin-brand .brand-mark {
+  width: 36px; height: 36px; border-radius: var(--r-md); background: var(--nav); color: var(--nav-ink-strong);
+  display: grid; place-items: center; flex: none;
+}
+.brand-name { font-weight: 700; font-size: var(--fs-md); }
+.signin-sub, .signin-help { font-size: var(--fs-sm); color: var(--muted); }
+
+/* Retry sits at the start of the card's column (it was part of .btn-secondary before PR 8a). */
+.signin-card .btn-secondary { align-self: flex-start; }
+
+@media (max-width: 640px) {
+  .signin-card { padding: var(--sp-5) var(--sp-4); }
+}

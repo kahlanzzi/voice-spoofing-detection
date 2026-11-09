@@ -1,0 +1,73 @@
+937 passed in 85.53s (0:01:25)
+PS C:\Users\dridi\Documents\voice_spoofing\voice-spoofing-detection> .\.venv\Scripts\python.exe -m coverage report --precision=2
+Name                                    Stmts   Miss Branch BrPart   Cover
+--------------------------------------------------------------------------
+api\__init__.py                             0      0      0      0 100.00%
+api\config.py                              55      0     20      0 100.00%
+api\errors.py                              36      0      0      0 100.00%
+api\main.py                                15      0      0      0 100.00%
+api\middleware.py                          25      2      4      1  89.66%
+api\routers\__init__.py                     0      0      0      0 100.00%
+api\routers\status.py                      12      0      0      0 100.00%
+api\schemas.py                             43      0      0      0 100.00%
+src\__init__.py                             0      0      0      0 100.00%
+src\audit\__init__.py                       0      0      0      0 100.00%
+src\audit\common.py                        95      6     14      4  90.83%
+src\audit\deepvoice_metadata_audit.py      82     12     14      2  83.33%
+src\audit\for2sec_audit.py                260     20     80     14  89.41%
+src\bundle\__init__.py                      0      0      0      0 100.00%
+src\bundle\bundle.py                      193     16     62     13  88.63%
+src\evaluation\__init__.py                  0      0      0      0 100.00%
+src\evaluation\bootstrap.py                62      4     20      1  93.90%
+src\evaluation\clip_scores.py             237     10     88      3  96.00%
+src\evaluation\metrics.py                  73      1     10      1  97.59%
+src\evaluation\run_registry.py            167     15     66     10  89.27%
+src\evaluation\seeds.py                    37      0     14      0 100.00%
+src\evaluation\speaker_average.py          42      0     20      0 100.00%
+src\evaluation\speakers.py                 28      0      8      0 100.00%
+src\features\__init__.py                    3      0      0      0 100.00%
+src\features\logmel_cache.py              132     11     54      6  90.86%
+src\features\mfcc_cache.py                158     15     62     10  88.64%
+src\freezing\__init__.py                    0      0      0      0 100.00%
+src\freezing\manifests.py                 208     46     78     24  74.83%
+src\models\__init__.py                      0      0      0      0 100.00%
+src\models\baseline.py                    178     13     60      6  91.18%
+src\models\cnn.py                          27      0      6      0 100.00%
+src\models\cnn_checkpoint.py              157      3     44      1  98.01%
+src\preprocessing\__init__.py               4      0      0      0 100.00%
+src\preprocessing\benchmark.py            104     82     32      2  19.12%
+src\preprocessing\features.py              33      2      8      2  90.24%
+src\preprocessing\profile.py              114     20     52     18  77.11%
+src\preprocessing\validation.py           210    105     68      4  47.12%
+src\preprocessing\waveform.py              97      6     32      6  90.70%
+src\risk\__init__.py                        0      0      0      0 100.00%
+src\risk\calibration.py                    84      5     24      5  90.74%
+src\risk\decisions.py                      55      1     26      1  97.53%
+src\risk\policy.py                         82      3     28      3  94.55%
+src\splitting\__init__.py                   0      0      0      0 100.00%
+src\splitting\for2sec.py                  251     40     92     27  79.88%
+src\training\__init__.py                    0      0      0      0 100.00%
+src\training\cnn_config.py                 58      0     16      0 100.00%
+src\training\determinism.py                21      0      4      0 100.00%
+src\training\normalization.py              42      2     18      2  93.33%
+src\training\train_cnn.py                 100      1     20      1  98.33%
+src\training\wandb_logger.py               90      2     52      2  97.18%
+src\tuning\__init__.py                      0      0      0      0 100.00%
+src\tuning\baseline_fit.py                140      6     32      4  94.19%
+src\tuning\baseline_run.py                101      4     22      4  93.50%
+src\tuning\cnn_search.py                  131      6     24      6  92.26%
+src\tuning\risk_fit.py                     28      2     12      2  90.00%
+src\tuning\risk_run.py                    145      6     26      6  92.98%
+--------------------------------------------------------------------------
+TOTAL                                    4215    467   1312    191  86.76%
+PS C:\Users\dridi\Documents\voice_spoofing\voice-spoofing-detection> .\.venv\Scripts\python.exe -m coverage json -o (Join-Path $part6After "coverage.json")
+Wrote JSON report to C:\Users\dridi\AppData\Local\Temp\voice-spoofing-part6-after-20261031-233811\coverage.json
+PS C:\Users\dridi\Documents\voice_spoofing\voice-spoofing-detection> $env:RADONFILESENCODING = "UTF-8"
+PS C:\Users\dridi\Documents\voice_spoofing\voice-spoofing-detection> .\.venv\Scripts\python.exe -m radon cc -j api src | Set-Content -Encoding utf8 (Join-Path $part6After "complexity.json")
+PS C:\Users\dridi\Documents\voice_spoofing\voice-spoofing-detection> .\.venv\Scripts\python.exe -m ruff check --isolated --no-cache --target-version py313 --select E4,E7,E9,F --output-format json api src | Set-Content -Encoding utf8 (Join-Path $part6After "lint.json")
+PS C:\Users\dridi\Documents\voice_spoofing\voice-spoofing-detection> "Ruff exit code: $LASTEXITCODE"
+Ruff exit code: 0
+PS C:\Users\dridi\Documents\voice_spoofing\voice-spoofing-detection> .\.venv\Scripts\python.exe -m pip show coverage radon ruff | Set-Content -Encoding utf8 (Join-Path $part6After "tool-versions.txt")
+PS C:\Users\dridi\Documents\voice_spoofing\voice-spoofing-detection> $part6After
+C:\Users\dridi\AppData\Local\Temp\voice-spoofing-part6-after-20261031-233811
+PS C:\Users\dridi\Documents\voice_spoofing\voice-spoofing-detection>

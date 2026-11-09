@@ -1,0 +1,38 @@
+import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite'
+import { configDefaults } from 'vitest/config'
+
+// Dev loop (A12): the dev server forwards /api to nginx on 8001 and presents the Origin the API
+// allows (configs/api.yaml allowed_origins), so api.yaml stays unchanged. Dev server only:
+// `vite preview` and the production build get no proxy.
+const API_ORIGIN = 'http://localhost:8001'
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    // Under Vitest only, the contract tests read api/schemas.py and docs/api_design.md
+    // (src/api/types.test.ts) and deploy/nginx.conf (src/routing/routes.test.ts); `.` keeps Vite's default.
+    // Folders, because a file entry does not admit a `?raw` import. The dev server serves web/ only, as before.
+    ...(process.env.VITEST ? { fs: { allow: ['.', '../api', '../deploy', '../docs'] } } : {}),
+    proxy: {
+      '/api': {
+        target: API_ORIGIN,
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            if (proxyReq.getHeader('origin')) proxyReq.setHeader('origin', API_ORIGIN)
+          })
+        },
+      },
+    },
+  },
+  test: {
+    environment: 'jsdom',
+    // e2e/ belongs to Playwright (playwright.config.ts), never to Vitest.
+    exclude: [...configDefaults.exclude, 'e2e/**'],
+    // A window.scrollTo spy before each test: jsdom does not implement it (src/test/setup.ts).
+    setupFiles: ['./src/test/setup.ts'],
+    // Process CSS in tests: without it Vitest returns '' for CSS, `?raw` included, and the token and
+    // colour tests would read empty files.
+    css: true,
+  },
+})

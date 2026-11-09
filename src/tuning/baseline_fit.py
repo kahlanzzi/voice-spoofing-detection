@@ -28,7 +28,7 @@ import yaml
 from sklearn.svm import SVC
 
 from src.evaluation.metrics import eer
-from src.models.baseline import N_FEATURES, BaselineModel, fit_scaler, from_sklearn
+from src.models.baseline import N_FEATURES, fit_scaler, from_sklearn
 from src.risk.decisions import _validate_labels
 
 # The only values the code implements; anything else in the config is refused.

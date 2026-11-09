@@ -46,6 +46,9 @@ on FoR only; nothing here touches DEEP-VOICE before Stage 13 (AGENTS.md hard rul
     choice, 2026-10-14).
   - H5 and H6 copied unchanged from the register (below); "clearly lower" and "raises" are made
     operational in §7 and §9 (register).
+  - Addendum (D48, D50; PR #111, 2026-11-10): H8 (v2 vs v1 on DEEP-VOICE, Stage 13) and H9 (v2 vs v1
+    under the held-out white-noise family, Stage 14) are pre-registered in the register with their
+    tests; they are written before any v2 model or test result exists.
 
   | ID | Hypothesis | Test | Stage |
   |---|---|---|---|
@@ -111,6 +114,14 @@ on FoR only; nothing here touches DEEP-VOICE before Stage 13 (AGENTS.md hard rul
     log Open item 0.10) (team choice, 2026-10-14).
   - Every run logged to W&B with its config; compute benchmark before Stage 8 (AGENTS.md code rules;
     v2.1).
+  - Addendum, model v2 (D48–D50; PR #111, 2026-11-10): the rules above stay for v1. v2 candidates
+    `cnn-aug`, `crnn` and `aasist`, trained on FoR train with the D50 on-the-fly augmentation (training
+    split only, REAL and FAKE alike, five families, probability 0.8, disjoint from the §9 grid, white
+    noise held out); selection on val-A only by the mean EER over the D50 selection set S (clean, noise
+    10 dB, reverberation, Opus 16 kbps, narrowband telephony); early stopping on that mean, patience 5;
+    ties: fewer parameters, then `cnn-aug`, `crnn`, `aasist`; seeds 0, 1, 2 for the winner, bundle seed
+    = median. Exact configurations, batch sizes, corpus pins and tool versions go in `configs/` before
+    any v2 training run (D49, D50 (5)).
 - **Status:** Decided
 
 ## 5. Metrics and statistics
@@ -149,6 +160,8 @@ on FoR only; nothing here touches DEEP-VOICE before Stage 13 (AGENTS.md hard rul
   - Freeze F4 contains the CNN checkpoint + preprocessing profile config + policy file (threshold, band,
     calibration parameters, version) + a manifest with the SHA-256 of each (D2; AGENTS.md hard rule 2)
     (format: team choice, 2026-10-14).
+  - Addendum, model v2 (D49; PR #111, 2026-11-10): the same method, on clean val-B, for the v2 bundle
+    seed only (D45); frozen in F5 with the same format.
 - **Status:** Decided
 
 ## 7. FoR internal test (Stage 11)
@@ -166,6 +179,10 @@ on FoR only; nothing here touches DEEP-VOICE before Stage 13 (AGENTS.md hard rul
   - Reporting: all D4 metrics with class counts, per subgroup (D4; FR-14).
   - H5 "clearly lower": FAKE_other recall ≥ 5 points below FAKE_mp3 recall, and the 95% CI of the
     difference excludes 0 (H5) (team choice, 2026-10-14).
+  - Addendum, model v2 (D48 (6), (7); PR #111, 2026-11-10): this protocol addendum is merged before the
+    v1 `stage11_test` claim. v2 gets its own `stage11_test` claim for the v2 model set (all three v2
+    seeds; calibrated p and prediction for the bundle seed only, D45), after v2 selection and before F5;
+    the same storage and reporting rules apply.
 - **Status:** Decided
 
 ## 8. External run (Stage 13)
@@ -185,6 +202,10 @@ on FoR only; nothing here touches DEEP-VOICE before Stage 13 (AGENTS.md hard rul
     Stage 13; D26 C→D) (columns: team choice, 2026-10-14).
   - Single-run rule: exactly one run of the frozen bundle, registered once (AGENTS.md hard rule 1;
     FR-15).
+  - Addendum (D48; PR #111, 2026-11-10): the single run scores the v1 bundle CNN, the v2 bundle model
+    and `baseline-v1` in one pass under the D35 dataset-wide claim, after F5 or, if F5 is not verified by
+    2026-12-04 23:59 Africa/Tunis, with v1 and `baseline-v1` only. The file-level view (D34) also
+    measures the end-of-call accuracy of the live rule (D52). H8 is tested here.
   - Reporting: next to the in-domain result, with the gap, the RVC-only scope and the 87.5% FAKE share
     stated (FR-16; D8).
   - Governance: a new decision, before Stage 13, on adding the external-run code to the allowlist of
@@ -214,6 +235,11 @@ on FoR only; nothing here touches DEEP-VOICE before Stage 13 (AGENTS.md hard rul
     percentile CIs from 2,000 D14-group bootstrap resamples with seed 2026. The baseline's primary
     endpoint is the 3.4 kHz EER increase; it is meaningful only at ≥5 absolute percentage points with
     the paired CI excluding 0. No fitting, tuning, recalibration, threshold change or model selection.
+  - Addendum (D48 (8), D50 (3); PR #111, 2026-11-10): the v2 bundle model is a third model set, one
+    `stage14_robustness` claim over the complete grid, reusing its own Stage 11 clean scores. For v2,
+    white noise is reported as an unseen family, MP3 as a seen family with unseen bitrates and
+    bandwidth as a seen family; H6 stays a v1 hypothesis; H4 and the paired method apply unchanged; H9
+    is tested here.
 - **Note:** FAKE clips already carry MP3 history (D16), so the compression curve also informs H5;
   it is reported, not avoided.
 - **Status:** Decided
@@ -262,7 +288,8 @@ on FoR only; nothing here touches DEEP-VOICE before Stage 13 (AGENTS.md hard rul
 - **Reviewer:** all four
 - **Decided:**
   - F1 = this protocol at v1.0 (Stage 3); F2 = split + manifests (Stage 5); F3 = preprocessing profile
-    (Stage 6); F4 = ModelBundle (Stage 12). After a freeze, the frozen item changes only through a new
+    (Stage 6); F4 = ModelBundle (Stage 12); F5 = ModelBundle v2 (D49; addendum PR #111, 2026-11-10),
+    frozen before Stage 13 or the D48 cut-off. After a freeze, the frozen item changes only through a new
     decision (D1; v2.1 §6; AGENTS.md hard rule 6).
 - **Change control:** (1) Items deferred by design (silence detector, loudness normalization,
   resampler and invariance tolerance) are decided in Stage 6 and frozen in F3. (2) Any other change
@@ -295,3 +322,4 @@ on FoR only; nothing here touches DEEP-VOICE before Stage 13 (AGENTS.md hard rul
 | 1.0 | 2026-10-26 | D43: Stage 16 loudness diagnostic, within-class Spearman of score vs RMS on the stored Stage 11 per-clip scores (addresses the loudness gap in D42's shortcut coverage, association only); no existing rule changed | #53 |
 | 1.0 | 2026-10-28 | D45: §7 stores calibrated p and prediction for the bundle-seed CNN only (seeds 1–2 not applicable); clarification, no rule changed | #57 |
 | 1.0 | 2026-10-31 | D46 (proposed): Stage 11 run procedure (runtime, environment record, reproduction gate, test features in memory, durable claim, rerun rule); no existing rule changed | |
+| 1.0 | 2026-11-10 | D48–D52 addendum before any test access: model v2 (§4, §6), v2 Stage 11 claim (§7), joint external run and cut-off (§8), v2 in Stage 14 (§9), F5 (§12), H8–H9 (§1); v1 rules unchanged | #111 |

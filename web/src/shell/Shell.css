@@ -1,0 +1,111 @@
+/* App shell (Stage 18 PR 6a). Tokens only; from the prototype (docs/design/analyst-console-prototype.html): skip
+   link 92-93, shell and rail 125-153, ≤ 860 px drawer and top bar 403-414, ≤ 640 px h1 417. Changes: min-height
+   100dvh (the prototype's -40px is its own banner, line 126); every shell target is at least --target (44 px) at
+   every width (HANDOFF lines 86 and 245); the prototype's 16 / 14 / 22 px text uses the nearest tokens (as in
+   Entry 134). Layout sizes with no token (36 px brand mark, 48 px New analysis, 288 px / 86vw drawer, z-index
+   24-60) are the prototype's. .btn and .btn-primary come from components/Button.css (PR 8a). */
+
+.skip {
+  position: absolute; left: var(--sp-2); top: -100px; z-index: 60; background: var(--surface); color: var(--link);
+  padding: var(--sp-3) var(--sp-4); border-radius: var(--r-sm); box-shadow: var(--elev-2); font-weight: 600;
+  min-height: var(--target); display: inline-flex; align-items: center;
+}
+.skip:focus { top: var(--sp-2); }
+
+.shell { display: grid; grid-template-columns: var(--rail-w) minmax(0, 1fr); min-height: 100vh; min-height: 100dvh; }
+.rail {
+  background: var(--nav); color: var(--nav-ink); padding: var(--sp-5) var(--sp-3);
+  display: flex; flex-direction: column; gap: var(--sp-5);
+}
+.brand { display: flex; align-items: center; gap: var(--sp-3); padding: 0 var(--sp-2); }
+.brand-mark {
+  width: 36px; height: 36px; border-radius: var(--r-md); background: var(--nav-ink); color: var(--nav);
+  display: grid; place-items: center; flex: none;
+}
+.rail .brand-name { font-weight: 700; font-size: var(--fs-md); color: var(--nav-ink-strong); }
+.brand-sub { font-size: var(--fs-xs); color: var(--nav-muted); }
+/* HANDOFF line 245: New analysis 48 px, the strongest action. */
+.rail .btn-primary { width: 100%; min-height: 48px; font-size: var(--fs-md); }
+.nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.nav a {
+  display: flex; align-items: center; gap: var(--sp-3); min-height: var(--target); padding: 0 var(--sp-3);
+  border-radius: var(--r-sm); color: var(--nav-ink); text-decoration: none; font-size: var(--fs-base);
+}
+.nav a:hover { background: var(--nav-2); }
+.rail :focus-visible, .topbar :focus-visible { outline-color: var(--nav-indicator); }
+/* aria-current + bar + bold, never colour alone (HANDOFF line 148). */
+.nav a[aria-current="page"] {
+  background: var(--nav-2); color: var(--nav-ink-strong); font-weight: 600; box-shadow: inset 3px 0 0 var(--nav-indicator);
+}
+.rail-foot {
+  margin-top: auto; display: flex; flex-direction: column; gap: var(--sp-3);
+  border-top: 1px solid var(--nav-line); padding-top: var(--sp-4);
+}
+.rail-foot:empty { display: none; }
+/* Rail status line (PR 7a; prototype lines 139-143). --target high, not 32 px, like every shell target; the icon
+   colours are the --nav-ok / --nav-warn / --nav-err tokens (P 143's values), at least 3:1 on --nav and --nav-2. */
+.svc {
+  display: flex; align-items: center; gap: var(--sp-2); min-height: var(--target); padding: 0 var(--sp-2);
+  border-radius: var(--r-sm); color: var(--nav-ink); text-decoration: none; font-size: var(--fs-sm);
+}
+.svc:hover { background: var(--nav-2); }
+.svc svg { flex: none; }
+.svc-ready svg { color: var(--nav-ok); } .svc-notice svg { color: var(--nav-warn); } .svc-down svg { color: var(--nav-err); }
+.svc-mock { color: var(--nav-muted); }
+/* Rail footer (PR 6b; prototype lines 144-149). The theme select's border is --nav-muted, 7.33 / 7.53:1 on --nav-2
+   (1.4.11); Sign out keeps the --nav-line border (text-labelled, like Menu) and is --target high, not 40 px. */
+.who { display: flex; flex-direction: column; padding: 0 var(--sp-2); min-width: 0; }
+.who-name { font-size: var(--fs-sm); font-weight: 600; color: var(--nav-ink-strong); overflow-wrap: anywhere; }
+.who-role, .theme label { font-size: var(--fs-xs); color: var(--nav-muted); }
+.theme { display: flex; flex-direction: column; gap: var(--sp-1); padding: 0 var(--sp-2); }
+.theme select {
+  min-height: var(--target); border-radius: var(--r-sm); border: 1px solid var(--nav-muted); background: var(--nav-2);
+  color: var(--nav-ink); padding: 0 var(--sp-2); font-size: var(--fs-sm); width: 100%;
+}
+.rail .btn-out {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2); min-height: var(--target);
+  white-space: nowrap; padding: 0 var(--sp-3); background: transparent; color: var(--nav-ink);
+  border: 1px solid var(--nav-line); border-radius: var(--r-sm); cursor: pointer; font-size: var(--fs-sm);
+}
+.rail .btn-out:hover:not([disabled]) { background: var(--nav-2); }
+.rail .btn-out[disabled] { opacity: .5; cursor: not-allowed; }
+.rail-foot .banner-err { margin: 0; }
+.topbar { display: none; }
+
+.main {
+  min-width: 0; padding-block: var(--sp-6) var(--sp-8);
+  padding-left: max(var(--sp-4), env(safe-area-inset-left, 0px)); padding-right: max(var(--sp-4), env(safe-area-inset-right, 0px));
+}
+.wrap {
+  max-width: var(--content-max); margin: 0 auto; padding-inline: var(--sp-4);
+  display: flex; flex-direction: column; gap: var(--sp-5);
+}
+.wrap h1:focus { outline: none; }
+
+@media (max-width: 1280px) { .main { padding-block: var(--sp-5) var(--sp-7); } }
+@media (max-width: 860px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .rail {
+    position: fixed; z-index: 25; top: 0; bottom: 0; left: 0; width: min(288px, 86vw); transform: translateX(-105%);
+    transition: transform 180ms var(--ease); padding-top: calc(var(--sp-5) + env(safe-area-inset-top, 0px));
+    padding-left: max(var(--sp-3), env(safe-area-inset-left, 0px)); overflow-y: auto; visibility: hidden;
+  }
+  .rail.open { transform: none; visibility: visible; box-shadow: var(--elev-2); }
+  .scrim { position: fixed; inset: 0; z-index: 24; background: var(--scrim); }
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3);
+    background: var(--nav); color: var(--nav-ink); padding-block: var(--sp-2);
+    padding-left: max(var(--sp-4), env(safe-area-inset-left, 0px)); padding-right: max(var(--sp-4), env(safe-area-inset-right, 0px));
+  }
+  .topbar .menu {
+    min-height: var(--target); padding: 0 var(--sp-3); border-radius: var(--r-sm); background: transparent;
+    border: 1px solid var(--nav-line); color: var(--nav-ink); cursor: pointer; display: inline-flex; gap: var(--sp-2);
+    align-items: center;
+  }
+  .topbar .btn { padding: 0 var(--sp-3); font-size: var(--fs-sm); }
+  .main { padding-block: var(--sp-5) var(--sp-7); }
+  .wrap { padding-inline: 0; }
+}
+@media (max-width: 640px) {
+  .wrap h1 { font-size: var(--fs-lg); }
+}

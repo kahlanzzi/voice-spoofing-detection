@@ -1,0 +1,36 @@
+/* Button (Stage 18 PR 8a; HANDOFF line 137; prototype lines 103-123 and 420). Tokens only; 36 px (sm) is the
+   prototype's size. .btn comes first, so .btn-sm and the variants win over it: in PR 7b's bundle Status.css's
+   .btn-sm and .btn-quiet came before SignIn.css's .btn, which made Check now a 44 px button with no border (Entry
+   141). The prototype's 14 px text uses --fs-sm (as in Entry 134). Pressed states for secondary and destructive
+   (prototype lines 112, 118) are an Open item; destructive and link have no user yet. */
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2); min-height: var(--target);
+  padding: 0 var(--sp-4); border-radius: var(--r-sm); border: 1px solid transparent; font-weight: 600;
+  font-size: var(--fs-base); cursor: pointer; white-space: nowrap;
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.btn-primary { background: var(--accent); color: var(--accent-ink); }
+.btn-primary:hover:not([disabled]) { background: var(--accent-hover); }
+.btn-primary:active:not([disabled]) { background: var(--accent-active); }
+.btn-secondary { background: var(--surface); color: var(--link); border-color: var(--link); }
+.btn-secondary:hover:not([disabled]) { background: var(--accent-soft); }
+.btn-quiet { background: transparent; color: var(--ink); border-color: var(--line-strong); }
+.btn-quiet:hover:not([disabled]) { background: var(--surface-2); }
+.btn-quiet:active:not([disabled]) { background: var(--line); }
+.btn-danger { background: transparent; color: var(--danger); border-color: var(--danger); }
+.btn-danger:hover:not([disabled]) { background: var(--danger-soft); }
+.btn-sm { min-height: 36px; padding: 0 var(--sp-3); font-size: var(--fs-sm); }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+.btn-link {
+  display: inline-flex; align-items: center; gap: var(--sp-1); min-height: 36px; padding: 0 2px; background: none;
+  border: none; color: var(--link); cursor: pointer; font-weight: 600; text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.btn-link:hover:not([disabled]) { text-decoration-thickness: 2px; }
+.btn-link[disabled] { color: var(--muted); text-decoration: none; cursor: not-allowed; }
+
+/* HANDOFF line 86: every target ≥ 44 × 44 px at ≤ 640 px, so the small sizes grow. */
+@media (max-width: 640px) {
+  .btn-sm, .btn-link { min-height: var(--target); }
+}

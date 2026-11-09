@@ -1,0 +1,3 @@
+coverage.json -text whitespace=cr-at-eol
+complexity.json -text whitespace=cr-at-eol
+lint.json -text whitespace=cr-at-eol

@@ -32,16 +32,20 @@ documents, propose a fix, and wait for approval.
 1. **DEEP-VOICE is external and touched exactly once.** Never use it for training, tuning, threshold
    selection, calibration, early stopping, model selection, or exploration. No listening, no spectrograms,
    no feature statistics, no model scoring, except the single guarded external run after the ModelBundle
-   freeze. Before that run, the only permitted accesses are (D20): download, zip hash, unzip, listing
-   paths / extensions / sizes / byte hashes, and `src/audit/deepvoice_metadata_audit.py`. Nothing reads
+   freezes (F4, and F5 or the D48 cut-off; D48). Before that run, the only permitted accesses are
+   (D20): download, zip hash, unzip, listing paths / extensions / sizes / byte hashes, and
+   `src/audit/deepvoice_metadata_audit.py`. Nothing reads
    audio content. If a request would touch DEEP-VOICE in any other way, **stop and refuse**, explaining why.
    `tests/governance/test_deepvoice_access.py` fails CI if DEEP-VOICE paths appear outside the permitted
    files; extend its allowlist only through a decision.
 2. **ModelBundle = CNN checkpoint + preprocessing profile + risk policy (thresholds, uncertain band,
    calibration).** All fitted on FoR only and frozen together *before* the external run (D2).
-3. **Scope lock.** Baseline = MFCC (mean+std) + RBF-SVM, for evaluation only (D7). Deployed model =
-   one CNN on log-Mel spectrograms. Do NOT add wav2vec2/WavLM/HuBERT/AASIST/RawNet, other features
-   (LFCC, CQCC, raw waveform), ensembles, or explainability. These are future work.
+3. **Scope lock.** Baseline = MFCC (mean+std) + RBF-SVM, for evaluation only (D7). Model v1 = one CNN
+   on log-Mel spectrograms (D42). Model v2 (D49, D50) = only the three pre-declared candidates
+   `cnn-aug`, `crnn` (log-Mel) and `aasist` (F3 waveform), trained with the D50 augmentation; one
+   deployed model at a time (D48 (5)). Do NOT add wav2vec2/WavLM/HuBERT/XLS-R/RawNet, other features
+   (LFCC, CQCC), ensembles, or explainability. These are future work. Live analysis follows D51 and
+   D52 only.
 4. **No training code before the dataset audit is signed off and Protocol v1.0 is frozen.**
 5. **Metrics:** accuracy, precision, recall, F1, EER, ROC-AUC, confusion matrix (3-way, incl. uncertain),
    plus coverage/deferral. Positive class = spoof. No t-DCF. Never report accuracy alone.
@@ -113,17 +117,19 @@ required CI check `checks`, branch up to date; no direct pushes.
 | 8–9 | CNN training + model selection (FoR val-A) | C · Donia | done |
 | 10 | Risk policy + calibration fit (FoR val-B) | C · Donia | done |
 | 11 | FoR internal test (once) | C · Donia | ← CURRENT |
-| 12 | **ModelBundle freeze** | C · Donia | |
-| 13 | **DEEP-VOICE external run (once, guarded)**, stores per-sample scores | D · Khalil; review: all four | |
+| 12 | **ModelBundle v1 freeze (F4)**; v1 replaces the mock in the API (D48) | C · Donia; integration: Iheb | |
+| V | Model v2 track: augmentation pipeline, candidates and selection (val-A), risk policy (val-B), FoR test once (v2 model set), **F5 freeze** (D48–D50) | C · Donia; D50 pipeline: Malak | |
+| 13 | **DEEP-VOICE external run (once, guarded)**: v1, v2 and baseline in one pass, after F5 or the 2026-12-04 cut-off (D48); stores per-sample scores | D · Khalil; review: all four | |
 | 14–16 | Robustness (FoR only) · calibration analysis · error analysis | D · Malak (14), Khalil (15, 16) | |
 | 17–19 | API (FastAPI) · web app (React, D38) · tests/CI/Docker/docs | E · Iheb; Stage 19 report: all four | |
+| L | Live analysis: live mic and `/api/live` (Must), Chrome extension (Should) (D51, D52) | E · Iheb | |
+| P | PostgreSQL, process pool and load test, staging/production, interface redesign and usability test (D53–D55) | E · Iheb; usability test: all four | |
 
 Review rule (D26): the consumer reviews the producer.
 
 Update the status column when a stage passes its gate.
 
 Open reminders:
-- `docker-compose.yml` → Stage 17
 - `configs/robustness.yaml` → Stage 14
 
 ## Compute and data
