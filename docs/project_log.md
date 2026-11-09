@@ -5510,7 +5510,61 @@ the DEEP-VOICE governance test passed **3/3**; `git diff --check` passed; token 
 
 ---
 
+### Entry 150 — Professor feedback: model v2 track, live analysis and infrastructure decisions proposed (2026-11-09)
+
+**Authorship:** requested and specified by Donia Mabrouk after the team's midterm meeting with the
+professor (2026-11-09). The proposals were drafted by **Claude** (claude.ai, Claude Opus 5.5), an AI
+tool, from the repository at `48e72f5` (PR #110 merged), the SRS v3.0, SDD v1.0 and Execution Plan
+v2.1 PDFs and the professor's feedback; Donia reviews before push.
+
+**Professor's feedback (as reported by Donia):** methodology, branches, commits and PRs are what was
+needed. Problems and requests: the platform cannot be tested because it runs on mock data; the
+interface looks generic and must be redesigned; the confidence-score decisions must be shown and
+justified; add a live check (calls, WhatsApp, possibly an extension) with free tools; plan the
+infrastructure (uploads, CPU/GPU inference, database, bottlenecks, a justified concurrency limit);
+move beyond the CNN towards temporal or voice-specific models; augment the clean training data for
+real-world audio; set up staging and production environments.
+
+**What (docs only, no code, no data access):** on `docs/stage11-v2-track-decisions`, decisions
+**D48–D55** proposed in `docs/decisions/README.md` with ADRs 0012–0015, and hypotheses **H8** (v2 vs v1
+on DEEP-VOICE) and **H9** (augmentation vs the held-out white-noise family) pre-registered:
+- D48 / ADR 0012: v1 continues to F4 and replaces the mock; Stage 13 is held and runs once on v1, v2
+  and `baseline-v1` (amends D36, D41); cut-off 2026-12-04; v2 deployed by rule, not by test result;
+  the v2 design is approved before the v1 Stage 11 claim.
+- D49, D50 / ADR 0013: candidates `cnn-aug`, `crnn`, `aasist`; selection on mean val-A EER over a
+  clean-plus-degraded set; on-the-fly augmentation of REAL and FAKE alike, disjoint from the Stage 14
+  grid, white noise held out (amends AGENTS.md hard rule 3 and supersedes D10 for v2 only).
+- D51, D52 / ADR 0014: live microphone mode and `/api/live` (Must), Chrome tab-capture extension
+  (Should), mobile and native call capture (Won't, platform limit); live verdict = D34's file-level
+  rule on the stream so far after 3 kept windows (changes SRS WH-01).
+- D53, D54 / ADR 0015: CPU process pool with `503` + `Retry-After`, limits from a staging load test,
+  PostgreSQL; dev/staging/production with images promoted from GHCR and a reviewed production gate.
+- D55: interface redesign (three directions, decision board, per-window timeline) with a moderated
+  usability test (SUS target ≥ 68).
+
+**Why now:** no test result exists for any model, so v2 can still be fixed blind; D35's dataset-wide
+Stage 13 key allows one external pass, so the joint run is the only way to compare v1 and v2 on
+DEEP-VOICE.
+
+**Checks:** see the PR description (real `pytest -q` output and `scripts/check-docs.sh`).
+
+**Gate:** approval by all four in this PR, then the approval commit (statuses to Approved, ADR
+statuses, AGENTS.md hard rule 3 and roadmap, Protocol addendum). **WAITING FOR APPROVAL.**
+
+---
+
 ## Open items
+
+**v2 track, live analysis and infrastructure (Entry 150)**
+- [ ] Approve or revise D48–D55, ADRs 0012–0015 and H8–H9 (all four) before the v1 Stage 11 claim.
+- [ ] Approval commit: statuses to Approved; AGENTS.md hard rule 3 (v2 candidates) and roadmap; Protocol addendum for §§4, 6, 7, 9, 12 (v2 values, F5, Stage 11/14 model sets, cut-off).
+- [ ] Pin the noise and RIR corpora (licence, hash, 50/50 file split) and codec tools before any v2 training (D50 (5)).
+- [ ] Compute benchmark per v2 candidate; batch sizes in `configs/` before training (D49).
+- [ ] Extension authentication design and security review in SDD v2.0 before implementation (D51).
+- [ ] Choose the hosting provider and record it (D54 (9)); load test on staging, then record K, L, `analysis_timeout_s` and `L_MAX` (D53 (3)).
+- [ ] Write SRS v4.0, SDD v2.0 and Execution Plan v3.0 from D48–D55 (D48 (10)).
+- [ ] Stage 13 runner (D35) and Stage 11 runner (PR #68) accept the v2 model set (D48 (3), (7)).
+
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
 - [ ] Review the sectioned documentation index (Entry 115); confirm existing entries and links remain available.
@@ -5875,7 +5929,9 @@ the DEEP-VOICE governance test passed **3/3**; `git diff --check` passed; token 
 
 ---
 
-## Current status — updated 2026-11-07
+## Current status — updated 2026-11-09
+
+**After the midterm review (Entry 150):** decisions D48–D55 (model v2 track with one joint Stage 13 run, live analysis, infrastructure, environments, interface redesign) and H8–H9 are proposed on `docs/stage11-v2-track-decisions` and await approval by all four; under D48 they must be approved before the v1 Stage 11 claim.
 
 **Documentation navigation:** Entry 115 groups the docs index by topic without moving files. The
 midterm backlog refresh in Entry 149 records merged Stage 17–18 evidence without changing the closed
