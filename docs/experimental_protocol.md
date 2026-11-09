@@ -321,4 +321,5 @@ on FoR only; nothing here touches DEEP-VOICE before Stage 13 (AGENTS.md hard rul
 | 1.0 | 2026-10-24 | D42: CNN design and training details fixed (completes §4 'size: team choice'); no existing rule changed | #44 |
 | 1.0 | 2026-10-26 | D43: Stage 16 loudness diagnostic, within-class Spearman of score vs RMS on the stored Stage 11 per-clip scores (addresses the loudness gap in D42's shortcut coverage, association only); no existing rule changed | #53 |
 | 1.0 | 2026-10-28 | D45: §7 stores calibrated p and prediction for the bundle-seed CNN only (seeds 1–2 not applicable); clarification, no rule changed | #57 |
+| 1.0 | 2026-10-31 | D46 (proposed): Stage 11 run procedure (runtime, environment record, reproduction gate, test features in memory, durable claim, rerun rule); no existing rule changed | |
 | 1.0 | 2026-11-10 | D48–D52 addendum before any test access: model v2 (§4, §6), v2 Stage 11 claim (§7), joint external run and cut-off (§8), v2 in Stage 14 (§9), F5 (§12), H8–H9 (§1); v1 rules unchanged | #111 |

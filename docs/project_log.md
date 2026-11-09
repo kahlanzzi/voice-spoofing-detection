@@ -5574,6 +5574,78 @@ evidence.
 
 ---
 
+### Entry 152 — D46 proposed: Stage 11 run procedure (2026-10-31)
+
+**Numbering:** written as Entry 101 on 2026-10-31; renumbered to 152 when `main` was merged into
+`docs/stage11-d46-runtime` on 2026-11-10 (Entries 101–151 were taken on `main` in the meantime,
+including PR #111's D48–D55). The text below is unchanged from 2026-10-31.
+
+**Owner:** Donia Mabrouk.
+
+**Scope [doc]:** Protocol §7, D15, D31, D41, D45 and ADR 0007, before the Stage 11 runner and any
+FoR test access; closes the gap left open by Entry 94 and `docs/results/risk_policy_fit.md` §6
+limitation 3 (Stage 11 must plan its runtime and environment record).
+
+**What we did:** on `docs/stage11-d46-runtime`, from `origin/main` at `af5d6e8` (PR #65 had merged
+after `877f2af`):
+- Proposed D46 (one row, `docs/decisions/README.md`): (1) Colab T4 runtime, all models scored on
+  CPU; (2) asserted environment gate; (3) recorded environment (`pip freeze` + SHA-256, feature and
+  model library versions, CPU flags incl. AVX-512, GPU, platform); (4) reproduction gate on the
+  val-A log-Mel and MFCC caches (built twice, npz bytes equal to Stages 8 and 7; the MFCC
+  npz-bytes-vs-commit test must exist and pass before the dry run); (5) fixed order with the
+  registry claim with key (`for`, `test`, `stage11_test`, model set) before the first test read;
+  (6) durable claim on Drive, re-read before the first test read, committed byte for byte to
+  `docs/audit_evidence/run_registry.jsonl` by PR after the run; (7) test features in memory only,
+  computed twice and hashed before any model sees them; (8) pre-declared rerun rule.
+- Protocol §14: one "D46 (proposed)" row, PR cell empty (as for D43); `docs/CHANGELOG.md`: one
+  "(proposed)" line (as for D44/D45).
+
+**Why:** Entry 94 found that a Colab CPU runtime gave a val-A log-Mel npz (`9fbb1711…e98ae19f`)
+different from Stage 8's, and the cause (processor vs image drift) could not be separated because
+neither Stage 8 nor Stage 10 recorded the processor or the unpinned feature libraries. Without a
+plan, the Stage 11 test features could be computed in an environment that does not match the one
+that produced the models and the policy, and a crashed Colab session could lose a claim that only
+lived in the clone. D46 fixes all of it before any test access.
+
+**Evidence [verified]:**
+- Stage 8 val-A log-Mel `npz_sha256` `4502eea2f77cfd83d7e2b1d777e392fa460a13e805a936faa2788df8e7862c81`
+  (`docs/audit_evidence/stage8_cnn/run_report.json:10` and `:49`); Stage 7 val-A MFCC `npz_sha256`
+  `04227c58b25f208771693db6262f39fd5276518811a13d60b9e7f9a560772bbd`
+  (`docs/audit_evidence/stage7_baseline/val-A.json:7`, `run_report.json:11`).
+- Stage 10 `scoring.device` "cpu" (`docs/audit_evidence/stage10_risk/run_report.json:51`).
+- `extract_features` returns `(WaveformResult, log_mel, mfcc)` (`src/preprocessing/features.py:64-79`).
+- The MFCC cache writes `code_commit` to the JSON only (`src/features/mfcc_cache.py:139`), but no
+  test checks MFCC npz bytes across commits (`tests/features/test_mfcc_cache.py:171` uses one
+  commit); the log-Mel counterpart exists (`tests/features/test_logmel_cache_npz_bytes.py`).
+- Stage 7's runtime type (T4 or CPU) is not recorded: Entry 74 says "on Colab" only, and notebook
+  03 has no accelerator in its metadata.
+
+**Conflict found and resolved in D46 (6):** `docs/evaluation_harness.md` "Run registry" says the real
+Stage 11 registry is `docs/audit_evidence/run_registry.jsonl` and, in Why (d), that "Stage 11 passes
+the committed evidence path"; D46 (6) puts the live file on Drive and commits it byte for byte to
+`docs/audit_evidence/run_registry.jsonl` after the run; the harness text (the path paragraph and
+Why (d)) changes in the approval commit.
+
+**Options rejected:** (a) pinning scipy, soxr, numba and llvmlite now; (b) a persisted test cache;
+(c) GPU scoring; (d) a local Windows run. Reasons in the D46 row.
+
+**Not done:** no code, test, notebook, data, Drive, cache, checkpoint or FoR test access; no
+approved decision, ADR or protocol rule text changed; `docs/evaluation_harness.md` not edited. The
+runner (Entry 99's carried items; the MFCC npz-bytes-vs-commit test is built in the runner PR) and
+the metrics (Protocol §7, D4) are not decided here.
+
+**Decisions:** D46 proposed (next D-ID: D47).
+
+**AI assistance:** **Claude** (claude.ai) wrote the prompt and the D46 content. **Claude Code**
+(Claude Opus 5.5) verified the cited hashes, lines and D-ID/entry numbers against `main` and the
+remote branches, found the `evaluation_harness.md` wording conflict, and edited the docs. Human
+review is still required. AI did not push, open or merge a PR.
+
+**Gate:** D46 approval (all four) before the Stage 11 runner and any FoR test access.
+**WAITING FOR APPROVAL.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -5707,7 +5779,7 @@ evidence.
 - [x] 10a-2 part 2: notebook 05 and its tests (Entry 93): merged as PR #59 (`11c07fe`).
 - [x] 10a-2 part 2: official Colab run of notebook 05 (2026-10-28; Entry 94)
 - [x] Commit the Stage 10 evidence and results (Entry 94): merged as PR #60 (`ff0a226`)
-- [ ] Stage 11: plan runtime and environment recording (T4 image family; unpinned feature libraries) before any FoR test access (Entry 94)
+- [ ] Stage 11: plan runtime and environment recording (T4 image family; unpinned feature libraries) before any FoR test access (Entry 94): proposed as D46 (Entry 152, written as Entry 101; PR #67), awaiting approval (all four)
 - [x] Approve D45 (bundle-seed-only policy): approved via PR #57 (2026-10-28; Entry 91).
 
 **Stage 11 run registry (Entry 34)**
@@ -6129,8 +6201,9 @@ canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI eth
 - `docs/stage10-brief`: Stage 10 brief (Entry 95) and closeout (Entry 96), merged as PR #61 (`f166001`).
 - `docs/stage18-ui-prototype-v3`: analyst console prototype v3 (Entry 97), merged as PR #63 (`c5eebbb`).
 - `docs/stage18-ui-prototype-v4`: prototype v4 and design handoff (Entry 98), merged as PR #64 (`e2e5eb6`).
-- `feat/stage11-d41-registry-storage`: D41 registry and per-clip storage implementation (Entry 99), PR #62, approved.
-- `docs/stage17-api-design`: Stage 17 API design note (Entry 100), not pushed yet.
+- `feat/stage11-d41-registry-storage`: D41 registry and per-clip storage implementation (Entry 99), merged as PR #62 (`877f2af`).
+- `docs/stage17-api-design`: Stage 17 API design note (Entry 100), merged as PR #65 (`af5d6e8`).
+- `docs/stage11-d46-runtime`: D46 proposal (Entry 152, written as Entry 101), open PR #67.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 

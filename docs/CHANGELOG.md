@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- D46 (proposed): Stage 11 run procedure: T4 runtime with CPU scoring, environment gate and record, val-A log-Mel/MFCC reproduction gate, durable registry claim on Drive before the first test read, test features in memory only (computed twice), pre-declared rerun rule; no FoR test accessed.
 - D48–D55, ADRs 0012–0015 and H8–H9 approved (PR #111); AGENTS.md hard rules 1 and 3 and the roadmap updated; Protocol addendum for model v2, the joint external run and F5 (v1 rules unchanged).
 - Proposed decisions D48–D55 with ADRs 0012–0015 and hypotheses H8–H9: model v2 track and one joint external run, v2 candidates and augmentation, live analysis, inference infrastructure, staging/production environments and the interface redesign (docs only; awaiting approval).
 - Stage 18: README section "MVP: install and run", tested from a fresh clone: key, start, first account, mock labelling, what is not in the MVP, clean database, tests and troubleshooting.
