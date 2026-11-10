@@ -193,7 +193,8 @@ clip's float32 little-endian C-order bytes in path order, which equals the stack
 | `environment_score.json` | written by `score` right after the marker (step 4): the environment record of the scoring session, same format as `environment.json` |
 | `run_report.json` | `schema_version` 1, `code_commit`, `run_id`, `dataset`, `split`, `evaluation_purpose`, `model_set` (role and artifact hash per model), `bundle_seed`, `claim_sha256`, `scoring_marker_sha256`, `pre_scoring_checks` (`expected` / `actual` / `passed`, from `score`'s `preflight`), `environment_files` (SHA-256 of `environment.json` and `pip_freeze.txt`, from `claim.json`), `environment_score_sha256`, `environment_same_as_claim` (`true` if the two canonical records are byte-equal; descriptive only, nothing depends on it), `scoring`, `features` (hashes, `n_clips`), `clip_scores` (`csv_sha256`, `sidecar_sha256`, `n_rows` per model), `counts` (per label and subgroup) |
 
-No metrics: the next PR computes them from the stored files only. `environment_record` never
+No metrics: they are computed from the stored files only, by the Stage 11 report
+([stage11_report.md](stage11_report.md), D57). `environment_record` never
 raises: a missing `/proc/cpuinfo`, `nvidia-smi` or `pip` is recorded under `failures`.
 
 ## Rehearsal (`rehearse`, the D46 dry run)

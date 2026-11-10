@@ -5800,6 +5800,74 @@ generated from one source so they match. Donia reviews before push.
 
 ---
 
+### Entry 156 — Stage 11 metrics report from the stored files (PR B); D57 proposed (2026-11-10)
+
+**Owner:** Donia Mabrouk.
+
+**Scope [doc]:** Protocol §1 (H1), §5 (CIs, seed rows), §7 (D4 metrics with counts, per subgroup;
+H5); D4, D11, D14, D29, D31, D41, D45, D46. PR B of three (A runner, merged as PR #68; B report;
+C notebook 06). Code, synthetic tests and docs only: no dataset, Drive, cache, checkpoint, W&B or
+FoR test access.
+
+**What we did:** on `feat/stage11-report`, from `main` at `499de16`:
+- **Report** `src/evaluation/stage11_report.py`: reads only what the Stage 11 run stored
+  (`run_report.json`, `claim.json`, the four per-clip score files), the registry, the F2 manifest,
+  the frozen risk policy and the Stage 7 / Stage 10 evidence. No audio, cache, checkpoint or model;
+  never calls the runner; torch-free (the runner's constants are re-declared and tested equal).
+  1. Integrity checks before any metric, each `expected` / `actual` / `passed` and raising with its
+     name: run report (schema, dataset, purpose, IDs, model set and roles, bundle seed); claim
+     (same run, SHA-256 equal to `claim_sha256`); registry (one started and one completed record,
+     same key and commit, `results_ref` equal to the claim's; registry SHA-256 and line count
+     recorded); each score file through `read_clip_scores`, against the run report and the F2 hash;
+     the same clips in all four files; the F2 join (split, label, group, none missing, counts);
+     policy and baseline threshold and hashes against Stage 7, Stage 10 and D41; independent
+     re-derivation of every stored `p` and prediction.
+  2. Metrics under D57: score level on `raw_score` for all four models (overall, REAL vs each FAKE
+     subgroup); forced binary for the bundle CNN (on `p` at the frozen threshold) and the baseline
+     (D29), overall and per subgroup; three-way for the bundle CNN from the stored predictions;
+     group-clustered bootstrap CIs; H1, H5; seed rows.
+  3. `metrics_report.json` (strict JSON) and `metrics_report.md` (rendered from the JSON only),
+     exclusive creation in a new folder; byte-identical on a second run.
+- **D57 (proposed)** in `docs/decisions/README.md`: the nine reporting conventions above, fixed before
+  any test result.
+- **Docs:** `docs/stage11_report.md` (new), `docs/README.md` index, `docs/CHANGELOG.md`, link from
+  `docs/stage11_run.md`.
+
+**Choices with reasons** (`docs/stage11_report.md` "Why"):
+- H5 on forced-binary recall (D57 (5)): the uncertain band defers different shares per subgroup, so
+  non-deferred recalls would have denominators chosen by the model; the non-deferred subgroup recall
+  is still reported in the three-way table.
+- "≥ 5 points" compared exactly on the counts (`fractions.Fraction`): in floats 0.85 − 0.80 =
+  0.04999…, so a difference of exactly 5 points would otherwise fail the Protocol's "≥". This is an
+  implementation of the Protocol rule, written into D57 (5) for review.
+- The split is read from `run_report.json` and checked against `claim.json` and the registry; the
+  module never names it and needs no guard `ALLOWED` entry (it reads stored outputs only, D31). The
+  guard's blind spot this relies on is written in the doc's Limitations.
+- The manifest is read as `load_f2_manifest` reads it but without its row-count check, and bound by
+  its SHA-256 to Stage 10 and the approved F2 value instead, so synthetic tests can use a small one.
+
+**Evidence:**
+- [verified] `pytest -q tests/evaluation/test_stage11_report.py tests/governance` (local, Windows,
+  Python 3.14.7, `REQUIRE_TORCH_TESTS=1`): 107 passed.
+- [verified] full `pytest -q` (same venv, `REQUIRE_TORCH_TESTS=1`): 1571 passed, 0 failed, 0 errors, 0 skipped (57 of them new in `test_stage11_report.py`).
+- [verified] hand case (14 clips): EER 1/4 (bundle CNN), 3/8 (baseline), H1 d 1/8, H5 d 1/2, three-way
+  confusion (4, 1, 1) / (2, 5, 1), each equal to its hand calculation in the test comments.
+
+**Not done:** no data, Drive, notebook or FoR test access; no registry file; no Protocol, ADR,
+`AGENTS.md` roadmap or guard change (Stage 11 is still current).
+
+**Decisions:** D57 proposed (Donia author); needs all four approvals and an approval commit before
+merge.
+
+**AI assistance:** **Claude** (claude.ai) wrote the prompt. **Claude Code** (Claude Opus 5.5)
+implemented the code, tests and docs, ran the tests, and wrote this entry, the D57 row and the
+CHANGELOG line. Donia reviews. AI does not approve or merge.
+
+**Gate:** D57 approved by all four, then review (Khalil, Part C reviewer; Malak and Khalil read
+these numbers in Stages 14–16). **WAITING FOR APPROVAL.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -6050,7 +6118,9 @@ generated from one source so they match. Donia reviews before push.
 
 **Stage 11 runner (Entry 154, written as Entry 102)**
 - [ ] Review of PR A: Khalil (required), Malak, Iheb; merge only after D46 is approved (PR #67). D46 approved (PR #67, Entry 153); review of PR #68 remains.
-- [ ] PR B: Stage 11 report computed from the stored files only.
+- [ ] PR B: Stage 11 report computed from the stored files only. Implemented on `feat/stage11-report` (Entry 156); review open.
+- [ ] D57 (Stage 11 reporting conventions): approval by all four and an approval commit, before PR B merges and before the Stage 11 claim (Entry 156).
+- [ ] PR C, notebook 06: run `python -m src.evaluation.stage11_report` after `complete`, from the stored files; choose the `results_ref` target (planned `docs/results/stage11_for_test.md`) (Entry 156).
 - [ ] PR C, notebook 06: Drive flush and remount between `claim` and `score`, registry SHA-256 checked against `claim.json`, `run_id` read from `claim.json` in code, val-A caches present in the score session, `out/` and registry on Drive outside the clone, `--results-ref` the Drive-relative path of `run_report.json`, the notebook's own exact `ALLOWED` entry (Entry 102).
 
 **Stage 17 API (Part E, Entry 100)**
@@ -6181,7 +6251,9 @@ generated from one source so they match. Donia reviews before push.
 
 ---
 
-## Current status — updated 2026-11-10 (Entry 155)
+## Current status — updated 2026-11-10 (Entry 156)
+
+**Stage 11 report (Entry 156):** PR B on `feat/stage11-report` computes the D4 metrics, CIs, H1, H5 and seed rows from the stored run files only, after integrity checks; D57 (reporting conventions) is proposed and needs all four approvals before merge and before the Stage 11 claim. Next: PR C, notebook 06.
 
 **Plan:** Execution Plan v3.0 (Entry 155) sets tracks R, V, L and P with dates; the v2 freeze cut-off is Friday 4 December, 23:59 Tunis (D48).
 
@@ -6204,6 +6276,9 @@ canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI eth
 **Midterm refactor audit:** Entries 108–110 record the initial report and baseline. Entry 111 implements two small lint cleanups on the stacked cleanup branch: 937 tests pass, governance 3 passed, scoped lint findings 2 to 0, coverage and complexity unchanged. No speedup is claimed. Entry 112 adds the measured report/PDF and after captures. The work merged via #73 into combined #72 (`76c55aa`) after recorded teammate approvals and successful CI. Entry 113 corrected stale report status and merged as PR #74 (`ca45601`); separate final editorial/course acceptance remains open. Evidence-sensitive restructuring stays deferred.
 
 **What was done:**
+- **Stage 11 metrics report (PR B)** on `feat/stage11-report` (Entry 156): `src/evaluation/stage11_report.py`,
+  integrity checks on the stored run files, then D4 metrics, clustered CIs, H1, H5 and seed rows;
+  D57 proposed; synthetic tests only; no FoR test access.
 - **Stage 11 runner (PR A)** on `feat/stage11-runner` (Entry 154, written as Entry 102; PR #68): `src/evaluation/stage11_run.py`,
   two-phase official run (`claim`, then `score` with a once-only marker), val-A/val-B rehearsal as
   the D46 dry run, MFCC npz-bytes test, guard `ALLOWED` = the runner; synthetic tests only,
@@ -6371,6 +6446,7 @@ canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI eth
 - `docs/stage17-api-design`: Stage 17 API design note (Entry 100), merged as PR #65 (`af5d6e8`).
 - `docs/stage11-d46-runtime`: D46 proposal (Entry 152, written as Entry 101), merged as PR #67 (`37d0233`); approval record PR #112 (Entry 153).
 - `feat/stage11-runner`: Stage 11 runner, PR A (Entry 154, written as Entry 102), PR #68; D46 approved (PR #67, Entry 153).
+- `feat/stage11-report`: Stage 11 metrics report, PR B (Entry 156); D57 proposed.
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
