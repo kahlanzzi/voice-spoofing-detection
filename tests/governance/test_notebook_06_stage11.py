@@ -1,9 +1,9 @@
-"""Static checks for the Stage 11 Colab notebook (notebooks/06_stage11_for_test.ipynb; D31, D40, D46, D57).
+"""Static checks for the Stage 11 Colab notebook (notebooks/06_stage11_for_test.ipynb; D31, D40, D46, D57, D58).
 
 The notebook is committed with outputs cleared and is only run in Colab, so these tests read its JSON
 and parse each code cell with ast; they never execute it. They pin the D46 order and its guards:
-the T4 runtime with CPU scoring, the environment gate, only val-A and val-B cached, the rehearsal
-before the claim, the claim cell and every later cell refusing the dry-run mode, the Drive flush and
+the T4 runtime (version 2026.10, D58 (1)) with CPU scoring, the environment gate, the D58 MFCC
+reference passed to every runner call, only val-A and val-B cached, the rehearsal before the claim, the claim cell and every later cell refusing the dry-run mode, the Drive flush and
 remount between claim and score, run_id read from claim.json, the registry never rewritten, one
 claim and one score, no metric read before the results view, and the FoR held-out guard.
 
@@ -175,14 +175,27 @@ def test_torch_is_never_installed():
 def test_python_torch_and_t4_are_asserted():
     tree = _cell_tree("'pip', 'install'")
     asserted = _asserted(tree)
-    assert "ENV['python'].startswith('3.13.')" in asserted  # D15
-    assert "torch.__version__.startswith('2.11.0')" in asserted
+    assert "ENV['python'] == '3.13.16'" in asserted  # D15, D58 (1): runtime 2026.10
+    assert "ENV['torch'] == '2.11.0+cu130'" in asserted  # D58 (1)
+    assert "torch.__version__ == '2.11.0+cu130'" in asserted  # before the install
+    assert "ENV['torch'] == torch.__version__" in asserted
+    assert not any("startswith('3.13" in a or "startswith('2.11" in a for a in asserted), asserted
     assert "'T4' in GPU_NAME" in asserted  # D46 (1)
     (gpu,) = _assigned(tree, "GPU_NAME")
     (command,) = [n for n in ast.walk(gpu) if isinstance(n, ast.List)]
     assert ast.literal_eval(command) == ["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"]
     metadata = _notebook()["metadata"]
     assert metadata["accelerator"] == "GPU" and metadata["colab"]["gpuType"] == "T4"
+
+
+def test_markdown_names_runtime_version_2026_10():
+    # D58 (1): the runtime version is chosen in the Colab UI, so the markdown must say which.
+    cells = _cells()
+    for marker in ("'pip', 'install'", "REPO_URL = "):
+        (i,) = [k for k, c in enumerate(cells) if c["cell_type"] == "code" and marker in _source(c)]
+        text = _source(cells[i - 1])
+        assert "2026.10" in text and "T4" in text, marker
+        assert "Version d'exécution / Runtime version" in text, marker
 
 
 def test_nothing_runs_on_the_gpu():
@@ -249,6 +262,27 @@ def test_frozen_artifacts_are_copied_outside_the_clone_and_never_loaded_here():
     assert not "/content/stage11_artifacts/".startswith(CLONE + "/")
 
 
+def test_mfcc_reference_is_copied_outside_the_clone_and_only_hashed():
+    # D58 (3)(a): the CPU-runtime reference is copied from Drive; the runner, not the notebook, checks it.
+    tree = _cell_tree("ARTIFACTS = ")
+    (local,) = _assigned(tree, "MFCC_REFERENCE_LOCAL")
+    assert ast.unparse(local) == "ARTIFACTS / 'mfcc_reference'"
+    (drive,) = _assigned(tree, "MFCC_REFERENCE_DRIVE")
+    assert ast.unparse(drive) == "STAGE11 / 'mfcc_reference'"
+    (loop,) = [n for n in tree.body if isinstance(n, ast.For) and ast.unparse(n.target) == "split"]
+    assert ast.literal_eval(loop.iter) == ("val-A", "val-B")
+    assert "shutil.copytree(MFCC_REFERENCE_DRIVE / split, MFCC_REFERENCE_LOCAL / split)" in [
+        ast.unparse(n) for n in loop.body]
+    (hashes,) = _assigned(tree, "MFCC_REFERENCE_SHA256")
+    assert ast.unparse(hashes) == "file_hashes(MFCC_REFERENCE_LOCAL)"
+    code = "\n".join(_code())
+    assert "MFCC_REFERENCE_LOCAL" not in code.split("ARTIFACTS = ")[0]  # defined in step 8, not before
+    assert "np.load" not in code and "allclose" not in code  # nothing compared here
+    (mount,) = _assigned(_cell_tree("STAGE11 = "), "STAGE11")
+    assert ast.unparse(mount) == "DRIVE / 'processed' / 'metadata' / 'stage11'"
+    assert "assert not ARTIFACTS.resolve().is_relative_to(REPO.resolve()), ARTIFACTS" in _code()[_cell_index("ARTIFACTS = ")]
+
+
 # --- Runner calls -----------------------------------------------------------------------------------
 
 def test_each_runner_subcommand_is_invoked_exactly_once_outside_loops_and_functions():
@@ -277,6 +311,7 @@ def test_shared_inputs_are_the_runner_arguments():
         "'--stage10-evidence'": "str(REPO / 'docs/audit_evidence/stage10_risk')",
         "'--cache-a'": "str(CACHE_A)",
         "'--cache-b'": "str(CACHE_B)",
+        "'--mfcc-reference'": "str(MFCC_REFERENCE_LOCAL)",  # D58 (3)(a)
     }
     assert "RUNNER = 'src.evaluation.stage11_run'" in _code()[_cell_index("INPUTS = [")]
 
@@ -292,6 +327,9 @@ def test_runner_arguments_per_subcommand():
                                  "'--run-id'": "RUN_ID", "'--out'": "str(CLAIM_OUT)"}
     for call in (rehearse, claim, score):
         assert "--split" not in _strings(call)
+        assert "*INPUTS" in _call_args(call)  # so each call gets --mfcc-reference (D58 (3)(a))
+    (inputs,) = _assigned(_cell_tree("INPUTS = ["), "INPUTS")
+    assert "--mfcc-reference" in _strings(inputs)
     code = _code()
     assert "REPORT_OUT = Path('/content/stage11_report')" in code[_cell_index(REPORT)]  # the report stays local
 
@@ -504,7 +542,8 @@ def test_official_export_files_and_manifest():
     assert {k.value for k in ret.keys} == {
         "commit", "mode", "cnn_version", "baseline_version", "risk_version", "python", "numpy", "torch",
         "gpu_name", "created_utc", "for_revision", "for_archive_sha256_observed", "pytest_counts",
-        "cache_sha256", "f3", "rehearsal_passed"}
+        "cache_sha256", "mfcc_reference_sha256", "f3", "rehearsal_passed"}
+    assert "'mfcc_reference_sha256': MFCC_REFERENCE_SHA256" in _code()[_cell_index("def base_manifest(")]
     assert "'registry': {'path': REGISTRY.relative_to(DRIVE).as_posix(), 'sha256': REGISTRY_SHA256," in src
     assert "REGISTRY_LINES = len(REGISTRY.read_text(encoding='utf-8').splitlines())" in src
 

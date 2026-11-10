@@ -6117,11 +6117,37 @@ cache, checkpoint, W&B or FoR test access; nothing under `src/` changed.
   `RUN_DEST.mkdir` put back into the claim cell, report `--run-dir` not the Drive folder) each fail
   at least one test.
 
+**Update for D58 (after `main` with D56 #116 and D58 #117 was merged in, `f852367`) [doc]:** reason:
+D58 (approved, PR #117) makes `--mfcc-reference` required by `rehearse`, `claim` and `score` and pins
+the Colab runtime version 2026.10 (D58 (1), (3)(a)); the notebook as committed would have failed the
+runner's argument parsing and allowed any 3.13 / 2.11.0 image. Nothing under `src/` changed.
+- Step 8 also copies `processed/metadata/stage11/mfcc_reference/{val-A,val-B}/` from Drive to
+  `/content/stage11_artifacts/mfcc_reference/` (outside the clone), not verified in the notebook (the
+  runner checks it against Stage 7); `MFCC_REFERENCE_SHA256` (SHA-256 of the copied files) is added
+  to `base_manifest()`, so both the dry-run and the export manifest record it.
+- `INPUTS` gains `'--mfcc-reference', str(MFCC_REFERENCE_LOCAL)`, so all three runner calls get it.
+- Environment: the parameters and environment markdown say to select the T4 and "Version d'exécution
+  / Runtime version" 2026.10; the cell asserts `ENV['python'] == '3.13.16'`, `ENV['torch'] ==
+  '2.11.0+cu130'` and, before the install, `torch.__version__ == '2.11.0+cu130'` (were
+  `startswith('3.13.')` / `startswith('2.11.0')`).
+- Step 7 markdown: the sentence saying the runner checks the MFCC caches against Stage 7's bytes is
+  replaced by the D58 (3) rule (reference and tolerance; Stage 7 bytes recorded only).
+- Static test: exact version asserts (no `startswith`), "2026.10" and the runtime-version label in both
+  markdown cells, the reference copy (Drive and local paths, val-A/val-B loop, outside the clone, only
+  hashed, nothing compared), `--mfcc-reference` in `INPUTS` and `*INPUTS` in all three runner calls,
+  `mfcc_reference_sha256` in `base_manifest()` (38 tests).
+- `docs/stage11_run.md` "Notebook 06": steps 1–6 (step 4) and 8, Drive layout `mfcc_reference/`.
+- [verified] `pytest -q tests/governance` (local, Windows, Python 3.14.7, `REQUIRE_TORCH_TESTS=1`):
+  88 passed; full `pytest -q` (same venv): 1623 passed, 0 failed, 0 errors, 0 skipped.
+- [verified] six hand mutations (no `--mfcc-reference` in `INPUTS`, Python `startswith('3.13.')`, torch
+  `startswith('2.11.0')`, no `mfcc_reference_sha256`, markdown "2026.9", reference copied from
+  `DRIVE /` instead of `STAGE11 /`) each fail at least one test.
+
 **Not done:** the notebook is not run (dry run Tue 17 Nov; official run Wed 18–Thu 19 Nov); no
 registry file, no Drive or data access; no decision, Protocol, ADR, guard or `AGENTS.md` roadmap
-change.
+change. The dry run must be redone with this notebook (Entry 159).
 
-**Decisions:** none new. D57 approved via GitHub reviews on PR #114 (2026-11-10); approval commit
+**Decisions:** none new (the D58 update implements approved D58). D57 approved via GitHub reviews on PR #114 (2026-11-10); approval commit
 merged with #114.
 
 **AI assistance:** **Claude** (claude.ai) wrote the prompt and will review. **Claude Code** (Claude
@@ -6397,7 +6423,7 @@ the official run only after the D57 approval commit is in and PR B and PR C are 
 **Stage 11 MFCC reproduction gate (Entry 159)**
 - [x] D58 (processor-bound MFCC gate, amends D46 (1) and (4)): approval by all four and an approval commit, before `fix/stage11-mfcc-gate` merges and before the Stage 11 claim. (approved via GitHub reviews on PR #117, 2026-11-10; merged as #117)
 - [x] Build the val-B CPU-runtime MFCC reference: rebuilt twice, `04f91e3e…` = Stage 7; reference on Drive at `processed/metadata/stage11/mfcc_reference/{val-A,val-B}/` (Entry 159).
-- [ ] PR C, notebook 06: pass `--mfcc-reference` (the Drive folder above) to `rehearse`, `claim` and `score`, and pin the Colab runtime version 2026.10 (D58 (1)) (Entry 159).
+- [x] PR C, notebook 06: pass `--mfcc-reference` (the Drive folder above) to `rehearse`, `claim` and `score`, and pin the Colab runtime version 2026.10 (D58 (1)) (Entry 159). (Entry 160 D58 update, `feat/stage11-notebook`; awaits PR C review)
 - [ ] Redo the Stage 11 dry run after D58 is approved and merged and PR C is updated (Entry 159).
 - [ ] Stage 13 joint run and Stage 14: apply the D58 (3) MFCC gate with the same reference when `baseline-v1` is scored on a T4 runtime (D58 (4)).
 - [x] Entry numbering: D56 took Entries 157 and 158 on `main` (PR #116); this D58 entry is Entry 159, and PR C's notebook entry (Entry 157 on `feat/stage11-notebook`) is renumbered when that branch is rebased (Entry 159).
@@ -6532,9 +6558,9 @@ the official run only after the D57 approval commit is in and PR B and PR C are 
 
 ## Current status — updated 2026-11-10 (Entry 160)
 
-**Stage 11 notebook (Entry 160):** PR C on `feat/stage11-notebook` (rebased on `main` after PR B merged as #114) adds notebook 06: a `dry_run` mode (rehearsal on val-A/val-B, export, stop) and an `official` mode (claim, Drive flush and remount with the claim verified on Drive, score, report, export, then the results view), with its static test; not run. Next: PR C review, the dry run on Colab T4 (Tue 17 Nov), then the official run after PR C merges (Wed 18–Thu 19 Nov).
+**Stage 11 notebook (Entry 160):** PR C on `feat/stage11-notebook` (rebased on `main` after PR B merged as #114) adds notebook 06: a `dry_run` mode (rehearsal on val-A/val-B, export, stop) and an `official` mode (claim, Drive flush and remount with the claim verified on Drive, score, report, export, then the results view), with its static test; not run. After `main` (D56, D58) was merged in, the notebook implements D58: it copies the CPU-runtime MFCC reference from Drive, passes `--mfcc-reference` to `rehearse`, `claim` and `score`, records the reference's SHA-256 in the manifests, and asserts runtime 2026.10 (Python 3.13.16, torch 2.11.0+cu130). Next: PR C review, the dry run redone on Colab T4 runtime 2026.10 (Tue 17 Nov), then the official run after PR C merges (Wed 18–Thu 19 Nov).
 
-**Stage 11 dry run and D58 (Entry 159):** the first dry run of notebook 06 (T4, runtime version 2026.10) stopped at the MFCC reproduction gate before any claim or test read: the T4 MFCC val-A bytes differ from Stage 7's, which reproduce only on a CPU runtime without AVX-512, while the log-Mel reproduces only on the T4. D58 (proposed, `fix/stage11-mfcc-gate`) keeps the exact log-Mel gate and replaces MFCC byte equality with a CPU-runtime reference equal to Stage 7, a fixed tolerance and identical `baseline-v1` validation decisions; the runner implements it. Next: D58 approval, PR C update (`--mfcc-reference`, runtime 2026.10), dry run again.
+**Stage 11 dry run and D58 (Entry 159):** the first dry run of notebook 06 (T4, runtime version 2026.10) stopped at the MFCC reproduction gate before any claim or test read: the T4 MFCC val-A bytes differ from Stage 7's, which reproduce only on a CPU runtime without AVX-512, while the log-Mel reproduces only on the T4. D58 (proposed, `fix/stage11-mfcc-gate`) keeps the exact log-Mel gate and replaces MFCC byte equality with a CPU-runtime reference equal to Stage 7, a fixed tolerance and identical `baseline-v1` validation decisions; the runner implements it. D58 is approved and merged (PR #117), and PR C is updated for it (Entry 160). Next: dry run again.
 
 **D56 approval (Entries 157–158):** Donia, Iheb and Khalil approved PR #116. D56 is Approved: RawBoost algorithm 1 replaces algorithm 3 for v2, preserving H9's held-out additive-Gaussian family, and the seven codec options are sampled uniformly. The approval commit awaits green CI and human merge before V1a begins.
 

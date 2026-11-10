@@ -308,9 +308,9 @@ every code cell starts with `assert MODE == 'official'`.
 
 | Step | What |
 |---|---|
-| 1–6 | parameters; Drive mount, refuse existing outputs; exact commit (`assert_clean`); environment gate (T4, Python 3.13, Colab torch 2.11.0 never installed, pinned requirements, fresh-process probe); FoR archive (D21 revision); `pytest` via JUnit XML, 0 failures, errors, skips (D46 (2)) |
+| 1–6 | parameters (select the T4 and Colab runtime version 2026.10, "Version d'exécution / Runtime version", D58 (1)); Drive mount, refuse existing outputs; exact commit (`assert_clean`); environment gate (step 4: T4, Python exactly 3.13.16, Colab torch exactly 2.11.0+cu130 never installed, i.e. runtime 2026.10, D58 (1); pinned requirements, fresh-process probe); FoR archive (D21 revision); `pytest` via JUnit XML, 0 failures, errors, skips (D46 (2)) |
 | 7 | caches: `cache_a` = `log_mel/` and `mfcc/` for val-A and val-B, `cache_b` = val-A only (D46 (4)); val-A files of both builds byte-identical; F3 and `code_commit` in each JSON |
-| 8 | frozen artifacts copied from Drive to `/content/stage11_artifacts/` (CNN seeds 0–2, `baseline-v1`, `risk_policy.json`, `val_b_scores.npz`); the runner checks every hash |
+| 8 | frozen artifacts copied from Drive to `/content/stage11_artifacts/` (CNN seeds 0–2, `baseline-v1`, `risk_policy.json`, `val_b_scores.npz`) and the D58 MFCC reference `mfcc_reference/{val-A,val-B}/` to `/content/stage11_artifacts/mfcc_reference/`, passed as `--mfcc-reference` (in `INPUTS`) to `rehearse`, `claim` and `score`; its files' SHA-256 recorded in the export manifest (`mfcc_reference_sha256`); not verified here: the runner checks every hash (the reference against Stage 7, D58 (3)(a)) |
 | 9 | `rehearse`, `passed` must be `true`; dry run: into `dry_run/<UTC timestamp>/rehearsal/` on Drive (the timestamped folder created with `exist_ok=False`), so the dry run also proves the runner's folder creation and exclusive writes on Drive; official: into `/content/stage11_rehearsal` |
 | 10 | dry run only: hash the rehearsal files in place, write `stage11_dry_run_manifest.json`, flush, remount, re-verify; "Dry run complete. Stop here." |
 | 11 | `refuse_existing_outputs()` (`run/` must not exist), then `claim` with the Drive registry, `RESULTS_REF` and `--out run/runner/` (`CLAIM_OUT`, on Drive); the notebook creates no folder: the runner creates `run/runner/` (with `run/`) by an exclusive `mkdir` only after the claim, so a pre-claim failure leaves nothing that blocks a permitted rerun; SHA-256 of the three claim files recorded (`CLAIM_HASHES`) |
@@ -321,7 +321,8 @@ every code cell starts with `assert MODE == 'official'`.
 | 16 | only now: display `metrics_report.md` |
 
 **Drive layout** (`processed/metadata/stage11/`): `run_registry.jsonl` (the live registry, D46 (6),
-written only by `claim` and `complete`); `run/` (official: `runner/` written in place by `claim` and
+written only by `claim` and `complete`); `mfcc_reference/{val-A,val-B}/` (the D58 (3)(a)
+CPU-runtime MFCC reference, read only: copied to `/content` by step 8); `run/` (official: `runner/` written in place by `claim` and
 `score`, with the claim and score evidence and `clip_scores/`; `metrics_report.*`, `rehearsal/`, the
 export manifest); `dry_run/<UTC timestamp>/` (one per dry run: `rehearsal/` written in place by
 `rehearse`, the manifest). The runner writes straight to Drive because the `scoring_started.json`
