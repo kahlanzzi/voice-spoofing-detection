@@ -935,8 +935,9 @@ def rehearse(*, root, stage10_scores, out_dir, splits=REHEARSAL_SPLITS, **inputs
     """The D46 dry run on val-A and val-B (module docstring); return the rehearsal report.
 
     cache_a must also hold the val-B caches, and mfcc_reference the val-B reference (D58 (3)(c);
-    only the rehearsal reads it). The T4 MFCC cache bytes are recorded, not compared with Stage 7
-    (D58 (3)); the log-Mel cache bytes must equal Stages 8 and 10. No registry is opened and no
+    only the rehearsal reads it); on both splits the in-memory T4 MFCC must be within the D58 (3)(b)
+    tolerance of the reference. The T4 MFCC cache bytes are recorded, not compared with Stage 7
+    (D58 (3)(d)); the log-Mel cache bytes must equal Stages 8 and 10. No registry is opened and no
     test path exists here.
     After the split and folder checks, the report is always written: "passed": true on success;
     on any failure "passed": false, the failing check's name (None if the error was not a recorded
@@ -1012,6 +1013,9 @@ def rehearse(*, root, stage10_scores, out_dir, splits=REHEARSAL_SPLITS, **inputs
                 f"{split}.{MFCC}")
             _check(known, f"{split}.{MFCC}.reference_rows",
                    _rows_record(rows["path"].tolist(), rows["label"].tolist()), _cache_rows(ref_paths, ref_labels))
+            difference = mfcc_difference(features[MFCC], ref_features)  # D58 (3)(c), the (b) rule
+            _record(known, f"{split}.{MFCC}.within_tolerance", MFCC_TOLERANCE_RULE, difference,
+                    difference["allclose"])
             baseline_reference_answers(models, split, features[MFCC], scores[BASELINE_ID], ref_features, known)
             per_split[split] = {"features": feature_hashes, "scored": sorted(scores),
                                 "counts": _counts(rows)}

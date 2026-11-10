@@ -217,12 +217,13 @@ failing loudly:
 
 | Check | Expected from |
 |---|---|
-| in-memory log-Mel and MFCC (with paths and labels) equal the verified caches, val-A and val-B | caches in `cache_a`; the log-Mel `npz_sha256` must equal the evidence (`<split>.log_mel.cache_npz_sha256`; val-B `2cff949d…`); the MFCC `npz_sha256` is recorded, not compared (`<split>.mfcc.cache_npz_sha256_observed`, D58 (3)) |
+| in-memory log-Mel and MFCC (with paths and labels) equal the verified caches, val-A and val-B | caches in `cache_a`; the log-Mel `npz_sha256` must equal the evidence (`<split>.log_mel.cache_npz_sha256`; val-B `2cff949d…`); the MFCC `npz_sha256` is recorded, not compared (`<split>.mfcc.cache_npz_sha256_observed`, D58 (3)(d)) |
 | val-A EER per CNN seed | each checkpoint's `val_a_eer` |
 | val-A baseline EER | Stage 7 `val_a_eer` |
 | val-B bundle-seed raw scores and `p`, byte for byte, same paths and labels | Stage 10 `val_b_scores.npz`, after its SHA-256 equals `val_b_scores_sha256` |
 | val-B baseline EER | Stage 7 `val_b_eer` |
 | D58 (3)(c), val-A and val-B: the reference MFCC (`<split>.mfcc.reference_sha256`, hashed before it is parsed; `reference_files` recorded; `reference_rows` equal to the split's rows) | Stage 7 `npz_sha256` (val-A `04227c58…`, val-B `04f91e3e…`) |
+| D58 (3)(c), val-A and val-B: `<split>.mfcc.within_tolerance`, the in-memory T4 MFCC against the reference under the (b) rule (`mfcc_difference`; `actual` = `max_abs`, `max_rel`, `allclose`, `rtol`, `atol`), failing like the gate | `np.allclose(t4, reference, rtol=1e-5, atol=1e-6)` |
 | D58 (3)(c), val-A and val-B: `baseline.<split>.predictions_equal_reference`, the number of clips whose `baseline-v1` D29 prediction from the T4 in-memory MFCC differs from the one from the reference MFCC, both scored by `score_models` and `baseline_outputs` in the same session | 0 |
 | recorded with it, before the check: `baseline.<split>.max_abs_score_diff` (max \|Δ raw score\|) and `baseline.<split>.near_threshold_clips` (clips whose reference raw score lies within that max of the D29 threshold) | descriptive |
 
@@ -313,8 +314,8 @@ every recorded check passed.
   The rehearsal shows identical validation decisions; it cannot show this for test clips near the
   threshold. Every later run that scores `baseline-v1` on a T4 runtime (Stage 13, Stage 14) applies
   the same gate with the same reference (D58 (4)).
-- The val-B T4 MFCC is compared with the reference through the baseline's decisions and EER
-  (D58 (3)(c)), not through a tolerance check; only val-A has the tolerance gate.
+- val-B has no pre-claim gate: its T4 MFCC is compared with the reference (tolerance and the
+  baseline's decisions, D58 (3)(c)) in the rehearsal only, which precedes the claim.
 - Tested on synthetic data only; the real run uses Colab.
 
 ## Tests (`tests/evaluation/test_stage11_run.py`)
@@ -355,7 +356,7 @@ hashes and EERs from the reference).
 | Environment record never raises | `test_environment_record_never_raises_without_cpuinfo_nvidia_smi_or_pip`, `test_environment_record_reads_cpu_flags_and_gpu` |
 | Rehearsal refuses other splits before reading | `test_rehearse_refuses_other_splits_before_reading` |
 | Rehearsal known answers (incl. D58 (3)(c) for both splits, every descriptive check listed); no registry | `test_rehearse_happy_path_never_touches_a_registry` |
-| Rehearsal detects cache, EER, Stage 10 and val-B reference (hash, rows) mismatches, and writes a failed report | `test_rehearse_detects_mismatch` (8 cases) |
+| Rehearsal detects cache, EER, Stage 10 and val-B reference (hash, rows, tolerance) mismatches, and writes a failed report | `test_rehearse_detects_mismatch` (9 cases) |
 | (k) Failed rehearsal report: MFCC mismatch with expected/actual hashes; pre-claim failure; non-check error | `test_rehearse_mfcc_mismatch_writes_failed_report_then_raises`, `test_rehearse_preflight_failure_writes_failed_report`, `test_rehearse_non_check_error_writes_failed_report` |
 | CLI: `rehearse`, `claim`, `score`; `--mfcc-reference` required by all three; no `run`, no split argument | `test_cli_dispatches_without_a_split_argument` |
 

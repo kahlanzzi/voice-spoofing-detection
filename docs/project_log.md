@@ -5923,16 +5923,19 @@ Colab runs, reported by her; the diagnostic read validation split val-A only.
     comment). These checks go into `claim.json` and the rehearsal report with the other pre-claim
     checks.
   - `rehearse`: for val-A and val-B, the reference is loaded and hash-checked, its rows must equal
-    the split's, and `baseline-v1` is scored on it by the same code path; known answers
+    the split's, the in-memory T4 MFCC must be within the (b) tolerance of it
+    (`<split>.mfcc.within_tolerance`, D58 (3)(c) after review), and `baseline-v1` is scored on it by
+    the same code path; known answers
     `baseline.<split>.max_abs_score_diff` and `…near_threshold_clips` (recorded, written before the
     check so a failed report holds them) and `…predictions_equal_reference` (0 differences). The
     reference val-B is read only here. `claim` and `score` are unchanged apart from the gate.
-  - **Change beyond the prompt, for review:** the rehearsal's `<split>.mfcc.cache_npz_sha256`
+  - **Rehearsal MFCC cache bytes (D58 (3)(d) after review; first a change beyond the prompt):** the
+    rehearsal's `<split>.mfcc.cache_npz_sha256`
     known answers compared the T4 `cache_a` MFCC with Stage 7's bytes, so under D58 they would fail
     by construction (the dry run stopped before reaching them). They are now recorded as
     `<split>.mfcc.cache_npz_sha256_observed`, as D58 (3) does for the gate; the log-Mel cache
-    known answers stay exact, and every other existing known answer is unchanged. D58 (3)
-    ("equality with Stage 7's `npz_sha256` is replaced") is read as covering them.
+    known answers stay exact, and every other existing known answer is unchanged. Review added
+    D58 (3)(d) to state this, and the val-B tolerance to (c).
 - **Tests** (`tests/evaluation/test_stage11_run.py`, synthetic only): the fixture builds a D58
   reference one float32 ulp from the "T4" MFCC (different bytes, inside the tolerance) and takes
   Stage 7's MFCC hashes and EERs from it; the baseline threshold sits between reference scores, so
@@ -5942,15 +5945,16 @@ Colab runs, reported by her; the diagnostic read validation split val-A only.
   label or path differs, MFCC beyond tolerance, MFCC builds one ulp apart, log-Mel builds identical
   but one ulp from Stage 8: the exact log-Mel gate still refuses); rehearsal: a baseline prediction
   flip between reference and T4 MFCC fails with a report holding the max score difference and the
-  near-threshold count while the Stage 7 EER passes; val-B reference hash and rows mismatches;
+  near-threshold count while the Stage 7 EER passes; val-B reference hash, rows and tolerance
+  mismatches;
   `mfcc_difference` unit cases; CLI `--mfcc-reference` required by all three subcommands.
 - **Docs:** `docs/stage11_run.md` (inputs, gate text, rehearsal known answers, Why (n)
   "processor-bound bytes", Limitations (D58 (5), (4)), tests table); `docs/CHANGELOG.md`.
 
 **Evidence:**
 - [verified] `pytest -q tests/evaluation/test_stage11_run.py tests/governance` (local, Windows,
-  Python 3.14.7, `REQUIRE_TORCH_TESTS=1`): 154 passed.
-- [verified] full `pytest -q` (same venv, `REQUIRE_TORCH_TESTS=1`): 1584 passed, 0 failed, 0 errors, 0 skipped.
+  Python 3.14.7, `REQUIRE_TORCH_TESTS=1`): 155 passed (154 before review).
+- [verified] full `pytest -q` (same venv, `REQUIRE_TORCH_TESTS=1`): 1585 passed, 0 failed, 0 errors, 0 skipped (1584 before review).
 - [doc] the dry-run and diagnostic hashes above are Donia's Colab output, not re-checked by the AI.
 
 **Not done:** notebook 06 is not touched (PR C is updated separately); no data, Drive or FoR test

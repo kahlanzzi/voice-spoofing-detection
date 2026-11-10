@@ -1052,7 +1052,9 @@ def test_rehearse_happy_path_never_touches_a_registry(world, patched, tmp_path, 
     known = report["known_answers"]
     assert all(c["passed"] is True for c in known.values())
     recorded = {k for k, c in known.items() if c["expected"] == run_module.RECORDED}
-    assert all(known[k]["expected"] == known[k]["actual"] for k in set(known) - recorded)
+    ruled = {k for k, c in known.items() if c["expected"] == run_module.MFCC_TOLERANCE_RULE}
+    assert ruled == {"val-A.mfcc.within_tolerance", "val-B.mfcc.within_tolerance"}
+    assert all(known[k]["expected"] == known[k]["actual"] for k in set(known) - recorded - ruled)
     assert all(c["passed"] is True for c in report["pre_claim_checks"].values())
     assert (report["passed"], report["failed_check"], report["error"]) == (True, None, None)
     assert {"val-A.log_mel.in_memory_equals_cache", "val-B.mfcc.in_memory_equals_cache",
@@ -1066,6 +1068,9 @@ def test_rehearse_happy_path_never_touches_a_registry(world, patched, tmp_path, 
         assert known[f"{split}.mfcc.reference_sha256"]["actual"] == world["reference_sha"][split]
         assert set(known[f"{split}.mfcc.reference_files"]["actual"]) == {f"{split}.npz", f"{split}.json"}
         assert known[f"{split}.mfcc.reference_rows"]["passed"] is True
+        tolerance = known[f"{split}.mfcc.within_tolerance"]
+        assert tolerance["expected"] == run_module.MFCC_TOLERANCE_RULE and tolerance["passed"] is True
+        assert tolerance["actual"]["allclose"] is True and 0 < tolerance["actual"]["max_abs"] < 1e-5
         assert known[f"baseline.{split}.predictions_equal_reference"] == {"expected": 0, "actual": 0, "passed": True}
         assert 0 < known[f"baseline.{split}.max_abs_score_diff"]["actual"] < 1e-4
         assert known[f"baseline.{split}.near_threshold_clips"]["actual"] == 0  # the fixture keeps a margin
@@ -1115,6 +1120,10 @@ REHEARSAL_MISMATCHES = {
         w, t, {"stage7": lambda d: d["caches"]["val-B"].update(npz_sha256="a" * 64)})),
     "val_b_reference_rows": ("val-B.mfcc.reference_rows", lambda w, t, s: _reference_case(
         w, t, splits=("val-A", "val-B"), manifest=_manifest_with(w, "val-B/REAL/00.wav", label="FAKE"))),
+    # D58 (3)(c): the val-B T4 MFCC must be within the (b) tolerance of the val-B reference.
+    "val_b_beyond_tolerance": ("val-B.mfcc.within_tolerance", lambda w, t, s: _reference_case(
+        w, t, splits=("val-A", "val-B"),
+        mfcc=lambda p: _fake_features(p)[1] + 1e-3 if p.startswith("val-B/") else _reference_mfcc(p))),
 }
 
 
@@ -1150,10 +1159,12 @@ def test_rehearse_mfcc_mismatch_writes_failed_report_then_raises(world, patched,
     assert sorted(p.name for p in out.iterdir()) == ["pip_freeze.txt", "rehearsal_report.json"]
 
 
-def test_rehearse_baseline_flip_between_reference_and_t4_fails_with_a_report(world, patched, tmp_path):
+def test_rehearse_baseline_flip_between_reference_and_t4_fails_with_a_report(world, patched, tmp_path, monkeypatch):
     # D58 (3)(c): in the val-B reference, one clip the T4 MFCC scores synthetic carries the MFCC of a
     # clip it scores authentic. The reference bytes are Stage 7's (evidence edited), the val-B EER on
-    # the T4 features is unchanged, so only the reference prediction check can catch it.
+    # the T4 features is unchanged. Such a swap is far beyond the tolerance, which would stop first
+    # (val_b_beyond_tolerance); atol is widened here only, so the prediction check is tested on its own.
+    monkeypatch.setattr(run_module, "MFCC_ATOL", 100.0)
     paths = sorted(world["manifest"].loc[world["manifest"]["split"] == "val-B", "path"])
     t4 = world["baseline"].predict(np.stack([_fake_features(p)[1] for p in paths]))
     swap = {paths[list(t4).index(SYNTHETIC)]: paths[list(t4).index(AUTHENTIC)]}
