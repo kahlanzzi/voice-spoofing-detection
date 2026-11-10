@@ -335,6 +335,10 @@ stops Stage 11 until a logged decision; a rehearsal that crashes on an infrastru
 (`failed_check` null) may be rerun from the same commit. After the claim, no rerun ever without a
 new decision, including a crash before any score exists; everything written stays for team review.
 
+**Long cells** (lesson of the official run, Entry 161): keep the computer plugged in with sleep
+disabled for the whole run, and do not press keys in the Colab tab while a long cell runs (a key
+press there can interrupt the cell's output loop).
+
 **What is committed** (results PR, after human review): `docs/audit_evidence/run_registry.jsonl`
 (byte copy with SHA-256 and line count); under `docs/audit_evidence/stage11_run/` the claim and
 score JSON evidence, `rehearsal_report.json`, `metrics_report.json` and
