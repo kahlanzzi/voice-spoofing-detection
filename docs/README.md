@@ -26,7 +26,7 @@ Project rules live in [AGENTS.md](../AGENTS.md).
 
 | File | What goes here | Update when… |
 |---|---|---|
-| [reference/](reference/) | SRS, SDD, Execution Plan, Proposal (read-only sources) | never edited here |
+| [reference/](reference/) | Version index plus current and historical SRS, SDD, Execution Plan and Proposal | a versioned document pair is added |
 | [decisions/](decisions/) | Decision register (`README.md`, D-IDs, hypotheses) + ADRs for major decisions | a decision is made |
 | [experimental_protocol.md](experimental_protocol.md) | Stage 3 Experimental Protocol (v1.0, frozen (F1)) | only by a new decision (§12 change control) |
 | [threat_model.md](threat_model.md) | Stage 2 threat model (v1.0 reviewed) | threats or claims change |

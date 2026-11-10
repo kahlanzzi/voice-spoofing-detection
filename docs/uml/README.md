@@ -11,6 +11,7 @@ not add requirements.
 | Repository diagram | Canonical report figure | Editable source | SVG export |
 |---|---|---|---|
 | Merged use-case model | SRS v3.0, Figure 1 | [`use-case.drawio`](use-case.drawio) | [`use-case.svg`](use-case.svg) |
+| SRS v4 use-case model | SRS v4.0, Figure 1 | [`use-case-v4.drawio`](use-case-v4.drawio) | [`use-case-v4.svg`](use-case-v4.svg) |
 | Online component view | SDD v1.0, Figure 1 | [`component-online.puml`](component-online.puml) | [`component-online.svg`](component-online.svg) |
 | Research component view | SDD v1.0, Figure 2 | [`component-research.puml`](component-research.puml) | [`component-research.svg`](component-research.svg) |
 | Analysis-domain classes | SDD v1.0, Figure 3 | [`class-analysis.puml`](class-analysis.puml) | [`class-analysis.svg`](class-analysis.svg) |
@@ -54,7 +55,8 @@ current implementation status belongs in `docs/midterm/backlog.md` and `docs/pro
 ## Render and validate
 
 The use-case model uses draw.io XML so its actor and use-case positions remain faithful to the
-approved SRS figure. The other six diagrams use PlantUML and retain the SDD's figure-level grouping:
+approved SRS figure. The v4 source extends that same fixed layout with the six approved v4 use cases;
+the v3 source/export remain unchanged history. The other six diagrams use PlantUML and retain the SDD's figure-level grouping:
 online versus research components, analysis versus evaluation classes, and one sequence per named
 use case. All seven have editable source and a matching SVG committed beside it.
 
@@ -77,6 +79,10 @@ approved requirement or decision; layout-only corrections do not.
 ## Merged use-case model
 
 ![Merged use-case model](use-case.svg)
+
+## SRS v4 use-case model
+
+![SRS v4 use-case model](use-case-v4.svg)
 
 ## Online component view
 
