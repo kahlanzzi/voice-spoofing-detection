@@ -6387,7 +6387,7 @@ Stage 12 (F4) next. **WAITING FOR APPROVAL.**
 - [x] Human review of `feat/stage11-run-registry`; CI green on Python 3.13: merged as PR #18.
 - [x] Stage 11: record the registry SHA-256 and line count right after the run (project-log entry
   and results PR). (`b0133fc8…af93b66d`, 2 lines; Entry 161)
-- [ ] Stage 11 stores per-clip path, group, raw score, calibrated p and prediction for the FoR test split (required by H7, Entry 72)
+- [x] Stage 11 stores per-clip path, group, raw score, calibrated p and prediction for the FoR test split (required by H7, Entry 72) (done: clip_scores/<model>.csv columns clip_id, label, group_id, raw_score, p, prediction, bound by run_report.json; Entry 161)
 - [ ] Report H1 as pre-registered even if both models are near 0% EER in-domain (results/baseline.md)
 
 **Stage 12 ModelBundle (Entry 35)**
