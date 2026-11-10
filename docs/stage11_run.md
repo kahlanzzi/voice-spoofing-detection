@@ -283,31 +283,34 @@ every code cell starts with `assert MODE == 'official'`.
 | 1–6 | parameters; Drive mount, refuse existing outputs; exact commit (`assert_clean`); environment gate (T4, Python 3.13, Colab torch 2.11.0 never installed, pinned requirements, fresh-process probe); FoR archive (D21 revision); `pytest` via JUnit XML, 0 failures, errors, skips (D46 (2)) |
 | 7 | caches: `cache_a` = `log_mel/` and `mfcc/` for val-A and val-B, `cache_b` = val-A only (D46 (4)); val-A files of both builds byte-identical; F3 and `code_commit` in each JSON |
 | 8 | frozen artifacts copied from Drive to `/content/stage11_artifacts/` (CNN seeds 0–2, `baseline-v1`, `risk_policy.json`, `val_b_scores.npz`); the runner checks every hash |
-| 9 | `rehearse` into `/content/stage11_rehearsal`; `passed` must be `true` |
-| 10 | dry run only: export the rehearsal evidence and `stage11_dry_run_manifest.json`, flush, remount, re-verify; "Dry run complete. Stop here." |
-| 11 | `claim` with the Drive registry and `RESULTS_REF`; claim evidence copied to `run/claim/` |
-| 12 | `drive.flush_and_unmount()`, remount; `RUN_ID` read from `claim.json` in code; registry SHA-256 equal to `registry_sha256`, last line this run's `started` record, `run/claim/` unchanged |
-| 13 | `score`; `run_report.json` names `COMMIT` and `RUN_ID`; registry's last line `completed` |
-| 14 | `stage11_report` into `/content/stage11_report` (prints paths only) |
-| 15 | export to `run/`, `stage11_export_manifest.json` (with `run_id`, registry SHA-256 and line count, GPU name, rehearsal `passed`), flush, remount, re-verify every file and the registry |
+| 9 | `rehearse`, `passed` must be `true`; dry run: into `dry_run/<UTC timestamp>/rehearsal/` on Drive (the timestamped folder created with `exist_ok=False`), so the dry run also proves the runner's folder creation and exclusive writes on Drive; official: into `/content/stage11_rehearsal` |
+| 10 | dry run only: hash the rehearsal files in place, write `stage11_dry_run_manifest.json`, flush, remount, re-verify; "Dry run complete. Stop here." |
+| 11 | `run/` created with `exist_ok=False`; `claim` with the Drive registry, `RESULTS_REF` and `--out run/runner/` (`CLAIM_OUT`, on Drive, created by the runner); SHA-256 of the three claim files recorded (`CLAIM_HASHES`) |
+| 12 | `drive.flush_and_unmount()`, remount; `RUN_ID` read from `claim.json` in code; registry SHA-256 equal to `registry_sha256`, last line this run's `started` record, claim files equal to `CLAIM_HASHES` |
+| 13 | `score --out run/runner/` (on Drive); `run_report.json` names `COMMIT` and `RUN_ID`; registry's last line `completed` |
+| 14 | `stage11_report --run-dir run/runner/` into `/content/stage11_report` (local; prints paths only) |
+| 15 | `run/runner/` holds exactly the expected files (claim files still equal to `CLAIM_HASHES`) and is hashed in place, not copied; `metrics_report.*` and `rehearsal/` copied to `run/`; `stage11_export_manifest.json` (with `run_id`, registry SHA-256 and line count, GPU name, rehearsal `passed`); flush, remount, re-verify every file under `run/` (including `runner/`) and the registry |
 | 16 | only now: display `metrics_report.md` |
 
 **Drive layout** (`processed/metadata/stage11/`): `run_registry.jsonl` (the live registry, D46 (6),
-written only by `claim` and `complete`); `run/` (official: `claim/`, the score evidence,
-`clip_scores/`, `metrics_report.*`, `rehearsal/`, the export manifest); `dry_run/<UTC timestamp>/`
-(one per dry run).
+written only by `claim` and `complete`); `run/` (official: `runner/` written in place by `claim` and
+`score`, with the claim and score evidence and `clip_scores/`; `metrics_report.*`, `rehearsal/`, the
+export manifest); `dry_run/<UTC timestamp>/` (one per dry run: `rehearsal/` written in place by
+`rehearse`, the manifest). The runner writes straight to Drive because the `scoring_started.json`
+marker must survive a runtime crash, so the no-rerun rule holds in code (Why (l)).
 
 **Rerun rule** (D46 (8), in the notebook above the claim): before the claim, an infrastructure
-failure (Drive, clone, pip, archive) may be rerun from the same commit; an environment-gate,
-reproduction-gate or rehearsal failure stops Stage 11 until a logged decision. After the claim, no
-rerun ever without a new decision, including a crash before any score exists; everything written
-stays for team review.
+failure (Drive, clone, pip, archive) may be rerun from the same commit; an environment-gate or
+reproduction-gate failure, or a rehearsal that ends with a failed check (`failed_check` not null),
+stops Stage 11 until a logged decision; a rehearsal that crashes on an infrastructure error
+(`failed_check` null) may be rerun from the same commit. After the claim, no rerun ever without a
+new decision, including a crash before any score exists; everything written stays for team review.
 
 **What is committed** (results PR, after human review): `docs/audit_evidence/run_registry.jsonl`
 (byte copy with SHA-256 and line count); under `docs/audit_evidence/stage11_run/` the claim and
 score JSON evidence, `rehearsal_report.json`, `metrics_report.json` and
 `stage11_export_manifest.json`; `metrics_report.md` at `docs/results/stage11_for_test.md`
-(`RESULTS_REF`). The per-clip CSVs and sidecars stay on Drive (`run/clip_scores/`), bound by their
+(`RESULTS_REF`). The per-clip CSVs and sidecars stay on Drive (`run/runner/clip_scores/`), bound by their
 SHA-256 in `run_report.json` (AGENTS.md rule 7); Stages 14 and 16 read them there.
 
 ## Limitations

@@ -26,8 +26,10 @@ REPORT = "src.evaluation.stage11_report"
 OFFICIAL = "assert MODE == 'official', 'dry run: stop before the claim'"
 RERUN_RULE = (
     "Rerun rule (D46 (8), pre-declared): before the claim, an infrastructure failure (Drive, clone, pip, "
-    "archive) may be rerun from the same COMMIT; an environment-gate, reproduction-gate or rehearsal "
-    "failure stops Stage 11 until a logged decision. After the claim, there is no rerun ever without a "
+    "archive) may be rerun from the same COMMIT; an environment-gate or reproduction-gate failure, or a "
+    "rehearsal that ends with a failed check (failed_check not null), stops Stage 11 until a logged "
+    "decision; a rehearsal that crashes on an infrastructure error (failed_check null) may be rerun from "
+    "the same COMMIT. After the claim, there is no rerun ever without a "
     "new decision, including a crash before any score exists; everything written stays for team review. "
     "Nothing in this notebook reads or reacts to the test results before they are exported."
 )
@@ -291,9 +293,46 @@ def test_runner_arguments_per_subcommand():
     for call in (rehearse, claim, score):
         assert "--split" not in _strings(call)
     code = _code()
-    assert "REHEARSAL_OUT = Path('/content/stage11_rehearsal')" in code[_cell_index("'rehearse'")]
-    assert "CLAIM_OUT = Path('/content/stage11_run')" in code[_cell_index("'claim', *INPUTS")]
-    assert "REPORT_OUT = Path('/content/stage11_report')" in code[_cell_index(REPORT)]
+    assert "REPORT_OUT = Path('/content/stage11_report')" in code[_cell_index(REPORT)]  # the report stays local
+
+
+def test_rehearsal_writes_to_drive_in_dry_run_and_locally_in_official_mode():
+    tree = _cell_tree("'rehearse'")
+    (branch,) = [n for n in tree.body if isinstance(n, ast.If) and ast.unparse(n.test) == "MODE == 'dry_run'"]
+    assert [ast.unparse(n) for n in branch.body] == [
+        "refuse_existing_outputs()",
+        "DRY_RUN_DEST.mkdir(parents=True, exist_ok=False)",
+        "REHEARSAL_OUT = DRY_RUN_DEST / 'rehearsal'",
+    ]
+    assert [ast.unparse(n) for n in branch.orelse] == ["REHEARSAL_OUT = Path('/content/stage11_rehearsal')"]
+    assert tree.body.index(branch) < [ast.unparse(n).startswith("stream(") for n in tree.body].index(True)
+
+
+def test_runner_output_is_on_drive_under_run_dest():
+    code = _code()
+    claim = code[_cell_index("'claim', *INPUTS")]
+    lines = claim.splitlines()
+    assert lines[1:4] == ["CLAIM_OUT = RUN_DEST / 'runner'", "refuse_existing_outputs()",
+                          "RUN_DEST.mkdir(parents=True, exist_ok=False)"]
+    assert claim.find("RUN_DEST.mkdir(") < claim.find("'claim', *INPUTS")
+    (hashes,) = _assigned(ast.parse(claim), "CLAIM_HASHES")
+    assert ast.unparse(hashes) == "{name: sha256(CLAIM_OUT / name) for name in CLAIM_FILES}"
+    assert claim.find("'claim', *INPUTS") < claim.find("CLAIM_HASHES = ")
+    assert len([s for s in code if "CLAIM_OUT = " in s]) == 1
+    (report,) = [n for tree in _trees() for n in ast.walk(tree) if isinstance(n, ast.List) and REPORT in _strings(n)]
+    words = [ast.unparse(e) for e in report.elts]
+    assert words[words.index("'--run-dir'") + 1] == "str(CLAIM_OUT)"
+
+
+def test_no_claim_copy_and_runner_files_are_hashed_in_place():
+    code = "\n".join(_code())
+    assert "'claim'" not in code.replace("'claim', *INPUTS", "")  # no run/claim/ folder
+    assert "CLAIM_DEST" not in code and "CLAIM_EXPORTS" not in code
+    export = _code()[_cell_index("EXPORT_MANIFEST = ")]
+    assert "files = [drive_entry(CLAIM_OUT / rel) for rel in runner_files]" in export
+    assert "export_file(CLAIM_OUT" not in export
+    assert "assert {name: sha256(CLAIM_OUT / name) for name in CLAIM_FILES} == CLAIM_HASHES" in export
+    assert "assert sorted(p.name for p in RUN_DEST.iterdir()) == ['runner']" in export
 
 
 def test_report_arguments():
@@ -335,10 +374,13 @@ def test_dry_run_export_runs_only_in_dry_run_mode_and_ends_with_the_stop_line():
     assert ast.unparse(tree.body[-1]) == ast.unparse(branch)  # the branch is the cell's last statement
     assert ast.unparse(branch.body[-1]) == "print('Dry run complete. Stop here.')"
     body = "\n".join(ast.unparse(n) for n in branch.body)
-    for step in ("refuse_existing_outputs()", "DRY_RUN_DEST.mkdir(parents=True, exist_ok=False)",
+    for step in ("assert REHEARSAL_OUT == DRY_RUN_DEST / 'rehearsal'",
+                 "assert stored == ['rehearsal/pip_freeze.txt', 'rehearsal/rehearsal_report.json']",
+                 "files = [drive_entry(DRY_RUN_DEST / rel) for rel in stored]",
                  "drive.flush_and_unmount()", "drive.mount('/content/drive', force_remount=True)",
                  "verify_after_remount(DRY_RUN_DEST, checked)"):
         assert step in body, step
+    assert "export_file(" not in body and "mkdir(" not in body  # hashed in place, nothing copied
     assert body.find("flush_and_unmount") < body.find("force_remount") < body.find("verify_after_remount")
     assert "STAGE11 / 'dry_run' / DRY_RUN_STAMP" in _code()[_cell_index("DRY_RUN_DEST = ")]
 
@@ -391,19 +433,17 @@ def test_registry_is_not_used_before_the_claim():
         assert uses in ([], ["REGISTRY = STAGE11 / 'run_registry.jsonl'"]), (i, uses)
 
 
-def test_run_dest_and_claim_dest_are_created_with_exist_ok_false():
+def test_output_folders_are_created_with_exist_ok_false():
     tree = _cell_tree("'claim', *INPUTS")
     made = {}
     for call in ast.walk(tree):
         if (isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute) and call.func.attr == "mkdir"
                 and isinstance(call.func.value, ast.Name)):
             made[call.func.value.id] = {k.arg: ast.literal_eval(k.value) for k in call.keywords}
-    assert made["RUN_DEST"] == {"exist_ok": False} and made["CLAIM_DEST"] == {"exist_ok": False}
-    assert "CLAIM_DEST = RUN_DEST / 'claim'" in _code()[_cell_index("'claim', *INPUTS")]
+    assert made == {"RUN_DEST": {"parents": True, "exist_ok": False}}
     assert "RUN_DEST = STAGE11 / 'run'" in "\n".join(_code())
     export = _code()[_cell_index("EXPORT_MANIFEST = ")]
-    for sub in ("(RUN_DEST / 'clip_scores').mkdir(exist_ok=False)", "(RUN_DEST / 'rehearsal').mkdir(exist_ok=False)"):
-        assert sub in export, sub
+    assert "(RUN_DEST / 'rehearsal').mkdir(exist_ok=False)" in export
     assert "assert not dest.exists()" in _code()[_cell_index("def export_file(")]
 
 
@@ -430,7 +470,7 @@ def test_claim_is_verified_on_drive_after_flush_and_remount():
     for check in ("sha256(REGISTRY) == CLAIM['registry_sha256']",
                   "LAST['run_id'] == RUN_ID and LAST['status'] == 'started'",
                   "CLAIM['code_commit'] == COMMIT", "CLAIM['results_ref'] == RESULTS_REF",
-                  "sha256(DRIVE / entry['path']) == entry['sha256']"):
+                  "{name: sha256(CLAIM_OUT / name) for name in CLAIM_FILES} == CLAIM_HASHES"):
         assert check in asserted, check
 
 
@@ -517,6 +557,6 @@ def test_final_markdown_names_the_committed_files_and_keeps_clip_scores_on_drive
     for name in ("docs/audit_evidence/run_registry.jsonl", "docs/audit_evidence/stage11_run/", "claim.json",
                  "environment.json", "scoring_started.json", "environment_score.json", "run_report.json",
                  "rehearsal_report.json", "metrics_report.json", "stage11_export_manifest.json",
-                 "docs/results/stage11_for_test.md", "run/clip_scores/", "SHA-256 and line count"):
+                 "docs/results/stage11_for_test.md", "run/runner/clip_scores/", "SHA-256 and line count"):
         assert name in text, name
     assert "stay on Drive only" in text

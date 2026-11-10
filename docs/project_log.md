@@ -5886,18 +5886,22 @@ cache, checkpoint, W&B or FoR test access; nothing under `src/` changed.
      probe); FoR archive (D21 revision); `pytest` via JUnit XML, 0 failures, errors, skips; caches
      `cache_a` (log-Mel and MFCC, val-A and val-B) and `cache_b` (val-A only) in the runner's layout
      `<cache>/<log_mel|mfcc>/<split>/`, val-A files byte-identical, F3 and `code_commit` checked;
-     frozen artifacts copied from Drive; `rehearse`, `passed` asserted; rehearsal evidence and
-     `stage11_dry_run_manifest.json` exported to `processed/metadata/stage11/dry_run/<UTC timestamp>/`,
-     flush, remount, re-verify; "Dry run complete. Stop here."
-  2. `MODE = 'official'`: the same up to the rehearsal, then `claim` (Drive registry, `RESULTS_REF`
-     = `docs/results/stage11_for_test.md`), claim evidence to `run/claim/`; flush, remount, `RUN_ID`
-     read from `claim.json`, registry SHA-256 equal to `registry_sha256` and last line this run's
-     `started` record; `score`; `stage11_report`; export of everything to `run/` with
-     `stage11_export_manifest.json` (plus `run_id`, registry SHA-256 and line count, GPU name,
-     rehearsal `passed`), flush, remount, re-verify; only then `metrics_report.md` is displayed.
+     frozen artifacts copied from Drive; `rehearse` written straight to
+     `processed/metadata/stage11/dry_run/<UTC timestamp>/rehearsal/` on Drive, `passed` asserted;
+     the files hashed in place, `stage11_dry_run_manifest.json` written, flush, remount, re-verify;
+     "Dry run complete. Stop here."
+  2. `MODE = 'official'`: the same up to the rehearsal (local `/content/stage11_rehearsal`), then
+     `run/` created with `exist_ok=False` and `claim` (Drive registry, `RESULTS_REF` =
+     `docs/results/stage11_for_test.md`) writing to `run/runner/` on Drive (`CLAIM_OUT`), claim
+     file hashes recorded; flush, remount, `RUN_ID` read from `claim.json`, registry SHA-256 equal to
+     `registry_sha256`, last line this run's `started` record, claim files unchanged; `score` into
+     the same Drive folder; `stage11_report` (local output); export: `run/runner/` hashed in place,
+     `metrics_report.*` and `rehearsal/` copied, `stage11_export_manifest.json` (plus `run_id`,
+     registry SHA-256 and line count, GPU name, rehearsal `passed`), flush, remount, re-verify; only
+     then `metrics_report.md` is displayed.
   From the claim cell on, every code cell starts with `assert MODE == 'official'`. The rerun rule
-  text (D46 (8), plus the rehearsal) sits above the claim cell.
-- **Static test** `tests/governance/test_notebook_06_stage11.py` (33 tests; the notebook 05 helpers
+  text (D46 (8), with the rehearsal split by `failed_check`) sits above the claim cell.
+- **Static test** `tests/governance/test_notebook_06_stage11.py` (36 tests; the notebook 05 helpers
   are private and bound to that notebook, so they are mirrored, not imported): outputs cleared,
   parameters, no secrets or 32-hex strings, T4 and versions asserted, no device argument or GPU move,
   caches val-A/val-B only with `cache_b` val-A only, one `rehearse`, `claim`, `score` and report call
@@ -5909,11 +5913,18 @@ cache, checkpoint, W&B or FoR test access; nothing under `src/` changed.
   is committed), intro and Limitations now point to it; `README.md` tree; `docs/CHANGELOG.md`.
 
 **Choices with reasons:**
-- The runner's output folder `CLAIM_OUT` is local (`/content/stage11_run`), as the prompt specifies;
-  the three claim files are copied to Drive `run/claim/` right after the claim, before the flush, so
-  the claim evidence survives a crashed session. A crash during `score` loses the local marker and
-  partial files, but cannot be rerun either way: `claim.json` is gone with the runtime and the
-  registry holds the `started` record (D46 (8)).
+- **Runner output on Drive (PR C review; closes open issue 1 of the first draft).** The first draft
+  wrote the runner's folder to `/content` and copied the claim files to Drive; a crash during
+  `score` would then have lost the `scoring_started.json` marker and the partial files with the
+  runtime. `CLAIM_OUT` is now `run/runner/` on Drive, so the marker survives a runtime crash and the
+  no-rerun rule holds in code (`stage11_run.md` Why (l), D46 (8)); there is no `run/claim/` copy,
+  the claim files' SHA-256 are recorded after the claim and re-checked after the remount and at
+  export. The dry run writes its rehearsal to Drive the same way, so it proves that the runner's
+  folder creation and exclusive (`xb`) writes work on Drive before the official run needs them.
+- **Rerun-rule wording (PR C review; open issue 4).** A rehearsal that ends with a failed check
+  (`failed_check` not null) stops Stage 11 until a logged decision; one that crashes on an
+  infrastructure error (`failed_check` null) may be rerun from the same COMMIT. Same text in the
+  notebook, `stage11_run.md` and the pinned test.
 - `RESULTS_REF` is the future `metrics_report.md` path (`docs/results/stage11_for_test.md`, planned in
   Entry 156), not the Drive path of `run_report.json` that the Entry 102 open item suggested.
 - No guard `ALLOWED` entry for the notebook (Entry 102 item): the notebook never names the split, and
@@ -5924,13 +5935,16 @@ cache, checkpoint, W&B or FoR test access; nothing under `src/` changed.
 
 **Evidence:**
 - [verified] `pytest -q tests/governance` (local, Windows, Python 3.14.7, `REQUIRE_TORCH_TESTS=1`):
-  83 passed.
-- [verified] full `pytest -q` (same venv, `REQUIRE_TORCH_TESTS=1`): 1605 passed, 0 failed, 0 errors,
-  0 skipped.
+  86 passed (after the review changes; 83 in the first draft).
+- [verified] full `pytest -q` (same venv, `REQUIRE_TORCH_TESTS=1`): 1608 passed, 0 failed, 0 errors,
+  0 skipped (after the review changes; 1605 in the first draft).
 - [verified] `file_hits` of `tests/governance/test_for_test_access.py` on the notebook: `[]`.
 - [verified] ten hand mutations of the notebook (official default, typed `run_id`, missing official
   assert, registry `unlink`, no remount before scoring, metrics read before the view, val-B in
-  `cache_b`, a `--device` argument, no T4 assert, a second `claim`) each fail at least one test.
+  `cache_b`, a `--device` argument, no T4 assert, a second `claim`) each fail at least one test;
+  after the review changes, six more (local `CLAIM_OUT`, runner files copied instead of hashed in
+  place, claim hashes not re-checked after the remount, dry-run rehearsal written locally, `run/`
+  not created before the claim, report `--run-dir` not the Drive folder) each fail at least one test.
 
 **Not done:** the notebook is not run (dry run Tue 17 Nov; official run Wed 18–Thu 19 Nov); no
 registry file, no Drive or data access; no decision, Protocol, ADR, guard or `AGENTS.md` roadmap
@@ -6198,7 +6212,7 @@ the official run only after D57 is approved and PR B and PR C are merged. **WAIT
 - [ ] PR B: Stage 11 report computed from the stored files only. Implemented on `feat/stage11-report` (Entry 156); review open.
 - [ ] D57 (Stage 11 reporting conventions): approval by all four and an approval commit, before PR B merges and before the Stage 11 claim (Entry 156).
 - [ ] PR C, notebook 06: run `python -m src.evaluation.stage11_report` after `complete`, from the stored files; choose the `results_ref` target (planned `docs/results/stage11_for_test.md`) (Entry 156). (implemented on `feat/stage11-notebook`, step 14, `RESULTS_REF` = `docs/results/stage11_for_test.md`, Entry 157; ticked at merge)
-- [ ] PR C, notebook 06: Drive flush and remount between `claim` and `score`, registry SHA-256 checked against `claim.json`, `run_id` read from `claim.json` in code, val-A caches present in the score session, `out/` and registry on Drive outside the clone, `--results-ref` the Drive-relative path of `run_report.json`, the notebook's own exact `ALLOWED` entry (Entry 102). (implemented on `feat/stage11-notebook`, Entry 157, with three changes for review: the runner's `out/` is local and copied to Drive with hash checks, the claim files right after the claim; `--results-ref` is the `metrics_report.md` path; no `ALLOWED` entry, the guard passes unchanged; ticked at merge)
+- [ ] PR C, notebook 06: Drive flush and remount between `claim` and `score`, registry SHA-256 checked against `claim.json`, `run_id` read from `claim.json` in code, val-A caches present in the score session, `out/` and registry on Drive outside the clone, `--results-ref` the Drive-relative path of `run_report.json`, the notebook's own exact `ALLOWED` entry (Entry 102). (implemented on `feat/stage11-notebook`, Entry 157: the runner's `out/` is `run/runner/` on Drive, after the PR C review; two changes for review: `--results-ref` is the `metrics_report.md` path; no `ALLOWED` entry, the guard passes unchanged; ticked at merge)
 - [ ] Review of PR C (Khalil, Part C reviewer) (Entry 157).
 - [ ] Dry run of notebook 06 (`MODE = 'dry_run'`) on a Colab T4 runtime from the approved commit, Tue 17 Nov; evidence in Drive `processed/metadata/stage11/dry_run/<UTC timestamp>/` (Entry 157).
 - [ ] Official run (`MODE = 'official'`), Wed 18–Thu 19 Nov, only after D57 is approved and PR B and PR C are merged and the dry run passed (Entry 157).
