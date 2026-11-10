@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Execution Plan v3.0 (`docs/reference/Execution_Plan_v3.0.md` and `.pdf`): tracks R, V, L and P with owners, dated six-week timeline, critical path to the 4 December cut-off and cut line (D48–D55); AGENTS.md points to it.
 - Stage 11 runner (D46 implementation, PR A) `src/evaluation/stage11_run.py`: two-phase official run (`claim` / `score` with a once-only marker), val-A/val-B rehearsal as the D46 dry run, MFCC npz-bytes test, guard `ALLOWED` = the runner; design note `docs/stage11_run.md`; synthetic tests only, no FoR test access.
 - D46 approved (PR #67): Stage 11 run procedure; `evaluation_harness.md` "Run registry" now names the live registry on Drive and the committed copy as evidence (D46 (6)).
 - D46 (proposed): Stage 11 run procedure: T4 runtime with CPU scoring, environment gate and record, val-A log-Mel/MFCC reproduction gate, durable registry claim on Drive before the first test read, test features in memory only (computed twice), pre-declared rerun rule; no FoR test accessed.
