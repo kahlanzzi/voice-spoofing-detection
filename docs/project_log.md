@@ -5868,11 +5868,68 @@ these numbers in Stages 14–16). **WAITING FOR APPROVAL.**
 
 ---
 
+### Entry 157 — D56 proposed: RawBoost variant and uniform codec options (2026-11-10)
+
+**Owner:** Malak Ben Salem. Review: Donia Mabrouk, Iheb Zemzemi and Khalil Dridi.
+
+**Scope [doc]:** D48 (6), D50 (2)(c), D50 (2)(e), D50 (3), H9 and ADR 0013. This is a
+docs-only decision proposal before the v1 Stage 11 claim and before any v2 augmentation code or
+training. No Protocol, source, config, test, dataset, audio, FoR or DEEP-VOICE access.
+
+**What changed:** D56 proposes RawBoost algorithm 1 (linear/non-linear convolutive noise) instead
+of algorithm 3 (stationary signal-independent additive noise), because algorithm 3 begins with
+white Gaussian noise and would overlap H9's held-out degradation family. The project will implement
+algorithm 1 independently from the paper with its Table 1 values pinned, then validate synthetic
+signals against the MIT-licensed official reference at commit `4f161a8b…f6c4`. D56 also fixes the
+codec interpretation at seven options sampled uniformly (1/7 each), including one narrowband option.
+
+**Evidence:** [verified] RawBoost paper §3.3 says algorithm 3 colours white noise before adding it;
+Table 1 gives the algorithm 1 parameter ranges. [verified] the pinned official reference identifies
+algorithm 1 as `LnL_convolutive_noise`, and its `LICENSE` is MIT. [doc] D50 (3) holds white Gaussian
+noise out of v2 training for Stage 14 and H9. [verified] full local suite: 1335 passed, 12 skipped in
+229.65s; DEEP-VOICE governance check: 3 passed in 1.28s; token grep: no token found; `git diff
+--check`: clean.
+
+**Decision:** D56 is Proposed. Donia, Iheb and Khalil must approve it; an approval commit must set
+D56 to Approved before this PR merges, before V1a implementation and before the v1 Stage 11 claim.
+
+**AI assistance:** Codex checked the paper, pinned reference implementation and licence, identified
+the seven-option codec count, and drafted the register/log text. Malak reviews every line; AI does not
+approve, push or merge.
+
+**Gate:** approvals from Donia, Iheb and Khalil, approval commit, green CI and human review.
+**WAITING FOR APPROVAL.**
+
+---
+
+### Entry 158 — D56 approval record (2026-11-10)
+
+**Owner:** Malak Ben Salem. Review: Donia Mabrouk, Iheb Zemzemi and Khalil Dridi.
+
+**What changed [doc]:** Donia, Iheb and Khalil each submitted an approving review on PR #116 at
+commit `1a79c38`. D56 is now Approved, and the D50 row carries the marker **RawBoost variant and
+codec sampling amended by D56** so D50 cannot be read without seeing the correction. The
+CHANGELOG records the approved status. No implementation, config, test, audio or dataset changed.
+
+**Checks [verified]:** GitHub `checks`, `web` and `e2e` all passed on proposal commit `1a79c38`.
+After the approval edits, the local full suite passed (1335 passed, 12 skipped in 82.09s), the
+DEEP-VOICE governance check passed (3 passed in 0.24s), token grep found no token and `git diff
+--check` was clean. The approval diff changes documentation only; DEEP-VOICE remains untouched.
+
+**AI assistance:** Codex verified the three GitHub approvals and green checks, then prepared the
+approval/status records. Malak reviews the diff; AI does not approve or merge.
+
+**Gate:** approval record committed and pushed, CI green again, then human merge. After merge,
+V1a may begin on `feat/stagev1-augmentation`. **WAITING FOR HUMAN MERGE.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
 - [x] Approve or revise D48–D55, ADRs 0012–0015 and H8–H9 (all four) before the v1 Stage 11 claim. (PR #111, 2026-11-10)
 - [x] Approval commit: statuses to Approved; AGENTS.md hard rule 3 (v2 candidates) and roadmap; Protocol addendum for §§4, 6, 7, 9, 12 (v2 values, F5, Stage 11/14 model sets, cut-off). (Entry 151)
+- [x] Approve D56 and add its approval commit before the v1 Stage 11 claim and before V1a implementation; D50 is marked as amended for RawBoost algorithm 1 and uniform sampling over seven codec options (Entries 157–158; PR #116; merge pending).
 - [ ] Pin the noise and RIR corpora (licence, hash, 50/50 file split) and codec tools before any v2 training (D50 (5)).
 - [ ] Compute benchmark per v2 candidate; batch sizes in `configs/` before training (D49).
 - [ ] Extension authentication design and security review in SDD v2.0 before implementation (D51).
@@ -6251,19 +6308,21 @@ these numbers in Stages 14–16). **WAITING FOR APPROVAL.**
 
 ---
 
-## Current status — updated 2026-11-10 (Entry 156)
+## Current status — updated 2026-11-10 (Entry 158)
 
-**Stage 11 report (Entry 156):** PR B on `feat/stage11-report` computes the D4 metrics, CIs, H1, H5 and seed rows from the stored run files only, after integrity checks; D57 (reporting conventions) is proposed and needs all four approvals before merge and before the Stage 11 claim. Next: PR C, notebook 06.
+**D56 approval (Entries 157–158):** Donia, Iheb and Khalil approved PR #116. D56 is Approved: RawBoost algorithm 1 replaces algorithm 3 for v2, preserving H9's held-out additive-Gaussian family, and the seven codec options are sampled uniformly. The approval commit awaits green CI and human merge before V1a begins.
+
+**Stage 11 report (Entry 156):** PR B merged as PR #114 and D57 is approved. It computes the D4 metrics, CIs, H1, H5 and seed rows from the stored run files only, after integrity checks. Next: PR C, notebook 06.
 
 **Plan:** Execution Plan v3.0 (Entry 155) sets tracks R, V, L and P with dates; the v2 freeze cut-off is Friday 4 December, 23:59 Tunis (D48).
 
-**After the midterm review (Entries 150–151):** decisions D48–D55 (model v2 track with one joint Stage 13 run, live analysis, infrastructure, environments, interface redesign) and H8–H9 are approved in PR #111 (2026-11-10), with the Protocol addendum D48 (6) requires; D46 is approved (PR #67, record Entry 153); the v1 Stage 11 claim may follow once the runner (PR #68) is merged and the dry run passes.
+**After the midterm review (Entries 150–151, 157):** decisions D48–D55 (model v2 track with one joint Stage 13 run, live analysis, infrastructure, environments, interface redesign) and H8–H9 are approved in PR #111 (2026-11-10), with the Protocol addendum D48 (6) requires; D46 is approved and the Stage 11 runner merged as PR #68. The v1 Stage 11 claim now waits for D56 approval, PR C and the dry run.
 
 **Documentation navigation:** Entry 115 groups the docs index by topic without moving files. The
 midterm backlog refresh in Entry 149 records merged Stage 17–18 evidence without changing the closed
 requirements, priorities or scope; it awaits PR/CI and human review.
 
-**Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 closed (Entry 96): run and results merged (PR #60; Entry 94), brief accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-28; Donia attended as author; no corrections; Q9 reading agreed), merged as PR #61 (`f166001`). Stage 11 is current: the D41 registry and per-clip storage implementation is approved (PR #62, Entry 99); the D46 runtime/environment plan is proposed in PR #67 and the Stage 11 runner is proposed in PR #68; both await review/merge. No FoR test access before the approved prerequisites are met.
+**Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 closed (Entry 96): run and results merged (PR #60; Entry 94), brief accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-28; Donia attended as author; no corrections; Q9 reading agreed), merged as PR #61 (`f166001`). Stage 11 is current: D41 storage is approved (PR #62), D46 is approved, the runner merged as PR #68 and the report merged as PR #114. Next are D56 approval, PR C and the dry run; no FoR test access before those gates pass.
 
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
@@ -6276,9 +6335,10 @@ canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI eth
 **Midterm refactor audit:** Entries 108–110 record the initial report and baseline. Entry 111 implements two small lint cleanups on the stacked cleanup branch: 937 tests pass, governance 3 passed, scoped lint findings 2 to 0, coverage and complexity unchanged. No speedup is claimed. Entry 112 adds the measured report/PDF and after captures. The work merged via #73 into combined #72 (`76c55aa`) after recorded teammate approvals and successful CI. Entry 113 corrected stale report status and merged as PR #74 (`ca45601`); separate final editorial/course acceptance remains open. Evidence-sensitive restructuring stays deferred.
 
 **What was done:**
+- **D56 approved** on `docs/stagev1-d56-rawboost` (Entries 157–158; PR #116): docs-only correction from RawBoost algorithm 3 to algorithm 1, paper parameters and reference commit pinned, and seven codec options sampled uniformly; no implementation or data access; approval commit awaits merge.
 - **Stage 11 metrics report (PR B)** on `feat/stage11-report` (Entry 156): `src/evaluation/stage11_report.py`,
   integrity checks on the stored run files, then D4 metrics, clustered CIs, H1, H5 and seed rows;
-  D57 proposed; synthetic tests only; no FoR test access.
+  D57 approved in PR #114; synthetic tests only; no FoR test access.
 - **Stage 11 runner (PR A)** on `feat/stage11-runner` (Entry 154, written as Entry 102; PR #68): `src/evaluation/stage11_run.py`,
   two-phase official run (`claim`, then `score` with a once-only marker), val-A/val-B rehearsal as
   the D46 dry run, MFCC npz-bytes test, guard `ALLOWED` = the runner; synthetic tests only,
