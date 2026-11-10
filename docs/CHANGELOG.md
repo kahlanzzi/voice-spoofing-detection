@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 11 notebook 06 (PR C) `notebooks/06_stage11_for_test.ipynb`: the D46 order on a Colab T4 runtime (CPU scoring) in two modes, `dry_run` (rehearsal on val-A/val-B, export, stop) and `official` (claim, Drive flush and remount with the claim verified on Drive, score, report, export, then the results view); static test `tests/governance/test_notebook_06_stage11.py`; not run, no FoR test access.
 - Stage 11 metrics report (PR B) `src/evaluation/stage11_report.py`: integrity checks on the stored run files, then D4 metrics per model and subgroup, group-clustered CIs, H1, H5 and seed rows from the stored per-clip files only (JSON + Markdown); D57 (proposed) fixes the reporting conventions before any test result; design note `docs/stage11_report.md`; synthetic tests only, no FoR test access.
 - Execution Plan v3.0 (`docs/reference/Execution_Plan_v3.0.md` and `.pdf`): tracks R, V, L and P with owners, dated six-week timeline, critical path to the 4 December cut-off and cut line (D48–D55); AGENTS.md points to it.
 - Stage 11 runner (D46 implementation, PR A) `src/evaluation/stage11_run.py`: two-phase official run (`claim` / `score` with a once-only marker), val-A/val-B rehearsal as the D46 dry run, MFCC npz-bytes test, guard `ALLOWED` = the runner; design note `docs/stage11_run.md`; synthetic tests only, no FoR test access.

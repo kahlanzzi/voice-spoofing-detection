@@ -5868,6 +5868,83 @@ these numbers in Stages 14–16). **WAITING FOR APPROVAL.**
 
 ---
 
+### Entry 157 — Stage 11 notebook 06 (PR C): the D46 run on Colab, dry run and official (2026-11-10)
+
+**Owner:** Donia Mabrouk.
+
+**Scope [doc]:** D46 (1)–(8), D31, D41, D45, D57, D21, D40; Protocol §7; harness "Run registry".
+PR C of three (A runner, PR #68; B report, `feat/stage11-report`). Stacked on `feat/stage11-report`
+(waiting for D57). A notebook, its static test and docs only: nothing executed on data, no Drive,
+cache, checkpoint, W&B or FoR test access; nothing under `src/` changed.
+
+**What we did:** on `feat/stage11-notebook`, from `feat/stage11-report` at `d7ab8a6`:
+- **Notebook** `notebooks/06_stage11_for_test.ipynb` (outputs cleared, plain Python, a markdown cell
+  before every code cell), in two modes:
+  1. `MODE = 'dry_run'` (committed default): Drive mount and refusal of existing outputs; exact
+     commit with `assert_clean`; environment gate (Colab T4 asserted with `nvidia-smi`, never used
+     for scoring; Python 3.13; Colab torch 2.11.0, never installed; pinned requirements; fresh-process
+     probe); FoR archive (D21 revision); `pytest` via JUnit XML, 0 failures, errors, skips; caches
+     `cache_a` (log-Mel and MFCC, val-A and val-B) and `cache_b` (val-A only) in the runner's layout
+     `<cache>/<log_mel|mfcc>/<split>/`, val-A files byte-identical, F3 and `code_commit` checked;
+     frozen artifacts copied from Drive; `rehearse`, `passed` asserted; rehearsal evidence and
+     `stage11_dry_run_manifest.json` exported to `processed/metadata/stage11/dry_run/<UTC timestamp>/`,
+     flush, remount, re-verify; "Dry run complete. Stop here."
+  2. `MODE = 'official'`: the same up to the rehearsal, then `claim` (Drive registry, `RESULTS_REF`
+     = `docs/results/stage11_for_test.md`), claim evidence to `run/claim/`; flush, remount, `RUN_ID`
+     read from `claim.json`, registry SHA-256 equal to `registry_sha256` and last line this run's
+     `started` record; `score`; `stage11_report`; export of everything to `run/` with
+     `stage11_export_manifest.json` (plus `run_id`, registry SHA-256 and line count, GPU name,
+     rehearsal `passed`), flush, remount, re-verify; only then `metrics_report.md` is displayed.
+  From the claim cell on, every code cell starts with `assert MODE == 'official'`. The rerun rule
+  text (D46 (8), plus the rehearsal) sits above the claim cell.
+- **Static test** `tests/governance/test_notebook_06_stage11.py` (33 tests; the notebook 05 helpers
+  are private and bound to that notebook, so they are mirrored, not imported): outputs cleared,
+  parameters, no secrets or 32-hex strings, T4 and versions asserted, no device argument or GPU move,
+  caches val-A/val-B only with `cache_b` val-A only, one `rehearse`, `claim`, `score` and report call
+  with their exact arguments, the official assert on the claim cell and every later one, rerun rule
+  verbatim, `RUN_ID` from `claim.json`, the registry never written, deleted or moved by the notebook
+  and unused before the claim, `exist_ok=False` folders, flush/remount/re-verify, no metric read
+  before the results view, step order, and the FoR guard's `file_hits` with no hit.
+- **Docs:** `docs/stage11_run.md` "Notebook 06" section (modes, steps, Drive layout, rerun rule, what
+  is committed), intro and Limitations now point to it; `README.md` tree; `docs/CHANGELOG.md`.
+
+**Choices with reasons:**
+- The runner's output folder `CLAIM_OUT` is local (`/content/stage11_run`), as the prompt specifies;
+  the three claim files are copied to Drive `run/claim/` right after the claim, before the flush, so
+  the claim evidence survives a crashed session. A crash during `score` loses the local marker and
+  partial files, but cannot be rerun either way: `claim.json` is gone with the runtime and the
+  registry holds the `started` record (D46 (8)).
+- `RESULTS_REF` is the future `metrics_report.md` path (`docs/results/stage11_for_test.md`, planned in
+  Entry 156), not the Drive path of `run_report.json` that the Entry 102 open item suggested.
+- No guard `ALLOWED` entry for the notebook (Entry 102 item): the notebook never names the split, and
+  the guard passes unchanged.
+- The registry check in step 12 compares the last line's `split` with `claim.json`'s instead of a
+  literal, so the notebook contains no split name.
+- Notebook metadata asks Colab for a T4 GPU runtime; the code asserts it.
+
+**Evidence:**
+- [verified] `pytest -q tests/governance` (local, Windows, Python 3.14.7, `REQUIRE_TORCH_TESTS=1`):
+  83 passed.
+- [verified] full `pytest -q` (same venv, `REQUIRE_TORCH_TESTS=1`): 1605 passed, 0 failed, 0 errors,
+  0 skipped.
+- [verified] `file_hits` of `tests/governance/test_for_test_access.py` on the notebook: `[]`.
+- [verified] ten hand mutations of the notebook (official default, typed `run_id`, missing official
+  assert, registry `unlink`, no remount before scoring, metrics read before the view, val-B in
+  `cache_b`, a `--device` argument, no T4 assert, a second `claim`) each fail at least one test.
+
+**Not done:** the notebook is not run (dry run Tue 17 Nov; official run Wed 18–Thu 19 Nov); no
+registry file, no Drive or data access; no decision, Protocol, ADR, guard or `AGENTS.md` roadmap
+change.
+
+**AI assistance:** **Claude** (claude.ai) wrote the prompt and will review. **Claude Code** (Claude
+Opus 5.5) wrote the notebook, its static test and the docs, ran the tests and the mutation check, and
+wrote this entry and the CHANGELOG line. Donia reviews. AI does not approve or merge.
+
+**Gate:** review of PR C (Khalil, Part C reviewer); dry run on Colab T4 from the approved commit;
+the official run only after D57 is approved and PR B and PR C are merged. **WAITING FOR APPROVAL.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -6120,8 +6197,12 @@ these numbers in Stages 14–16). **WAITING FOR APPROVAL.**
 - [ ] Review of PR A: Khalil (required), Malak, Iheb; merge only after D46 is approved (PR #67). D46 approved (PR #67, Entry 153); review of PR #68 remains.
 - [ ] PR B: Stage 11 report computed from the stored files only. Implemented on `feat/stage11-report` (Entry 156); review open.
 - [ ] D57 (Stage 11 reporting conventions): approval by all four and an approval commit, before PR B merges and before the Stage 11 claim (Entry 156).
-- [ ] PR C, notebook 06: run `python -m src.evaluation.stage11_report` after `complete`, from the stored files; choose the `results_ref` target (planned `docs/results/stage11_for_test.md`) (Entry 156).
-- [ ] PR C, notebook 06: Drive flush and remount between `claim` and `score`, registry SHA-256 checked against `claim.json`, `run_id` read from `claim.json` in code, val-A caches present in the score session, `out/` and registry on Drive outside the clone, `--results-ref` the Drive-relative path of `run_report.json`, the notebook's own exact `ALLOWED` entry (Entry 102).
+- [ ] PR C, notebook 06: run `python -m src.evaluation.stage11_report` after `complete`, from the stored files; choose the `results_ref` target (planned `docs/results/stage11_for_test.md`) (Entry 156). (implemented on `feat/stage11-notebook`, step 14, `RESULTS_REF` = `docs/results/stage11_for_test.md`, Entry 157; ticked at merge)
+- [ ] PR C, notebook 06: Drive flush and remount between `claim` and `score`, registry SHA-256 checked against `claim.json`, `run_id` read from `claim.json` in code, val-A caches present in the score session, `out/` and registry on Drive outside the clone, `--results-ref` the Drive-relative path of `run_report.json`, the notebook's own exact `ALLOWED` entry (Entry 102). (implemented on `feat/stage11-notebook`, Entry 157, with three changes for review: the runner's `out/` is local and copied to Drive with hash checks, the claim files right after the claim; `--results-ref` is the `metrics_report.md` path; no `ALLOWED` entry, the guard passes unchanged; ticked at merge)
+- [ ] Review of PR C (Khalil, Part C reviewer) (Entry 157).
+- [ ] Dry run of notebook 06 (`MODE = 'dry_run'`) on a Colab T4 runtime from the approved commit, Tue 17 Nov; evidence in Drive `processed/metadata/stage11/dry_run/<UTC timestamp>/` (Entry 157).
+- [ ] Official run (`MODE = 'official'`), Wed 18–Thu 19 Nov, only after D57 is approved and PR B and PR C are merged and the dry run passed (Entry 157).
+- [ ] Results PR after human review: `docs/audit_evidence/run_registry.jsonl` (byte copy, SHA-256 and line count), `docs/audit_evidence/stage11_run/` (claim and score JSON evidence, `rehearsal_report.json`, `metrics_report.json`, `stage11_export_manifest.json`), `metrics_report.md` at `docs/results/stage11_for_test.md`; per-clip files stay on Drive (Entry 157).
 
 **Stage 17 API (Part E, Entry 100)**
 - [x] Team review of the API contract `docs/api_design.md`, including the proposed `invalid_request` (400) code. (approved, PR #65, Donia, 2026-10-30; Entry 101)
@@ -6251,9 +6332,11 @@ these numbers in Stages 14–16). **WAITING FOR APPROVAL.**
 
 ---
 
-## Current status — updated 2026-11-10 (Entry 156)
+## Current status — updated 2026-11-10 (Entry 157)
 
-**Stage 11 report (Entry 156):** PR B on `feat/stage11-report` computes the D4 metrics, CIs, H1, H5 and seed rows from the stored run files only, after integrity checks; D57 (reporting conventions) is proposed and needs all four approvals before merge and before the Stage 11 claim. Next: PR C, notebook 06.
+**Stage 11 notebook (Entry 157):** PR C on `feat/stage11-notebook` (stacked on PR B) adds notebook 06: a `dry_run` mode (rehearsal on val-A/val-B, export, stop) and an `official` mode (claim, Drive flush and remount with the claim verified on Drive, score, report, export, then the results view), with its static test; not run. Next: review, the dry run on Colab T4 (Tue 17 Nov), then the official run after D57 is approved and PR B and PR C are merged (Wed 18–Thu 19 Nov).
+
+**Stage 11 report (Entry 156):** PR B on `feat/stage11-report` computes the D4 metrics, CIs, H1, H5 and seed rows from the stored run files only, after integrity checks; D57 (reporting conventions) is proposed and needs all four approvals before merge and before the Stage 11 claim. PR C, notebook 06, is drafted (Entry 157).
 
 **Plan:** Execution Plan v3.0 (Entry 155) sets tracks R, V, L and P with dates; the v2 freeze cut-off is Friday 4 December, 23:59 Tunis (D48).
 
@@ -6276,6 +6359,9 @@ canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI eth
 **Midterm refactor audit:** Entries 108–110 record the initial report and baseline. Entry 111 implements two small lint cleanups on the stacked cleanup branch: 937 tests pass, governance 3 passed, scoped lint findings 2 to 0, coverage and complexity unchanged. No speedup is claimed. Entry 112 adds the measured report/PDF and after captures. The work merged via #73 into combined #72 (`76c55aa`) after recorded teammate approvals and successful CI. Entry 113 corrected stale report status and merged as PR #74 (`ca45601`); separate final editorial/course acceptance remains open. Evidence-sensitive restructuring stays deferred.
 
 **What was done:**
+- **Stage 11 notebook 06 (PR C)** on `feat/stage11-notebook` (Entry 157): `notebooks/06_stage11_for_test.ipynb`,
+  dry-run and official modes of the D46 order on a Colab T4 runtime (CPU scoring), static test
+  `tests/governance/test_notebook_06_stage11.py`; not run, no FoR test access.
 - **Stage 11 metrics report (PR B)** on `feat/stage11-report` (Entry 156): `src/evaluation/stage11_report.py`,
   integrity checks on the stored run files, then D4 metrics, clustered CIs, H1, H5 and seed rows;
   D57 proposed; synthetic tests only; no FoR test access.

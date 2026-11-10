@@ -4,8 +4,9 @@ Stage 11. The one FoR test-split run (Protocol v1.0 §7; D31, D41, D45, D46): it
 split with the four models of the D41 model set, stores per-clip scores ([clip_scores.md](clip_scores.md))
 and records the run in the registry ([evaluation_harness.md](evaluation_harness.md) "Run registry").
 It also holds the D46 dry run on val-A and val-B. This note covers the code and its synthetic
-tests; the real run on Colab (notebook 06) and the metrics from the stored files are later PRs. No
-FoR test access before D46 is approved.
+tests; the metrics from the stored files are [stage11_report.md](stage11_report.md) (PR B) and the
+real run on Colab is notebook 06 (PR C, [below](#notebook-06)). No FoR test access before D46 is
+approved.
 
 ## Inputs
 
@@ -74,8 +75,8 @@ Each step raises on failure. Nothing is written before the claim.
 On Colab, Drive writes go to a local cache and are synced later; re-reading the registry on the
 same mount reads that cache, so it does not prove that the claim reached Drive (D46 (6)). The run is
 therefore split into two CLI calls. Between them, the notebook flushes Drive (unmount with flush,
-re-mount) and checks that the registry file on Drive holds the claim. That notebook step is out of
-scope here (notebook 06, PR C); this code makes it possible and checks the result: `score`
+re-mount) and checks that the registry file on Drive holds the claim. That step is
+[notebook 06](#notebook-06), step 12; this code makes it possible and checks the result: `score`
 requires the registry, re-read through the new mount, to be byte-identical to the one `claim`
 recorded in `claim.json`.
 
@@ -266,6 +267,49 @@ every recorded check passed.
 - **(m) Recorded hashes are computed.** The checkpoint hash in the report is computed with the
   repository's function, not copied from the expected value, so the record shows what was found.
 
+## Notebook 06
+
+[`notebooks/06_stage11_for_test.ipynb`](../notebooks/06_stage11_for_test.ipynb) runs this on a Colab
+T4 runtime (D46 (1); the GPU is asserted, never used: every runner call scores on CPU). Static test:
+`tests/governance/test_notebook_06_stage11.py`; it also runs the FoR guard on the notebook, which
+needs no `ALLOWED` entry (the notebook never names the split; the runner fixes it).
+
+**Modes.** `MODE = 'dry_run'` (committed default) runs steps 1–10 and stops: no claim, no test
+access, rerunnable. `MODE = 'official'` runs steps 1–9, then 11–16, once. From the claim cell on,
+every code cell starts with `assert MODE == 'official'`.
+
+| Step | What |
+|---|---|
+| 1–6 | parameters; Drive mount, refuse existing outputs; exact commit (`assert_clean`); environment gate (T4, Python 3.13, Colab torch 2.11.0 never installed, pinned requirements, fresh-process probe); FoR archive (D21 revision); `pytest` via JUnit XML, 0 failures, errors, skips (D46 (2)) |
+| 7 | caches: `cache_a` = `log_mel/` and `mfcc/` for val-A and val-B, `cache_b` = val-A only (D46 (4)); val-A files of both builds byte-identical; F3 and `code_commit` in each JSON |
+| 8 | frozen artifacts copied from Drive to `/content/stage11_artifacts/` (CNN seeds 0–2, `baseline-v1`, `risk_policy.json`, `val_b_scores.npz`); the runner checks every hash |
+| 9 | `rehearse` into `/content/stage11_rehearsal`; `passed` must be `true` |
+| 10 | dry run only: export the rehearsal evidence and `stage11_dry_run_manifest.json`, flush, remount, re-verify; "Dry run complete. Stop here." |
+| 11 | `claim` with the Drive registry and `RESULTS_REF`; claim evidence copied to `run/claim/` |
+| 12 | `drive.flush_and_unmount()`, remount; `RUN_ID` read from `claim.json` in code; registry SHA-256 equal to `registry_sha256`, last line this run's `started` record, `run/claim/` unchanged |
+| 13 | `score`; `run_report.json` names `COMMIT` and `RUN_ID`; registry's last line `completed` |
+| 14 | `stage11_report` into `/content/stage11_report` (prints paths only) |
+| 15 | export to `run/`, `stage11_export_manifest.json` (with `run_id`, registry SHA-256 and line count, GPU name, rehearsal `passed`), flush, remount, re-verify every file and the registry |
+| 16 | only now: display `metrics_report.md` |
+
+**Drive layout** (`processed/metadata/stage11/`): `run_registry.jsonl` (the live registry, D46 (6),
+written only by `claim` and `complete`); `run/` (official: `claim/`, the score evidence,
+`clip_scores/`, `metrics_report.*`, `rehearsal/`, the export manifest); `dry_run/<UTC timestamp>/`
+(one per dry run).
+
+**Rerun rule** (D46 (8), in the notebook above the claim): before the claim, an infrastructure
+failure (Drive, clone, pip, archive) may be rerun from the same commit; an environment-gate,
+reproduction-gate or rehearsal failure stops Stage 11 until a logged decision. After the claim, no
+rerun ever without a new decision, including a crash before any score exists; everything written
+stays for team review.
+
+**What is committed** (results PR, after human review): `docs/audit_evidence/run_registry.jsonl`
+(byte copy with SHA-256 and line count); under `docs/audit_evidence/stage11_run/` the claim and
+score JSON evidence, `rehearsal_report.json`, `metrics_report.json` and
+`stage11_export_manifest.json`; `metrics_report.md` at `docs/results/stage11_for_test.md`
+(`RESULTS_REF`). The per-clip CSVs and sidecars stay on Drive (`run/clip_scores/`), bound by their
+SHA-256 in `run_report.json` (AGENTS.md rule 7); Stages 14 and 16 read them there.
+
 ## Limitations
 
 - The guard (`tests/governance/test_for_test_access.py`) now allows this one file; it is a text
@@ -274,8 +318,8 @@ every recorded check passed.
   test split itself.
 - The environment record is descriptive; only Python and torch are asserted (D46 (2)). The
   `pytest` and requirements parts of the gate belong to the notebook.
-- The Drive flush between `claim` and `score` is a notebook step (PR C); the code checks its
-  result (registry bytes equal to `claim.json`) but cannot flush.
+- The Drive flush between `claim` and `score` is notebook 06, step 12 ([below](#notebook-06)); the
+  code checks its result (registry bytes equal to `claim.json`) but cannot flush.
 - A wrong `run_id` (or a commit other than the claim's) is refused from `claim.json` before the
   marker, so it does not block scoring. Once the marker exists, any further `score` call needs a
   new decision (D46 (8)).
