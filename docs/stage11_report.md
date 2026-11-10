@@ -178,3 +178,4 @@ cases (single-clip groups), all written with the real writers (`write_clip_score
 | Torch-free import (fresh interpreter); constants, `_counts` and `_model_set` equal the runner's | `test_import_is_torch_free`, `test_constants_and_formats_equal_the_runners` |
 | Fixture writes the runner's `claim.json` / `run_report.json` keys (read from its source with `ast`) | `test_fixture_key_lists_equal_the_runners` |
 | Guard finds nothing in this module; `ALLOWED` unchanged | `test_report_module_is_not_test_split_access_for_the_guard` |
+| Report reads the runner's own synthetic output; D41 check fires on a non-D41 baseline (real `claim` + `score` from `test_stage11_run.py`'s fixtures, imported only with torch) | `test_report_reads_the_runners_own_output` |

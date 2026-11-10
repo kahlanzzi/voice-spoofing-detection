@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import importlib.util
 import json
 import subprocess
 import sys
@@ -30,6 +31,10 @@ from src.risk.decisions import AUTHENTIC, SYNTHETIC
 from src.risk.policy import RiskPolicy
 from src.tuning.baseline_run import _json_text
 from tests.governance.test_for_test_access import ALLOWED, file_hits
+
+if importlib.util.find_spec("torch") is not None:  # the runner's tests import torch at import time
+    from tests.evaluation import test_stage11_run as runner_tests  # noqa: E402  (fixtures world, patched)
+    from tests.evaluation.test_stage11_run import patched, world  # noqa: E402, F401
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RUNNER = REPO_ROOT / "src" / "evaluation" / "stage11_run.py"
@@ -640,3 +645,42 @@ def test_report_module_is_not_test_split_access_for_the_guard():
 
 def test_fraction_rule_constant():
     assert report_module.H5_MIN_DIFFERENCE == Fraction(1, 20)
+
+
+def test_report_reads_the_runners_own_output(request, monkeypatch):
+    # End to end on the runner's own synthetic happy path (tests/evaluation/test_stage11_run.py): the
+    # real claim + score write the folder, and the report must accept exactly what the runner wrote.
+    from tests._torch import require_torch
+    require_torch()
+    world, state = request.getfixturevalue("world"), request.getfixturevalue("patched")
+    out = request.getfixturevalue("tmp_path") / "runner_out"
+    run_report = runner_tests._run(world, state, out)
+    monkeypatch.setattr(report_module, "APPROVED_F2_MANIFEST_SHA256", _sha(world["manifest_path"].read_bytes()))
+    monkeypatch.setattr(report_module, "code_version", lambda: {"git_commit": REPORT_COMMIT, "git_dirty": False})
+    ev = world["evidence"]
+    inputs = {"run_dir": out, "registry_path": state["registry"], "manifest_path": world["manifest_path"],
+              "risk_policy_path": world["policy_path"], "stage7_dir": ev / "stage7", "stage10_dir": ev / "stage10"}
+    argv = [*(x for k, v in (("--run-dir", out), ("--registry", state["registry"]),
+                             ("--manifest", world["manifest_path"]), ("--risk-policy", world["policy_path"]),
+                             ("--stage7-evidence", ev / "stage7"), ("--stage10-evidence", ev / "stage10"))
+              for x in (k, str(v)))]
+    # (a) The runner fixture's synthetic baseline is not the D41 artifact; this is the only tamper case
+    # for the D41 check: with only the two patches above, build_report refuses it and nothing is written.
+    report_out = out.parent / "report_out"
+    with pytest.raises(report_module.CheckFailed) as caught:
+        report_module.main([*argv, "--out", str(report_out)])
+    assert caught.value.key == "baseline.artifact_sha256.d41"
+    assert not report_out.exists()
+    # (b) The runner's own test patches run_module.BASELINE_ARTIFACT_SHA256 the same way.
+    stage7 = json.loads((ev / "stage7" / "run_report.json").read_text(encoding="utf-8"))
+    monkeypatch.setattr(report_module, "BASELINE_ARTIFACT_SHA256", stage7["artifact_sha256"])
+    report = report_module.build_report(**inputs)
+    assert report["checks"] and all(c["passed"] for c in report["checks"].values())
+    assert report["run"]["run_id"] == run_report["run_id"]
+    assert report["run"]["counts"] == run_report["counts"]
+    bundle_id = f"cnn-v1-seed{run_report['bundle_seed']}"
+    stored = read_clip_scores(out / "clip_scores", bundle_id)
+    y = np.array([1 if x == "FAKE" else 0 for x in stored.label])
+    expected = three_way_metrics(y, list(stored.prediction)).confusion
+    confusion = report["models"][bundle_id]["three_way"]["overall"]["confusion"]
+    assert (tuple(confusion["bonafide"]), tuple(confusion["spoof"])) == expected
