@@ -5957,10 +5957,8 @@ cache, checkpoint, W&B or FoR test access; nothing under `src/` changed.
 registry file, no Drive or data access; no decision, Protocol, ADR, guard or `AGENTS.md` roadmap
 change.
 
-**Decisions:** none new. D57 approved via PR #114 on 2026-11-10 (user-reported; the approval commit
-goes on `feat/stage11-report`; when this entry was written that branch and its remote were still at
-`d7ab8a6`, where the D57 row reads Proposed). The D57 status row is changed only by that approval
-commit, not on this branch.
+**Decisions:** none new. D57 approved via GitHub reviews on PR #114 (2026-11-10); approval commit
+merged with #114.
 
 **AI assistance:** **Claude** (claude.ai) wrote the prompt and will review. **Claude Code** (Claude
 Opus 5.5) wrote the notebook, its static test and the docs, ran the tests and the mutation check, and
@@ -6222,8 +6220,8 @@ the official run only after the D57 approval commit is in and PR B and PR C are 
 
 **Stage 11 runner (Entry 154, written as Entry 102)**
 - [ ] Review of PR A: Khalil (required), Malak, Iheb; merge only after D46 is approved (PR #67). D46 approved (PR #67, Entry 153); review of PR #68 remains.
-- [ ] PR B: Stage 11 report computed from the stored files only. Implemented on `feat/stage11-report` (Entry 156); review open.
-- [x] D57 (Stage 11 reporting conventions): approval by all four and an approval commit, before PR B merges and before the Stage 11 claim (Entry 156). (approved via PR #114, 2026-11-10, user-reported; approval commit on `feat/stage11-report`; Entry 157)
+- [x] PR B: Stage 11 report computed from the stored files only. Implemented on `feat/stage11-report` (Entry 156); review open. (merged as #114)
+- [x] D57 (Stage 11 reporting conventions): approval by all four and an approval commit, before PR B merges and before the Stage 11 claim (Entry 156). (approved via GitHub reviews on PR #114 (2026-11-10); approval commit merged with #114; Entry 157)
 - [ ] PR C, notebook 06: run `python -m src.evaluation.stage11_report` after `complete`, from the stored files; choose the `results_ref` target (planned `docs/results/stage11_for_test.md`) (Entry 156). (implemented on `feat/stage11-notebook`, step 14, `RESULTS_REF` = `docs/results/stage11_for_test.md`, Entry 157; ticked at merge)
 - [ ] PR C, notebook 06: Drive flush and remount between `claim` and `score`, registry SHA-256 checked against `claim.json`, `run_id` read from `claim.json` in code, val-A caches present in the score session, `out/` and registry on Drive outside the clone, `--results-ref` the Drive-relative path of `run_report.json`, the notebook's own exact `ALLOWED` entry (Entry 102). (implemented on `feat/stage11-notebook`, Entry 157: the runner's `out/` is `run/runner/` on Drive, after the PR C review; two changes for review: `--results-ref` is the `metrics_report.md` path; no `ALLOWED` entry, the guard passes unchanged; ticked at merge)
 - [ ] Review of PR C (Khalil, Part C reviewer) (Entry 157).
@@ -6361,9 +6359,9 @@ the official run only after the D57 approval commit is in and PR B and PR C are 
 
 ## Current status — updated 2026-11-10 (Entry 157)
 
-**Stage 11 notebook (Entry 157):** PR C on `feat/stage11-notebook` (stacked on PR B) adds notebook 06: a `dry_run` mode (rehearsal on val-A/val-B, export, stop) and an `official` mode (claim, Drive flush and remount with the claim verified on Drive, score, report, export, then the results view), with its static test; not run. Next: review, the dry run on Colab T4 (Tue 17 Nov), then the official run once PR B and PR C are merged (Wed 18–Thu 19 Nov).
+**Stage 11 notebook (Entry 157):** PR C on `feat/stage11-notebook` (rebased on `main` after PR B merged as #114) adds notebook 06: a `dry_run` mode (rehearsal on val-A/val-B, export, stop) and an `official` mode (claim, Drive flush and remount with the claim verified on Drive, score, report, export, then the results view), with its static test; not run. Next: PR C review, the dry run on Colab T4 (Tue 17 Nov), then the official run after PR C merges (Wed 18–Thu 19 Nov).
 
-**Stage 11 report (Entry 156):** PR B on `feat/stage11-report` computes the D4 metrics, CIs, H1, H5 and seed rows from the stored run files only, after integrity checks; D57 (reporting conventions) is approved via PR #114 (2026-11-10, user-reported; approval commit on `feat/stage11-report`), so PR B can merge after review. PR C, notebook 06, is drafted (Entry 157).
+**Stage 11 report (Entry 156):** PR B, merged as #114, computes the D4 metrics, CIs, H1, H5 and seed rows from the stored run files only, after integrity checks; D57 (reporting conventions) is approved via GitHub reviews on PR #114 (2026-11-10); approval commit merged with #114. PR C, notebook 06, is drafted (Entry 157).
 
 **Plan:** Execution Plan v3.0 (Entry 155) sets tracks R, V, L and P with dates; the v2 freeze cut-off is Friday 4 December, 23:59 Tunis (D48).
 
