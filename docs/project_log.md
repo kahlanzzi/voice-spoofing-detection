@@ -6160,6 +6160,92 @@ the official run only after the D57 approval commit is in and PR B and PR C are 
 
 ---
 
+### Entry 161 — Stage 11 official run (once): evidence and results (2026-11-10)
+
+**Owner:** Donia Mabrouk.
+
+**Scope [doc]:** D31, D41, D45, D46 (1)–(8), D57, D58; Protocol §§1, 5, 7; harness "Run registry"
+(e). The results PR on `docs/stage11-results` from `main` at `8219562` (PR #115): byte copies of the
+run's evidence and this entry. No code, test, notebook logic, decision or Protocol changed; no new
+number computed.
+
+**The run [doc, from the committed evidence; run by Donia]:**
+- Notebook 06, `MODE = 'official'`, from commit `8219562b9dd97762a38d61171f48577798853dad`; Colab T4,
+  runtime version 2026.10 (Python 3.13.16, torch 2.11.0+cu130, `Intel(R) Xeon(R) CPU @ 2.00GHz` with
+  AVX-512; CPU scoring); `pytest` in Colab: 1623 tests, 0 failures, errors, skips.
+- The second dry run (after D58, commit `ad69eddc…`, `20261110T150257Z`) passed; the first
+  (`20261110T114951Z`) had stopped at `reproduction.mfcc.val-A.npz_sha256` (Entry 159). The official
+  rehearsal passed.
+- Claim: run `d5306a55a77d4e9c85d237d959e3dbae`; registry 0 → 1 line, `registry_sha256` after the
+  claim `ebe02d02…c509c8b6`; Drive flush and remount, the claim verified on Drive (step 12).
+- Scoring marker 16:18:39 UTC; `completed` 16:21:50 UTC. Report: 84 of 84 integrity checks passed.
+  Export: 19 files (18 in the manifest plus the manifest) verified after the remount.
+- Registry: SHA-256 `b0133fc8d76f318a2d45001bcdf04ef41051b15927d1b13627bb1871af93b66d`, 2 lines
+  (harness "Run registry" (e)).
+
+**Two incidents, as they happened [doc, reported by Donia]:**
+1. During step 13 the laptop went to sleep; on waking it, Donia pressed the space bar in the Colab
+   tab and the cell showed `KeyboardInterrupt` in the notebook's output-reading loop (~16:22 UTC).
+   The runner process had already recorded `completed` at 16:21:50 UTC. A read-only inspection cell
+   confirmed no score process running, all 14 runner files present and the registry's `completed`
+   line; the step 13 post-score assertions were run unchanged in a separate cell and passed. No
+   second `score` was attempted.
+2. That inspection cell (written by Claude) imported the `datetime` module and rebound the
+   notebook's `datetime` name, so the step 15 export stopped at line 17 after lines 1–15 had run
+   (rehearsal folder created, 4 files copied with hash checks). A recovery cell restored the name,
+   checked the state (folder listing, 18 entries, hashes, registry) and ran lines 16–35 of the step
+   15 cell unchanged; Drive was verified after the remount (19 files).
+
+Both happened after the run's own writes; neither involved test access or scoring. Lesson in
+`docs/stage11_run.md` "Notebook 06": sleep disabled (plugged in), no key presses in the Colab tab
+during a long cell.
+
+**Evidence committed [verified, Claude Code on the download in
+`C:\Users\donia\Desktop\stage11_evidence\`]:**
+- `docs/audit_evidence/run_registry.jsonl` (D46 (6)); `docs/audit_evidence/stage11_run/` (export
+  manifest, `metrics_report.json`, `claim.json`, `environment.json`, `environment_score.json`,
+  `pip_freeze.txt`, `scoring_started.json`, `run_report.json`, `rehearsal/rehearsal_report.json`,
+  both dry-run files, `README.md` with hashes, sizes, Drive paths and the verification steps);
+  `docs/results/stage11_for_test.md` = `run/metrics_report.md` byte for byte (`RESULTS_REF`).
+  `.gitattributes` (`* -text` in `stage11_run/`, `stage11_for_test.md -text` in `docs/results/`;
+  the registry is covered by the root `*.jsonl -text`).
+- Before the copy: the 18 manifest files' SHA-256 and size equal the manifest; the registry
+  SHA-256 equals the expected value and the manifest's, 2 lines, loads with `RunRegistry` (hash
+  chain), line 1 `started` and line 2 `completed` with this run, commit, purpose `stage11_test` and
+  `results_ref`, line 2 `prev_sha256` = SHA-256 of line 1; `run_report.json` binds the 8 per-clip
+  files, `claim.json` and `scoring_started.json`; dry-run fields as above. Export manifest SHA-256
+  `f3310f2f…c2f0620308` (observed only).
+- After the commit, every blob's SHA-256 (`git cat-file blob`) equals its source.
+- The 8 per-clip CSVs and sidecars stay on Drive (`run/runner/clip_scores/`), bound by
+  `run_report.json` (AGENTS.md rule 7).
+
+**Reproduction (stored files only, D31):**
+- (a) [verified] Local Windows, Python 3.14.7, numpy 2.5.3 (Claude Code): `python -m
+  src.evaluation.stage11_report` stopped at `rederive.bundle.p_bytes`: 69 of 2,658 recomputed `p`
+  differ from the stored ones by at most 1 ulp (max 1.4e-17), with no three-way or forced-binary
+  decision change; the same processor-bound float effect as D58 [hypothesis: `np.exp` across
+  platforms].
+- (b) [doc, run by Donia] On the run's platform (Colab T4, runtime 2026.10, Python 3.13.16,
+  `Intel(R) Xeon(R) CPU @ 2.00GHz`, commit `8219562`, stored files only): `metrics_report.json`
+  (`28b45802…f89c79ae`) and `metrics_report.md` (`cf0b8689…cbbcb59b`) byte-identical to the stored
+  ones. No reproduction output is committed.
+
+**Results:** [docs/results/stage11_for_test.md](results/stage11_for_test.md). As the report states:
+H1 not supported (d 0.0007, 95% CI [−0.0022, 0.0022]); H5 not supported (recall 1.0 in both
+subgroups, d 0, CI collapsed). No interpretation here; the Stage 11 brief (D32) does it.
+
+**Decisions:** none.
+
+**AI assistance:** **Claude** (claude.ai) guided the run, wrote the inspection and recovery cells,
+and wrote the prompt for this PR. **Claude Code** (Claude Opus 5.5) verified the download, ran the
+local reproduction, copied and committed the evidence, and wrote the README, this entry and the
+CHANGELOG line. Donia ran every cell. AI does not approve or merge.
+
+**Gate:** human review of the results PR; then the Stage 11 brief (D32) and Khalil's teach-back;
+Stage 12 (F4) next. **WAITING FOR APPROVAL.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -6299,8 +6385,8 @@ the official run only after the D57 approval commit is in and PR B and PR C are 
 
 **Stage 11 run registry (Entry 34)**
 - [x] Human review of `feat/stage11-run-registry`; CI green on Python 3.13: merged as PR #18.
-- [ ] Stage 11: record the registry SHA-256 and line count right after the run (project-log entry
-  and results PR).
+- [x] Stage 11: record the registry SHA-256 and line count right after the run (project-log entry
+  and results PR). (`b0133fc8…af93b66d`, 2 lines; Entry 161)
 - [ ] Stage 11 stores per-clip path, group, raw score, calibrated p and prediction for the FoR test split (required by H7, Entry 72)
 - [ ] Report H1 as pre-registered even if both models are near 0% EER in-domain (results/baseline.md)
 
@@ -6416,17 +6502,23 @@ the official run only after the D57 approval commit is in and PR B and PR C are 
 - [ ] PR C, notebook 06: run `python -m src.evaluation.stage11_report` after `complete`, from the stored files; choose the `results_ref` target (planned `docs/results/stage11_for_test.md`) (Entry 156). (implemented on `feat/stage11-notebook`, step 14, `RESULTS_REF` = `docs/results/stage11_for_test.md`, Entry 160; ticked at merge)
 - [ ] PR C, notebook 06: Drive flush and remount between `claim` and `score`, registry SHA-256 checked against `claim.json`, `run_id` read from `claim.json` in code, val-A caches present in the score session, `out/` and registry on Drive outside the clone, `--results-ref` the Drive-relative path of `run_report.json`, the notebook's own exact `ALLOWED` entry (Entry 102). (implemented on `feat/stage11-notebook`, Entry 160: the runner's `out/` is `run/runner/` on Drive, after the PR C review; two changes for review: `--results-ref` is the `metrics_report.md` path; no `ALLOWED` entry, the guard passes unchanged; ticked at merge)
 - [ ] Review of PR C (Khalil, Part C reviewer) (Entry 160).
-- [ ] Dry run of notebook 06 (`MODE = 'dry_run'`) on a Colab T4 runtime from the approved commit, Tue 17 Nov; evidence in Drive `processed/metadata/stage11/dry_run/<UTC timestamp>/` (Entry 160).
-- [ ] Official run (`MODE = 'official'`), Wed 18–Thu 19 Nov, only after PR B (with the D57 approval commit) and PR C are merged and the dry run passed (Entry 160).
-- [ ] Results PR after human review: `docs/audit_evidence/run_registry.jsonl` (byte copy, SHA-256 and line count), `docs/audit_evidence/stage11_run/` (claim and score JSON evidence, `rehearsal_report.json`, `metrics_report.json`, `stage11_export_manifest.json`), `metrics_report.md` at `docs/results/stage11_for_test.md`; per-clip files stay on Drive (Entry 160).
+- [x] Dry run of notebook 06 (`MODE = 'dry_run'`) on a Colab T4 runtime from the approved commit, Tue 17 Nov; evidence in Drive `processed/metadata/stage11/dry_run/<UTC timestamp>/` (Entry 160). (2026-11-10, `20261110T150257Z`, commit `ad69edd`, passed; Entry 161)
+- [x] Official run (`MODE = 'official'`), Wed 18–Thu 19 Nov, only after PR B (with the D57 approval commit) and PR C are merged and the dry run passed (Entry 160). (2026-11-10, commit `8219562`, run `d5306a55…`, completed 16:21:50 UTC; Entry 161)
+- [ ] Results PR after human review: `docs/audit_evidence/run_registry.jsonl` (byte copy, SHA-256 and line count), `docs/audit_evidence/stage11_run/` (claim and score JSON evidence, `rehearsal_report.json`, `metrics_report.json`, `stage11_export_manifest.json`), `metrics_report.md` at `docs/results/stage11_for_test.md`; per-clip files stay on Drive (Entry 160). (on `docs/stage11-results`, Entry 161; ticked at merge)
 
 **Stage 11 MFCC reproduction gate (Entry 159)**
 - [x] D58 (processor-bound MFCC gate, amends D46 (1) and (4)): approval by all four and an approval commit, before `fix/stage11-mfcc-gate` merges and before the Stage 11 claim. (approved via GitHub reviews on PR #117, 2026-11-10; merged as #117)
 - [x] Build the val-B CPU-runtime MFCC reference: rebuilt twice, `04f91e3e…` = Stage 7; reference on Drive at `processed/metadata/stage11/mfcc_reference/{val-A,val-B}/` (Entry 159).
 - [x] PR C, notebook 06: pass `--mfcc-reference` (the Drive folder above) to `rehearse`, `claim` and `score`, and pin the Colab runtime version 2026.10 (D58 (1)) (Entry 159). (Entry 160 D58 update, `feat/stage11-notebook`; awaits PR C review)
-- [ ] Redo the Stage 11 dry run after D58 is approved and merged and PR C is updated (Entry 159).
+- [x] Redo the Stage 11 dry run after D58 is approved and merged and PR C is updated (Entry 159). (`20261110T150257Z`, passed; Entry 161)
 - [ ] Stage 13 joint run and Stage 14: apply the D58 (3) MFCC gate with the same reference when `baseline-v1` is scored on a T4 runtime (D58 (4)).
 - [x] Entry numbering: D56 took Entries 157 and 158 on `main` (PR #116); this D58 entry is Entry 159, and PR C's notebook entry (Entry 157 on `feat/stage11-notebook`) is renumbered when that branch is rebased (Entry 159).
+
+**Stage 11 results (Entry 161)**
+- [ ] Stage 11 brief `docs/stages/` (D32), with the interpretation of the results (Donia).
+- [ ] Khalil's teach-back of the Stage 11 brief (D32), then a closeout PR marking Stage 11 done in `AGENTS.md`.
+- [ ] `stage11_report`'s byte-exact `p` re-derivation reproduces only on the run's platform (T4, 2026.10); document in `docs/stage11_report.md` Limitations in a later PR (no code change) (Entry 161).
+- [ ] Stage 12: ModelBundle v1 freeze (F4) after Stage 11 closes; v1 replaces the mock in the API (D48).
 
 **Stage 17 API (Part E, Entry 100)**
 - [x] Team review of the API contract `docs/api_design.md`, including the proposed `invalid_request` (400) code. (approved, PR #65, Donia, 2026-10-30; Entry 101)
@@ -6556,7 +6648,17 @@ the official run only after the D57 approval commit is in and PR B and PR C are 
 
 ---
 
-## Current status — updated 2026-11-10 (Entry 160)
+## Current status — updated 2026-11-10 (Entry 161)
+
+**Stage 11 official run (Entry 161):** the one FoR test-split run is done (2026-11-10, commit
+`8219562`, Colab T4 runtime 2026.10, run `d5306a55…`, `completed` 16:21:50 UTC; registry
+`b0133fc8…af93b66d`, 2 lines). The results PR on `docs/stage11-results` commits the evidence byte for
+byte (`docs/audit_evidence/stage11_run/`, `docs/audit_evidence/run_registry.jsonl`) and the report
+at `docs/results/stage11_for_test.md`: H1 not supported, H5 not supported. The report reproduces
+byte for byte on the run's platform; locally it stops at the 1-ulp `p` re-derivation check. Two
+incidents after the run's writes (a `KeyboardInterrupt` in the output loop, an export resumed after
+a rebound name) are recorded; neither touched scoring or test access. Next: review of the results
+PR, the Stage 11 brief (D32) and Khalil's teach-back, then Stage 12 (F4).
 
 **Stage 11 notebook (Entry 160):** PR C on `feat/stage11-notebook` (rebased on `main` after PR B merged as #114) adds notebook 06: a `dry_run` mode (rehearsal on val-A/val-B, export, stop) and an `official` mode (claim, Drive flush and remount with the claim verified on Drive, score, report, export, then the results view), with its static test; not run. After `main` (D56, D58) was merged in, the notebook implements D58: it copies the CPU-runtime MFCC reference from Drive, passes `--mfcc-reference` to `rehearse`, `claim` and `score`, records the reference's SHA-256 in the manifests, and asserts runtime 2026.10 (Python 3.13.16, torch 2.11.0+cu130). Next: PR C review, the dry run redone on Colab T4 runtime 2026.10 (Tue 17 Nov), then the official run after PR C merges (Wed 18–Thu 19 Nov).
 
@@ -6574,7 +6676,7 @@ the official run only after the D57 approval commit is in and PR B and PR C are 
 midterm backlog refresh in Entry 149 records merged Stage 17–18 evidence without changing the closed
 requirements, priorities or scope; it awaits PR/CI and human review.
 
-**Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 closed (Entry 96): run and results merged (PR #60; Entry 94), brief accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-28; Donia attended as author; no corrections; Q9 reading agreed), merged as PR #61 (`f166001`). Stage 11 is current: D41 storage is approved (PR #62), D46 is approved, the runner merged as PR #68 and the report merged as PR #114. Next are D56 approval, PR C and the dry run; no FoR test access before those gates pass.
+**Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 closed (Entry 96): run and results merged (PR #60; Entry 94), brief accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-28; Donia attended as author; no corrections; Q9 reading agreed), merged as PR #61 (`f166001`). Stage 11 is current: D41 storage is approved (PR #62), D46 is approved, the runner merged as PR #68, the report merged as PR #114 and notebook 06 as PR #115; the official run is done (Entry 161) and its results PR is open. Next are the Stage 11 brief and teach-back, then Stage 12 (F4).
 
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
@@ -6587,6 +6689,9 @@ canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI eth
 **Midterm refactor audit:** Entries 108–110 record the initial report and baseline. Entry 111 implements two small lint cleanups on the stacked cleanup branch: 937 tests pass, governance 3 passed, scoped lint findings 2 to 0, coverage and complexity unchanged. No speedup is claimed. Entry 112 adds the measured report/PDF and after captures. The work merged via #73 into combined #72 (`76c55aa`) after recorded teammate approvals and successful CI. Entry 113 corrected stale report status and merged as PR #74 (`ca45601`); separate final editorial/course acceptance remains open. Evidence-sensitive restructuring stays deferred.
 
 **What was done:**
+- **Stage 11 official run and results PR** on `docs/stage11-results` (Entry 161): the run's
+  evidence and registry committed byte for byte, results at `docs/results/stage11_for_test.md`,
+  blobs re-hashed after the commit; no code change.
 - **Stage 11 notebook 06 (PR C)** on `feat/stage11-notebook` (Entry 160): `notebooks/06_stage11_for_test.ipynb`,
   dry-run and official modes of the D46 order on a Colab T4 runtime (CPU scoring), static test
   `tests/governance/test_notebook_06_stage11.py`; not run, no FoR test access.

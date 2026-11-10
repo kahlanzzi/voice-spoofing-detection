@@ -1,0 +1,2 @@
+# The Stage 11 results file is a byte copy of metrics_report.md (RESULTS_REF): never convert its line endings.
+stage11_for_test.md -text

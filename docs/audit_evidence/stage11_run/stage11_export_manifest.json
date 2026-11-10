@@ -1,0 +1,148 @@
+{
+  "baseline_version": "baseline-v1",
+  "cache_sha256": {
+    "cache_a": {
+      "log_mel/val-A/val-A.json": "e7436eeb60ec1472007f59e6a9181899bf69fed228503859a813ec915c35ce31",
+      "log_mel/val-A/val-A.npz": "4502eea2f77cfd83d7e2b1d777e392fa460a13e805a936faa2788df8e7862c81",
+      "log_mel/val-B/val-B.json": "b0483c7afa91ddf037fb4b1a01053da7150ab2fcaed419b16e8711e062163933",
+      "log_mel/val-B/val-B.npz": "2cff949dae029515acde26392da84e6ef8587b8d6d8d536ea3d27ef879c568d7",
+      "mfcc/val-A/val-A.json": "7bc0fad543a71919726b1c707f3a3c095c768d880b0ac122dfe3beec60f5c572",
+      "mfcc/val-A/val-A.npz": "72a28d7e370b61f704bcae1ebbdad3f822e725daef663c8059219034adba431e",
+      "mfcc/val-B/val-B.json": "bf87c689acb480d79682baf332278894923e4c41b7b004663204de6fadbdec71",
+      "mfcc/val-B/val-B.npz": "16f3ba34b5259b1b019c7d7c17d3cf0980e79e6b3e98006ef3f5f18bc0380274"
+    },
+    "cache_b": {
+      "log_mel/val-A/val-A.json": "e7436eeb60ec1472007f59e6a9181899bf69fed228503859a813ec915c35ce31",
+      "log_mel/val-A/val-A.npz": "4502eea2f77cfd83d7e2b1d777e392fa460a13e805a936faa2788df8e7862c81",
+      "mfcc/val-A/val-A.json": "7bc0fad543a71919726b1c707f3a3c095c768d880b0ac122dfe3beec60f5c572",
+      "mfcc/val-A/val-A.npz": "72a28d7e370b61f704bcae1ebbdad3f822e725daef663c8059219034adba431e"
+    }
+  },
+  "cnn_version": "cnn-v1",
+  "commit": "8219562b9dd97762a38d61171f48577798853dad",
+  "created_utc": "2026-11-10T16:27:37+00:00",
+  "f3": {
+    "config_sha256": "7bd35bfdcb9270dd55ea9e73449c7bf6c6a359a80335b2551c0c89dde77c8630",
+    "fingerprint": "5b4f5849a9bb63f9016dd79969ff5bfb9e37006acbff1e26bbfee4ee2bad68f2"
+  },
+  "files": [
+    {
+      "path": "processed/metadata/stage11/run/runner/claim.json",
+      "sha256": "53a570b67395a3488a05b72c43da771a1b94a9a70866e94ef6e9bb7949777f27",
+      "size": 6744
+    },
+    {
+      "path": "processed/metadata/stage11/run/runner/clip_scores/baseline-v1.csv",
+      "sha256": "b950437b91d8864400f51b8bffd9acde519f6d535a920e0855e73a10b1d3b826",
+      "size": 287109
+    },
+    {
+      "path": "processed/metadata/stage11/run/runner/clip_scores/baseline-v1.json",
+      "sha256": "56ffd0d4e333f1ef76d8bf5b25b6a957b8cfecbfd79720a5011b0c5ca8461e3e",
+      "size": 543
+    },
+    {
+      "path": "processed/metadata/stage11/run/runner/clip_scores/cnn-v1-seed0.csv",
+      "sha256": "2bc638e46100c577bb79166cd3fc99d1bc3220b166be67aaf3b1134d9d97d81c",
+      "size": 338652
+    },
+    {
+      "path": "processed/metadata/stage11/run/runner/clip_scores/cnn-v1-seed0.json",
+      "sha256": "b67c3c83d19363b7cfbc4e841f48d783369b839e064c479c4f94709092805c36",
+      "size": 560
+    },
+    {
+      "path": "processed/metadata/stage11/run/runner/clip_scores/cnn-v1-seed1.csv",
+      "sha256": "165d299c4744b200978b8f8faccb9e8d2e456184350f4289608f473d488c6473",
+      "size": 262238
+    },
+    {
+      "path": "processed/metadata/stage11/run/runner/clip_scores/cnn-v1-seed1.json",
+      "sha256": "4bc24e3c847c402d9777cdc335a54ffe967375cd0e4640722207f730223b1448",
+      "size": 532
+    },
+    {
+      "path": "processed/metadata/stage11/run/runner/clip_scores/cnn-v1-seed2.csv",
+      "sha256": "6b498c88012711d4cf5f41af65ae07f24b97908b320dcc1f4e1e90f47ac0470c",
+      "size": 261744
+    },
+    {
+      "path": "processed/metadata/stage11/run/runner/clip_scores/cnn-v1-seed2.json",
+      "sha256": "7465a9de41c96c25bb5d852375493953416ec447f8c82f5cfd02a9e82fbeda8c",
+      "size": 532
+    },
+    {
+      "path": "processed/metadata/stage11/run/runner/environment.json",
+      "sha256": "43c8e95b343ba145664a6e780ad7477151e66feb3ad8c89da7a03af1e5d9850f",
+      "size": 1213
+    },
+    {
+      "path": "processed/metadata/stage11/run/runner/environment_score.json",
+      "sha256": "43c8e95b343ba145664a6e780ad7477151e66feb3ad8c89da7a03af1e5d9850f",
+      "size": 1213
+    },
+    {
+      "path": "processed/metadata/stage11/run/runner/pip_freeze.txt",
+      "sha256": "2c5297373ef748794200976bcce96cd11530d976ae3bcea830bc1785ede06b9b",
+      "size": 14390
+    },
+    {
+      "path": "processed/metadata/stage11/run/runner/run_report.json",
+      "sha256": "cb2bfb9ec01e7b7a7868ff1eefa174c612dacf3232e87f419a3ad7e41db6099f",
+      "size": 8784
+    },
+    {
+      "path": "processed/metadata/stage11/run/runner/scoring_started.json",
+      "sha256": "9dfdb7c0e3ec21b44587cecb4ca6a6f8dc6d00ed93acebbd16a787be0d346d00",
+      "size": 95
+    },
+    {
+      "path": "processed/metadata/stage11/run/metrics_report.json",
+      "sha256": "28b458020f35d7e411f30d369e9afe982a59ddb5f530ce854e5fd94cf89c79ae",
+      "size": 36269
+    },
+    {
+      "path": "processed/metadata/stage11/run/metrics_report.md",
+      "sha256": "cf0b8689fb12a67a893891706faae831d894f014e7249d198611c2b7cbbcb59b",
+      "size": 6856
+    },
+    {
+      "path": "processed/metadata/stage11/run/rehearsal/rehearsal_report.json",
+      "sha256": "a0fde5fefc0f0496dda30d6c35080c71638a322321af52efc24df666a3b2f4fa",
+      "size": 253932
+    },
+    {
+      "path": "processed/metadata/stage11/run/rehearsal/pip_freeze.txt",
+      "sha256": "2c5297373ef748794200976bcce96cd11530d976ae3bcea830bc1785ede06b9b",
+      "size": 14390
+    }
+  ],
+  "for_archive_sha256_observed": "9bddb83503ab442e9c7f54a1b7b9c02bc0ce32ed93f7863f28de5f59b6540b46",
+  "for_revision": "ff8c82c79e7bbefef811941bac9775c9328e9055",
+  "gpu_name": "Tesla T4",
+  "mfcc_reference_sha256": {
+    "val-A/val-A.json": "18a3fd8005c86a8cee28252688819daf2a3843faa5bd68d2e3b1e4fe9498d58f",
+    "val-A/val-A.npz": "04227c58b25f208771693db6262f39fd5276518811a13d60b9e7f9a560772bbd",
+    "val-B/val-B.json": "c0de8f7cb30cec437af542787051a5c541b5ad33a7884f0de99e2e45702d49b6",
+    "val-B/val-B.npz": "04f91e3e4957ba25f1edd9b3b7af7b830249e4f617695b96d83674ac2d7783c7"
+  },
+  "mode": "official",
+  "numpy": "2.5.3",
+  "pytest_counts": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 1623
+  },
+  "python": "3.13.16",
+  "registry": {
+    "lines": 2,
+    "path": "processed/metadata/stage11/run_registry.jsonl",
+    "sha256": "b0133fc8d76f318a2d45001bcdf04ef41051b15927d1b13627bb1871af93b66d"
+  },
+  "rehearsal_passed": true,
+  "results_ref": "docs/results/stage11_for_test.md",
+  "risk_version": "risk-v1",
+  "run_id": "d5306a55a77d4e9c85d237d959e3dbae",
+  "torch": "2.11.0+cu130"
+}
