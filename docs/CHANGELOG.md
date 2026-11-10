@@ -9,7 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
-- D56 (proposed): replace D50 RawBoost algorithm 3 with paper-defined algorithm 1 to preserve H9's unseen additive-Gaussian family, pin its reference parameters and parity source, and clarify uniform sampling over the seven codec options; documentation only, no data or augmentation code.
+- D56 approved (PR #116): replace D50 RawBoost algorithm 3 with paper-defined algorithm 1 to preserve H9's unseen additive-Gaussian family, pin its reference parameters and parity source, and clarify uniform sampling over the seven codec options; documentation only, no data or augmentation code.
 - Stage 11 metrics report (PR B) `src/evaluation/stage11_report.py`: integrity checks on the stored run files, then D4 metrics per model and subgroup, group-clustered CIs, H1, H5 and seed rows from the stored per-clip files only (JSON + Markdown); D57 (proposed) fixes the reporting conventions before any test result; design note `docs/stage11_report.md`; synthetic tests only, no FoR test access.
 - Execution Plan v3.0 (`docs/reference/Execution_Plan_v3.0.md` and `.pdf`): tracks R, V, L and P with owners, dated six-week timeline, critical path to the 4 December cut-off and cut line (D48–D55); AGENTS.md points to it.
 - Stage 11 runner (D46 implementation, PR A) `src/evaluation/stage11_run.py`: two-phase official run (`claim` / `score` with a once-only marker), val-A/val-B rehearsal as the D46 dry run, MFCC npz-bytes test, guard `ALLOWED` = the runner; design note `docs/stage11_run.md`; synthetic tests only, no FoR test access.

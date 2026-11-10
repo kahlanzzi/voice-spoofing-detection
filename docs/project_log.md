@@ -5902,12 +5902,34 @@ approve, push or merge.
 
 ---
 
+### Entry 158 — D56 approval record (2026-11-10)
+
+**Owner:** Malak Ben Salem. Review: Donia Mabrouk, Iheb Zemzemi and Khalil Dridi.
+
+**What changed [doc]:** Donia, Iheb and Khalil each submitted an approving review on PR #116 at
+commit `1a79c38`. D56 is now Approved, and the D50 row carries the marker **RawBoost variant and
+codec sampling amended by D56** so D50 cannot be read without seeing the correction. The
+CHANGELOG records the approved status. No implementation, config, test, audio or dataset changed.
+
+**Checks [verified]:** GitHub `checks`, `web` and `e2e` all passed on proposal commit `1a79c38`.
+After the approval edits, the local full suite passed (1335 passed, 12 skipped in 82.09s), the
+DEEP-VOICE governance check passed (3 passed in 0.24s), token grep found no token and `git diff
+--check` was clean. The approval diff changes documentation only; DEEP-VOICE remains untouched.
+
+**AI assistance:** Codex verified the three GitHub approvals and green checks, then prepared the
+approval/status records. Malak reviews the diff; AI does not approve or merge.
+
+**Gate:** approval record committed and pushed, CI green again, then human merge. After merge,
+V1a may begin on `feat/stagev1-augmentation`. **WAITING FOR HUMAN MERGE.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
 - [x] Approve or revise D48–D55, ADRs 0012–0015 and H8–H9 (all four) before the v1 Stage 11 claim. (PR #111, 2026-11-10)
 - [x] Approval commit: statuses to Approved; AGENTS.md hard rule 3 (v2 candidates) and roadmap; Protocol addendum for §§4, 6, 7, 9, 12 (v2 values, F5, Stage 11/14 model sets, cut-off). (Entry 151)
-- [ ] Approve D56 and merge its approval commit before the v1 Stage 11 claim and before V1a implementation; then amend D50 to RawBoost algorithm 1 and uniform sampling over seven codec options (Entry 157).
+- [x] Approve D56 and add its approval commit before the v1 Stage 11 claim and before V1a implementation; D50 is marked as amended for RawBoost algorithm 1 and uniform sampling over seven codec options (Entries 157–158; PR #116; merge pending).
 - [ ] Pin the noise and RIR corpora (licence, hash, 50/50 file split) and codec tools before any v2 training (D50 (5)).
 - [ ] Compute benchmark per v2 candidate; batch sizes in `configs/` before training (D49).
 - [ ] Extension authentication design and security review in SDD v2.0 before implementation (D51).
@@ -6286,9 +6308,9 @@ approve, push or merge.
 
 ---
 
-## Current status — updated 2026-11-10 (Entry 157)
+## Current status — updated 2026-11-10 (Entry 158)
 
-**D56 proposal (Entry 157):** RawBoost algorithm 1 replaces algorithm 3 for v2 only if approved, preserving H9's held-out additive-Gaussian family; the seven codec options are sampled uniformly. This docs-only decision needs Donia, Iheb and Khalil approval before V1a implementation and before the v1 Stage 11 claim.
+**D56 approval (Entries 157–158):** Donia, Iheb and Khalil approved PR #116. D56 is Approved: RawBoost algorithm 1 replaces algorithm 3 for v2, preserving H9's held-out additive-Gaussian family, and the seven codec options are sampled uniformly. The approval commit awaits green CI and human merge before V1a begins.
 
 **Stage 11 report (Entry 156):** PR B merged as PR #114 and D57 is approved. It computes the D4 metrics, CIs, H1, H5 and seed rows from the stored run files only, after integrity checks. Next: PR C, notebook 06.
 
@@ -6313,7 +6335,7 @@ canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI eth
 **Midterm refactor audit:** Entries 108–110 record the initial report and baseline. Entry 111 implements two small lint cleanups on the stacked cleanup branch: 937 tests pass, governance 3 passed, scoped lint findings 2 to 0, coverage and complexity unchanged. No speedup is claimed. Entry 112 adds the measured report/PDF and after captures. The work merged via #73 into combined #72 (`76c55aa`) after recorded teammate approvals and successful CI. Entry 113 corrected stale report status and merged as PR #74 (`ca45601`); separate final editorial/course acceptance remains open. Evidence-sensitive restructuring stays deferred.
 
 **What was done:**
-- **D56 proposed** on `docs/stagev1-d56-rawboost` (Entry 157): docs-only correction from RawBoost algorithm 3 to algorithm 1, paper parameters and reference commit pinned, and seven codec options sampled uniformly; no implementation or data access.
+- **D56 approved** on `docs/stagev1-d56-rawboost` (Entries 157–158; PR #116): docs-only correction from RawBoost algorithm 3 to algorithm 1, paper parameters and reference commit pinned, and seven codec options sampled uniformly; no implementation or data access; approval commit awaits merge.
 - **Stage 11 metrics report (PR B)** on `feat/stage11-report` (Entry 156): `src/evaluation/stage11_report.py`,
   integrity checks on the stored run files, then D4 metrics, clustered CIs, H1, H5 and seed rows;
   D57 approved in PR #114; synthetic tests only; no FoR test access.
