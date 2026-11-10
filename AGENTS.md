@@ -20,8 +20,9 @@ documents, propose a fix, and wait for approval.
   overrides the documents below.** Major decisions also have an ADR in `docs/decisions/`.
 - `docs/reference/SRS_Voice_Spoofing_Detection.pdf` — requirements (FR-xx, NFR-xx, PC-xx)
 - `docs/reference/SDD_Voice_Spoofing_Detection_Lab5.pdf` — architecture, classes, interfaces
-- `docs/reference/Execution_Plan_v2.1.pdf` — stage-by-stage tasks, owners and hand-overs (D26).
-  The v1 `docs/reference/Execution_Plan.md` is kept for history, superseded.
+- `docs/reference/Execution_Plan_v3.0.md` (and `.pdf`) — tracks, owners, dates, critical path and
+  hand-overs from the midterm to delivery (D48–D55). v2.1 (D26) and the unadopted v2.2 draft are kept
+  for history; the v1 `docs/reference/Execution_Plan.md` is superseded.
 - `docs/reference/Voice_Spoofing_Detection_Project_Proposal.docx` — motivation and framing
 - `docs/dataset_audit.md` (Stage 1) · `docs/threat_model.md` (Stage 2) · `docs/project_log.md` (living log)
 - `docs/experimental_protocol.md` — Stage 3, v1.0 frozen (F1)

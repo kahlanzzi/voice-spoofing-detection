@@ -5776,6 +5776,30 @@ does not approve or merge.
 
 ---
 
+### Entry 155 — Execution Plan v3.0 (2026-11-10)
+
+**What:** on `docs/stage11-execution-plan-v3`, `docs/reference/Execution_Plan_v3.0.md` and its PDF
+(12 pages, same layout as v2.1), from `main` at `eb16a85` (PR #68 merged). It turns D48–D55 into
+tracks and dates: Track R (v1 to F4: Stage 11 PR B, PR C, dry run, official run), Track V (model v2,
+V1–V5, F5 by the 4 December cut-off), Part D (joint Stage 13 run on 5–6 December, Stages 14–16),
+Track L (live endpoint, live mic mode, extension) and Track P (real model in the API, PostgreSQL and
+process pool, staging/production, load test, UI redesign, Stage 19). It adds a critical-path table, a
+cut line (extension first, then `aasist`, then a smaller usability test), owners and reviewers per
+track, and proposes SRS v4.0 (Khalil, W2) and SDD v2.0 (Iheb, W3). AGENTS.md now points to v3.0; v2.1
+and the unadopted v2.2 draft stay as history.
+
+**Not changed:** no decision, rule or protocol text. Dates are targets to confirm in the Monday sync,
+except the 4 December cut-off, which is D48 (4). Owners proposed for SRS v4.0 and SDD v2.0 are to be
+confirmed by the team.
+
+**AI assistance:** Claude (claude.ai, Claude Opus 5.5) wrote the plan from the decision register,
+protocol, project log, v2.1, the v2.2 draft, SRS v3.0 and SDD v1.0; the Markdown and the PDF are
+generated from one source so they match. Donia reviews before push.
+
+**Gate:** one approval and green CI, then merge. **WAITING FOR REVIEW.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -6157,7 +6181,9 @@ does not approve or merge.
 
 ---
 
-## Current status — updated 2026-11-10 (Entry 153)
+## Current status — updated 2026-11-10 (Entry 155)
+
+**Plan:** Execution Plan v3.0 (Entry 155) sets tracks R, V, L and P with dates; the v2 freeze cut-off is Friday 4 December, 23:59 Tunis (D48).
 
 **After the midterm review (Entries 150–151):** decisions D48–D55 (model v2 track with one joint Stage 13 run, live analysis, infrastructure, environments, interface redesign) and H8–H9 are approved in PR #111 (2026-11-10), with the Protocol addendum D48 (6) requires; D46 is approved (PR #67, record Entry 153); the v1 Stage 11 claim may follow once the runner (PR #68) is merged and the dry run passes.
 
