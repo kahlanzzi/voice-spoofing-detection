@@ -5,7 +5,7 @@
 | **Stage** | 11 — FoR internal test, the one test-split run |
 | **Owner** | Donia Mabrouk (D26, Part C) |
 | **Reviewer(s)** | Khalil Dridi (Protocol v1.0 §7 reviewer); D32 teach-back: Khalil (required), Iheb and Malak (consumers: Stage 12 integration, Stage 14) |
-| **Status** | Draft |
+| **Status** | Accepted — D32 teach-back: Khalil (required), Iheb and Malak, face to face, 2026-11-10; Donia attended as author, correcting only; no corrections to the brief; confirmed by approval of the closeout PR |
 | **Date** | 2026-11-10 |
 | **Related PRs** | #62 (D41 storage), #67 and #112 (D46), #68 (runner), #114 (report, D57), #116 (D56, ordering gate), #117 (D58), #115 (notebook 06), #118 (evidence and results) |
 

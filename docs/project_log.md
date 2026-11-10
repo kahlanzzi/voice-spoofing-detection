@@ -6283,6 +6283,31 @@ done in `AGENTS.md`. **WAITING FOR HUMAN REVIEW.**
 
 ---
 
+### Entry 163 — Stage 11 closed (D32) (2026-11-10)
+
+**What:** the brief `docs/stages/stage11-for-test.md` was drafted in Entry 162 and merged as PR #119.
+Khalil (required, Protocol §7 reviewer), Iheb and Malak completed their D32 teach-back face to face on
+2026-11-10, answering the 10 §7 questions without the author; Donia attended as author, correcting
+only (reported by Donia). No corrections to the brief came up, so the brief was not revised. The
+written confirmation is the approval of this closeout PR (D26). In this closeout commit on
+`docs/stage11-closeout`, the brief status is set to accepted, and the stage-briefs index, the
+`AGENTS.md` roadmap (Stage 11 done, Stage 12 current) and the CHANGELOG are updated.
+
+**Status:** Stage 11 is done: one `stage11_test` claim for the v1 model set, completed (Entry 161);
+evidence and results merged (#118); brief merged (#119) and accepted. Stage 12 (ModelBundle v1, F4) is
+current. Carried open items: `stage11_report` Limitations note (Entry 161); D58 (4) for Stages 13 and
+14.
+
+**Decisions:** none.
+
+**AI assistance:** **Claude** (claude.ai) wrote this closeout commit from Donia's report of the
+teach-back (format, attendees, no corrections). AI does not approve or merge.
+
+**Gate:** approval of the closeout PR by Khalil, Iheb and Malak is the written confirmation of the
+teach-back. **WAITING FOR HUMAN REVIEW.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -6541,7 +6566,7 @@ done in `AGENTS.md`. **WAITING FOR HUMAN REVIEW.**
 - [ ] Review of PR C (Khalil, Part C reviewer) (Entry 160).
 - [x] Dry run of notebook 06 (`MODE = 'dry_run'`) on a Colab T4 runtime from the approved commit, Tue 17 Nov; evidence in Drive `processed/metadata/stage11/dry_run/<UTC timestamp>/` (Entry 160). (2026-11-10, `20261110T150257Z`, commit `ad69edd`, passed; Entry 161)
 - [x] Official run (`MODE = 'official'`), Wed 18–Thu 19 Nov, only after PR B (with the D57 approval commit) and PR C are merged and the dry run passed (Entry 160). (2026-11-10, commit `8219562`, run `d5306a55…`, completed 16:21:50 UTC; Entry 161)
-- [ ] Results PR after human review: `docs/audit_evidence/run_registry.jsonl` (byte copy, SHA-256 and line count), `docs/audit_evidence/stage11_run/` (claim and score JSON evidence, `rehearsal_report.json`, `metrics_report.json`, `stage11_export_manifest.json`), `metrics_report.md` at `docs/results/stage11_for_test.md`; per-clip files stay on Drive (Entry 160). (on `docs/stage11-results`, Entry 161; ticked at merge)
+- [x] Results PR after human review: `docs/audit_evidence/run_registry.jsonl` (byte copy, SHA-256 and line count), `docs/audit_evidence/stage11_run/` (claim and score JSON evidence, `rehearsal_report.json`, `metrics_report.json`, `stage11_export_manifest.json`), `metrics_report.md` at `docs/results/stage11_for_test.md`; per-clip files stay on Drive (Entry 160). (merged as #118, Entry 161)
 
 **Stage 11 MFCC reproduction gate (Entry 159)**
 - [x] D58 (processor-bound MFCC gate, amends D46 (1) and (4)): approval by all four and an approval commit, before `fix/stage11-mfcc-gate` merges and before the Stage 11 claim. (approved via GitHub reviews on PR #117, 2026-11-10; merged as #117)
@@ -6552,8 +6577,8 @@ done in `AGENTS.md`. **WAITING FOR HUMAN REVIEW.**
 - [x] Entry numbering: D56 took Entries 157 and 158 on `main` (PR #116); this D58 entry is Entry 159, and PR C's notebook entry (Entry 157 on `feat/stage11-notebook`) is renumbered when that branch is rebased (Entry 159).
 
 **Stage 11 results (Entry 161)**
-- [ ] Stage 11 brief `docs/stages/` (D32), with the interpretation of the results (Donia). (drafted on `docs/stage11-brief`, Entry 162; ticked at merge)
-- [ ] Khalil's teach-back of the Stage 11 brief (D32), then a closeout PR marking Stage 11 done in `AGENTS.md`.
+- [x] Stage 11 brief `docs/stages/` (D32), with the interpretation of the results (Donia). (merged as #119, Entry 162)
+- [x] Khalil's teach-back of the Stage 11 brief (D32), then a closeout PR marking Stage 11 done in `AGENTS.md`. (Khalil, Iheb and Malak, face to face, 2026-11-10, no corrections; closeout on `docs/stage11-closeout`, Entry 163)
 - [ ] `stage11_report`'s byte-exact `p` re-derivation reproduces only on the run's platform (T4, 2026.10); document in `docs/stage11_report.md` Limitations in a later PR (no code change) (Entry 161).
 - [ ] Stage 12: ModelBundle v1 freeze (F4) after Stage 11 closes; v1 replaces the mock in the API (D48).
 
@@ -6685,7 +6710,9 @@ done in `AGENTS.md`. **WAITING FOR HUMAN REVIEW.**
 
 ---
 
-## Current status — updated 2026-11-10 (Entry 161)
+## Current status — updated 2026-11-10 (Entry 163)
+
+**Stage 11 closed (Entry 163):** run, evidence and results (#118) and the accepted brief (#119); D32 teach-back by Khalil, Iheb and Malak, face to face, 2026-11-10, no corrections. **Stage 12 (ModelBundle v1, F4) is current**; the first step is the bundle format for the two-file checkpoint (`checkpoint.json` + `weights.safetensors`) before F4 is built.
 
 **Stage 11 official run (Entry 161):** the one FoR test-split run is done (2026-11-10, commit
 `8219562`, Colab T4 runtime 2026.10, run `d5306a55…`, `completed` 16:21:50 UTC; registry
@@ -6713,7 +6740,7 @@ PR, the Stage 11 brief (D32) and Khalil's teach-back, then Stage 12 (F4).
 midterm backlog refresh in Entry 149 records merged Stage 17–18 evidence without changing the closed
 requirements, priorities or scope; it awaits PR/CI and human review.
 
-**Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 closed (Entry 96): run and results merged (PR #60; Entry 94), brief accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-28; Donia attended as author; no corrections; Q9 reading agreed), merged as PR #61 (`f166001`). Stage 11 is current: D41 storage is approved (PR #62), D46 is approved, the runner merged as PR #68, the report merged as PR #114 and notebook 06 as PR #115; the official run is done (Entry 161) and its results PR is open. Next are the Stage 11 brief and teach-back, then Stage 12 (F4).
+**Status:** Stages 8–9 closed (Entry 88): briefs 08–09 accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-26; Donia attended as author; no corrections), merged as PR #54 (`e2374cc`). Run validation only (Entry 86): 4 blocks, learning rate 1e-3, bundle seed 0, val-A EER 0 on all three seeds. D43 approved (PR #53; Entry 87), implementation only at Stage 16. Stage 10 closed (Entry 96): run and results merged (PR #60; Entry 94), brief accepted after the D32 teach-back (Iheb, Malak, Khalil, face to face, 2026-10-28; Donia attended as author; no corrections; Q9 reading agreed), merged as PR #61 (`f166001`). Stage 11 is current: D41 storage is approved (PR #62), D46 is approved, the runner merged as PR #68, the report merged as PR #114 and notebook 06 as PR #115; the official run is done (Entry 161), its results merged (#118), and the brief accepted after the D32 teach-back (#119, Entry 163): Stage 11 is closed. Stage 12 (F4) is current.
 
 **Part E status:** Stage 17 API contract approved (PR #65); API skeleton merged in PR #66
 (`d9e8c4a`): `create_app()`, config, §6 errors, request IDs, schemas and a mock
