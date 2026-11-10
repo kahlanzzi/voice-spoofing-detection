@@ -24,7 +24,7 @@ python -m src.evaluation.stage11_run rehearse --root <FoR root> \
   --stage7-evidence docs/audit_evidence/stage7_baseline \
   --stage8-evidence docs/audit_evidence/stage8_cnn \
   --stage10-evidence docs/audit_evidence/stage10_risk \
-  --cache-a <build A> --cache-b <build B> --stage10-scores <val_b_scores.npz> --out <new folder>
+  --cache-a <build A> --cache-b <build B> --mfcc-reference <D58 reference folder>   --stage10-scores <val_b_scores.npz> --out <new folder>
 
 python -m src.evaluation.stage11_run claim <same arguments, without --root and --stage10-scores> \
   --registry <run_registry.jsonl> --results-ref <relative path of the run report> --out <new folder>
@@ -44,6 +44,7 @@ reads val-A and val-B only. `claim` takes no `--root`: it reads no audio.
 | profile, config, manifest | F3 profile, `batch_size`, F2 rows (paths, labels, subgroups, groups) |
 | Stage 7, 8, 10 evidence | every expected hash and value (below); nothing is typed in the code except the D41 baseline hash |
 | `cache_a`, `cache_b` | two builds of `log_mel/<split>/` and `mfcc/<split>/` from the cache CLIs, same session; `cache_a` also holds val-B for the rehearsal |
+| `mfcc_reference` (D58 (3)(a)) | required by all three subcommands (`--mfcc-reference`): a folder with `val-A/` and `val-B/`, each an `mfcc_cache` folder (`<split>.npz` + `<split>.json`), rebuilt on a Colab CPU runtime (no AVX-512) and accepted only if each `npz_sha256` equals Stage 7's; kept on Drive (`processed/metadata/stage11/mfcc_reference/`), never committed (AGENTS.md rule 7). Its expected hashes are Stage 7's, from the evidence; nothing is typed. `claim` and `score` read val-A only; val-B is read only by the rehearsal |
 | registry (claim, score) | `RunRegistry`; the live file is on Drive (D46 (6)) |
 | `run_id` (score only) | the value `claim` printed; 32 lowercase hex, checked as an argument before anything else |
 | `results_ref` (claim only) | required, stored in `claim.json`; what `complete` records as the place of the run report. A non-empty, safe, canonical relative POSIX path (`src.freezing.manifests.safe_relative_path`, and the value must equal its canonical form): empty, absolute, drive, `..`, `.` and backslash spellings are refused before anything else |
@@ -60,7 +61,7 @@ reads val-A and val-B only. `claim` takes no `--root`: it reads no audio.
 | `artifact_sha256`, `val_b_threshold`, `val_a_eer`, `val_b_eer` | Stage 7 | `artifact_sha256` equals the D41 value; `version` is `baseline-v1` |
 | val-A log-Mel `npz_sha256` | Stage 8 | `caches.val-A` equals `val_a_cache_npz_sha256` |
 | val-B log-Mel `npz_sha256` | Stage 10 | |
-| val-A, val-B MFCC `npz_sha256` | Stage 7 | |
+| val-A, val-B MFCC `npz_sha256` | Stage 7 | expected bytes of the D58 MFCC reference (no longer of the T4 caches, D58 (3)) |
 | `risk_policy_sha256`, `val_b_scores_sha256`, `scoring.batch_size` | Stage 10 | `scoring.device` is `cpu` |
 | `cnn_config_sha256` | Stage 8 | |
 | profile fingerprint, profile config hash, F2 manifest hash | Stages 7, 8, 10 | all three equal |
@@ -90,8 +91,17 @@ recorded in `claim.json`.
    `load_checkpoint` uses) and equal to the evidence, then `load_checkpoint` against it (which
    checks the bytes it loads again) and its metadata seed equal to its folder's seed; baseline
    `artifact_sha256`, version and threshold; risk-policy SHA-256; the **reproduction gate**
-   (D46 (4)): for log-Mel and MFCC, the val-A caches of `cache_a` and `cache_b` (two folders) load
-   and verify, have equal `npz_sha256`, and that hash equals Stage 8 (log-Mel) or Stage 7 (MFCC);
+   (D46 (4) as amended by D58 (3)): for log-Mel and MFCC, the val-A caches of `cache_a` and
+   `cache_b` (two folders) load and verify and have equal `npz_sha256` (`builds_identical`).
+   Log-Mel: that hash equals Stage 8's (`npz_sha256`, D46 (4) unchanged). MFCC: the hash is
+   recorded, not compared (`npz_sha256_observed`, with Stage 7's value and whether they are
+   equal); the reference val-A npz is hashed before it is parsed and must equal Stage 7's
+   (`reference_sha256`), both reference files' SHA-256 are recorded (`reference_files`), the
+   reference loads as an `mfcc_cache` folder; `cache_a`'s val-A has the same paths and labels
+   (`reference_rows`: row count and SHA-256 of the canonical paths and labels) and is within
+   tolerance (`within_tolerance`: `np.allclose(t4, reference, rtol=1e-5, atol=1e-6)` in float64,
+   `actual` = `max_abs`, `max_rel` (over entries where the reference is not 0), `allclose`, `rtol`,
+   `atol`; constants `MFCC_RTOL`, `MFCC_ATOL`). All keys are `reproduction.<feature>.val-A.<name>`;
    the **test rows** of the manifest (sorted by path), each valid under the clip_scores row rules,
    reusing its validators (`_check_clip_id`: canonical clip ID; `_check_choice`: label in
    {FAKE, REAL}; `_check_text`: non-empty trimmed group), the columns path, label, subgroup,
@@ -207,14 +217,19 @@ failing loudly:
 
 | Check | Expected from |
 |---|---|
-| in-memory log-Mel and MFCC (with paths and labels) equal the verified caches, val-A and val-B | caches in `cache_a`, whose `npz_sha256` must equal the evidence (val-B log-Mel `2cff949d…`, val-B MFCC `04f91e3e…`) |
+| in-memory log-Mel and MFCC (with paths and labels) equal the verified caches, val-A and val-B | caches in `cache_a`; the log-Mel `npz_sha256` must equal the evidence (`<split>.log_mel.cache_npz_sha256`; val-B `2cff949d…`); the MFCC `npz_sha256` is recorded, not compared (`<split>.mfcc.cache_npz_sha256_observed`, D58 (3)) |
 | val-A EER per CNN seed | each checkpoint's `val_a_eer` |
 | val-A baseline EER | Stage 7 `val_a_eer` |
 | val-B bundle-seed raw scores and `p`, byte for byte, same paths and labels | Stage 10 `val_b_scores.npz`, after its SHA-256 equals `val_b_scores_sha256` |
 | val-B baseline EER | Stage 7 `val_b_eer` |
+| D58 (3)(c), val-A and val-B: the reference MFCC (`<split>.mfcc.reference_sha256`, hashed before it is parsed; `reference_files` recorded; `reference_rows` equal to the split's rows) | Stage 7 `npz_sha256` (val-A `04227c58…`, val-B `04f91e3e…`) |
+| D58 (3)(c), val-A and val-B: `baseline.<split>.predictions_equal_reference`, the number of clips whose `baseline-v1` D29 prediction from the T4 in-memory MFCC differs from the one from the reference MFCC, both scored by `score_models` and `baseline_outputs` in the same session | 0 |
+| recorded with it, before the check: `baseline.<split>.max_abs_score_diff` (max \|Δ raw score\|) and `baseline.<split>.near_threshold_clips` (clips whose reference raw score lies within that max of the D29 threshold) | descriptive |
 
 On val-B only the bundle seed and the baseline are scored (D45). The baseline prediction check
-runs on val-B too. Output: a new folder with `rehearsal_report.json` and `pip_freeze.txt`.
+(`baseline_outputs`) runs on val-A and val-B, on both MFCC sources. Output: a new folder with
+`rehearsal_report.json` and `pip_freeze.txt`. A descriptive check has `expected`
+`"recorded, not compared"` and `passed` true.
 
 The report is written whatever happens after the split and folder checks. Every check, pre-claim
 and known answer, is recorded as `expected` / `actual` / `passed` as it runs. On success the report
@@ -265,6 +280,18 @@ every recorded check passed.
   the claim's record is reported, not required.
 - **(m) Recorded hashes are computed.** The checkpoint hash in the report is computed with the
   repository's function, not copied from the expected value, so the record shows what was found.
+- **(n) Processor-bound bytes (D58, Entry 158).** The Stage 11 dry run (2026-11-10) found that each
+  cache reproduces byte for byte only on the processor type it was first built on: Stage 7's MFCC
+  on a CPU runtime without AVX-512, Stage 8's log-Mel on a T4 runtime with AVX-512 [inference,
+  strongly supported]. No single runtime meets D46 (4) as written. D58 keeps the exact log-Mel
+  gate (the primary CNN and its policy were built on T4 features) and replaces MFCC byte equality
+  with a CPU-runtime reference that does equal Stage 7 byte for byte, a fixed tolerance between it
+  and the T4 MFCC (set before the difference was computed) and, in the rehearsal, identical
+  `baseline-v1` decisions from both. The decision test scores both features with the same code in
+  the same session, so a difference can only come from the features; the max score difference and
+  the clips near the threshold show how close the decisions came. The reference hash is checked
+  before the file is parsed, as for every other input, so the comparison is always against
+  Stage 7's bytes.
 
 ## Limitations
 
@@ -281,19 +308,33 @@ every recorded check passed.
   new decision (D46 (8)).
 - If F3 raises on a test clip, that happens after the claim and stops the run under D46 (8). It
   cannot be checked earlier without test access; F3 refuses rather than returning NaN or infinity.
+- `baseline-v1` held-out and external scores are computed from T4 MFCC, which differs from a
+  CPU-runtime computation at float precision; they are stored and reported as computed (D58 (5)).
+  The rehearsal shows identical validation decisions; it cannot show this for test clips near the
+  threshold. Every later run that scores `baseline-v1` on a T4 runtime (Stage 13, Stage 14) applies
+  the same gate with the same reference (D58 (4)).
+- The val-B T4 MFCC is compared with the reference through the baseline's decisions and EER
+  (D58 (3)(c)), not through a tolerance check; only val-A has the tolerance gate.
 - Tested on synthetic data only; the real run uses Colab.
 
 ## Tests (`tests/evaluation/test_stage11_run.py`)
 
 Synthetic: a 22-row manifest (val-A, val-B, test), fake audio reads and fake features derived from
 each path (monkeypatched), real log-Mel and MFCC caches built from those fakes (build A, build B
-and one differing build), three untrained 3-block CNN checkpoints saved with `save_checkpoint`
-(their `val_a_eer` is the EER of the runner's scoring path), a real baseline artifact, a real
-policy file, a Stage 10 `val_b_scores.npz` and synthetic Stage 7, 8 and 10 evidence.
+and differing builds), a real D58 MFCC reference (val-A, val-B) one float32 ulp from the "T4"
+MFCC (different bytes, inside the tolerance), three untrained 3-block CNN checkpoints saved with
+`save_checkpoint` (their `val_a_eer` is the EER of the runner's scoring path), a real baseline
+artifact (threshold placed between reference scores, so no score lies near it), a real policy
+file, a Stage 10 `val_b_scores.npz` and synthetic Stage 7, 8 and 10 evidence (Stage 7's MFCC
+hashes and EERs from the reference).
 
 | Property | Test |
 |---|---|
-| Each pre-claim check: raises with its own message, no audio read, no registry line, no output | `test_pre_claim_failure_reads_no_audio_and_writes_nothing` (19 cases), `test_every_pre_claim_case_names_its_message` |
+| Each pre-claim check: raises with its own message, no audio read, no registry line, no output | `test_pre_claim_failure_reads_no_audio_and_writes_nothing` (26 cases), `test_every_pre_claim_case_names_its_message` |
+| (n) D58 gate, before the claim: MFCC builds one ulp apart; log-Mel builds identical but one ulp from Stage 8 (exact gate kept); reference hash not Stage 7's, the T4 cache given as reference, reference missing; reference label or path differs; MFCC beyond tolerance | the same test, cases `mfcc_builds_differ`, `log_mel_one_ulp_from_stage8`, `reference_vs_stage7`, `reference_is_the_t4_cache`, `reference_missing`, `reference_label_differs`, `reference_path_differs`, `mfcc_beyond_tolerance` |
+| (n) Happy path: T4 MFCC bytes differ from Stage 7 (recorded), reference and tolerance pass with `max_abs` / `max_rel` recorded, also in `claim.json` | `test_happy_path_files_report_and_registry` |
+| (n) `mfcc_difference`: max abs, max rel without zero reference entries, atol at a zero reference, rtol, shapes; D58 constants | `test_mfcc_difference_records_max_abs_max_rel_and_allclose`, `test_mfcc_tolerance_is_the_d58_value` |
+| (n) Rehearsal: a `baseline-v1` prediction flip between reference and T4 MFCC fails with a report holding the max score difference and the near-threshold count, while the Stage 7 EER passes | `test_rehearse_baseline_flip_between_reference_and_t4_fails_with_a_report` |
 | Earlier `stage11_test` claim (other model set) | `test_existing_stage11_claim_is_refused_before_any_read` |
 | Existing output folder | `test_existing_out_dir_is_refused_first` |
 | Float, NaN, empty or untrimmed group; non-canonical path; missing subgroup column: refused before the claim | `test_bad_group_is_refused_before_the_claim`, `test_non_canonical_test_path_is_refused_before_the_claim`, `test_missing_subgroup_column_is_refused_before_the_claim` |
@@ -313,10 +354,10 @@ policy file, a Stage 10 `val_b_scores.npz` and synthetic Stage 7, 8 and 10 evide
 | Committed evidence gives the D46 values | `test_committed_evidence_loads_with_the_d46_values` |
 | Environment record never raises | `test_environment_record_never_raises_without_cpuinfo_nvidia_smi_or_pip`, `test_environment_record_reads_cpu_flags_and_gpu` |
 | Rehearsal refuses other splits before reading | `test_rehearse_refuses_other_splits_before_reading` |
-| Rehearsal known answers; no registry | `test_rehearse_happy_path_never_touches_a_registry` |
-| Rehearsal detects cache, EER and Stage 10 mismatches, and writes a failed report | `test_rehearse_detects_mismatch` (6 cases) |
+| Rehearsal known answers (incl. D58 (3)(c) for both splits, every descriptive check listed); no registry | `test_rehearse_happy_path_never_touches_a_registry` |
+| Rehearsal detects cache, EER, Stage 10 and val-B reference (hash, rows) mismatches, and writes a failed report | `test_rehearse_detects_mismatch` (8 cases) |
 | (k) Failed rehearsal report: MFCC mismatch with expected/actual hashes; pre-claim failure; non-check error | `test_rehearse_mfcc_mismatch_writes_failed_report_then_raises`, `test_rehearse_preflight_failure_writes_failed_report`, `test_rehearse_non_check_error_writes_failed_report` |
-| CLI: `rehearse`, `claim`, `score`; no `run`, no split argument | `test_cli_dispatches_without_a_split_argument` |
+| CLI: `rehearse`, `claim`, `score`; `--mfcc-reference` required by all three; no `run`, no split argument | `test_cli_dispatches_without_a_split_argument` |
 
 The MFCC cache npz-bytes-vs-commit test (D46 (4) precondition) is
 `tests/features/test_mfcc_cache_npz_bytes.py`.

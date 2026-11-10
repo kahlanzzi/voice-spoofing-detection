@@ -9,9 +9,10 @@ claim() (no test audio is read):
 1. Pre-claim checks, nothing written: results_ref and output folder, clean full-SHA commit,
    environment gate (D46 (2): Python and torch versions), the committed Stage 7, 8 and 10 evidence,
    F2 manifest and F3 profile hashes, every model loaded against its recorded hash, the
-   reproduction gate (D46 (4): two val-A cache builds per feature, byte-identical and equal to
-   Stage 7 / Stage 8), every test row valid under the clip_scores row rules, and no earlier
-   ("for", "test", "stage11_test") record in the registry.
+   reproduction gate (D46 (4) as amended by D58 (3): two val-A cache builds per feature,
+   byte-identical; log-Mel equal to Stage 8; MFCC within the D58 tolerance of the CPU-runtime
+   reference, whose bytes equal Stage 7), every test row valid under the clip_scores row rules,
+   and no earlier ("for", "test", "stage11_test") record in the registry.
 2. RunRegistry.claim (D31, D41), re-read from the file and verified.
 3. Environment evidence: out/ is created with environment.json (the D46 (3) record) and
    pip_freeze.txt, then out/claim.json (run_id, commit, registry SHA-256 after the claim,
@@ -38,8 +39,9 @@ Any failure after the claim raises and leaves the started record: no retry, no c
 registry is never rewritten (D46 (8)).
 
 rehearse() is the D46 dry run on val-A and val-B only: the same pre-claim checks (no registry), the
-same feature and scoring functions, and known answers from the caches, the checkpoints, Stage 7 and
-Stage 10. It refuses every other split before anything is read. If any check fails, it still
+same feature and scoring functions, and known answers from the caches, the checkpoints, Stage 7,
+Stage 10 and the D58 MFCC reference (baseline-v1 predictions from the T4 MFCC equal to those from
+the reference). It refuses every other split before anything is read. If any check fails, it still
 writes rehearsal_report.json with every check done so far and "passed": false, then raises.
 
 Expected hashes come from the committed evidence files, never from constants, except the D41
@@ -119,6 +121,13 @@ ROLE_OTHER = "cnn_other_seed"
 REHEARSAL_SPLITS = ("val-A", "val-B")
 GATE_SPLIT = "val-A"  # D46 (4): the reproduction gate rebuilds val-A only
 LOG_MEL, MFCC = "log_mel", "mfcc"  # cache sub-folders and feature names
+# D58 (3)(b): the T4 val-A MFCC must satisfy np.allclose(t4, reference, rtol, atol) against the
+# CPU-runtime reference. Fixed by D58 before the T4-reference difference was computed; never tuned.
+MFCC_RTOL = 1e-5
+MFCC_ATOL = 1e-6
+MFCC_TOLERANCE_RULE = (f"same paths and labels as the reference, and np.allclose(t4, reference, "
+                       f"rtol={MFCC_RTOL}, atol={MFCC_ATOL}) (D58 (3)(b))")
+RECORDED = "recorded, not compared"  # the expected value of a descriptive check (passed is true)
 CACHE_LOADERS = {LOG_MEL: load_logmel_cache, MFCC: load_mfcc_cache}
 FEATURE_SHAPES = {LOG_MEL: LOG_MEL_SHAPE, MFCC: (N_FEATURES,)}
 CLIP_SCORES_DIR = "clip_scores"
@@ -525,9 +534,9 @@ def _load_models(checkpoints, baseline_dir, risk_policy_path, evidence: Evidence
                   batch_size=batch_size, artifact_sha256=hashes)
 
 
-def _load_cache(cache_dir, feature: str, split: str, profile, profile_config_sha256: str):
+def _load_cache_folder(folder, feature: str, split: str, profile, profile_config_sha256: str):
     features, labels, paths, meta = CACHE_LOADERS[feature](
-        Path(cache_dir) / feature / split, split, profile, expected_f2_manifest_sha256=F2_MANIFEST_SHA256
+        Path(folder), split, profile, expected_f2_manifest_sha256=F2_MANIFEST_SHA256
     )
     if meta["profile_config_sha256"] != profile_config_sha256:
         raise ValueError(f"{feature}/{split}: cache built from profile config "
@@ -535,23 +544,101 @@ def _load_cache(cache_dir, feature: str, split: str, profile, profile_config_sha
     return features, labels, paths, meta
 
 
-def reproduction_gate(cache_a, cache_b, profile, profile_config_sha256: str, evidence: Evidence,
-                      checks: dict) -> None:
-    """D46 (4): two val-A builds per feature, byte-identical, npz_sha256 equal to Stage 8 / Stage 7."""
+def _load_cache(cache_dir, feature: str, split: str, profile, profile_config_sha256: str):
+    return _load_cache_folder(Path(cache_dir) / feature / split, feature, split, profile, profile_config_sha256)
+
+
+def _rows_record(paths, label_names) -> dict[str, Any]:
+    """Row count and SHA-256 of the canonical paths + label names (features_sha256 with no arrays)."""
+    paths, label_names = [str(p) for p in paths], [str(x) for x in label_names]
+    return {"n_rows": len(paths), "rows_sha256": features_sha256(paths, label_names, {})}
+
+
+def _cache_rows(paths, labels) -> dict[str, Any]:
+    return _rows_record(paths, [LABEL_NAMES[int(x)] for x in labels])
+
+
+def load_mfcc_reference(reference_dir, split: str, profile, profile_config_sha256: str, evidence: Evidence,
+                        checks: dict, prefix: str):
+    """D58 (3)(a): the CPU-runtime MFCC reference of split, from <reference_dir>/<split>/.
+
+    The npz SHA-256 is checked against Stage 7's before the file is parsed (prefix.reference_sha256),
+    the SHA-256 of both files is recorded (prefix.reference_files), then the folder is loaded and
+    verified as an mfcc_cache folder, whose loader checks the bytes it parses against the same hash.
+    Returns (features, labels, paths).
+    """
+    folder = Path(reference_dir) / split
+    npz_path, json_path = folder / f"{split}.npz", folder / f"{split}.json"
+    for path in (npz_path, json_path):
+        if not path.is_file():
+            raise ValueError(f"MFCC reference (D58 (3)(a)): missing file {path}")
+    expected = evidence.cache_npz_sha256[(MFCC, split)]
+    npz_sha256 = sha256_file(npz_path)
+    _check(checks, f"{prefix}.reference_sha256", expected, npz_sha256)
+    _record(checks, f"{prefix}.reference_files", RECORDED,
+            {npz_path.name: npz_sha256, json_path.name: sha256_file(json_path)}, True)
+    features, labels, paths, meta = _load_cache_folder(folder, MFCC, split, profile, profile_config_sha256)
+    if meta["npz_sha256"] != expected:  # the file changed after it was hashed above
+        raise ValueError(f"MFCC reference {split}: loaded npz_sha256 {meta['npz_sha256']}, expected {expected}")
+    return features, labels, paths
+
+
+def mfcc_difference(t4: np.ndarray, reference: np.ndarray) -> dict[str, Any]:
+    """D58 (3)(b): max |t4 - reference|, max relative difference and np.allclose at MFCC_RTOL/MFCC_ATOL.
+
+    Computed in float64 (exact for float32 inputs). The relative difference is |t4 - ref| / |ref|
+    over the entries where ref != 0; an entry where ref == 0 is bounded by atol inside allclose.
+    """
+    if t4.shape != reference.shape:
+        raise ValueError(f"MFCC shapes differ: T4 {t4.shape}, reference {reference.shape}")
+    a, b = np.asarray(t4, dtype=np.float64), np.asarray(reference, dtype=np.float64)
+    diff = np.abs(a - b)
+    nonzero = b != 0
+    return {
+        "max_abs": float(diff.max()) if diff.size else 0.0,
+        "max_rel": float((diff[nonzero] / np.abs(b[nonzero])).max()) if nonzero.any() else 0.0,
+        "allclose": bool(np.allclose(a, b, rtol=MFCC_RTOL, atol=MFCC_ATOL)),
+        "rtol": MFCC_RTOL,
+        "atol": MFCC_ATOL,
+    }
+
+
+def reproduction_gate(cache_a, cache_b, mfcc_reference, profile, profile_config_sha256: str,
+                      evidence: Evidence, checks: dict) -> None:
+    """D46 (4) as amended by D58 (3): two val-A builds per feature, byte-identical; then
+
+    - log-Mel: npz_sha256 equal to Stage 8 (D46 (4), unchanged);
+    - MFCC: the bytes are recorded (npz_sha256_observed, not compared to Stage 7); the reference
+      val-A (D58 (3)(a)) is hash-checked against Stage 7 and loaded; the cache_a val-A has the same
+      paths and labels (reference_rows) and is within the D58 tolerance (within_tolerance).
+    """
     if Path(cache_a).resolve() == Path(cache_b).resolve():
         raise ValueError(f"cache_a and cache_b are the same folder ({cache_a}); the gate needs two builds")
     for feature in FEATURE_SHAPES:
-        metas = [_load_cache(c, feature, GATE_SPLIT, profile, profile_config_sha256)[3]
-                 for c in (cache_a, cache_b)]
-        _check(checks, f"reproduction.{feature}.{GATE_SPLIT}.builds_identical",
-               metas[0]["npz_sha256"], metas[1]["npz_sha256"])
-        _check(checks, f"reproduction.{feature}.{GATE_SPLIT}.npz_sha256",
-               evidence.cache_npz_sha256[(feature, GATE_SPLIT)], metas[0]["npz_sha256"])
+        prefix = f"reproduction.{feature}.{GATE_SPLIT}"
+        builds = [_load_cache(c, feature, GATE_SPLIT, profile, profile_config_sha256) for c in (cache_a, cache_b)]
+        observed = builds[0][3]["npz_sha256"]
+        _check(checks, f"{prefix}.builds_identical", observed, builds[1][3]["npz_sha256"])
+        stage_value = evidence.cache_npz_sha256[(feature, GATE_SPLIT)]
+        if feature == LOG_MEL:
+            _check(checks, f"{prefix}.npz_sha256", stage_value, observed)
+            continue
+        # D58 (3): MFCC equality with Stage 7's bytes is replaced by the reference comparison below.
+        _record(checks, f"{prefix}.npz_sha256_observed", RECORDED,
+                {"npz_sha256": observed, "stage7_npz_sha256": stage_value,
+                 "equal_to_stage7": observed == stage_value}, True)
+        ref_features, ref_labels, ref_paths = load_mfcc_reference(
+            mfcc_reference, GATE_SPLIT, profile, profile_config_sha256, evidence, checks, prefix)
+        t4_features, t4_labels, t4_paths, _ = builds[0]
+        _check(checks, f"{prefix}.reference_rows", _cache_rows(ref_paths, ref_labels),
+               _cache_rows(t4_paths, t4_labels))
+        difference = mfcc_difference(t4_features, ref_features)
+        _record(checks, f"{prefix}.within_tolerance", MFCC_TOLERANCE_RULE, difference, difference["allclose"])
 
 
 def preflight(checks: dict, *, checkpoints, baseline_dir, risk_policy, profile_path, config_path,
               manifest_path, stage7_evidence, stage8_evidence, stage10_evidence, cache_a,
-              cache_b) -> Context:
+              cache_b, mfcc_reference) -> Context:
     """Every check that reads no test audio and writes nothing; raise on the first failure.
 
     Checks are recorded into the caller's dict as they run, so the caller keeps those done before
@@ -577,7 +664,7 @@ def preflight(checks: dict, *, checkpoints, baseline_dir, risk_policy, profile_p
     _check(checks, "batch_size", evidence.batch_size, batch_size)
 
     models = _load_models(checkpoints, baseline_dir, risk_policy, evidence, batch_size, checks)
-    reproduction_gate(cache_a, cache_b, profile, profile_config_sha256, evidence, checks)
+    reproduction_gate(cache_a, cache_b, mfcc_reference, profile, profile_config_sha256, evidence, checks)
     return Context(commit=commit, evidence=evidence, profile=profile, manifest=manifest, models=models,
                    checks=checks, profile_config_sha256=profile_config_sha256,
                    f2_manifest_sha256=f2_manifest_sha256)
@@ -815,6 +902,27 @@ def _bytes_sha256(array: np.ndarray) -> str:
     return hashlib.sha256(np.ascontiguousarray(array).tobytes()).hexdigest()
 
 
+def baseline_reference_answers(models: Models, split: str, t4_mfcc: np.ndarray, t4_scores: np.ndarray,
+                               reference_mfcc: np.ndarray, known: dict) -> None:
+    """D58 (3)(c): baseline-v1 D29 predictions from the T4 MFCC equal those from the reference MFCC.
+
+    Both are scored by the same code in the same session (score_models, baseline_outputs), so only
+    the feature difference is tested. Recorded first, so a failed report holds them: the max
+    |raw score difference| and the number of clips whose reference raw score lies within that max
+    of the D29 threshold. Then the count of differing predictions must be 0.
+    """
+    reference_scores = score_models(models, {MFCC: reference_mfcc}, (BASELINE_ID,))[BASELINE_ID]
+    reference_prediction = baseline_outputs(models.baseline, reference_mfcc, reference_scores)
+    t4_prediction = baseline_outputs(models.baseline, t4_mfcc, t4_scores)
+    max_abs = float(np.abs(t4_scores - reference_scores).max())
+    near = int((np.abs(reference_scores - models.baseline.threshold) <= max_abs).sum())
+    prefix = f"baseline.{split}"
+    _record(known, f"{prefix}.max_abs_score_diff", RECORDED, max_abs, True)
+    _record(known, f"{prefix}.near_threshold_clips", RECORDED, near, True)
+    _check(known, f"{prefix}.predictions_equal_reference", 0,
+           sum(a != b for a, b in zip(t4_prediction, reference_prediction)))
+
+
 def _write_rehearsal_report(out_dir: Path, report: dict, freeze: str) -> None:
     out_dir.mkdir(parents=True)
     freeze_bytes = freeze.encode("utf-8")
@@ -826,7 +934,10 @@ def _write_rehearsal_report(out_dir: Path, report: dict, freeze: str) -> None:
 def rehearse(*, root, stage10_scores, out_dir, splits=REHEARSAL_SPLITS, **inputs) -> dict[str, Any]:
     """The D46 dry run on val-A and val-B (module docstring); return the rehearsal report.
 
-    cache_a must also hold the val-B caches. No registry is opened and no test path exists here.
+    cache_a must also hold the val-B caches, and mfcc_reference the val-B reference (D58 (3)(c);
+    only the rehearsal reads it). The T4 MFCC cache bytes are recorded, not compared with Stage 7
+    (D58 (3)); the log-Mel cache bytes must equal Stages 8 and 10. No registry is opened and no
+    test path exists here.
     After the split and folder checks, the report is always written: "passed": true on success;
     on any failure "passed": false, the failing check's name (None if the error was not a recorded
     check) and the error, and the error is raised again.
@@ -861,8 +972,13 @@ def rehearse(*, root, stage10_scores, out_dir, splits=REHEARSAL_SPLITS, **inputs
             for feature in FEATURE_SHAPES:  # in-memory features byte-equal to the verified cache
                 cached, labels, paths, meta = _load_cache(inputs["cache_a"], feature, split, ctx.profile,
                                                           ctx.profile_config_sha256)
-                _check(known, f"{split}.{feature}.cache_npz_sha256",
-                       evidence.cache_npz_sha256[(feature, split)], meta["npz_sha256"])
+                stage_value = evidence.cache_npz_sha256[(feature, split)]
+                if feature == LOG_MEL:
+                    _check(known, f"{split}.{feature}.cache_npz_sha256", stage_value, meta["npz_sha256"])
+                else:  # D58 (3): T4 MFCC bytes are recorded; the reference answers below replace them
+                    _record(known, f"{split}.{feature}.cache_npz_sha256_observed", RECORDED,
+                            {"npz_sha256": meta["npz_sha256"], "stage7_npz_sha256": stage_value,
+                             "equal_to_stage7": meta["npz_sha256"] == stage_value}, True)
                 cache_hash = features_sha256(paths.tolist(), [LABEL_NAMES[int(x)] for x in labels],
                                              {feature: array_sha256(feature, cached)})
                 memory_hash = features_sha256(rows["path"].tolist(), rows["label"].tolist(),
@@ -890,7 +1006,13 @@ def rehearse(*, root, stage10_scores, out_dir, splits=REHEARSAL_SPLITS, **inputs
                        _bytes_sha256(p))
                 _check(known, f"val-B.{BASELINE_ID}.eer", evidence.baseline_val_b_eer,
                        eer(labels, scores[BASELINE_ID])[0])
-                baseline_outputs(models.baseline, features[MFCC], scores[BASELINE_ID])
+            # D58 (3)(c), both splits: the reference MFCC (Stage 7 bytes) against the T4 in-memory MFCC.
+            ref_features, ref_labels, ref_paths = load_mfcc_reference(
+                inputs["mfcc_reference"], split, ctx.profile, ctx.profile_config_sha256, evidence, known,
+                f"{split}.{MFCC}")
+            _check(known, f"{split}.{MFCC}.reference_rows",
+                   _rows_record(rows["path"].tolist(), rows["label"].tolist()), _cache_rows(ref_paths, ref_labels))
+            baseline_reference_answers(models, split, features[MFCC], scores[BASELINE_ID], ref_features, known)
             per_split[split] = {"features": feature_hashes, "scored": sorted(scores),
                                 "counts": _counts(rows)}
     except Exception as error:
@@ -917,6 +1039,7 @@ def _inputs(args) -> dict[str, Any]:
         "profile_path": args.profile, "config_path": args.config, "manifest_path": args.manifest,
         "stage7_evidence": args.stage7_evidence, "stage8_evidence": args.stage8_evidence,
         "stage10_evidence": args.stage10_evidence, "cache_a": args.cache_a, "cache_b": args.cache_b,
+        "mfcc_reference": args.mfcc_reference,
     }
 
 
@@ -943,6 +1066,8 @@ def main(argv: list[str] | None = None) -> None:
                        help="docs/audit_evidence/stage10_risk")
         p.add_argument("--cache-a", required=True, type=Path, help="Build A: log_mel/<split>/, mfcc/<split>/")
         p.add_argument("--cache-b", required=True, type=Path, help="Build B: log_mel/val-A/, mfcc/val-A/")
+        p.add_argument("--mfcc-reference", required=True, type=Path,
+                       help="D58 CPU-runtime MFCC reference: val-A/ and val-B/ (mfcc_cache format)")
         p.add_argument("--out", required=True, type=Path,
                        help="rehearse, claim: new output folder; score: the folder claim wrote")
         if name == "rehearse":

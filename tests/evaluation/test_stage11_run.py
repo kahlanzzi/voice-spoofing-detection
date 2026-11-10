@@ -84,6 +84,28 @@ def _fake_extract(perturb=0.0):
     return extract
 
 
+def _ulp(array):
+    """One float32 step up: different bytes, well inside the D58 tolerance."""
+    return np.nextafter(array, np.float32(np.inf))
+
+
+def _reference_mfcc(path: str):
+    """The synthetic "CPU-runtime" MFCC (D58 (3)(a)): the T4 fake MFCC one ulp away."""
+    return _ulp(_fake_features(path)[1])
+
+
+def _build_reference(world, folder: Path, mfcc=_reference_mfcc, manifest=None, splits=("val-A", "val-B")) -> dict:
+    """An MFCC reference folder (<folder>/<split>/) with mfcc(path) as features; returns {split: npz_sha256}."""
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(mfcc_module, "read_verified_audio", _fake_read)
+        mp.setattr(mfcc_module, "extract_features", lambda waveform, sample_rate, profile: (None, None, mfcc(waveform)))
+        return {split: build_mfcc_cache(world["base"], world["manifest"] if manifest is None else manifest,
+                                        world["profile"], split, folder / split,
+                                        f2_manifest_sha256=world["manifest_sha"],
+                                        profile_config_sha256=world["profile_sha"], code_commit=COMMIT)["npz_sha256"]
+                for split in splits}
+
+
 def _write_json(path: Path, data: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2, sort_keys=True), encoding="utf-8")
@@ -102,7 +124,13 @@ def _checkpoint_meta(seed: int, val_a_eer: float, profile, manifest_sha: str) ->
 
 @pytest.fixture(scope="module")
 def world(tmp_path_factory):
-    """Manifest, caches (build A, build B, a differing build), checkpoints, baseline, policy, evidence."""
+    """Manifest, caches (build A, build B, differing builds), the D58 MFCC reference, checkpoints,
+    baseline, policy, evidence.
+
+    The caches and the in-memory features are the "T4" side; the reference is the same MFCC one ulp
+    away (different bytes, inside the D58 tolerance), and Stage 7's MFCC hashes, EERs and threshold
+    come from the reference, as the real Stage 7 came from a CPU runtime.
+    """
     base = tmp_path_factory.mktemp("stage11")
     profile = load_profile(PROFILE_PATH)
     rows = []
@@ -119,11 +147,11 @@ def world(tmp_path_factory):
 
     builders = {"log_mel": build_logmel_cache, "mfcc": build_mfcc_cache}
 
-    def build(folder, splits, perturb=0.0):
+    def build(folder, splits, perturb=0.0, extract=None):
         with pytest.MonkeyPatch.context() as mp:
             for module in (logmel_module, mfcc_module):
                 mp.setattr(module, "read_verified_audio", _fake_read)
-                mp.setattr(module, "extract_features", _fake_extract(perturb))
+                mp.setattr(module, "extract_features", extract or _fake_extract(perturb))
             for feature, builder in builders.items():
                 for split in splits:
                     builder(base, manifest, profile, split, folder / feature / split,
@@ -131,18 +159,33 @@ def world(tmp_path_factory):
                             code_commit=COMMIT)
         return folder
 
+    def ulp_only(feature):  # one feature one ulp away, the other unchanged
+        def extract(waveform, sample_rate, profile):
+            log_mel, mfcc = _fake_features(waveform)
+            return (None, _ulp(log_mel), mfcc) if feature == "log_mel" else (None, log_mel, _ulp(mfcc))
+        return extract
+
     cache_a = build(base / "cache_a", ("val-A", "val-B"))
     cache_b = build(base / "cache_b", ("val-A",))
     cache_bad = build(base / "cache_bad", ("val-A",), perturb=1e-3)
+    cache_mfcc_ulp = build(base / "cache_mfcc_ulp", ("val-A",), extract=ulp_only("mfcc"))
+    cache_lm_ulp_a = build(base / "cache_lm_ulp_a", ("val-A",), extract=ulp_only("log_mel"))
+    cache_lm_ulp_b = build(base / "cache_lm_ulp_b", ("val-A",), extract=ulp_only("log_mel"))
+    world = {"base": base, "profile": profile, "manifest": manifest, "manifest_sha": manifest_sha,
+             "profile_sha": profile_sha}
+    reference = base / "mfcc_reference"
+    reference_sha = _build_reference(world, reference)
 
-    def load(feature, split):
+    def load(feature, split, folder=None):
         loader = load_logmel_cache if feature == "log_mel" else load_mfcc_cache
-        return loader(cache_a / feature / split, split, profile, expected_f2_manifest_sha256=manifest_sha)
+        folder = folder or cache_a / feature / split
+        return loader(folder, split, profile, expected_f2_manifest_sha256=manifest_sha)
 
     lm_a, y_a, _, lm_meta_a = load("log_mel", "val-A")
     lm_b, y_b, paths_b, lm_meta_b = load("log_mel", "val-B")
-    mf_a, _, _, mf_meta_a = load("mfcc", "val-A")
-    mf_b, _, _, mf_meta_b = load("mfcc", "val-B")
+    ref_a = load("mfcc", "val-A", reference / "val-A")[0]
+    ref_b = load("mfcc", "val-B", reference / "val-B")[0]
+    t4_mf = [load("mfcc", split)[0] for split in ("val-A", "val-B")]
 
     # Three untrained 3-block CNNs; val_a_eer is the EER of the runner's own scoring path.
     checkpoints, hashes, cnn = base / "checkpoints", {}, {}
@@ -162,7 +205,15 @@ def world(tmp_path_factory):
     proto = dict(version="baseline-v1", mean=np.zeros(40), std=np.ones(40),
                  support_vectors=rng.standard_normal((6, 40)), dual_coef=rng.standard_normal(6),
                  intercept=0.1, gamma=0.02, C=1.0)
-    val_b_rate, val_b_threshold = eer(y_b, BaselineModel(**proto, threshold=0.0).score(mf_b))
+    unthresholded = BaselineModel(**proto, threshold=0.0)
+    val_b_rate, near_eer = eer(y_b, unthresholded.score(ref_b))
+    # The threshold sits in the middle of the gap between reference scores around the EER point, so no
+    # T4 or reference score lies near it and the happy path has no D58 prediction flip by construction.
+    ref_scores = np.concatenate([unthresholded.score(ref_a), unthresholded.score(ref_b)])
+    below, above = ref_scores[ref_scores < near_eer], ref_scores[ref_scores >= near_eer]
+    val_b_threshold = float((below.max() + above.min()) / 2)
+    all_scores = np.concatenate([ref_scores, *(unthresholded.score(m) for m in t4_mf)])
+    assert np.abs(all_scores - val_b_threshold).min() > 1e-5
     baseline = BaselineModel(**proto, threshold=val_b_threshold)
     baseline_dir = save_baseline(baseline, base / "baseline")
 
@@ -182,8 +233,8 @@ def world(tmp_path_factory):
     evidence = base / "evidence"
     _write_json(evidence / "stage7" / "run_report.json", {
         **shared, "version": "baseline-v1", "artifact_sha256": artifact_sha256(baseline_dir),
-        "caches": {"val-A": {"npz_sha256": mf_meta_a["npz_sha256"]}, "val-B": {"npz_sha256": mf_meta_b["npz_sha256"]}},
-        "val_a_eer": eer(y_a, baseline.score(mf_a))[0], "val_b_eer": val_b_rate, "val_b_threshold": val_b_threshold,
+        "caches": {split: {"npz_sha256": reference_sha[split]} for split in ("val-A", "val-B")},
+        "val_a_eer": eer(y_a, baseline.score(ref_a))[0], "val_b_eer": val_b_rate, "val_b_threshold": val_b_threshold,
     })
     _write_json(evidence / "stage8" / "run_report.json", {
         **shared, "bundle_seed": 0, "checkpoint_sha256": hashes, "cnn_config_sha256": _sha(CONFIG_PATH),
@@ -196,8 +247,10 @@ def world(tmp_path_factory):
         "val_b_scores_sha256": _sha(scores_path), "caches": {"val-B": {"npz_sha256": lm_meta_b["npz_sha256"]}},
         "scoring": {"device": "cpu", "batch_size": 256},
     })
-    return {"base": base, "profile": profile, "manifest": manifest, "manifest_path": manifest_path,
-            "cache_a": cache_a, "cache_b": cache_b, "cache_bad": cache_bad, "checkpoints": checkpoints,
+    return {**world, "manifest_path": manifest_path,
+            "cache_a": cache_a, "cache_b": cache_b, "cache_bad": cache_bad, "cache_mfcc_ulp": cache_mfcc_ulp,
+            "cache_lm_ulp_a": cache_lm_ulp_a, "cache_lm_ulp_b": cache_lm_ulp_b, "reference": reference,
+            "reference_sha": reference_sha, "checkpoints": checkpoints,
             "hashes": hashes, "baseline_dir": baseline_dir, "baseline": baseline, "policy": policy,
             "policy_path": policy_path, "scores_path": scores_path, "evidence": evidence}
 
@@ -209,7 +262,7 @@ def _inputs(world, **overrides) -> dict:
         "risk_policy": world["policy_path"], "profile_path": PROFILE_PATH, "config_path": CONFIG_PATH,
         "manifest_path": world["manifest_path"], "stage7_evidence": ev / "stage7",
         "stage8_evidence": ev / "stage8", "stage10_evidence": ev / "stage10",
-        "cache_a": world["cache_a"], "cache_b": world["cache_b"],
+        "cache_a": world["cache_a"], "cache_b": world["cache_b"], "mfcc_reference": world["reference"],
     }
     inputs.update(overrides)
     return inputs
@@ -337,6 +390,26 @@ def _dirty(world, tmp_path, monkeypatch):
     return {}
 
 
+def _manifest_with(world, row_path: str, **values) -> pd.DataFrame:
+    """The synthetic manifest with the row at row_path changed (e.g. its label or its path)."""
+    manifest = world["manifest"].copy()
+    row = manifest["path"] == row_path
+    for column, value in values.items():
+        manifest.loc[row, column] = value
+    return manifest
+
+
+def _reference_case(world, tmp_path, splits=("val-A",), **build) -> dict:
+    """A new MFCC reference whose npz hashes Stage 7 is edited to name, so its own check passes."""
+    folder = tmp_path / "reference"
+    hashes = _build_reference(world, folder, splits=splits, **build)
+
+    def edit(data):
+        for split, value in hashes.items():
+            data["caches"][split]["npz_sha256"] = value
+    return {"mfcc_reference": folder, **_edited_evidence(world, tmp_path, {"stage7": edit})}
+
+
 PRE_CLAIM_FAILURES = {  # case: make(world, tmp_path, monkeypatch) -> input overrides
     "dirty_worktree": _dirty,
     "short_commit": lambda w, t, mp: mp.setattr(run_module, "code_version", lambda: {"git_commit": "abc1234"}) or {},
@@ -358,8 +431,19 @@ PRE_CLAIM_FAILURES = {  # case: make(world, tmp_path, monkeypatch) -> input over
     "same_cache_twice": lambda w, t, mp: {"cache_b": w["cache_a"]},
     "cache_vs_stage8": lambda w, t, mp: _edited_evidence(w, t, {"stage8": _set(
         caches={"val-A": {"npz_sha256": "a" * 64}}, val_a_cache_npz_sha256="a" * 64)}),
-    "cache_vs_stage7": lambda w, t, mp: _edited_evidence(w, t, {"stage7": lambda d: d["caches"]["val-A"].update(
+    # D58 (3): MFCC builds must still be byte-identical, even one ulp apart.
+    "mfcc_builds_differ": lambda w, t, mp: {"cache_b": w["cache_mfcc_ulp"]},
+    # D58 (2): log-Mel keeps the exact gate; two identical builds one ulp from Stage 8 are refused.
+    "log_mel_one_ulp_from_stage8": lambda w, t, mp: {"cache_a": w["cache_lm_ulp_a"], "cache_b": w["cache_lm_ulp_b"]},
+    "reference_vs_stage7": lambda w, t, mp: _edited_evidence(w, t, {"stage7": lambda d: d["caches"]["val-A"].update(
         npz_sha256="a" * 64)}),
+    "reference_is_the_t4_cache": lambda w, t, mp: {"mfcc_reference": w["cache_a"] / "mfcc"},
+    "reference_missing": lambda w, t, mp: {"mfcc_reference": t / "no_reference"},
+    "reference_label_differs": lambda w, t, mp: _reference_case(w, t, manifest=_manifest_with(
+        w, "val-A/REAL/00.wav", label="FAKE")),
+    "reference_path_differs": lambda w, t, mp: _reference_case(w, t, manifest=_manifest_with(
+        w, "val-A/REAL/00.wav", path="val-A/REAL/00b.wav")),
+    "mfcc_beyond_tolerance": lambda w, t, mp: _reference_case(w, t, mfcc=lambda p: _fake_features(p)[1] + 1e-3),
 }
 
 
@@ -383,7 +467,14 @@ PRE_CLAIM_MESSAGES = {
     "cache_builds_differ": "log_mel.val-A.builds_identical",
     "same_cache_twice": "the same folder",
     "cache_vs_stage8": "log_mel.val-A.npz_sha256",
-    "cache_vs_stage7": "mfcc.val-A.npz_sha256",
+    "mfcc_builds_differ": "check failed: reproduction.mfcc.val-A.builds_identical",
+    "log_mel_one_ulp_from_stage8": "check failed: reproduction.log_mel.val-A.npz_sha256",
+    "reference_vs_stage7": "check failed: reproduction.mfcc.val-A.reference_sha256",
+    "reference_is_the_t4_cache": "check failed: reproduction.mfcc.val-A.reference_sha256",
+    "reference_missing": r"MFCC reference \(D58 \(3\)\(a\)\): missing file",
+    "reference_label_differs": "check failed: reproduction.mfcc.val-A.reference_rows",
+    "reference_path_differs": "check failed: reproduction.mfcc.val-A.reference_rows",
+    "mfcc_beyond_tolerance": "check failed: reproduction.mfcc.val-A.within_tolerance",
 }
 
 
@@ -766,8 +857,25 @@ def test_happy_path_files_report_and_registry(world, patched, tmp_path, monkeypa
     checks = report["pre_scoring_checks"]
     assert all(c["passed"] is True for c in checks.values())
     assert {"environment.python", "environment.torch", "reproduction.log_mel.val-A.builds_identical",
-            "reproduction.mfcc.val-A.npz_sha256", "checkpoint.seed_2.metadata_seed", "baseline.artifact_sha256",
-            "risk_policy.sha256"} <= set(checks)
+            "reproduction.log_mel.val-A.npz_sha256", "reproduction.mfcc.val-A.builds_identical",
+            "checkpoint.seed_2.metadata_seed", "baseline.artifact_sha256", "risk_policy.sha256"} <= set(checks)
+    # D58 (3): the T4 MFCC bytes differ from Stage 7 and are recorded; the reference and tolerance pass.
+    assert "reproduction.mfcc.val-A.npz_sha256" not in checks
+    gate = "reproduction.mfcc.val-A"
+    t4_sha = json.loads((world["cache_a"] / "mfcc" / "val-A" / "val-A.json").read_text(encoding="utf-8"))["npz_sha256"]
+    assert checks[f"{gate}.npz_sha256_observed"]["actual"] == {
+        "npz_sha256": t4_sha, "stage7_npz_sha256": world["reference_sha"]["val-A"], "equal_to_stage7": False}
+    assert checks[f"{gate}.reference_sha256"]["actual"] == world["reference_sha"]["val-A"]
+    assert checks[f"{gate}.reference_files"]["actual"] == {
+        name: _sha(world["reference"] / "val-A" / name) for name in ("val-A.npz", "val-A.json")}
+    tolerance = checks[f"{gate}.within_tolerance"]
+    assert tolerance["expected"] == run_module.MFCC_TOLERANCE_RULE
+    assert tolerance["actual"]["allclose"] is True and (tolerance["actual"]["rtol"], tolerance["actual"]["atol"]) == (
+        1e-5, 1e-6)
+    assert 0 < tolerance["actual"]["max_abs"] < 1e-5 and 0 < tolerance["actual"]["max_rel"] < 1e-6
+    assert checks[f"{gate}.reference_rows"]["expected"] == checks[f"{gate}.reference_rows"]["actual"]
+    claim_checks = json.loads((out / "claim.json").read_text(encoding="utf-8"))["pre_claim_checks"]
+    assert claim_checks[f"{gate}.within_tolerance"] == tolerance  # also in claim.json
     # The recorded checkpoint hash is computed, not copied: the repository's definition by hand.
     for seed in (0, 1, 2):
         folder = world["checkpoints"] / f"seed_{seed}"
@@ -942,13 +1050,29 @@ def test_rehearse_happy_path_never_touches_a_registry(world, patched, tmp_path, 
     assert sorted(p.name for p in out.iterdir()) == ["pip_freeze.txt", "rehearsal_report.json"]
     assert (out / "rehearsal_report.json").read_bytes() == run_module._json_text(report).encode("utf-8")
     known = report["known_answers"]
-    assert all(c["expected"] == c["actual"] and c["passed"] is True for c in known.values())
+    assert all(c["passed"] is True for c in known.values())
+    recorded = {k for k, c in known.items() if c["expected"] == run_module.RECORDED}
+    assert all(known[k]["expected"] == known[k]["actual"] for k in set(known) - recorded)
     assert all(c["passed"] is True for c in report["pre_claim_checks"].values())
     assert (report["passed"], report["failed_check"], report["error"]) == (True, None, None)
     assert {"val-A.log_mel.in_memory_equals_cache", "val-B.mfcc.in_memory_equals_cache",
-            "val-A.mfcc.cache_npz_sha256", "val-A.cnn-v1-seed1.eer", "val-A.baseline-v1.eer",
-            "stage10.val_b_scores_sha256", "val-B.cnn-v1-seed0.raw_score_bytes", "val-B.cnn-v1-seed0.p_bytes",
-            "val-B.baseline-v1.eer"} <= set(known)
+            "val-A.log_mel.cache_npz_sha256", "val-B.log_mel.cache_npz_sha256", "val-A.cnn-v1-seed1.eer",
+            "val-A.baseline-v1.eer", "stage10.val_b_scores_sha256", "val-B.cnn-v1-seed0.raw_score_bytes",
+            "val-B.cnn-v1-seed0.p_bytes", "val-B.baseline-v1.eer"} <= set(known)
+    # D58: the T4 MFCC cache bytes are recorded, not compared; the reference answers for both splits.
+    assert not {"val-A.mfcc.cache_npz_sha256", "val-B.mfcc.cache_npz_sha256"} & set(known)
+    for split in ("val-A", "val-B"):
+        assert known[f"{split}.mfcc.cache_npz_sha256_observed"]["actual"]["equal_to_stage7"] is False
+        assert known[f"{split}.mfcc.reference_sha256"]["actual"] == world["reference_sha"][split]
+        assert set(known[f"{split}.mfcc.reference_files"]["actual"]) == {f"{split}.npz", f"{split}.json"}
+        assert known[f"{split}.mfcc.reference_rows"]["passed"] is True
+        assert known[f"baseline.{split}.predictions_equal_reference"] == {"expected": 0, "actual": 0, "passed": True}
+        assert 0 < known[f"baseline.{split}.max_abs_score_diff"]["actual"] < 1e-4
+        assert known[f"baseline.{split}.near_threshold_clips"]["actual"] == 0  # the fixture keeps a margin
+    assert recorded == {f"{split}.mfcc.{name}" for split in ("val-A", "val-B")
+                        for name in ("cache_npz_sha256_observed", "reference_files")} | {
+        f"baseline.{split}.{name}" for split in ("val-A", "val-B")
+        for name in ("max_abs_score_diff", "near_threshold_clips")}
     assert report["per_split"]["val-B"]["scored"] == ["baseline-v1", "cnn-v1-seed0"]  # D45: bundle seed only
     reads = set(patched["reads"])
     assert reads and all(p.startswith(("val-A/", "val-B/")) for p in reads)
@@ -986,6 +1110,11 @@ REHEARSAL_MISMATCHES = {
                        lambda w, t, s: _altered_scores(w, t, update_evidence=True)),
     "stage10_scores_sha256": ("stage10.val_b_scores_sha256",
                               lambda w, t, s: _altered_scores(w, t, update_evidence=False)),
+    # D58 (3)(a): the val-B reference (rehearsal only) must also hold Stage 7's bytes.
+    "val_b_reference_sha256": ("val-B.mfcc.reference_sha256", lambda w, t, s: _edited_evidence(
+        w, t, {"stage7": lambda d: d["caches"]["val-B"].update(npz_sha256="a" * 64)})),
+    "val_b_reference_rows": ("val-B.mfcc.reference_rows", lambda w, t, s: _reference_case(
+        w, t, splits=("val-A", "val-B"), manifest=_manifest_with(w, "val-B/REAL/00.wav", label="FAKE"))),
 }
 
 
@@ -1016,9 +1145,53 @@ def test_rehearse_mfcc_mismatch_writes_failed_report_then_raises(world, patched,
     # Every check before it is recorded and passed; nothing after it ran.
     done = {k: v for k, v in report["known_answers"].items() if k != key}
     assert set(done) == {"val-A.log_mel.cache_npz_sha256", "val-A.log_mel.in_memory_equals_cache",
-                         "val-A.mfcc.cache_npz_sha256"}
+                         "val-A.mfcc.cache_npz_sha256_observed"}
     assert all(c["passed"] is True for c in (*done.values(), *report["pre_claim_checks"].values()))
     assert sorted(p.name for p in out.iterdir()) == ["pip_freeze.txt", "rehearsal_report.json"]
+
+
+def test_rehearse_baseline_flip_between_reference_and_t4_fails_with_a_report(world, patched, tmp_path):
+    # D58 (3)(c): in the val-B reference, one clip the T4 MFCC scores synthetic carries the MFCC of a
+    # clip it scores authentic. The reference bytes are Stage 7's (evidence edited), the val-B EER on
+    # the T4 features is unchanged, so only the reference prediction check can catch it.
+    paths = sorted(world["manifest"].loc[world["manifest"]["split"] == "val-B", "path"])
+    t4 = world["baseline"].predict(np.stack([_fake_features(p)[1] for p in paths]))
+    swap = {paths[list(t4).index(SYNTHETIC)]: paths[list(t4).index(AUTHENTIC)]}
+    overrides = _reference_case(world, tmp_path, splits=("val-A", "val-B"),
+                                mfcc=lambda p: _reference_mfcc(swap.get(p, p)))
+    out = tmp_path / "out"
+    key = "baseline.val-B.predictions_equal_reference"
+    with pytest.raises(run_module.CheckFailed, match=f"check failed: {key}:"):
+        _rehearse(world, out, **overrides)
+    report = json.loads((out / "rehearsal_report.json").read_text(encoding="utf-8"))
+    assert (report["passed"], report["failed_check"]) == (False, key)
+    known = report["known_answers"]
+    assert known[key] == {"expected": 0, "actual": 1, "passed": False}
+    # Recorded before the failing check, so the failed report shows the size of the difference.
+    assert known["baseline.val-B.max_abs_score_diff"]["actual"] > 1e-3
+    assert known["baseline.val-B.near_threshold_clips"]["actual"] >= 1
+    assert known["val-B.baseline-v1.eer"]["passed"] is True  # the Stage 7 EER alone does not see it
+    assert known["baseline.val-A.predictions_equal_reference"]["passed"] is True
+
+
+def test_mfcc_difference_records_max_abs_max_rel_and_allclose():
+    reference = np.array([[2.0, 0.0, -4.0]], dtype=np.float32)
+    within = np.array([[2.00002, 5e-7, -4.0]], dtype=np.float32)  # 2e-5 <= 1e-6 + 1e-5 * 2; 5e-7 <= atol
+    result = run_module.mfcc_difference(within, reference)
+    assert result["allclose"] is True and (result["rtol"], result["atol"]) == (1e-5, 1e-6)
+    assert result["max_abs"] == pytest.approx(2e-5, rel=1e-2)
+    assert result["max_rel"] == pytest.approx(1e-5, rel=1e-2)  # zero reference entries are left out
+    beyond_atol = np.array([[2.0, 5e-6, -4.0]], dtype=np.float32)  # at a zero reference, only atol counts
+    assert run_module.mfcc_difference(beyond_atol, reference)["allclose"] is False
+    beyond_rtol = np.array([[2.0, 0.0, -4.0001]], dtype=np.float32)  # 1e-4 > 1e-6 + 1e-5 * 4
+    assert run_module.mfcc_difference(beyond_rtol, reference)["allclose"] is False
+    with pytest.raises(ValueError, match="shapes differ"):
+        run_module.mfcc_difference(within[:, :2], reference)
+
+
+def test_mfcc_tolerance_is_the_d58_value():
+    assert (run_module.MFCC_RTOL, run_module.MFCC_ATOL) == (1e-5, 1e-6)
+    assert "rtol=1e-05, atol=1e-06" in run_module.MFCC_TOLERANCE_RULE and "D58" in run_module.MFCC_TOLERANCE_RULE
 
 
 def test_rehearse_preflight_failure_writes_failed_report(world, patched, tmp_path):
@@ -1052,10 +1225,18 @@ def test_cli_dispatches_without_a_split_argument(monkeypatch, tmp_path):
     monkeypatch.setattr(run_module, "rehearse", lambda **kw: seen.setdefault("rehearse", kw) and {})
     common = ["--checkpoints", "c", "--baseline", "b", "--risk-policy", "p", "--profile", "f",
               "--config", "g", "--manifest", "m", "--stage7-evidence", "e7", "--stage8-evidence", "e8",
-              "--stage10-evidence", "e10", "--cache-a", "a", "--cache-b", "bb", "--out", "o"]
-    run_module.main(["claim", *common, "--registry", "reg.jsonl", "--results-ref", RESULTS_REF])
-    run_module.main(["score", "--root", "r", *common, "--registry", "reg.jsonl", "--run-id", OTHER_RUN_ID])
-    run_module.main(["rehearse", "--root", "r", *common, "--stage10-scores", "s.npz"])
+              "--stage10-evidence", "e10", "--cache-a", "a", "--cache-b", "bb", "--mfcc-reference", "ref",
+              "--out", "o"]
+    commands = {"claim": ["claim", *common, "--registry", "reg.jsonl", "--results-ref", RESULTS_REF],
+                "score": ["score", "--root", "r", *common, "--registry", "reg.jsonl", "--run-id", OTHER_RUN_ID],
+                "rehearse": ["rehearse", "--root", "r", *common, "--stage10-scores", "s.npz"]}
+    for argv in commands.values():
+        run_module.main(argv)
+    assert all(seen[name]["mfcc_reference"] == Path("ref") for name in commands)  # D58 (3)(a)
+    for name, argv in commands.items():  # --mfcc-reference is required by every subcommand
+        i = argv.index("--mfcc-reference")
+        with pytest.raises(SystemExit):
+            run_module.main([*argv[:i], *argv[i + 2:]])
     assert seen["claim"]["registry_path"] == Path("reg.jsonl") and seen["claim"]["cache_b"] == Path("bb")
     assert seen["claim"]["results_ref"] == RESULTS_REF and "root" not in seen["claim"]  # claim reads no audio
     assert (seen["score"]["run_id"], seen["score"]["root"]) == (OTHER_RUN_ID, Path("r"))

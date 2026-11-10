@@ -5868,6 +5868,108 @@ these numbers in Stages 14–16). **WAITING FOR APPROVAL.**
 
 ---
 
+### Entry 158 — Stage 11 dry run stopped at the MFCC reproduction gate; D58 proposed (2026-11-10)
+
+**Numbering:** Entry 157 is on `feat/stage11-notebook` (PR C); `docs/stagev1-d56-rawboost` also
+holds an Entry 157 (D56), so one of the two needs renumbering at merge. D58 is the next free D-ID
+(D56 is reserved for the RawBoost PR).
+
+**Owner:** Donia Mabrouk.
+
+**Scope [doc]:** Protocol §7; D41, D46 (1), (4), (7), (8). Code, synthetic tests and docs only: no
+dataset, Drive, cache, checkpoint, W&B or FoR test access by the AI. The facts below are Donia's
+Colab runs, reported by her; the diagnostic read validation split val-A only.
+
+**Facts (Stage 11 dry run, 2026-11-10):**
+- Dry run of notebook 06 from `797bba1002f3dc2250909bed4b0d08daacb15b97` (PR C head). The default
+  Colab image ("latest") had torch 2.14.1+cu130, so the environment gate stopped before any data
+  access; rerun on the pinned Colab runtime version **2026.10** (T4): Python 3.13.16, numpy 2.5.3,
+  torch 2.11.0+cu130, Tesla T4, CPU Intel Xeon @ 2.00GHz with AVX-512 (avx512f/bw/cd/dq/vl); pytest
+  1608 passed, 0 failures/errors/skips.
+- Rehearsal stopped at `reproduction.mfcc.val-A.npz_sha256`: both T4 val-A MFCC builds
+  `72a28d7e370b61f704bcae1ebbdad3f822e725daef663c8059219034adba431e`, Stage 7
+  `04227c58b25f208771693db6262f39fd5276518811a13d60b9e7f9a560772bbd`. log-Mel val-A on the T4 equal to
+  Stage 8 `4502eea2…862c81` (both builds). Failed report on Drive
+  `processed/metadata/stage11/dry_run/20261110T114951Z/rehearsal/`.
+- Diagnostic (validation split val-A only, not committed; Drive `scratch/stage11_diag/<UTC>/`), Colab
+  CPU runtime, version 2026.10: Intel Xeon @ 2.20GHz, no AVX-512, Python 3.13.18, numpy 2.5.3, scipy
+  1.16.3, librosa 1.0.0, soxr 1.1.0, numba 0.68.1, llvmlite 0.50.0, same commit. Two builds each:
+  MFCC val-A `04227c58…` = Stage 7; log-Mel val-A `9fbb1711…e98ae19f` ≠ Stage 8 (the CPU-runtime value
+  Entry 94 recorded). MFCC code unchanged since the Stage 7 commit `297c352` (empty diff).
+- The val-B MFCC rebuilt twice on the same CPU runtime gave
+  `04f91e3e4957ba25f1edd9b3b7af7b830249e4f617695b96d83674ac2d7783c7` = Stage 7 val-B. The D58
+  reference (val-A `04227c58…`, val-B `04f91e3e…`, both byte-identical to Stage 7) is on Drive at
+  `processed/metadata/stage11/mfcc_reference/{val-A,val-B}/` (not committed).
+- Conclusion [inference, strongly supported]: each cache reproduces byte for byte only on the
+  processor type it was first built on (Stage 7 on a CPU runtime without AVX-512; Stages 8 and 10 on
+  a T4 runtime with AVX-512). No single Colab machine meets D46 (4) as written. Under the D46 (8)
+  rerun rule, a reproduction-gate failure stops Stage 11 until a logged decision: this entry and
+  D58 are that proposal. No claim was made and no test audio was read.
+
+**What we did:** on `fix/stage11-mfcc-gate`, from `main` at `d26fd83` (after #114):
+- **D58 (proposed)** in `docs/decisions/README.md`, in its own commit (the row only), so the
+  approval commit is a one-line change.
+- **Runner** `src/evaluation/stage11_run.py`: new required input `mfcc_reference` (CLI
+  `--mfcc-reference`, for `rehearse`, `claim` and `score`), a folder with `val-A/` and `val-B/` in the
+  `mfcc_cache` format, passed through `preflight`. Its expected hashes are Stage 7's, from the
+  evidence already loaded; nothing typed.
+  - `reproduction_gate`: log-Mel unchanged (builds identical, equal to Stage 8). MFCC: builds
+    identical as before; the exact `reproduction.mfcc.val-A.npz_sha256` check is removed and its
+    value kept as `…npz_sha256_observed` (descriptive, with Stage 7's value and whether they are
+    equal); then `…reference_sha256` (the reference npz hashed before it is parsed),
+    `…reference_files` (both file hashes, recorded), `…reference_rows` (same paths and labels as
+    `cache_a`) and `…within_tolerance` (`np.allclose(t4, reference, rtol=1e-5, atol=1e-6)`, actual
+    `max_abs`, `max_rel`, `allclose`, `rtol`, `atol`; constants `MFCC_RTOL`, `MFCC_ATOL` with a D58
+    comment). These checks go into `claim.json` and the rehearsal report with the other pre-claim
+    checks.
+  - `rehearse`: for val-A and val-B, the reference is loaded and hash-checked, its rows must equal
+    the split's, and `baseline-v1` is scored on it by the same code path; known answers
+    `baseline.<split>.max_abs_score_diff` and `…near_threshold_clips` (recorded, written before the
+    check so a failed report holds them) and `…predictions_equal_reference` (0 differences). The
+    reference val-B is read only here. `claim` and `score` are unchanged apart from the gate.
+  - **Change beyond the prompt, for review:** the rehearsal's `<split>.mfcc.cache_npz_sha256`
+    known answers compared the T4 `cache_a` MFCC with Stage 7's bytes, so under D58 they would fail
+    by construction (the dry run stopped before reaching them). They are now recorded as
+    `<split>.mfcc.cache_npz_sha256_observed`, as D58 (3) does for the gate; the log-Mel cache
+    known answers stay exact, and every other existing known answer is unchanged. D58 (3)
+    ("equality with Stage 7's `npz_sha256` is replaced") is read as covering them.
+- **Tests** (`tests/evaluation/test_stage11_run.py`, synthetic only): the fixture builds a D58
+  reference one float32 ulp from the "T4" MFCC (different bytes, inside the tolerance) and takes
+  Stage 7's MFCC hashes and EERs from it; the baseline threshold sits between reference scores, so
+  no score is near it. New cases: happy path (bytes differ and are recorded, tolerance passes with
+  `max_abs` / `max_rel`, in `claim.json` too); pre-claim refusals with no read, no registry line and
+  no output (reference hash not Stage 7's, T4 cache given as the reference, reference missing,
+  label or path differs, MFCC beyond tolerance, MFCC builds one ulp apart, log-Mel builds identical
+  but one ulp from Stage 8: the exact log-Mel gate still refuses); rehearsal: a baseline prediction
+  flip between reference and T4 MFCC fails with a report holding the max score difference and the
+  near-threshold count while the Stage 7 EER passes; val-B reference hash and rows mismatches;
+  `mfcc_difference` unit cases; CLI `--mfcc-reference` required by all three subcommands.
+- **Docs:** `docs/stage11_run.md` (inputs, gate text, rehearsal known answers, Why (n)
+  "processor-bound bytes", Limitations (D58 (5), (4)), tests table); `docs/CHANGELOG.md`.
+
+**Evidence:**
+- [verified] `pytest -q tests/evaluation/test_stage11_run.py tests/governance` (local, Windows,
+  Python 3.14.7, `REQUIRE_TORCH_TESTS=1`): 154 passed.
+- [verified] full `pytest -q` (same venv, `REQUIRE_TORCH_TESTS=1`): 1584 passed, 0 failed, 0 errors, 0 skipped.
+- [doc] the dry-run and diagnostic hashes above are Donia's Colab output, not re-checked by the AI.
+
+**Not done:** notebook 06 is not touched (PR C is updated separately); no data, Drive or FoR test
+access; no Protocol, ADR, guard or `AGENTS.md` change; the D46 row is not edited (D58 says
+"amends").
+
+**Decisions:** D58 proposed (Donia author); needs all four approvals and an approval commit before
+merge.
+
+**AI assistance:** **Claude** (claude.ai) wrote the prompt and analysed the dry-run facts with
+Donia. **Claude Code** (Claude Opus 5.5) implemented the runner change, the tests and the docs, wrote
+the D58 row, this entry and the CHANGELOG line, and ran the tests. Donia reviews. AI does not
+approve, push or merge.
+
+**Gate:** D58 approved by all four, then review (Khalil, Part C reviewer). Then: PR C passes
+`--mfcc-reference` and pins runtime version 2026.10; redo the dry run. **WAITING FOR APPROVAL.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -6120,6 +6222,14 @@ these numbers in Stages 14–16). **WAITING FOR APPROVAL.**
 - [ ] Review of PR A: Khalil (required), Malak, Iheb; merge only after D46 is approved (PR #67). D46 approved (PR #67, Entry 153); review of PR #68 remains.
 - [ ] PR B: Stage 11 report computed from the stored files only. Implemented on `feat/stage11-report` (Entry 156); review open.
 - [ ] D57 (Stage 11 reporting conventions): approval by all four and an approval commit, before PR B merges and before the Stage 11 claim (Entry 156).
+
+**Stage 11 MFCC reproduction gate (Entry 158)**
+- [ ] D58 (processor-bound MFCC gate, amends D46 (1) and (4)): approval by all four and an approval commit, before `fix/stage11-mfcc-gate` merges and before the Stage 11 claim.
+- [x] Build the val-B CPU-runtime MFCC reference: rebuilt twice, `04f91e3e…` = Stage 7; reference on Drive at `processed/metadata/stage11/mfcc_reference/{val-A,val-B}/` (Entry 158).
+- [ ] PR C, notebook 06: pass `--mfcc-reference` (the Drive folder above) to `rehearse`, `claim` and `score`, and pin the Colab runtime version 2026.10 (D58 (1)) (Entry 158).
+- [ ] Redo the Stage 11 dry run after D58 is approved and merged and PR C is updated (Entry 158).
+- [ ] Stage 13 joint run and Stage 14: apply the D58 (3) MFCC gate with the same reference when `baseline-v1` is scored on a T4 runtime (D58 (4)).
+- [ ] Entry 157 is used on both `feat/stage11-notebook` and `docs/stagev1-d56-rawboost`; renumber one at merge (Entry 158).
 - [ ] PR C, notebook 06: run `python -m src.evaluation.stage11_report` after `complete`, from the stored files; choose the `results_ref` target (planned `docs/results/stage11_for_test.md`) (Entry 156).
 - [ ] PR C, notebook 06: Drive flush and remount between `claim` and `score`, registry SHA-256 checked against `claim.json`, `run_id` read from `claim.json` in code, val-A caches present in the score session, `out/` and registry on Drive outside the clone, `--results-ref` the Drive-relative path of `run_report.json`, the notebook's own exact `ALLOWED` entry (Entry 102).
 
@@ -6251,7 +6361,9 @@ these numbers in Stages 14–16). **WAITING FOR APPROVAL.**
 
 ---
 
-## Current status — updated 2026-11-10 (Entry 156)
+## Current status — updated 2026-11-10 (Entry 158)
+
+**Stage 11 dry run and D58 (Entry 158):** the first dry run of notebook 06 (T4, runtime version 2026.10) stopped at the MFCC reproduction gate before any claim or test read: the T4 MFCC val-A bytes differ from Stage 7's, which reproduce only on a CPU runtime without AVX-512, while the log-Mel reproduces only on the T4. D58 (proposed, `fix/stage11-mfcc-gate`) keeps the exact log-Mel gate and replaces MFCC byte equality with a CPU-runtime reference equal to Stage 7, a fixed tolerance and identical `baseline-v1` validation decisions; the runner implements it. Next: D58 approval, PR C update (`--mfcc-reference`, runtime 2026.10), dry run again.
 
 **Stage 11 report (Entry 156):** PR B on `feat/stage11-report` computes the D4 metrics, CIs, H1, H5 and seed rows from the stored run files only, after integrity checks; D57 (reporting conventions) is proposed and needs all four approvals before merge and before the Stage 11 claim. Next: PR C, notebook 06.
 
@@ -6276,6 +6388,10 @@ canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI eth
 **Midterm refactor audit:** Entries 108–110 record the initial report and baseline. Entry 111 implements two small lint cleanups on the stacked cleanup branch: 937 tests pass, governance 3 passed, scoped lint findings 2 to 0, coverage and complexity unchanged. No speedup is claimed. Entry 112 adds the measured report/PDF and after captures. The work merged via #73 into combined #72 (`76c55aa`) after recorded teammate approvals and successful CI. Entry 113 corrected stale report status and merged as PR #74 (`ca45601`); separate final editorial/course acceptance remains open. Evidence-sensitive restructuring stays deferred.
 
 **What was done:**
+- **Stage 11 MFCC gate (D58)** on `fix/stage11-mfcc-gate` (Entry 158): the runner takes the
+  CPU-runtime MFCC reference, checks it against Stage 7's bytes, compares the T4 val-A MFCC within
+  the D58 tolerance and, in the rehearsal, the baseline's decisions on both; D58 proposed;
+  synthetic tests only; no FoR test access.
 - **Stage 11 metrics report (PR B)** on `feat/stage11-report` (Entry 156): `src/evaluation/stage11_report.py`,
   integrity checks on the stored run files, then D4 metrics, clustered CIs, H1, H5 and seed rows;
   D57 proposed; synthetic tests only; no FoR test access.
@@ -6447,6 +6563,7 @@ canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI eth
 - `docs/stage11-d46-runtime`: D46 proposal (Entry 152, written as Entry 101), merged as PR #67 (`37d0233`); approval record PR #112 (Entry 153).
 - `feat/stage11-runner`: Stage 11 runner, PR A (Entry 154, written as Entry 102), PR #68; D46 approved (PR #67, Entry 153).
 - `feat/stage11-report`: Stage 11 metrics report, PR B (Entry 156); D57 proposed.
+- `fix/stage11-mfcc-gate`: D58 proposal and the runner's processor-bound MFCC gate (Entry 158).
 - PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
   prerequisite before Stage 13.
 
