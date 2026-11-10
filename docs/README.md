@@ -46,6 +46,7 @@ Project rules live in [AGENTS.md](../AGENTS.md).
 | [evaluation_harness.md](evaluation_harness.md) | Shared metrics module (EER, ROC-AUC, ...): conventions, methods, tests | a harness step is added |
 | [clip_scores.md](clip_scores.md) | Per-clip score files (Stage 11, D41/D45): CSV + sidecar format, applicability per model role, FoR test-split access guard | the score format or the guard changes |
 | [stage11_run.md](stage11_run.md) | Stage 11 runner (D46): the one FoR test run in two phases (claim: checks, registry claim, evidence; score: features and scores twice, per-clip files) and its val-A/val-B dry run | the Stage 11 run procedure changes |
+| [stage11_report.md](stage11_report.md) | Stage 11 metrics report (D57): integrity checks on the stored run files, D4 metrics per model and subgroup, clustered CIs, H1, H5 and seed rows, JSON + Markdown | the Stage 11 reporting conventions change |
 | [speaker_analysis.md](speaker_analysis.md) / [speaker_average.md](speaker_average.md) | Per-speaker metrics and speaker-average conventions | reporting implementation changes |
 | [synthetic_reporting.md](synthetic_reporting.md) | Synthetic integration and discrimination checks; not real model evaluation | synthetic checks change |
 | [model_bundle.md](model_bundle.md) | ModelBundle (Stage 12): format, verifying loader, tests | the bundle format changes |
