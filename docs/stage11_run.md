@@ -285,7 +285,7 @@ every code cell starts with `assert MODE == 'official'`.
 | 8 | frozen artifacts copied from Drive to `/content/stage11_artifacts/` (CNN seeds 0–2, `baseline-v1`, `risk_policy.json`, `val_b_scores.npz`); the runner checks every hash |
 | 9 | `rehearse`, `passed` must be `true`; dry run: into `dry_run/<UTC timestamp>/rehearsal/` on Drive (the timestamped folder created with `exist_ok=False`), so the dry run also proves the runner's folder creation and exclusive writes on Drive; official: into `/content/stage11_rehearsal` |
 | 10 | dry run only: hash the rehearsal files in place, write `stage11_dry_run_manifest.json`, flush, remount, re-verify; "Dry run complete. Stop here." |
-| 11 | `run/` created with `exist_ok=False`; `claim` with the Drive registry, `RESULTS_REF` and `--out run/runner/` (`CLAIM_OUT`, on Drive, created by the runner); SHA-256 of the three claim files recorded (`CLAIM_HASHES`) |
+| 11 | `refuse_existing_outputs()` (`run/` must not exist), then `claim` with the Drive registry, `RESULTS_REF` and `--out run/runner/` (`CLAIM_OUT`, on Drive); the notebook creates no folder: the runner creates `run/runner/` (with `run/`) by an exclusive `mkdir` only after the claim, so a pre-claim failure leaves nothing that blocks a permitted rerun; SHA-256 of the three claim files recorded (`CLAIM_HASHES`) |
 | 12 | `drive.flush_and_unmount()`, remount; `RUN_ID` read from `claim.json` in code; registry SHA-256 equal to `registry_sha256`, last line this run's `started` record, claim files equal to `CLAIM_HASHES` |
 | 13 | `score --out run/runner/` (on Drive); `run_report.json` names `COMMIT` and `RUN_ID`; registry's last line `completed` |
 | 14 | `stage11_report --run-dir run/runner/` into `/content/stage11_report` (local; prints paths only) |

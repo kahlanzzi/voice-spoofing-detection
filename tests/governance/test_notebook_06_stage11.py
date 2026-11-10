@@ -312,9 +312,10 @@ def test_runner_output_is_on_drive_under_run_dest():
     code = _code()
     claim = code[_cell_index("'claim', *INPUTS")]
     lines = claim.splitlines()
-    assert lines[1:4] == ["CLAIM_OUT = RUN_DEST / 'runner'", "refuse_existing_outputs()",
-                          "RUN_DEST.mkdir(parents=True, exist_ok=False)"]
-    assert claim.find("RUN_DEST.mkdir(") < claim.find("'claim', *INPUTS")
+    # The runner creates run/runner/ (and run/) by an exclusive mkdir only after the claim, so a
+    # pre-claim failure leaves no folder that would block a permitted rerun.
+    assert lines[1:4] == ["CLAIM_OUT = RUN_DEST / 'runner'", "refuse_existing_outputs()", "assert_clean()"]
+    assert "'claim', *INPUTS" in lines[4]
     (hashes,) = _assigned(ast.parse(claim), "CLAIM_HASHES")
     assert ast.unparse(hashes) == "{name: sha256(CLAIM_OUT / name) for name in CLAIM_FILES}"
     assert claim.find("'claim', *INPUTS") < claim.find("CLAIM_HASHES = ")
@@ -435,12 +436,9 @@ def test_registry_is_not_used_before_the_claim():
 
 def test_output_folders_are_created_with_exist_ok_false():
     tree = _cell_tree("'claim', *INPUTS")
-    made = {}
-    for call in ast.walk(tree):
-        if (isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute) and call.func.attr == "mkdir"
-                and isinstance(call.func.value, ast.Name)):
-            made[call.func.value.id] = {k.arg: ast.literal_eval(k.value) for k in call.keywords}
-    assert made == {"RUN_DEST": {"parents": True, "exist_ok": False}}
+    mkdirs = [n for n in ast.walk(tree) if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+              and n.func.attr in ("mkdir", "makedirs")]
+    assert mkdirs == [], "the claim cell creates no folder; the runner does, after the claim"
     assert "RUN_DEST = STAGE11 / 'run'" in "\n".join(_code())
     export = _code()[_cell_index("EXPORT_MANIFEST = ")]
     assert "(RUN_DEST / 'rehearsal').mkdir(exist_ok=False)" in export
