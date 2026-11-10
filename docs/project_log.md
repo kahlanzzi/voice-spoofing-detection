@@ -6246,6 +6246,43 @@ Stage 12 (F4) next. **WAITING FOR APPROVAL.**
 
 ---
 
+### Entry 162 — Stage 11 brief drafted (D32) (2026-11-10)
+
+**Owner:** Donia Mabrouk.
+
+**Scope [doc]:** D32 brief for Stage 11, docs only; the run and its evidence are merged (#118,
+Entry 161).
+
+**What we did:** on `docs/stage11-brief`, from `main` at `2f73ec7`:
+- `docs/stages/stage11-for-test.md` from `docs/stages/TEMPLATE.md`, in the shape of the Stage 10
+  brief: inputs/outputs with consumers (Stages 12, 13, 14, 16, 19), the work in order (D41 storage,
+  D46, runner, report and D57, the D48 (6) ordering gate with D56, the dry-run finding and D58,
+  notebook 06, the official run and its two incidents, the results PR), decisions D31, D41/D45, D46,
+  D57, D58, D29, evidence with sources (no number that is not in the committed evidence), the
+  interpretation the results PR left to the brief (in-domain ceiling, H1 and H5 "not shown",
+  asymmetric deferral, shortcuts still to test), limitations, 10 teach-back questions with answers,
+  and a verification snippet.
+- Stage index row set to draft.
+
+**Evidence:**
+- [verified] The brief's verification snippet, run from the repo root, printed `True` on every
+  line (9 evidence files against the export manifest, registry hash, 2 lines and chain, 84 checks,
+  H1/H5 outcomes) (Claude, on a clone of `main` at `2f73ec7`).
+
+**Not done:** no data, Drive or code touched; the brief is not accepted and `AGENTS.md` is
+unchanged (Stage 11 closes only after the teach-back).
+
+**Decisions:** none.
+
+**AI assistance:** **Claude** (claude.ai) read the template, the Stage 10 brief and the committed
+Stage 11 evidence, drafted the brief and this entry, and ran the snippet. Donia reviews every line;
+AI does not approve or merge.
+
+**Gate:** D32 teach-back (Khalil required; Iheb and Malak), then a closeout PR that marks Stage 11
+done in `AGENTS.md`. **WAITING FOR HUMAN REVIEW.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -6515,7 +6552,7 @@ Stage 12 (F4) next. **WAITING FOR APPROVAL.**
 - [x] Entry numbering: D56 took Entries 157 and 158 on `main` (PR #116); this D58 entry is Entry 159, and PR C's notebook entry (Entry 157 on `feat/stage11-notebook`) is renumbered when that branch is rebased (Entry 159).
 
 **Stage 11 results (Entry 161)**
-- [ ] Stage 11 brief `docs/stages/` (D32), with the interpretation of the results (Donia).
+- [ ] Stage 11 brief `docs/stages/` (D32), with the interpretation of the results (Donia). (drafted on `docs/stage11-brief`, Entry 162; ticked at merge)
 - [ ] Khalil's teach-back of the Stage 11 brief (D32), then a closeout PR marking Stage 11 done in `AGENTS.md`.
 - [ ] `stage11_report`'s byte-exact `p` re-derivation reproduces only on the run's platform (T4, 2026.10); document in `docs/stage11_report.md` Limitations in a later PR (no code change) (Entry 161).
 - [ ] Stage 12: ModelBundle v1 freeze (F4) after Stage 11 closes; v1 replaces the mock in the API (D48).
