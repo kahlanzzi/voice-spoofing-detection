@@ -281,7 +281,7 @@ every recorded check passed.
   the claim's record is reported, not required.
 - **(m) Recorded hashes are computed.** The checkpoint hash in the report is computed with the
   repository's function, not copied from the expected value, so the record shows what was found.
-- **(n) Processor-bound bytes (D58, Entry 158).** The Stage 11 dry run (2026-11-10) found that each
+- **(n) Processor-bound bytes (D58, Entry 159).** The Stage 11 dry run (2026-11-10) found that each
   cache reproduces byte for byte only on the processor type it was first built on: Stage 7's MFCC
   on a CPU runtime without AVX-512, Stage 8's log-Mel on a T4 runtime with AVX-512 [inference,
   strongly supported]. No single runtime meets D46 (4) as written. D58 keeps the exact log-Mel
