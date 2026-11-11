@@ -1,0 +1,79 @@
+@startuml
+!pragma layout smetana
+title SDD v2 — UML deployment view: build-once promotion and bounded inference
+top to bottom direction
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam componentStyle rectangle
+skinparam component {
+  BackgroundColor #EAF2FB
+  BorderColor #1F5A99
+}
+skinparam node {
+  BackgroundColor #FFFFFF
+  BorderColor #1F5A99
+}
+skinparam database {
+  BackgroundColor #F5F5F5
+  BorderColor #555555
+}
+
+cloud "GitHub / CI" as CI {
+  component "Required Checks" as Checks
+  component "Image Build\nfull main SHA" as Build
+}
+cloud "GHCR" as Registry {
+  artifact "api:<full SHA>" as ApiImage
+  artifact "web:<full SHA>" as WebImage
+}
+
+node "Developer Machine" as Dev {
+  component "Local Compose" as LocalCompose
+  database "SQLite\nlocal compatibility" as SQLite
+}
+
+node "One Deployment Host" as Host {
+  node "Staging Compose Project" as Staging {
+    component "nginx + React Web" as StageWeb
+    component "FastAPI Service" as StageApi
+    component "Bounded Process Pool\nK workers; no queue" as StagePool
+    database "PostgreSQL Staging" as StageDb
+    folder "tmpfs Uploads" as StageTmp
+  }
+  node "Production Compose Project" as Production {
+    component "nginx + React Web" as ProdWeb
+    component "FastAPI Service" as ProdApi
+    component "Bounded Process Pool\nK workers; no queue" as ProdPool
+    database "PostgreSQL Production" as ProdDb
+    folder "tmpfs Uploads" as ProdTmp
+  }
+}
+
+Checks --> Build : green main
+Build --> ApiImage
+Build --> WebImage
+ApiImage --> Staging : automatic deploy
+WebImage --> Staging : same SHA
+Staging --> Production : release tag + non-self reviewer\nsame tested SHA
+
+LocalCompose --> SQLite
+StageWeb --> StageApi : /api and /api/live
+StageApi --> StagePool : admitted jobs only
+StageApi --> StageDb : repository interface
+StageApi --> StageTmp : temporary upload lifecycle
+ProdWeb --> ProdApi : /api and /api/live
+ProdApi --> ProdPool : admitted jobs only
+ProdApi --> ProdDb : repository interface
+ProdApi --> ProdTmp : temporary upload lifecycle
+
+note right of StagePool
+  K, L, analysis_timeout_s and L_MAX are
+  measured on staging and fixed only by a later decision.
+end note
+
+legend bottom
+  Blue components = deployed software; grey cylinders = environment data stores
+  Staging and production use the exact same immutable image SHA
+endlegend
+@enduml

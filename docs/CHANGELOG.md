@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- SDD v2.0 Markdown/PDF pair and reference-version index: distinguishes the implemented React/FastAPI mock MVP from the approved target architecture for model inference, live analysis, bounded process-pool capacity, PostgreSQL, environments and extension security; the v1 PDF remains unchanged history.
 - SRS v4.0 Markdown/PDF pair and reference-version index: preserves v3 identifiers, incorporates approved D47-D57 for identity, model v2, live analysis, reporting, infrastructure and delivery, and marks unimplemented work honestly; the v3 PDF remains unchanged history.
 - D56 approved (PR #116): replace D50 RawBoost algorithm 3 with paper-defined algorithm 1 to preserve H9's unseen additive-Gaussian family, pin its reference parameters and parity source, and clarify uniform sampling over the seven codec options; documentation only, no data or augmentation code.
 - Stage 11 metrics report (PR B) `src/evaluation/stage11_report.py`: integrity checks on the stored run files, then D4 metrics per model and subgroup, group-clustered CIs, H1, H5 and seed rows from the stored per-clip files only (JSON + Markdown); D57 (proposed) fixes the reporting conventions before any test result; design note `docs/stage11_report.md`; synthetic tests only, no FoR test access.

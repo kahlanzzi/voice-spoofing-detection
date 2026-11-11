@@ -22,6 +22,22 @@ not add requirements.
 The detailed use-case descriptions, responsibility tables, class-design table, interface contracts,
 logical data model and sequence-message lists remain in the source reports under `docs/reference/`.
 
+## SDD v2 additions
+
+SDD v2.0 reuses all six canonical SDD figures above. Four new views document only the approved or
+proposed v2 scope that did not exist in SDD v1.0; they do not replace or redefine the original
+component, class or sequence models.
+
+| Repository diagram | SDD v2 purpose | Editable source | SVG export |
+|---|---|---|---|
+| Live-analysis sequence | authenticated live admission, two-second windows and D52 aggregation | [`sequence-live-analysis.puml`](sequence-live-analysis.puml) | [`sequence-live-analysis.svg`](sequence-live-analysis.svg) |
+| Extension relay sequence | proposed same-origin relay, one-use nonce and channel closure | [`sequence-extension-relay.puml`](sequence-extension-relay.puml) | [`sequence-extension-relay.svg`](sequence-extension-relay.svg) |
+| Operational data classes | account/session, immutable analysis, note and metadata-only live records | [`class-operational-data.puml`](class-operational-data.puml) | [`class-operational-data.svg`](class-operational-data.svg) |
+| Runtime deployment | local/staging/production isolation and exact-SHA promotion | [`deployment-runtime.puml`](deployment-runtime.puml) | [`deployment-runtime.svg`](deployment-runtime.svg) |
+
+These additions use the same white background, blue grouping, pale-blue UML elements, explicit
+multiplicities, labelled messages and legend conventions as the canonical package.
+
 ## Controlled post-report updates
 
 The diagrams preserve the report's actors, use-case IDs, components, classes, relationships,
@@ -56,9 +72,9 @@ current implementation status belongs in `docs/midterm/backlog.md` and `docs/pro
 
 The use-case model uses draw.io XML so its actor and use-case positions remain faithful to the
 approved SRS figure. The v4 source extends that same fixed layout with the six approved v4 use cases;
-the v3 source/export remain unchanged history. The other six diagrams use PlantUML and retain the SDD's figure-level grouping:
-online versus research components, analysis versus evaluation classes, and one sequence per named
-use case. All seven have editable source and a matching SVG committed beside it.
+the v3 source/export remain unchanged history. The PlantUML diagrams retain the SDD's figure-level
+grouping: online versus research components, analysis versus evaluation classes, and one sequence
+per named flow. Every diagram has editable source and a matching SVG committed beside it.
 
 ```powershell
 java -Djava.awt.headless=true -jar plantuml.jar -checkonly docs/uml/*.puml
@@ -107,3 +123,19 @@ approved requirement or decision; layout-only corrections do not.
 ## UC-08 sequence
 
 ![UC-08 External Generalization Test sequence](sequence-uc08-external-test.svg)
+
+## SDD v2 live-analysis sequence
+
+![SDD v2 live-analysis sequence](sequence-live-analysis.svg)
+
+## SDD v2 extension-relay sequence
+
+![SDD v2 proposed extension-relay sequence](sequence-extension-relay.svg)
+
+## SDD v2 operational data classes
+
+![SDD v2 operational data class model](class-operational-data.svg)
+
+## SDD v2 deployment model
+
+![SDD v2 deployment model](deployment-runtime.svg)

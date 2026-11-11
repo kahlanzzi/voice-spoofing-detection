@@ -5955,6 +5955,41 @@ REVIEW.**
 
 ---
 
+### Entry 160 — SDD v2.0 draft and current architecture index (2026-11-10)
+
+**Owner:** Iheb Zemzemi. Draft preparation: Malak Ben Salem. Review: Donia Mabrouk for the model
+lifecycle and protocol, Khalil Dridi for SRS/infrastructure alignment, and all four for the proposed
+extension-authentication security design.
+
+**What changed [doc]:** added `docs/reference/SDD_v2.0.md` and its generated PDF as one source
+pair. The document preserves the v1 component/class/sequence intent, then aligns it with the current
+React/FastAPI/SQLite mock MVP and the approved target architecture in D38, D41 and D47-D57. It
+covers session boundaries, API/service/repository layers, the bounded no-queue process pool,
+PostgreSQL parity and migration, model-bundle verification, live-analysis windowing, Stage 11/14
+registries, staging/production promotion and D55 usability evidence. Every section labels what is
+implemented, approved but pending, or still open; no capacity, hosting provider or detector result is
+invented.
+
+**Security design [doc]:** the SDD proposes the D51 browser-extension relay for team review: the
+extension receives no session cookie or bearer credential; an authenticated same-origin page owns the
+WebSocket and relays tab-capture frames through a one-use pairing channel. The extension is optional
+and must not be implemented until the team approves this SDD design or records a replacement
+decision.
+
+**Version control [doc]:** `docs/reference/README.md` now maps `SDD_v2.0.md` + `.pdf` as current
+and the unchanged `SDD_Voice_Spoofing_Detection_Lab5.pdf` as v1.0 history. `AGENTS.md` points only
+to the current SDD v2.0 pair. The SRS v4.0 and Execution Plan v3.0 pointers are unchanged.
+
+**AI assistance:** Codex compared SDD v1.0 with the current API/web implementation, SRS v4.0,
+Execution Plan v3.0 and approved decisions, then drafted the versioned source and generated PDF.
+Malak reviews the source; Iheb remains the document owner and the named humans approve it. AI does
+not approve or merge.
+
+**Gate:** owner/team review, explicit security-design acceptance, source/PDF consistency, green CI
+and human merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -5963,10 +5998,10 @@ REVIEW.**
 - [x] Approve D56 and add its approval commit before the v1 Stage 11 claim and before V1a implementation; D50 is marked as amended for RawBoost algorithm 1 and uniform sampling over seven codec options (Entries 157–158; PR #116; merge pending).
 - [ ] Pin the noise and RIR corpora (licence, hash, 50/50 file split) and codec tools before any v2 training (D50 (5)).
 - [ ] Compute benchmark per v2 candidate; batch sizes in `configs/` before training (D49).
-- [ ] Extension authentication design and security review in SDD v2.0 before implementation (D51).
+- [x] Draft the extension authentication design and security-review text in SDD v2.0 before implementation (D51; Entry 160; human approval and merge pending).
 - [ ] Choose the hosting provider and record it (D54 (9)); load test on staging, then record K, L, `analysis_timeout_s` and `L_MAX` (D53 (3)).
 - [x] Draft SRS v4.0 Markdown/PDF pair and version index from D48-D56 (Entry 159; human review and merge pending).
-- [ ] Write SDD v2.0 Markdown/PDF pair from the current SRS and approved architecture decisions (D48 (10)).
+- [x] Draft the SDD v2.0 Markdown/PDF pair from the current SRS and approved architecture decisions (D48 (10); Entry 160; human review and merge pending).
 - [ ] Stage 13 runner (D35) and Stage 11 runner (PR #68) accept the v2 model set (D48 (3), (7)).
 
 
@@ -6340,7 +6375,12 @@ REVIEW.**
 
 ---
 
-## Current status — updated 2026-11-10 (Entry 158)
+## Current status — updated 2026-11-10 (Entry 160)
+
+**Reference documents (Entries 159–160):** SRS v4.0 and SDD v2.0 are drafted as matching
+Markdown/PDF source pairs. The old unversioned SRS and SDD PDFs remain unchanged history. SRS v4.0
+awaits Khalil/team review; SDD v2.0 awaits Iheb/team review, including explicit approval of the D51
+extension relay design. Execution Plan v3.0 remains current.
 
 **D56 approval (Entries 157–158):** Donia, Iheb and Khalil approved PR #116. D56 is Approved: RawBoost algorithm 1 replaces algorithm 3 for v2, preserving H9's held-out additive-Gaussian family, and the seven codec options are sampled uniformly. The approval commit awaits green CI and human merge before V1a begins.
 
