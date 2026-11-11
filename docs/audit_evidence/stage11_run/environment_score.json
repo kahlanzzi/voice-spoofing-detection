@@ -1,0 +1,29 @@
+{
+  "cpu": {
+    "avx512": [
+      "avx512bw",
+      "avx512cd",
+      "avx512dq",
+      "avx512f",
+      "avx512vl"
+    ],
+    "flags": "3dnowprefetch abm adx aes apic arat arch_capabilities avx avx2 avx512bw avx512cd avx512dq avx512f avx512vl bmi1 bmi2 clflush clflushopt clwb cmov constant_tsc cpuid cx16 cx8 de erms f16c fma fpu fsgsbase fxsr hle ht hypervisor ibpb ibrs invpcid lahf_lm lm mca mce md_clear mmx movbe mpx msr mtrr nonstop_tsc nopl nx pae pat pcid pclmulqdq pdpe1gb pge pni popcnt pse pse36 rdrand rdseed rdtscp rep_good rtm sep smap smep ss ssbd sse sse2 sse4_1 sse4_2 ssse3 stibp syscall tsc tsc_adjust tsc_known_freq vme x2apic xgetbv1 xsave xsavec xsaveopt xsaves xtopology",
+    "model": "Intel(R) Xeon(R) CPU @ 2.00GHz"
+  },
+  "failures": {},
+  "gpu": "Tesla T4, 580.82.07",
+  "packages": {
+    "librosa": "1.0.0",
+    "llvmlite": "0.50.0",
+    "numba": "0.68.1",
+    "numpy": "2.5.3",
+    "scikit-learn": "1.9.1",
+    "scipy": "1.16.3",
+    "soundfile": "0.14.0",
+    "soxr": "1.1.0",
+    "torch": "2.11.0+cu130"
+  },
+  "pip_freeze_sha256": "2c5297373ef748794200976bcce96cd11530d976ae3bcea830bc1785ede06b9b",
+  "platform": "Linux-6.6.159+-x86_64-with-glibc2.39",
+  "python": "3.13.16"
+}
