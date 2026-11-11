@@ -388,6 +388,7 @@ notebooks/
     03_stage7_baseline.ipynb
     04_stage8_cnn.ipynb
     05_stage10_risk_policy.ipynb
+    06_stage11_for_test.ipynb
 pytest.ini
 requirements-cnn.txt
 requirements.txt
