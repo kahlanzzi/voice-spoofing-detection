@@ -149,6 +149,11 @@ def test_build_then_verify(tree, tmp_path):
     # Record on disk: strict JSON, sorted keys, 2-space indent, trailing newline; equal to the return.
     text = (out.parent / f4.RECORD_NAME).read_text(encoding="utf-8")
     assert text == json.dumps(record, indent=2, sort_keys=True) + "\n"
+    # The record is committed: no local path (tmp folder, checkpoint download folder) in it, in
+    # either the native or the JSON-escaped spelling.
+    for local in (str(tmp_path), str(ckpt)):
+        assert local not in text
+        assert json.dumps(local)[1:-1] not in text
     assert (out.parent / MANIFEST_NAME).read_bytes() == manifest_bytes
     assert sorted(p.name for p in out.iterdir()) == sorted(
         ["bundle_manifest.json", "checkpoint", "policy.json", "preprocessing.yaml"])
@@ -278,6 +283,29 @@ def test_build_never_overwrites_a_record(tree, tmp_path):
         _build(tree, out)
     assert (out.parent / f4.RECORD_NAME).read_text(encoding="utf-8") == "earlier"
     assert not out.exists()
+
+
+@pytest.mark.parametrize("parts", [("bundle-v1",), ("x", "bundle-v1")])
+def test_build_refuses_out_dir_inside_repository(tree, parts):
+    # AGENTS.md rule 7: the bundle (with the checkpoint), its record and manifest copy are built
+    # outside the working tree, so they cannot be committed by accident.
+    out = tree[0].joinpath(*parts)
+    with pytest.raises(ValueError, match="output: .* is inside the repository"):
+        _build(tree, out)
+    _nothing_written(out)
+
+
+def test_build_refuses_checkpoint_dir_inside_repository(tree, tmp_path):
+    # The downloaded Stage 8 files must not sit in the working tree either.
+    root, ckpt = tree
+    inside = root / "checkpoints" / "seed_0"
+    inside.mkdir(parents=True)
+    for name in CHECKPOINT_FILES:
+        (inside / name).write_bytes((ckpt / name).read_bytes())
+    out = tmp_path / "out" / "bundle-v1"
+    with pytest.raises(ValueError, match="checkpoint: .* is inside the repository"):
+        f4.build(inside, out, root=root, created_at=CREATED_AT, git=_clean_git)
+    _nothing_written(out)
 
 
 def test_build_refuses_non_empty_out_dir(tree, tmp_path):

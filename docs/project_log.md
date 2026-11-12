@@ -6484,6 +6484,12 @@ test or DEEP-VOICE access.
   `tests/bundle/test_f4_evidence.py` (3, no torch: real evidence values pinned, layering).
 - **Docs:** `docs/model_bundle.md` "Real build (F4)" (sources, procedure, CLI, record, local-build
   and no-scoring reasons, Drive path, what is committed) and Tests; `docs/CHANGELOG.md`.
+- **Review fixes (1):** the per-file checkpoint check's `source` named the local download folder,
+  which would have been committed in `f4_record.json`; it now reads "vs downloaded copy of
+  `checkpoints/cnn/cnn-v1/seed_0`" (Drive-relative). Every other value reaching the record was
+  audited (relative or constant). `test_build_then_verify` asserts no local path in the record text.
+- **Review fixes (2):** `build` refuses, before anything is written, an `out_dir`, its parent or a
+  `checkpoint_dir` inside the repository (AGENTS.md rule 7); three new tests, each writes nothing.
 
 **Deviations from the prompt:**
 - The profile is parsed with `parse_profile` from the bytes already hashed, not `load_profile`, so
@@ -6498,8 +6504,8 @@ test or DEEP-VOICE access.
 
 **Evidence:**
 - [verified] `pytest -q tests/bundle` (local, Windows, Python 3.14.7, torch 2.11.0+cpu,
-  `REQUIRE_TORCH_TESTS=1`): 119 passed, 1 skipped (the Windows symlink case from Entry 166).
-- [verified] full `pytest -q` (same venv, `REQUIRE_TORCH_TESTS=1`): 1708 passed, 1 skipped,
+  `REQUIRE_TORCH_TESTS=1`): 122 passed, 1 skipped (the Windows symlink case from Entry 166).
+- [verified] full `pytest -q` (same venv, `REQUIRE_TORCH_TESTS=1`): 1711 passed, 1 skipped,
   0 failed.
 - [verified] `expected_from_evidence()` with `torch` and `safetensors` blocked in `sys.modules`
   returns `c33eb820…` with 9 checks passing (module is torch-free at import).

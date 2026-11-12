@@ -270,7 +270,8 @@ def _check_checkpoint_dir(checkpoint_dir: Path, expected: dict, checks: _Checks)
     names = sorted(p.name for p in checkpoint_dir.iterdir())
     if names != sorted(CHECKPOINT_FILES):
         raise ValueError(f"checkpoint: {checkpoint_dir} must hold exactly {sorted(CHECKPOINT_FILES)}, found {names}")
-    source = f"{STAGE8_EXPORT} files[{expected['source']}/<name>] vs {checkpoint_dir}"
+    # Drive-relative only: this text is written to the committed record, so no local path.
+    source = f"{STAGE8_EXPORT} files[{expected['source']}/<name>] vs downloaded copy of {expected['source']}"
     for name in CHECKPOINT_FILES:
         path = checkpoint_dir / name
         if path.is_symlink() or not path.is_file():
@@ -343,12 +344,20 @@ def build(checkpoint_dir, out_dir, *, root=DEFAULT_ROOT, created_at: str | None 
           git: GitState = git_state) -> dict:
     """Build F4 into out_dir, verify it, write the F4 record and a manifest copy beside it.
 
-    Returns the record. Any failed check raises ValueError; then nothing is left in out_dir and no
-    record or manifest copy is written.
+    Returns the record. out_dir, its parent and checkpoint_dir must be outside root. Any failed
+    check raises ValueError; then nothing is left in out_dir and no record or manifest copy is
+    written.
     """
     from src.bundle.model_loader import load_bundle_model  # torch: imported only when building
 
     root, checkpoint_dir, out_dir = Path(root), Path(checkpoint_dir), Path(out_dir)
+    # Outside the repository only (AGENTS.md rule 7): neither the bundle, its record and manifest
+    # copy, nor the downloaded Stage 8 files may sit in the working tree, where they could be committed.
+    repo = root.resolve()
+    for what, path in (("output", out_dir), ("output", out_dir.parent), ("checkpoint", checkpoint_dir)):
+        if path.resolve().is_relative_to(repo):
+            raise ValueError(f"{what}: {path} is inside the repository; F4 is built outside it "
+                             f"(AGENTS.md rule 7: no checkpoints in Git)")
     record_path = out_dir.parent / RECORD_NAME
     manifest_copy = out_dir.parent / MANIFEST_COPY_NAME
     if out_dir.exists() and (not out_dir.is_dir() or any(out_dir.iterdir())):

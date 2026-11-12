@@ -179,7 +179,9 @@ against each other. Any disagreement is a `ValueError` naming both files and fie
 | baseline-v1 | `docs/audit_evidence/stage7_baseline/run_report.json` | `version`, `artifact_sha256` (`42cc4d53…`); recorded, not bundled |
 
 `build(checkpoint_dir, out_dir, *, root, created_at=None)`:
-1. Refuse a non-empty `out_dir` or an existing record or manifest copy next to it.
+1. Refuse a non-empty `out_dir` or an existing record or manifest copy next to it. Refuse an
+   `out_dir`, an `out_dir` parent (where the record and manifest copy go) or a `checkpoint_dir`
+   inside the repository: F4 is built outside it (AGENTS.md rule 7: no checkpoints in Git).
 2. Provenance: `git rev-parse HEAD` (40 lowercase hex) and an empty `git status --porcelain`; a dirty
    tree is refused. HEAD is the manifest's `code_commit`.
 3. `expected_from_evidence(root)`; then `checkpoint_dir` must hold exactly the two D42 files, each
