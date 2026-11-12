@@ -1,0 +1,267 @@
+{
+  "baseline": {
+    "artifact_sha256": "42cc4d53a7cd881f56e4fa54fcf4797de8885b404d0a2b31c293555c868df10a",
+    "source": "docs/audit_evidence/stage7_baseline/run_report.json",
+    "version": "baseline-v1"
+  },
+  "bundle_seed": 0,
+  "bundle_version": "bundle-v1",
+  "checks": [
+    {
+      "actual": 0,
+      "expected": 0,
+      "name": "bundle_seed",
+      "ok": true,
+      "source": "docs/audit_evidence/stage8_cnn/run_report.json bundle_seed vs docs/audit_evidence/stage10_risk/run_report.json bundle_seed"
+    },
+    {
+      "actual": "c33eb82086d3bc40f3dedf1356addc6e5c1924ca2e517b0d4527b447e1958932",
+      "expected": "c33eb82086d3bc40f3dedf1356addc6e5c1924ca2e517b0d4527b447e1958932",
+      "name": "checkpoint_sha256",
+      "ok": true,
+      "source": "docs/audit_evidence/stage8_cnn/run_report.json checkpoint_sha256['0'] vs docs/audit_evidence/stage10_risk/run_report.json checkpoint_sha256"
+    },
+    {
+      "actual": "c33eb82086d3bc40f3dedf1356addc6e5c1924ca2e517b0d4527b447e1958932",
+      "expected": "c33eb82086d3bc40f3dedf1356addc6e5c1924ca2e517b0d4527b447e1958932",
+      "name": "checkpoint_sha256 from per-file hashes",
+      "ok": true,
+      "source": "docs/audit_evidence/stage8_cnn/run_report.json checkpoint_sha256['0'] vs docs/audit_evidence/stage8_cnn/stage8_export_manifest.json files[checkpoints/cnn/cnn-v1/seed_0/*]"
+    },
+    {
+      "actual": "a74f1f512b2e7c527df5f34e56acaf5fbe2ceb58071e3d46a441cc2f3f4966c1",
+      "expected": "a74f1f512b2e7c527df5f34e56acaf5fbe2ceb58071e3d46a441cc2f3f4966c1",
+      "name": "policy sha256",
+      "ok": true,
+      "source": "docs/audit_evidence/stage10_risk/run_report.json risk_policy_sha256 vs SHA-256 of docs/audit_evidence/stage10_risk/risk_policy.json"
+    },
+    {
+      "actual": "risk-v1",
+      "expected": "risk-v1",
+      "name": "policy version",
+      "ok": true,
+      "source": "docs/audit_evidence/stage10_risk/run_report.json version vs docs/audit_evidence/stage10_risk/risk_policy.json version"
+    },
+    {
+      "actual": "7bd35bfdcb9270dd55ea9e73449c7bf6c6a359a80335b2551c0c89dde77c8630",
+      "expected": "7bd35bfdcb9270dd55ea9e73449c7bf6c6a359a80335b2551c0c89dde77c8630",
+      "name": "profile sha256",
+      "ok": true,
+      "source": "docs/audit_evidence/stage8_cnn/run_report.json profile_config_sha256 vs SHA-256 of configs/preprocessing.yaml"
+    },
+    {
+      "actual": "5b4f5849a9bb63f9016dd79969ff5bfb9e37006acbff1e26bbfee4ee2bad68f2",
+      "expected": "5b4f5849a9bb63f9016dd79969ff5bfb9e37006acbff1e26bbfee4ee2bad68f2",
+      "name": "profile fingerprint",
+      "ok": true,
+      "source": "docs/audit_evidence/stage8_cnn/run_report.json profile_fingerprint vs fingerprint of configs/preprocessing.yaml"
+    },
+    {
+      "actual": "1.0",
+      "expected": "1.0",
+      "name": "profile protocol_version",
+      "ok": true,
+      "source": "PROTOCOL_VERSION vs configs/preprocessing.yaml protocol_version"
+    },
+    {
+      "actual": "c9fc2e230c0883028459d0b2b8de4f6ee537676cd5a4e259e9d0f545c60943cc",
+      "expected": "c9fc2e230c0883028459d0b2b8de4f6ee537676cd5a4e259e9d0f545c60943cc",
+      "name": "f2_ledger_sha256",
+      "ok": true,
+      "source": "docs/audit_evidence/stage6_preprocessing/profile_report.json f2.ledger_sha256 vs configs/preprocessing.yaml f2_ledger_sha256"
+    },
+    {
+      "actual": 1350,
+      "expected": 1350,
+      "name": "checkpoint file checkpoint.json size",
+      "ok": true,
+      "source": "docs/audit_evidence/stage8_cnn/stage8_export_manifest.json files[checkpoints/cnn/cnn-v1/seed_0/<name>] vs downloaded copy of checkpoints/cnn/cnn-v1/seed_0"
+    },
+    {
+      "actual": "dc0f8b0e9a8549583478db7d1a94e24d01668af9459bfd692895abcc83c98932",
+      "expected": "dc0f8b0e9a8549583478db7d1a94e24d01668af9459bfd692895abcc83c98932",
+      "name": "checkpoint file checkpoint.json sha256",
+      "ok": true,
+      "source": "docs/audit_evidence/stage8_cnn/stage8_export_manifest.json files[checkpoints/cnn/cnn-v1/seed_0/<name>] vs downloaded copy of checkpoints/cnn/cnn-v1/seed_0"
+    },
+    {
+      "actual": 396084,
+      "expected": 396084,
+      "name": "checkpoint file weights.safetensors size",
+      "ok": true,
+      "source": "docs/audit_evidence/stage8_cnn/stage8_export_manifest.json files[checkpoints/cnn/cnn-v1/seed_0/<name>] vs downloaded copy of checkpoints/cnn/cnn-v1/seed_0"
+    },
+    {
+      "actual": "6722f8587b54aaea649456a04ec3074fb30883d549bf48ea6a6ffa9111dcf835",
+      "expected": "6722f8587b54aaea649456a04ec3074fb30883d549bf48ea6a6ffa9111dcf835",
+      "name": "checkpoint file weights.safetensors sha256",
+      "ok": true,
+      "source": "docs/audit_evidence/stage8_cnn/stage8_export_manifest.json files[checkpoints/cnn/cnn-v1/seed_0/<name>] vs downloaded copy of checkpoints/cnn/cnn-v1/seed_0"
+    },
+    {
+      "actual": "bundle-v1",
+      "expected": "bundle-v1",
+      "name": "manifest bundle_version",
+      "ok": true,
+      "source": "BUNDLE_VERSION vs bundle_manifest.json"
+    },
+    {
+      "actual": "1.0",
+      "expected": "1.0",
+      "name": "manifest protocol_version",
+      "ok": true,
+      "source": "evidence vs bundle_manifest.json"
+    },
+    {
+      "actual": "c9fc2e230c0883028459d0b2b8de4f6ee537676cd5a4e259e9d0f545c60943cc",
+      "expected": "c9fc2e230c0883028459d0b2b8de4f6ee537676cd5a4e259e9d0f545c60943cc",
+      "name": "manifest f2_ledger_sha256",
+      "ok": true,
+      "source": "docs/audit_evidence/stage6_preprocessing/profile_report.json vs bundle_manifest.json"
+    },
+    {
+      "actual": "ea5544a768876001ee66c8a7446b688c042bdf72",
+      "expected": "ea5544a768876001ee66c8a7446b688c042bdf72",
+      "name": "manifest code_commit",
+      "ok": true,
+      "source": "git HEAD vs bundle_manifest.json"
+    },
+    {
+      "actual": "2026-11-12T22:40:45Z",
+      "expected": "2026-11-12T22:40:45Z",
+      "name": "manifest created_at",
+      "ok": true,
+      "source": "build argument vs bundle_manifest.json"
+    },
+    {
+      "actual": "c33eb82086d3bc40f3dedf1356addc6e5c1924ca2e517b0d4527b447e1958932",
+      "expected": "c33eb82086d3bc40f3dedf1356addc6e5c1924ca2e517b0d4527b447e1958932",
+      "name": "manifest checkpoint sha256",
+      "ok": true,
+      "source": "docs/audit_evidence/stage8_cnn/run_report.json vs bundle_manifest.json"
+    },
+    {
+      "actual": "dc0f8b0e9a8549583478db7d1a94e24d01668af9459bfd692895abcc83c98932",
+      "expected": "dc0f8b0e9a8549583478db7d1a94e24d01668af9459bfd692895abcc83c98932",
+      "name": "manifest checkpoint file checkpoint.json sha256",
+      "ok": true,
+      "source": "docs/audit_evidence/stage8_cnn/stage8_export_manifest.json vs bundle_manifest.json"
+    },
+    {
+      "actual": "6722f8587b54aaea649456a04ec3074fb30883d549bf48ea6a6ffa9111dcf835",
+      "expected": "6722f8587b54aaea649456a04ec3074fb30883d549bf48ea6a6ffa9111dcf835",
+      "name": "manifest checkpoint file weights.safetensors sha256",
+      "ok": true,
+      "source": "docs/audit_evidence/stage8_cnn/stage8_export_manifest.json vs bundle_manifest.json"
+    },
+    {
+      "actual": "cnn-v1",
+      "expected": "cnn-v1",
+      "name": "manifest checkpoint version",
+      "ok": true,
+      "source": "docs/audit_evidence/stage8_cnn/run_report.json vs bundle_manifest.json"
+    },
+    {
+      "actual": "cnn-v1",
+      "expected": "cnn-v1",
+      "name": "loaded checkpoint version",
+      "ok": true,
+      "source": "docs/audit_evidence/stage8_cnn/run_report.json vs loaded checkpoint.json"
+    },
+    {
+      "actual": "7bd35bfdcb9270dd55ea9e73449c7bf6c6a359a80335b2551c0c89dde77c8630",
+      "expected": "7bd35bfdcb9270dd55ea9e73449c7bf6c6a359a80335b2551c0c89dde77c8630",
+      "name": "manifest profile sha256",
+      "ok": true,
+      "source": "docs/audit_evidence/stage8_cnn/run_report.json vs bundle_manifest.json"
+    },
+    {
+      "actual": "preprocessing-v1",
+      "expected": "preprocessing-v1",
+      "name": "manifest profile version",
+      "ok": true,
+      "source": "configs/preprocessing.yaml vs bundle_manifest.json"
+    },
+    {
+      "actual": "5b4f5849a9bb63f9016dd79969ff5bfb9e37006acbff1e26bbfee4ee2bad68f2",
+      "expected": "5b4f5849a9bb63f9016dd79969ff5bfb9e37006acbff1e26bbfee4ee2bad68f2",
+      "name": "bundled profile fingerprint",
+      "ok": true,
+      "source": "docs/audit_evidence/stage8_cnn/run_report.json vs bundled profile"
+    },
+    {
+      "actual": "a74f1f512b2e7c527df5f34e56acaf5fbe2ceb58071e3d46a441cc2f3f4966c1",
+      "expected": "a74f1f512b2e7c527df5f34e56acaf5fbe2ceb58071e3d46a441cc2f3f4966c1",
+      "name": "manifest policy sha256",
+      "ok": true,
+      "source": "docs/audit_evidence/stage10_risk/run_report.json vs bundle_manifest.json"
+    },
+    {
+      "actual": "risk-v1",
+      "expected": "risk-v1",
+      "name": "manifest policy version",
+      "ok": true,
+      "source": "docs/audit_evidence/stage10_risk/risk_policy.json vs bundle_manifest.json"
+    },
+    {
+      "actual": "edf4a205e12fc948a68575ebaa929145481aaa535d34e3353ef9535f92840efc",
+      "expected": "edf4a205e12fc948a68575ebaa929145481aaa535d34e3353ef9535f92840efc",
+      "name": "manifest_sha256",
+      "ok": true,
+      "source": "SHA-256 of bundle_manifest.json vs load_bundle"
+    }
+  ],
+  "code_commit": "ea5544a768876001ee66c8a7446b688c042bdf72",
+  "components": {
+    "checkpoint": {
+      "dir": "checkpoint",
+      "files": {
+        "checkpoint.json": {
+          "sha256": "dc0f8b0e9a8549583478db7d1a94e24d01668af9459bfd692895abcc83c98932",
+          "size": 1350
+        },
+        "weights.safetensors": {
+          "sha256": "6722f8587b54aaea649456a04ec3074fb30883d549bf48ea6a6ffa9111dcf835",
+          "size": 396084
+        }
+      },
+      "sha256": "c33eb82086d3bc40f3dedf1356addc6e5c1924ca2e517b0d4527b447e1958932",
+      "source": "checkpoints/cnn/cnn-v1/seed_0",
+      "version": "cnn-v1"
+    },
+    "policy": {
+      "file": "policy.json",
+      "sha256": "a74f1f512b2e7c527df5f34e56acaf5fbe2ceb58071e3d46a441cc2f3f4966c1",
+      "source": "docs/audit_evidence/stage10_risk/risk_policy.json",
+      "version": "risk-v1"
+    },
+    "profile": {
+      "file": "preprocessing.yaml",
+      "fingerprint": "5b4f5849a9bb63f9016dd79969ff5bfb9e37006acbff1e26bbfee4ee2bad68f2",
+      "sha256": "7bd35bfdcb9270dd55ea9e73449c7bf6c6a359a80335b2551c0c89dde77c8630",
+      "source": "configs/preprocessing.yaml",
+      "version": "preprocessing-v1"
+    }
+  },
+  "created_at": "2026-11-12T22:40:45Z",
+  "environment": {
+    "numpy": "2.5.3",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.14.7",
+    "safetensors": "0.8.0",
+    "torch": "2.11.0+cpu"
+  },
+  "evidence_sha256": {
+    "configs/preprocessing.yaml": "7bd35bfdcb9270dd55ea9e73449c7bf6c6a359a80335b2551c0c89dde77c8630",
+    "docs/audit_evidence/stage10_risk/risk_policy.json": "a74f1f512b2e7c527df5f34e56acaf5fbe2ceb58071e3d46a441cc2f3f4966c1",
+    "docs/audit_evidence/stage10_risk/run_report.json": "4775fff54a7e38a4392c3d3a770bef5f0d989e66cf355e8c35946cc119c266fc",
+    "docs/audit_evidence/stage6_preprocessing/profile_report.json": "49c21d0051a5fa50d1173df97cad9e3882b46d3c94f715273a287c8165ed8dfd",
+    "docs/audit_evidence/stage7_baseline/run_report.json": "f446fe0fd6d8d7472b6fac5e3fef3019949ae0e58a7d0b0408c0121f949480c5",
+    "docs/audit_evidence/stage8_cnn/run_report.json": "c0e1be359949cceffde74444c026b2f55607134d3ada3bc88fd96f298db89b23",
+    "docs/audit_evidence/stage8_cnn/stage8_export_manifest.json": "97544c54b0a7374c52e13b61940d443c8de49f6df8336025b4dde021a6e6237e"
+  },
+  "f2_ledger_sha256": "c9fc2e230c0883028459d0b2b8de4f6ee537676cd5a4e259e9d0f545c60943cc",
+  "manifest_sha256": "edf4a205e12fc948a68575ebaa929145481aaa535d34e3353ef9535f92840efc",
+  "protocol_version": "1.0",
+  "schema_version": 1
+}
