@@ -6445,6 +6445,79 @@ Approved) → merge → F4 build PR (Stage 12). D59 approved (PR #123, 2026-11-1
 
 ---
 
+### Entry 167 — Stage 12: F4 build/verify tool (2026-11-12)
+
+**Owner:** Donia Mabrouk.
+
+**Scope [doc]:** Protocol v1.0 §6, §11, §12; D2, D28, D36, D42, D58, D59; SRS v4.0 FR-29, NFR-09;
+SDD v2.0 §3.5. Code, synthetic tests and docs only: no dataset, Drive, real checkpoint, W&B, FoR
+test or DEEP-VOICE access.
+
+**Facts (verified on `main` at `52fb0f7`):**
+- Every F4 input value is already in committed evidence: bundle seed 0 (stage8 and stage10
+  `run_report.json`), combined `checkpoint_sha256` `c33eb820…1958932` (both run reports), per-file
+  `dc0f8b0e…98932` (1,350 B) and `6722f858…cf835` (396,084 B) (`stage8_export_manifest.json`),
+  `cnn-v1`, policy `a74f1f51…` (stage10 `risk_policy_sha256` = SHA-256 of the committed
+  `risk_policy.json`), profile config `7bd35bfd…` and fingerprint `5b4f5849…`, F2 ledger
+  `c9fc2e23…` (stage6), `baseline-v1` `42cc4d53…` (stage7).
+- D59 (merged, PR #123) gives `build_bundle`, `load_bundle` and `load_bundle_model`; nothing built
+  a real bundle yet.
+
+**What we did:** on `feat/stage12-f4-tool` from `main` at `52fb0f7` (two commits):
+- **`src/bundle/f4.py`** (CLI `python -m src.bundle.f4 {build,verify}`): `expected_from_evidence`
+  reads each evidence file once and cross-checks the sources (seed and checkpoint hash stage8 vs
+  stage10, per-file hashes give the combined hash, policy hash and version, profile config hash,
+  fingerprint and protocol, F2 ledger stage6 vs profile); `build` checks provenance (40-hex HEAD,
+  clean tree; git injectable), the checkpoint folder per file against the export manifest, calls
+  `build_bundle`, verifies with `load_bundle_model` and every manifest value, then writes
+  `f4_record.json` and a `bundle_manifest.json` copy next to the bundle (exclusive create, never
+  overwritten; a failure after the build removes everything); `verify` compares a copy with its
+  record. torch is imported inside `build`/`verify` only.
+- **Where it runs:** locally, not on Colab. The build copies and hashes bytes only (no features, no
+  scoring), so no processor-bound gate (D58) applies, and the two checkpoint files are checked
+  against the Stage 8 hashes, so a download error cannot pass. Rejected: a Colab notebook (runtime
+  pin, Drive flush/remount, an extra notebook for a byte copy).
+- **No scoring check:** the checkpoint bytes are proved identical to those Stage 10 fitted on and
+  Stage 11 scored (same `checkpoint_sha256` in both run reports) and are loaded by the reviewed
+  loader, so re-scoring would test nothing new.
+- **Tests:** `tests/bundle/test_f4.py` (33, torch, synthetic evidence tree) and
+  `tests/bundle/test_f4_evidence.py` (3, no torch: real evidence values pinned, layering).
+- **Docs:** `docs/model_bundle.md` "Real build (F4)" (sources, procedure, CLI, record, local-build
+  and no-scoring reasons, Drive path, what is committed) and Tests; `docs/CHANGELOG.md`.
+
+**Deviations from the prompt:**
+- The profile is parsed with `parse_profile` from the bytes already hashed, not `load_profile`, so
+  the evidence file is read once (same parser, same fingerprint).
+- Extra cross-checks beyond the table: policy file `version` = stage10 `version`; profile
+  `protocol_version` = `1.0`; profile `f2_ledger_sha256` = stage6 ledger; per-file export hashes
+  give the combined hash. Each is a recorded check.
+- The record's checkpoint `source` is the Drive-relative export path
+  (`checkpoints/cnn/cnn-v1/seed_0`), not the local download folder, so no local path is recorded.
+  The record also holds `bundle_seed`.
+- `main()` takes `root` and `git` keyword arguments so the CLI test runs without a repository.
+
+**Evidence:**
+- [verified] `pytest -q tests/bundle` (local, Windows, Python 3.14.7, torch 2.11.0+cpu,
+  `REQUIRE_TORCH_TESTS=1`): 119 passed, 1 skipped (the Windows symlink case from Entry 166).
+- [verified] full `pytest -q` (same venv, `REQUIRE_TORCH_TESTS=1`): 1708 passed, 1 skipped,
+  0 failed.
+- [verified] `expected_from_evidence()` with `torch` and `safetensors` blocked in `sys.modules`
+  returns `c33eb820…` with 9 checks passing (module is torch-free at import).
+
+**Not done:** no real build, no Drive access, no record committed, no API change.
+
+**Decisions:** none new. The F4 freeze row D60 comes with the build evidence PR.
+
+**AI assistance:** **Claude** (claude.ai) wrote the prompt with Donia. **Claude Code** (Claude Opus
+5.5) implemented `f4.py`, the tests and the docs, wrote this entry and the CHANGELOG line, and ran
+the tests. Donia reviews. AI does not approve, push or merge.
+
+**What's next:** review and merge of this PR → local F4 build from a clean `main` (checkpoint
+downloaded from Drive `seed_0/`) → upload to `MyDrive/voice-spoofing-detection/checkpoints/bundle/bundle-v1/`
+and `verify` there → build evidence PR (`docs/audit_evidence/stage12_bundle/`, D60) → API wiring (D48).
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -6596,6 +6669,7 @@ Approved) → merge → F4 build PR (Stage 12). D59 approved (PR #123, 2026-11-1
 - [x] Stage 12/17: load the checkpoint from verified bytes (or re-verify at load). (D59, Entry 166, PR #123)
 - [ ] Stage 8: save checkpoints in a non-executable form (safetensors or state_dict + weights_only=True).
 - [ ] F4: record manifest_sha256 in the freeze decision.
+- [ ] F4 real build with `python -m src.bundle.f4 build` from a clean `main`, Drive upload and `verify`, then the evidence PR (`docs/audit_evidence/stage12_bundle/`, D60) (Entry 167).
 
 **Stage briefs (D32, Entry 37)**
 - [x] Team review of `docs/stage6-stage-briefs` (approves D32): approved by all three, 2026-10-18.
@@ -6848,7 +6922,9 @@ Approved) → merge → F4 build PR (Stage 12). D59 approved (PR #123, 2026-11-1
 
 ---
 
-## Current status — updated 2026-11-12 (Entry 166)
+## Current status — updated 2026-11-12 (Entry 167)
+
+**Stage 12 F4 tool (Entry 167):** `src/bundle/f4.py` builds and verifies F4 from the committed evidence (every expected value read in code, sources cross-checked, clean-tree provenance, per-file checkpoint check, `load_bundle_model` verification, F4 record next to the bundle); runs locally, no scoring. Synthetic tests plus a torch-free test of the real evidence values (full suite 1708 passed, 1 skipped). On `feat/stage12-f4-tool`, not pushed. Next: review, then the real build, Drive upload and verify, and the build evidence PR with D60.
 
 **Stage 12 prep (Entry 166):** D59 (approved, PR #123) fixes the ModelBundle layout for the two-file Stage 8 checkpoint: a `checkpoint/` folder copied byte for byte, manifest schema 2 with the combined `checkpoint_sha256` (`c33eb820…` for F4), cross-checks of profile and checkpoint against the manifest, and `load_bundle_model` loading the CNN from the verified bytes. Implemented on `feat/stage12-bundle-d59` with synthetic tests (full suite 1672 passed, 1 skipped). Next: the F4 build PR.
 
