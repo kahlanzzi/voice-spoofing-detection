@@ -161,10 +161,77 @@ Closed by D59 (were limitations of the format step): the profile version is now 
 profile file (load step 5); check-then-use for the checkpoint is closed by `load_bundle_model`.
 
 ## Real build (F4)
-Not in this step. Stage 12's next PR builds F4 from Stage 8 `seed_0/` (expected
-`checkpoint_sha256` `c33eb820…`), Stage 10 `risk_policy.json` (`a74f1f51…`) and
-`configs/preprocessing.yaml`, records `manifest_sha256` with `baseline-v1`'s `artifact_sha256` in the
-freeze entry, and wires `load_bundle_model` into the API in place of the mock (D48).
+F4 is the `load_bundle`-verified bundle of the Stage 8 bundle-seed checkpoint, the F3 profile and
+`risk-v1` (D59), with `baseline-v1`'s artifact hash recorded beside it (D36). The tool is
+`src/bundle/f4.py`. It does not type any expected value: `expected_from_evidence(root)` reads each
+value from the committed evidence (each file read once, its SHA-256 kept) and checks the sources
+against each other. Any disagreement is a `ValueError` naming both files and fields.
+
+| Value | Committed source | Field and check |
+|---|---|---|
+| bundle seed | `docs/audit_evidence/stage8_cnn/run_report.json`, `stage10_risk/run_report.json` | `bundle_seed`, equal in both (0) |
+| combined checkpoint hash | stage8 `run_report.json` | `checkpoint_sha256[str(seed)]` = stage10 `checkpoint_sha256` (`c33eb820…`) |
+| per-file hashes and sizes | `stage8_cnn/stage8_export_manifest.json` | one `files[]` entry per D42 file at `checkpoints/cnn/cnn-v1/seed_<seed>/<name>`, 64 hex, size > 0; together they give the combined hash |
+| model version | stage8 `run_report.json` | `version` (`cnn-v1`) |
+| policy file | `docs/audit_evidence/stage10_risk/risk_policy.json` | SHA-256 = stage10 `risk_policy_sha256` (`a74f1f51…`); its `version` = stage10 `version` (`risk-v1`) |
+| profile file | `configs/preprocessing.yaml` | SHA-256 = stage8 `profile_config_sha256` (`7bd35bfd…`); fingerprint = stage8 `profile_fingerprint` (`5b4f5849…`); protocol `1.0` |
+| F2 ledger | `docs/audit_evidence/stage6_preprocessing/profile_report.json` | `f2.ledger_sha256` (`c9fc2e23…`) = the profile's |
+| baseline-v1 | `docs/audit_evidence/stage7_baseline/run_report.json` | `version`, `artifact_sha256` (`42cc4d53…`); recorded, not bundled |
+
+`build(checkpoint_dir, out_dir, *, root, created_at=None)`:
+1. Refuse a non-empty `out_dir` or an existing record or manifest copy next to it. Refuse an
+   `out_dir`, an `out_dir` parent (where the record and manifest copy go) or a `checkpoint_dir`
+   inside the repository: F4 is built outside it (AGENTS.md rule 7: no checkpoints in Git).
+2. Provenance: `git rev-parse HEAD` (40 lowercase hex) and an empty `git status --porcelain`; a dirty
+   tree is refused. HEAD is the manifest's `code_commit`.
+3. `expected_from_evidence(root)`; then `checkpoint_dir` must hold exactly the two D42 files, each
+   with the size and SHA-256 of its export-manifest entry (the error names the file, expected and
+   actual).
+4. `build_bundle` with the evidence values, `bundle_version="bundle-v1"`, `protocol_version="1.0"`
+   and `created_at` (UTC, seconds, `YYYY-MM-DDTHH:MM:SSZ`; now by default).
+5. `load_bundle_model(out_dir)`; every manifest value (versions, all hashes, F2 ledger, commit,
+   date) and the bundled profile's fingerprint equal the evidence.
+6. Write the F4 record and a copy of `bundle_manifest.json` in `out_dir`'s parent (never inside the
+   bundle, which holds exactly its own entries). If a step after 4 fails, the bundle, record and copy
+   are removed.
+
+`verify(bundle_dir, record)`: `load_bundle_model(bundle_dir)`, then the bundle's `manifest_sha256`
+and every component hash and version equal the record's. Iheb (API, Track P1) and Khalil (Stage 13)
+run it on their copy, and we run it on the Drive copy.
+
+```
+python -m src.bundle.f4 build --checkpoint-dir DIR --out DIR [--created-at TS]
+    -> record path, manifest_sha256, "F4 build OK"
+python -m src.bundle.f4 verify --bundle DIR --record FILE
+    -> manifest_sha256, "F4 verify OK"
+```
+Any failure exits non-zero with the error message.
+
+**F4 record** (`f4_record.json`, strict JSON, sorted keys, 2-space indent, trailing newline):
+`schema_version` 1, `bundle_version`, `manifest_sha256`, `created_at`, `code_commit`, `components`
+(checkpoint: in-bundle `dir`, Drive-relative `source`, per-file SHA-256 and size, combined hash,
+version; profile: file, source, SHA-256, version, fingerprint; policy: file, source, SHA-256,
+version), `baseline` (`version`, `artifact_sha256`, source), `bundle_seed`, `f2_ledger_sha256`,
+`protocol_version`, `environment` (Python, platform, torch, numpy, safetensors), `checks` (every
+check as `{name, expected, actual, source, ok}`) and `evidence_sha256` (SHA-256 of each evidence
+file read). No local absolute path is recorded.
+
+**Where it runs: locally, not on Colab.** The build copies and hashes bytes only (no features, no
+scoring), so no processor-bound gate (D58) applies. The two checkpoint files (1,350 + 396,084 bytes)
+are downloaded from Drive and their hashes are checked against the Stage 8 evidence, so a download
+error cannot pass. Rejected: a Colab notebook (runtime pin, Drive flush and remount, and one more
+notebook for a byte copy).
+
+**Why no scoring check.** The checkpoint bytes are proved identical to those Stage 10 fitted the
+policy on and Stage 11 scored (the same `checkpoint_sha256` in both run reports), and
+`load_bundle_model` loads them through the reviewed loader, so re-scoring would test nothing new.
+
+**Where F4 lives.** The bundle is uploaded to
+`MyDrive/voice-spoofing-detection/checkpoints/bundle/bundle-v1/` and verified there with `verify`.
+Committed (with the build evidence PR, which also adds the F4 freeze decision D60):
+`docs/audit_evidence/stage12_bundle/` = `bundle_manifest.json`, `f4_record.json` and a README. The
+checkpoint is never committed (AGENTS.md hard rule 7). The API then loads F4 through
+`load_bundle_model` in place of the mock (D48).
 
 ## Tests
 `tests/bundle/test_bundle.py` (no torch; dummy `checkpoint.json` with `version` and
@@ -198,6 +265,28 @@ the real profile's):
 | (g) check-then-use | `test_weight_changed_after_load_bundle_is_refused` (a weight byte changes between `load_bundle` and `load_checkpoint` → `checkpoint_sha256 mismatch`) |
 | (h) version | `test_checkpoint_version_mismatch_is_refused`, `test_model_loader_checks_loaded_version_itself` |
 | Layering | `test_model_loader_does_not_import_research_code` |
+
+`tests/bundle/test_f4.py` (torch; a synthetic evidence tree with the real file names and fields, a
+tiny real D42 checkpoint whose real hashes are written into fake stage8/stage10 reports, git
+injected):
+
+| Point | Test |
+|---|---|
+| Round trip | `test_build_then_verify` (record = evidence, `manifest_sha256` = SHA-256 of the manifest, record and copy outside the bundle, `load_bundle_model` passes, `verify` passes), `test_default_created_at_is_utc_seconds` |
+| Determinism | `test_build_is_deterministic` (same inputs, date and commit → same manifest bytes and hash) |
+| Provenance | `test_build_refuses_bad_provenance` (dirty tree, HEAD not 40 lowercase hex) |
+| Evidence | `test_build_refuses_evidence_disagreement` (stage8 vs stage10 seed and checkpoint hash, policy hash and version, profile config hash and fingerprint, F2 ledger, bad types), `test_build_refuses_export_manifest_inconsistent_with_run_report`, `test_build_refuses_missing_export_entry`, `test_build_refuses_policy_file_changed` |
+| Checkpoint folder | `test_build_refuses_flipped_checkpoint_bit` (each file; the file is named), `test_build_refuses_extra_checkpoint_file`, `test_build_refuses_missing_checkpoint_file` |
+| Immutability | `test_build_never_overwrites_a_record`, `test_build_refuses_non_empty_out_dir`, `test_build_refuses_bad_created_at`, `test_failure_after_build_removes_the_bundle` |
+| Verify | `test_verify_refuses_other_manifest_sha256`, `test_verify_refuses_component_difference`, `test_verify_refuses_tampered_bundle`, `test_verify_refuses_record_of_wrong_schema` |
+| CLI | `test_cli_build_and_verify` (outputs, exit 0, exit 1 on failure) |
+
+Every refusal leaves nothing in `out_dir` and writes no record.
+
+`tests/bundle/test_f4_evidence.py` (no torch, runs everywhere): `test_expected_from_real_evidence`
+pins every value read from the real committed evidence (seed 0, `c33eb820…`, per-file `dc0f8b0e…`
+1,350 B and `6722f858…` 396,084 B, `a74f1f51…`, `5b4f5849…`, `c9fc2e23…`, `42cc4d53…`);
+`test_f4_does_not_import_research_code` and `test_f4_module_level_is_torch_free` (layering).
 
 `tests/preprocessing/test_profile.py` adds `test_profile_fingerprint_is_pinned_and_parse_profile_agrees`
 (fingerprint `5b4f5849…` from the file and from its text) and
