@@ -6555,7 +6555,8 @@ dataset, cache, audio, W&B, FoR test or DEEP-VOICE access, no scoring.
 
 **Not done:** API wiring (Iheb, P1, D48 (5)); Stage 12 brief and teach-back (D32).
 
-**Decisions:** D60 proposed (Donia author); approval by Iheb, Malak and Khalil in this PR.
+**Decisions:** D60 proposed (Donia author); approved by Iheb, Malak and Khalil in GitHub on PR #125
+(2026-11-12), approval commit before merge.
 
 **AI assistance:** **Claude** (claude.ai) guided the run step by step, checked the record and
 manifest independently, and wrote the D60 row, the README and this entry as a patch. Donia ran the
@@ -6563,7 +6564,7 @@ build, upload and verify. AI does not approve, push or merge.
 
 **What's next:** D60 approval → approval commit → merge → hand-over (Iheb P1: replace `MockAnalyzer`
 with `load_bundle_model`; Khalil: Stage 13 v1 model set) → Stage 12 brief and teach-back.
-**WAITING FOR APPROVAL.**
+D60 approved (PR #125, 2026-11-12); merge pending.
 
 ---
 
@@ -6717,7 +6718,7 @@ with `load_bundle_model`; Khalil: Stage 13 v1 model set) → Stage 12 brief and 
 - [x] Stage 12: add the profile-version check once the F3 profile format is frozen. (D59, Entry 166, PR #123)
 - [x] Stage 12/17: load the checkpoint from verified bytes (or re-verify at load). (D59, Entry 166, PR #123)
 - [ ] Stage 8: save checkpoints in a non-executable form (safetensors or state_dict + weights_only=True).
-- [ ] F4: record manifest_sha256 in the freeze decision. (D60 proposed with `edf4a205…`, Entry 168; ticked at approval)
+- [x] F4: record manifest_sha256 in the freeze decision. (D60, `edf4a205…`, Entry 168, PR #125)
 - [x] F4 real build with `python -m src.bundle.f4 build` from a clean `main`, Drive upload and `verify`, then the evidence PR (`docs/audit_evidence/stage12_bundle/`, D60) (Entry 167). (Built and verified 2026-11-12, Entry 168)
 - [ ] Hand-over of F4: Iheb (API P1, replace `MockAnalyzer`), Khalil (Stage 13); each runs `verify` on their copy (Entry 168).
 - [ ] Stage 12 brief and teach-back (D32).
@@ -6975,7 +6976,7 @@ with `load_bundle_model`; Khalil: Stage 13 v1 model set) → Stage 12 brief and 
 
 ## Current status — updated 2026-11-12 (Entry 168)
 
-**Stage 12 F4 (Entry 168):** F4 built and verified: `bundle-v1`, manifest SHA-256 `edf4a205…40efc`, on Drive `checkpoints/bundle/bundle-v1/` (Drive copy verified); evidence in `docs/audit_evidence/stage12_bundle/`; D60 (F4 freeze) proposed. Next: D60 approval, hand-over to Iheb (P1) and Khalil (Stage 13), Stage 12 brief.
+**Stage 12 F4 (Entry 168):** F4 built and verified: `bundle-v1`, manifest SHA-256 `edf4a205…40efc`, on Drive `checkpoints/bundle/bundle-v1/` (Drive copy verified); evidence in `docs/audit_evidence/stage12_bundle/`; D60 (F4 freeze) approved (PR #125). Next: hand-over to Iheb (P1) and Khalil (Stage 13), Stage 12 brief.
 
 **Stage 12 F4 tool (Entry 167):** `src/bundle/f4.py` builds and verifies F4 from the committed evidence (every expected value read in code, sources cross-checked, clean-tree provenance, per-file checkpoint check, `load_bundle_model` verification, F4 record next to the bundle); runs locally, no scoring. Synthetic tests plus a torch-free test of the real evidence values (full suite 1708 passed, 1 skipped). On `feat/stage12-f4-tool`, not pushed. Next: review, then the real build, Drive upload and verify, and the build evidence PR with D60.
 

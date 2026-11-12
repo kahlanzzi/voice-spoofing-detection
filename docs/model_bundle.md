@@ -161,7 +161,7 @@ Closed by D59 (were limitations of the format step): the profile version is now 
 profile file (load step 5); check-then-use for the checkpoint is closed by `load_bundle_model`.
 
 ## Real build (F4)
-**Built 2026-11-12** (Entry 168, D60): `bundle-v1`, manifest SHA-256 `edf4a205…40efc`; evidence and
+**Built 2026-11-12, frozen as F4** (Entry 168, D60 approved in PR #125): `bundle-v1`, manifest SHA-256 `edf4a205…40efc`; evidence and
 how to verify a copy: [audit_evidence/stage12_bundle/](audit_evidence/stage12_bundle/README.md).
 
 F4 is the `load_bundle`-verified bundle of the Stage 8 bundle-seed checkpoint, the F3 profile and
