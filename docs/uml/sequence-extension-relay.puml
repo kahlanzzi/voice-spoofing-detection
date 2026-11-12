@@ -1,0 +1,73 @@
+@startuml
+title SDD v2 — Proposed same-origin extension authentication relay (D51 review)
+hide footbox
+autonumber
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam participant {
+  BackgroundColor #EAF2FB
+  BorderColor #1F5A99
+}
+skinparam sequence {
+  ArrowColor #333333
+  LifeLineBorderColor #777777
+  GroupBorderColor #1F5A99
+  GroupHeaderFontColor #1F5A99
+}
+
+actor Analyst
+boundary "Extension Popup" as Popup
+participant "Offscreen Tab\nCapture" as Capture
+participant "Content Script\n(app origin only)" as Content
+boundary "Authenticated Relay Page\n/live/extension" as Page
+participant "API Gateway" as Gateway
+participant "Live Session\nService" as Live
+
+Analyst -> Page: open relay page after normal sign-in
+activate Page
+Page -> Page: create one-use pairing nonce
+Analyst -> Popup: Start active-tab analysis
+activate Popup
+Popup -> Capture: begin tabCapture after user action
+activate Capture
+Popup -> Content: pair(nonce, exact page window)
+activate Content
+Content -> Page: establish page-scoped MessageChannel
+Page -> Gateway: WSS /api/live (first-party D47 cookie)
+activate Gateway
+Gateway -> Live: authorize handshake
+activate Live
+Live --> Page: accepted | refused
+
+loop while paired and running
+  Capture -> Content: mono PCM chunk
+  Content -> Page: validated chunk over MessageChannel
+  Page -> Live: WebSocket audio frame
+  Live --> Page: running evidence / verdict
+  Page --> Content: visible state
+  Content --> Popup: visible listening/result state
+end
+
+alt Stop, navigation, tab close, sign-out or failure
+  Page -> Live: close live session
+  Page -> Content: close channel; invalidate nonce
+  Content -> Capture: stop capture
+end
+deactivate Live
+deactivate Gateway
+deactivate Content
+deactivate Capture
+deactivate Popup
+deactivate Page
+
+note over Popup,Live
+  The extension receives no cookie, bearer token or reusable API credential.
+  An unpaired extension, non-app origin or replayed nonce is refused.
+end note
+
+legend bottom
+  Proposed design: team SDD/security approval is required before implementation
+  The same-origin page owns the authenticated WebSocket; the extension only relays captured audio
+endlegend
+@enduml

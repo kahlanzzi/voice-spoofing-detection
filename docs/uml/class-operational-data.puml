@@ -1,0 +1,86 @@
+@startuml
+!pragma layout smetana
+title SDD v2 — UML class diagram: operational persistence model
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam class {
+  BackgroundColor #EAF2FB
+  BorderColor #1F5A99
+  ArrowColor #333333
+}
+hide circle
+
+class Account {
+  - accountId: Integer
+  - username: String
+  - passwordHash: Argon2idHash
+  - disabled: Boolean
+  - createdAt: DateTime
+  - passwordChangedAt: DateTime
+}
+
+class Session {
+  - sessionHash: Sha256
+  - createdAt: DateTime
+  - lastSeenAt: DateTime
+  - expiresAt: DateTime
+}
+
+class SignInFailure {
+  - usernameHmac: KeyedDigest
+  - failures: Integer
+  - lastFailureAt: DateTime
+  - lockedUntil: DateTime?
+}
+
+class AnalysisRecord {
+  - requestId: String
+  - createdAt: DateTime
+  - prediction: Prediction
+  - confidence: Decimal
+  - riskLevel: RiskLevel
+  - modelProfilePolicyVersion: String
+  - notice: String
+  - processingMs: Integer
+  - isMock: Boolean
+}
+
+class AnalystNote {
+  - requestId: String
+  - text: String
+  - updatedAt: DateTime
+}
+
+class LiveSessionRecord {
+  - liveSessionId: String
+  - startedAt: DateTime
+  - endedAt: DateTime
+  - receivedWindows: Integer
+  - keptWindows: Integer
+  - noSpeechWindows: Integer
+  - finalPrediction: Prediction?
+  - modelProfilePolicyVersion: String
+  - processingSummaryMs: Integer
+}
+
+Account "1" -- "0..*" Session : owns
+Account "1" -- "0..*" AnalystNote : authors
+Account "1" -- "0..*" LiveSessionRecord : starts
+AnalysisRecord "1" *-- "0..1" AnalystNote : note
+
+note right of AnalysisRecord
+  Immutable after insert.
+  No raw audio or original file name.
+end note
+
+note right of LiveSessionRecord
+  One metadata row per live session.
+  No per-window PCM is stored.
+end note
+
+legend bottom
+  Filled diamond = composition; solid line = association
+  PostgreSQL adds constraints and indexes without changing repository behavior
+endlegend
+@enduml

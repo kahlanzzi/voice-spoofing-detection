@@ -1,0 +1,77 @@
+@startuml
+title SDD v2 — UML sequence diagram for UC-12 Analyze Live Microphone
+hide footbox
+autonumber
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam participant {
+  BackgroundColor #EAF2FB
+  BorderColor #1F5A99
+}
+skinparam sequence {
+  ArrowColor #333333
+  LifeLineBorderColor #777777
+  GroupBorderColor #1F5A99
+  GroupHeaderFontColor #1F5A99
+}
+
+actor "Fraud Prevention\nAnalyst" as Analyst
+boundary "React Live Screen" as Web
+participant "API Gateway" as Gateway
+participant "Live Session\nService" as Live
+participant "Inference\nCoordinator" as Coordinator
+participant "Worker\nProcess" as Worker
+database "Live Metadata\nRepository" as Repository
+
+Analyst -> Web: startLiveAnalysis()
+activate Web
+Web -> Web: requestMicrophonePermission()
+Web -> Gateway: WSS /api/live (D47 session cookie)
+activate Gateway
+Gateway -> Live: authorizeAndStart()
+activate Live
+Live -> Coordinator: admitSession(L)
+activate Coordinator
+Coordinator --> Live: admitted | refused(503, Retry-After)
+deactivate Coordinator
+
+alt admitted
+  loop mono PCM chunks until Stop
+    Web -> Live: audioChunk(bytes, sampleRate)
+    Live -> Live: validate cap and form non-overlapping 2 s windows
+    opt complete window
+      Live -> Coordinator: analyze(window, deadline)
+      activate Coordinator
+      Coordinator -> Worker: F3 + verified bundle + frozen policy
+      activate Worker
+      Worker --> Coordinator: score | no-speech | unavailable
+      deactivate Worker
+      Coordinator --> Live: window outcome
+      deactivate Coordinator
+      Live -> Live: D52 running aggregation
+      Live --> Web: window evidence + running verdict
+    end
+  end
+  Analyst -> Web: stop()
+  Web -> Live: Stop
+  Live -> Live: discard remainder shorter than 2 s
+  Live -> Repository: persist one session metadata record (no audio)
+  activate Repository
+  Repository --> Live: stored
+  deactivate Repository
+  Live --> Web: final verdict + session summary
+else capacity refused
+  Live --> Web: explicit unavailable response
+end
+deactivate Live
+deactivate Gateway
+Web --> Analyst: show final state and notice
+deactivate Web
+
+legend bottom
+  Solid arrow = synchronous call; dashed arrow = return
+  loop = repeated chunk intake; opt = complete-window processing only
+  No raw live audio is persisted; no live-specific threshold is fitted
+endlegend
+@enduml
