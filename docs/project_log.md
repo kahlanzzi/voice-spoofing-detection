@@ -6374,6 +6374,74 @@ and human merge. **WAITING FOR HUMAN REVIEW.**
 
 ---
 
+### Entry 166 — Stage 12 prep: D59 proposed; bundle format for the two-file checkpoint (2026-11-10)
+
+**Numbering:** Prompt said Entry 164; 164 and 165 were taken by PRs #121-#122 (SRS v4.0, SDD v2.0),
+so this is Entry 166.
+
+**Owner:** Donia Mabrouk.
+
+**Scope [doc]:** Protocol §6 and §11; D2, D28, D42, D48; D59 (proposed); SRS v4.0 FR-04, FR-29,
+NFR-09; SDD v2.0 §3.5, §6.4. Code, synthetic tests and docs only: no dataset, Drive, cache, real
+checkpoint, W&B, FoR test or DEEP-VOICE access.
+
+**Facts (verified on `main` at `e580ef3`):**
+- `docs/model_bundle.md` and `src/bundle/bundle.py` (schema 1) expected a bundle of exactly four
+  plain files with ONE checkpoint file (`checkpoint` passed as a file path, copied flat).
+- The Stage 8 checkpoint (`src/models/cnn_checkpoint.py`, D42) is a FOLDER of exactly two files,
+  `checkpoint.json` + `weights.safetensors`; its recorded identity is the combined
+  `checkpoint_sha256` (bundle seed 0: `c33eb820…1958932`, `docs/audit_evidence/stage8_cnn/README.md`).
+  A schema-1 bundle could not hold it without changing the recorded hash.
+- Still open from the format step: the profile version was not checked against the profile file
+  (Limitation 1), and `load_bundle` returned the checkpoint by path only (check-then-use,
+  Limitation 2).
+
+**What we did:** on `feat/stage12-bundle-format` from `main` at `e580ef3` (three commits):
+- **D59 (proposed)** in `docs/decisions/README.md`, in its own commit (the row only), so the
+  approval commit is a one-line status change.
+- **`src/bundle/bundle.py`** (still torch-free): `SCHEMA_VERSION = 2` (schema 1 refused);
+  `CHECKPOINT_DIR`, `CHECKPOINT_FILES`; `checkpoint_dir_sha256` (the D42 rule restated);
+  `CheckpointComponent(dir, files, sha256, version)` with the combined hash checked at parse;
+  `build_bundle(..., checkpoint_dir, expected_checkpoint_sha256, profile, policy, ...)` reads every
+  source once, refuses a combined hash other than the recorded one, copies the policy file byte for
+  byte (manifest hash = source SHA-256), checks profile version / protocol / F2 ledger and the
+  `checkpoint.json` version and `profile_fingerprint` before writing, and cleans up `checkpoint/`
+  on failure; `load_bundle` checks both folder levels, every hash, parses policy, profile and
+  `checkpoint.json` from the hashed bytes and cross-checks them (D59 (4)); `LoadedBundle` now has
+  `checkpoint_dir`, `checkpoint_sha256` and the parsed `profile` (`checkpoint_path` removed).
+- **`src/bundle/model_loader.py`** (new, torch): `load_bundle_model` = `load_bundle` +
+  `cnn_checkpoint.load_checkpoint(checkpoint_dir, expected_sha256=<manifest value>)` + a version
+  check; `cnn_checkpoint.py` unchanged.
+- **`src/preprocessing/profile.py`:** `parse_profile(text, source)` split out of `load_profile`
+  (same errors, result and fingerprint).
+- **Tests:** `tests/bundle/test_bundle.py` (36 cases on `main` → 78 now, all old cases kept and
+  adapted), new `tests/bundle/test_model_loader.py` (6), `tests/preprocessing/test_profile.py`
+  (+2: fingerprint pinned to `5b4f5849…`, source named on bad YAML).
+- **Docs:** `docs/model_bundle.md` rewritten (Format, Method, Why (g) and (h) with the SRS/SDD
+  references, Limitations, Real build (F4), Tests); `docs/CHANGELOG.md`.
+
+**Evidence:**
+- [verified] `pytest -q tests/bundle tests/preprocessing tests/models` (local, Windows, Python
+  3.14.7, torch 2.11.0+cpu, `REQUIRE_TORCH_TESTS=1`): 225 passed, 1 skipped.
+- [verified] full `pytest -q` (same venv, `REQUIRE_TORCH_TESTS=1`): 1672 passed, 1 skipped,
+  0 failed, 0 errors.
+- The one skip is `test_build_refuses_symlinked_checkpoint_file`: Windows refuses to create the
+  symlink without Developer Mode (WinError 1314); it runs on Linux CI.
+
+**Not done:** no real bundle built; no `api/`, `src/evaluation/`, notebook, requirements or
+`AGENTS.md` change; `cnn_checkpoint.py` untouched.
+
+**Decisions:** D59 proposed (Donia author); approval by Iheb, Malak and Khalil in this PR.
+
+**AI assistance:** **Claude** (claude.ai) wrote the prompt with Donia. **Claude Code** (Claude Opus
+5.5) implemented the loader, model loader, profile split, tests and docs, wrote the D59 row, this
+entry and the CHANGELOG line, and ran the tests. Donia reviews. AI does not approve, push or merge.
+
+**What's next:** D59 approval by Iheb, Malak and Khalil in GitHub → approval commit (status to
+Approved) → merge → F4 build PR (Stage 12). **WAITING FOR APPROVAL.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -6521,8 +6589,8 @@ and human merge. **WAITING FOR HUMAN REVIEW.**
 
 **Stage 12 ModelBundle (Entry 35)**
 - [x] Human review of `feat/stage12-bundle-format`; CI green on Python 3.13: merged as PR #19.
-- [ ] Stage 12: add the profile-version check once the F3 profile format is frozen.
-- [ ] Stage 12/17: load the checkpoint from verified bytes (or re-verify at load).
+- [ ] Stage 12: add the profile-version check once the F3 profile format is frozen. (implemented on `feat/stage12-bundle-format`, D59, Entry 166; ticked at merge)
+- [ ] Stage 12/17: load the checkpoint from verified bytes (or re-verify at load). (implemented on `feat/stage12-bundle-format`, D59, Entry 166; ticked at merge)
 - [ ] Stage 8: save checkpoints in a non-executable form (safetensors or state_dict + weights_only=True).
 - [ ] F4: record manifest_sha256 in the freeze decision.
 
@@ -6777,7 +6845,9 @@ and human merge. **WAITING FOR HUMAN REVIEW.**
 
 ---
 
-## Current status — updated 2026-11-10 (Entry 165)
+## Current status — updated 2026-11-10 (Entry 166)
+
+**Stage 12 prep (Entry 166):** D59 (proposed) fixes the ModelBundle layout for the two-file Stage 8 checkpoint: a `checkpoint/` folder copied byte for byte, manifest schema 2 with the combined `checkpoint_sha256` (`c33eb820…` for F4), cross-checks of profile and checkpoint against the manifest, and `load_bundle_model` loading the CNN from the verified bytes. Implemented on `feat/stage12-bundle-format` with synthetic tests (full suite 1672 passed, 1 skipped). Next: D59 approval by Iheb, Malak and Khalil, then the F4 build PR.
 
 **Reference documents (Entries 164–165):** SRS v4.0 and SDD v2.0 are drafted as matching
 Markdown/PDF source pairs. The old unversioned SRS and SDD PDFs remain unchanged history. SRS v4.0
