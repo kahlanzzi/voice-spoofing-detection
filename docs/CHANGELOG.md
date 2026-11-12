@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- F4 built and verified (Stage 12, Entry 168): `bundle-v1`, manifest SHA-256 `edf4a205…40efc`, from `ea5544a`; evidence `docs/audit_evidence/stage12_bundle/` (manifest, F4 record, README); Drive copy verified; D60 (F4 freeze) proposed.
 - Stage 12 F4 build/verify tool `src/bundle/f4.py` (`python -m src.bundle.f4 {build,verify}`): expected values read from the committed Stage 6/7/8/10 evidence and cross-checked, clean-tree provenance, checkpoint checked per file, `load_bundle_model` verification, `f4_record.json` and manifest copy beside the bundle; runs locally, no scoring; synthetic tests and a torch-free real-evidence test; no real build yet (Entry 167).
 - D59 (approved, PR #123): ModelBundle layout for the two-file checkpoint (`checkpoint/` with `checkpoint.json` + `weights.safetensors`, manifest schema 2 with the combined D42 `checkpoint_sha256`); `load_bundle` cross-checks profile and checkpoint, new `load_bundle_model` loads the CNN from the verified bytes, `parse_profile` split out of `load_profile`; synthetic tests only (Entry 166).
 - SDD v2.0 Markdown/PDF pair and reference-version index: distinguishes the implemented React/FastAPI mock MVP from the approved target architecture for model inference, live analysis, bounded process-pool capacity, PostgreSQL, environments and extension security; the v1 PDF remains unchanged history.
