@@ -6374,10 +6374,12 @@ and human merge. **WAITING FOR HUMAN REVIEW.**
 
 ---
 
-### Entry 166 — Stage 12 prep: D59 proposed; bundle format for the two-file checkpoint (2026-11-10)
+### Entry 166 — Stage 12 prep: D59 proposed; bundle format for the two-file checkpoint (2026-11-12)
 
 **Numbering:** Prompt said Entry 164; 164 and 165 were taken by PRs #121-#122 (SRS v4.0, SDD v2.0),
 so this is Entry 166.
+
+**Branch:** renamed from feat/stage12-bundle-format (PR #19's name) to feat/stage12-bundle-d59 before the first push.
 
 **Owner:** Donia Mabrouk.
 
@@ -6396,7 +6398,7 @@ checkpoint, W&B, FoR test or DEEP-VOICE access.
   (Limitation 1), and `load_bundle` returned the checkpoint by path only (check-then-use,
   Limitation 2).
 
-**What we did:** on `feat/stage12-bundle-format` from `main` at `e580ef3` (three commits):
+**What we did:** on `feat/stage12-bundle-d59` from `main` at `e580ef3` (three commits):
 - **D59 (proposed)** in `docs/decisions/README.md`, in its own commit (the row only), so the
   approval commit is a one-line status change.
 - **`src/bundle/bundle.py`** (still torch-free): `SCHEMA_VERSION = 2` (schema 1 refused);
@@ -6589,8 +6591,8 @@ Approved) → merge → F4 build PR (Stage 12). **WAITING FOR APPROVAL.**
 
 **Stage 12 ModelBundle (Entry 35)**
 - [x] Human review of `feat/stage12-bundle-format`; CI green on Python 3.13: merged as PR #19.
-- [ ] Stage 12: add the profile-version check once the F3 profile format is frozen. (implemented on `feat/stage12-bundle-format`, D59, Entry 166; ticked at merge)
-- [ ] Stage 12/17: load the checkpoint from verified bytes (or re-verify at load). (implemented on `feat/stage12-bundle-format`, D59, Entry 166; ticked at merge)
+- [ ] Stage 12: add the profile-version check once the F3 profile format is frozen. (implemented on `feat/stage12-bundle-d59`, D59, Entry 166; ticked at merge)
+- [ ] Stage 12/17: load the checkpoint from verified bytes (or re-verify at load). (implemented on `feat/stage12-bundle-d59`, D59, Entry 166; ticked at merge)
 - [ ] Stage 8: save checkpoints in a non-executable form (safetensors or state_dict + weights_only=True).
 - [ ] F4: record manifest_sha256 in the freeze decision.
 
@@ -6845,9 +6847,9 @@ Approved) → merge → F4 build PR (Stage 12). **WAITING FOR APPROVAL.**
 
 ---
 
-## Current status — updated 2026-11-10 (Entry 166)
+## Current status — updated 2026-11-12 (Entry 166)
 
-**Stage 12 prep (Entry 166):** D59 (proposed) fixes the ModelBundle layout for the two-file Stage 8 checkpoint: a `checkpoint/` folder copied byte for byte, manifest schema 2 with the combined `checkpoint_sha256` (`c33eb820…` for F4), cross-checks of profile and checkpoint against the manifest, and `load_bundle_model` loading the CNN from the verified bytes. Implemented on `feat/stage12-bundle-format` with synthetic tests (full suite 1672 passed, 1 skipped). Next: D59 approval by Iheb, Malak and Khalil, then the F4 build PR.
+**Stage 12 prep (Entry 166):** D59 (proposed) fixes the ModelBundle layout for the two-file Stage 8 checkpoint: a `checkpoint/` folder copied byte for byte, manifest schema 2 with the combined `checkpoint_sha256` (`c33eb820…` for F4), cross-checks of profile and checkpoint against the manifest, and `load_bundle_model` loading the CNN from the verified bytes. Implemented on `feat/stage12-bundle-d59` with synthetic tests (full suite 1672 passed, 1 skipped). Next: D59 approval by Iheb, Malak and Khalil, then the F4 build PR.
 
 **Reference documents (Entries 164–165):** SRS v4.0 and SDD v2.0 are drafted as matching
 Markdown/PDF source pairs. The old unversioned SRS and SDD PDFs remain unchanged history. SRS v4.0
