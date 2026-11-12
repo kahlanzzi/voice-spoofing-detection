@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+  <title id="title">SRS v4 use-case model for the Voice-Spoofing Detection and Risk Scoring System</title>
+  <desc id="desc">Sixteen use cases, seven actors, include relationships and the annotation extend relationship, arranged in the established red and pink canonical layout.</desc>
+  <defs>
+    <marker id="openArrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth"><path d="M1,1 L10,6 L1,11" fill="none" stroke="#444" stroke-width="1.4"/></marker>
+    <style>
+      .boundary{fill:none;stroke:#9E1B16;stroke-width:2}.uc{fill:#FCE8E6;stroke:#9E1B16;stroke-width:2}.label{font-family:Arial,sans-serif;fill:#222;font-size:16px;text-anchor:middle}.small{font-size:14px}.title{font-family:Arial,sans-serif;fill:#9E1B16;font-size:19px;font-weight:700;text-anchor:middle}.actor{fill:none;stroke:#333;stroke-width:1.7}.assoc{fill:none;stroke:#444;stroke-width:1.4}.dep{fill:none;stroke:#555;stroke-width:1.5;stroke-dasharray:7 5;marker-end:url(#openArrow)}.edgeLabel{font-family:Arial,sans-serif;fill:#444;font-size:12px}.legend{font-family:Arial,sans-serif;fill:#333;font-size:14px}
+    </style>
+  </defs>
+  <rect width="1600" height="1000" fill="#fff"/>
+  <rect class="boundary" x="190" y="40" width="1210" height="830"/>
+  <text class="title" x="795" y="70">Voice-Spoofing Detection &amp; Risk Scoring System</text>
+
+  <!-- Actor associations are drawn behind use cases. -->
+  <g class="assoc">
+    <path d="M115 460 L175 460 L230 146"/><path d="M115 460 L175 460 L230 446"/><path d="M115 460 L175 500 L230 606"/>
+    <path d="M115 460 L180 520 L525 446"/><path d="M115 460 L180 560 L525 606"/>
+    <path d="M115 270 L175 270 L230 286"/><path d="M115 670 L170 760 L1115 606"/>
+    <path d="M1040 146 L1080 90 L1445 90 L1485 180"/><path d="M1335 146 L1485 180"/><path d="M1040 286 L1485 180"/><path d="M1040 446 L1485 180"/>
+    <path d="M1335 286 L1485 325"/><path d="M1040 446 L1485 475"/><path d="M1335 446 L1485 635"/>
+  </g>
+
+  <!-- Include and extend relationships. -->
+  <g>
+    <path class="dep" d="M450 146 L525 146"/><text class="edgeLabel" x="464" y="133">&lt;&lt;include&gt;&gt;</text>
+    <path class="dep" d="M450 286 C490 270 505 195 555 180"/><text class="edgeLabel" x="455" y="235">&lt;&lt;include&gt;&gt;</text>
+    <path class="dep" d="M635 187 L635 245"/><text class="edgeLabel" x="648" y="220">&lt;&lt;include&gt;&gt;</text>
+    <path class="dep" d="M420 405 C470 350 515 320 560 305"/><text class="edgeLabel" x="435" y="355">&lt;&lt;include&gt;&gt;</text>
+    <path class="dep" d="M430 570 C500 500 540 380 575 326"/><text class="edgeLabel" x="463" y="475">&lt;&lt;include&gt;&gt;</text>
+    <path class="dep" d="M745 606 L820 606"/><text class="edgeLabel" x="755" y="593">&lt;&lt;include&gt;&gt;</text>
+    <path class="dep" d="M1115 606 L1040 606"/><text class="edgeLabel" x="1043" y="593">&lt;&lt;include&gt;&gt;</text>
+    <path class="dep" d="M340 565 L340 487"/><text class="edgeLabel" x="352" y="530">&lt;&lt;extend&gt;&gt;</text>
+  </g>
+
+  <!-- Use cases. -->
+  <g>
+    <ellipse class="uc" cx="340" cy="146" rx="110" ry="41"/><text class="label" x="340" y="141"><tspan x="340">UC-01</tspan><tspan x="340" dy="20">Upload and Analyze</tspan></text>
+    <ellipse class="uc" cx="635" cy="146" rx="110" ry="41"/><text class="label" x="635" y="141"><tspan x="635">UC-03</tspan><tspan x="635" dy="20">Validate &amp; Analyze Audio</tspan></text>
+    <ellipse class="uc" cx="930" cy="146" rx="110" ry="41"/><text class="label small" x="930" y="141"><tspan x="930">UC-07</tspan><tspan x="930" dy="19">Evaluate Approved Model Sets</tspan></text>
+    <ellipse class="uc" cx="1225" cy="146" rx="110" ry="41"/><text class="label" x="1225" y="141"><tspan x="1225">UC-16</tspan><tspan x="1225" dy="20">Train &amp; Select Model v2</tspan></text>
+    <ellipse class="uc" cx="340" cy="286" rx="110" ry="41"/><text class="label" x="340" y="281"><tspan x="340">UC-02</tspan><tspan x="340" dy="20">Analyze via REST API</tspan></text>
+    <ellipse class="uc" cx="635" cy="286" rx="110" ry="41"/><text class="label" x="635" y="281"><tspan x="635">UC-04</tspan><tspan x="635" dy="20">Record Analysis Metadata</tspan></text>
+    <ellipse class="uc" cx="930" cy="286" rx="110" ry="41"/><text class="label" x="930" y="281"><tspan x="930">UC-08</tspan><tspan x="930" dy="20">Run Joint External Test</tspan></text>
+    <ellipse class="uc" cx="1225" cy="286" rx="110" ry="41"/><text class="label" x="1225" y="281"><tspan x="1225">UC-15</tspan><tspan x="1225" dy="20">Promote Verified Release</tspan></text>
+    <ellipse class="uc" cx="340" cy="446" rx="110" ry="41"/><text class="label" x="340" y="441"><tspan x="340">UC-05</tspan><tspan x="340" dy="20">Review History &amp; Details</tspan></text>
+    <ellipse class="uc" cx="635" cy="446" rx="110" ry="41"/><text class="label" x="635" y="441"><tspan x="635">UC-11</tspan><tspan x="635" dy="20">Sign In &amp; Sign Out</tspan></text>
+    <ellipse class="uc" cx="930" cy="446" rx="110" ry="41"/><text class="label" x="930" y="441"><tspan x="930">UC-09</tspan><tspan x="930" dy="20">View Evaluation Report</tspan></text>
+    <ellipse class="uc" cx="1225" cy="446" rx="110" ry="41"/><text class="label small" x="1225" y="441"><tspan x="1225">UC-10</tspan><tspan x="1225" dy="19">Review Service State &amp; Logs</tspan></text>
+    <ellipse class="uc" cx="340" cy="606" rx="110" ry="41"/><text class="label" x="340" y="601"><tspan x="340">UC-06</tspan><tspan x="340" dy="20">Annotate Result</tspan></text>
+    <ellipse class="uc" cx="635" cy="606" rx="110" ry="41"/><text class="label" x="635" y="601"><tspan x="635">UC-12</tspan><tspan x="635" dy="20">Analyze Live Microphone</tspan></text>
+    <ellipse class="uc" cx="930" cy="606" rx="110" ry="41"/><text class="label" x="930" y="601"><tspan x="930">UC-13</tspan><tspan x="930" dy="20">Process Live Stream</tspan></text>
+    <ellipse class="uc" cx="1225" cy="606" rx="110" ry="41"/><text class="label small" x="1225" y="601"><tspan x="1225">UC-14</tspan><tspan x="1225" dy="19">Analyze Active Browser Tab</tspan></text>
+  </g>
+
+  <!-- Actors. -->
+  <g class="actor">
+    <circle cx="80" cy="215" r="13"/><path d="M80 228 L80 270 M55 245 L105 245 M80 270 L60 302 M80 270 L100 302"/>
+    <circle cx="80" cy="405" r="13"/><path d="M80 418 L80 460 M55 435 L105 435 M80 460 L60 492 M80 460 L100 492"/>
+    <circle cx="80" cy="615" r="13"/><path d="M80 628 L80 670 M55 645 L105 645 M80 670 L60 702 M80 670 L100 702"/>
+    <circle cx="1510" cy="150" r="13"/><path d="M1510 163 L1510 205 M1485 180 L1535 180 M1510 205 L1490 237 M1510 205 L1530 237"/>
+    <circle cx="1510" cy="295" r="13"/><path d="M1510 308 L1510 350 M1485 325 L1535 325 M1510 350 L1490 382 M1510 350 L1530 382"/>
+    <circle cx="1510" cy="445" r="13"/><path d="M1510 458 L1510 500 M1485 475 L1535 475 M1510 500 L1490 532 M1510 500 L1530 532"/>
+    <circle cx="1510" cy="605" r="13"/><path d="M1510 618 L1510 660 M1485 635 L1535 635 M1510 660 L1490 692 M1510 660 L1530 692"/>
+  </g>
+  <g class="label small">
+    <text x="80" y="330"><tspan x="80">API Client</tspan><tspan x="80" dy="18">&lt;&lt;external system&gt;&gt;</tspan></text>
+    <text x="80" y="520"><tspan x="80">Fraud Prevention</tspan><tspan x="80" dy="18">Analyst</tspan></text>
+    <text x="80" y="730"><tspan x="80">Browser Extension</tspan><tspan x="80" dy="18">User</tspan></text>
+    <text x="1510" y="260"><tspan x="1510">ML / Research</tspan><tspan x="1510" dy="18">Engineer</tspan></text>
+    <text x="1510" y="405">CI/CD System</text>
+    <text x="1510" y="555"><tspan x="1510">Compliance</tspan><tspan x="1510" dy="18">Officer</tspan></text>
+    <text x="1510" y="715"><tspan x="1510">Operations / Security</tspan><tspan x="1510" dy="18">Administrator</tspan></text>
+  </g>
+
+  <!-- Legend follows the established v3 layout. -->
+  <g class="legend">
+    <line x1="260" y1="930" x2="350" y2="930" stroke="#444"/><text x="365" y="935">association</text>
+    <line x1="600" y1="930" x2="690" y2="930" class="dep"/><text x="710" y="935">&lt;&lt;include&gt;&gt;: base → included</text>
+    <line x1="1050" y1="930" x2="1140" y2="930" class="dep"/><text x="1160" y="935">&lt;&lt;extend&gt;&gt;: extension → base</text>
+  </g>
+</svg>

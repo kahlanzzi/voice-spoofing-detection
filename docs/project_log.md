@@ -6308,6 +6308,37 @@ teach-back. **WAITING FOR HUMAN REVIEW.**
 
 ---
 
+### Entry 164 — SRS v4.0 draft and reference-version index (2026-11-10)
+
+**Owner:** Khalil Dridi. Draft preparation: Malak Ben Salem. Review: Donia Mabrouk and Iheb
+Zemzemi for their owned model/platform areas; all four approve the controlling document.
+
+**What changed [doc]:** added `docs/reference/SRS_v4.0.md` and its generated PDF as one source pair.
+The draft preserves FR-01-FR-20, NFR-01-NFR-11 and PC-01-PC-09 from SRS v3.0, states every
+amendment, and adds requirements traceable only to approved D38, D41 and D47-D57. It aligns the
+contract with the current `/api/analyses` endpoint and React/FastAPI platform, changes the single
+external evaluation to D48's joint run, and covers model v2, live analysis, PostgreSQL/process-pool
+capacity, environments and D55 usability evidence. Planned work is labelled planned; no mock result
+is described as a real detector result.
+
+**Version control [doc]:** added `docs/reference/README.md` as the version index. The historical
+`SRS_Voice_Spoofing_Detection.pdf` remains unchanged and is mapped to v3.0. `AGENTS.md` points only
+to the current SRS v4.0 pair. SDD v1.0 remains current until the separate SDD v2.0 PR merges.
+
+**Review evidence:** requirement identifiers and v3-to-v4 changes are tabulated in the source;
+Khalil must validate SRS ownership/content, Donia the research constraints, Iheb the platform/live
+requirements and Malak the D50/D56 and Stage 14 traceability. PDF render and repository checks are
+recorded in the PR.
+
+**AI assistance:** Codex extracted the unchanged v3 PDF, compared it with the approved decision
+register, current API and Execution Plan v3.0, then drafted the versioned source and generated PDF.
+Malak reviews the source; the named owners approve it. AI does not approve or merge.
+
+**Gate:** owner/team review, source/PDF consistency, green CI and human merge. **WAITING FOR HUMAN
+REVIEW.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -6318,7 +6349,8 @@ teach-back. **WAITING FOR HUMAN REVIEW.**
 - [ ] Compute benchmark per v2 candidate; batch sizes in `configs/` before training (D49).
 - [ ] Extension authentication design and security review in SDD v2.0 before implementation (D51).
 - [ ] Choose the hosting provider and record it (D54 (9)); load test on staging, then record K, L, `analysis_timeout_s` and `L_MAX` (D53 (3)).
-- [ ] Write SRS v4.0, SDD v2.0 and Execution Plan v3.0 from D48–D55 (D48 (10)).
+- [x] Draft SRS v4.0 Markdown/PDF pair and version index from D48-D56 (Entry 164; human review and merge pending).
+- [ ] Write SDD v2.0 Markdown/PDF pair from the current SRS and approved architecture decisions (D48 (10)).
 - [ ] Stage 13 runner (D35) and Stage 11 runner (PR #68) accept the v2 model set (D48 (3), (7)).
 
 

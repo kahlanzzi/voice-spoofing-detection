@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- SRS v4.0 Markdown/PDF pair and reference-version index: preserves v3 identifiers, incorporates approved D47-D57 for identity, model v2, live analysis, reporting, infrastructure and delivery, and marks unimplemented work honestly; the v3 PDF remains unchanged history.
 - Stage 11 closed (D32, Entry 163): brief accepted after the teach-back (Khalil, Iheb and Malak, face to face, 2026-11-10; no corrections); `AGENTS.md` roadmap: Stage 11 done, Stage 12 current.
 - Stage 11 brief `docs/stages/stage11-for-test.md` (D32, Entry 162): what the one FoR test run did, the decisions it rests on (D31, D41, D45, D46, D57, D58, D29), the evidence with sources, limitations (in-domain ceiling, asymmetric deferral, untested shortcuts), 10 teach-back questions and a verification snippet; draft, docs only.
 - Stage 11 official run evidence (Entry 161): byte copies of the run registry (`docs/audit_evidence/run_registry.jsonl`, 2 lines), the claim, score, environment, rehearsal, dry-run and export files (`docs/audit_evidence/stage11_run/`, with README and `-text` attributes) and the metrics report at `docs/results/stage11_for_test.md` (H1 and H5 not supported); per-clip files stay on Drive; no code change.
