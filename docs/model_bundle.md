@@ -7,7 +7,7 @@ F4 before the external run (D2, AGENTS.md hard rule 2, Protocol v1.0 §6 and §1
 loads, its hash verified, refusal to start otherwise; Protocol v1.0 §11, D26; SRS v4.0 FR-29, SDD
 v2.0 §3.5 and §6.4). It lives in `src/bundle/`, the Model Registry of the shared core (SDD Fig. 1).
 
-The layout is fixed by **D59** (proposed in the PR that adds it): the Stage 8 checkpoint is a folder
+The layout is fixed by **D59** (approved in PR #123): the Stage 8 checkpoint is a folder
 of two files (D42), so the bundle keeps it as its own folder and records its combined hash. This
 step defines the format, the verifying loader and the model loader. It is tested on synthetic files
 only; no dataset, Drive or real checkpoint is read.

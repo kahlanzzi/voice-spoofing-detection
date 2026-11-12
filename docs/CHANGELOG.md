@@ -9,7 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
-- D59 (proposed): ModelBundle layout for the two-file checkpoint (`checkpoint/` with `checkpoint.json` + `weights.safetensors`, manifest schema 2 with the combined D42 `checkpoint_sha256`); `load_bundle` cross-checks profile and checkpoint, new `load_bundle_model` loads the CNN from the verified bytes, `parse_profile` split out of `load_profile`; synthetic tests only (Entry 166).
+- D59 (approved, PR #123): ModelBundle layout for the two-file checkpoint (`checkpoint/` with `checkpoint.json` + `weights.safetensors`, manifest schema 2 with the combined D42 `checkpoint_sha256`); `load_bundle` cross-checks profile and checkpoint, new `load_bundle_model` loads the CNN from the verified bytes, `parse_profile` split out of `load_profile`; synthetic tests only (Entry 166).
 - SDD v2.0 Markdown/PDF pair and reference-version index: distinguishes the implemented React/FastAPI mock MVP from the approved target architecture for model inference, live analysis, bounded process-pool capacity, PostgreSQL, environments and extension security; the v1 PDF remains unchanged history.
 - SRS v4.0 Markdown/PDF pair and reference-version index: preserves v3 identifiers, incorporates approved D47-D57 for identity, model v2, live analysis, reporting, infrastructure and delivery, and marks unimplemented work honestly; the v3 PDF remains unchanged history.
 - Stage 11 closed (D32, Entry 163): brief accepted after the teach-back (Khalil, Iheb and Malak, face to face, 2026-11-10; no corrections); `AGENTS.md` roadmap: Stage 11 done, Stage 12 current.
