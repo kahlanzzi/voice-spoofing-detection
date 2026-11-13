@@ -5,7 +5,7 @@ with the implementation details D61 fixes before any v2 training. Code and synth
 no dataset, cache, W&B, training run, FoR test or DEEP-VOICE access.
 
 Decisions: D49 (candidates, selection, F5), D50 / D56 (augmentation), D59 (bundle layout),
-**D61 (proposed)** (implementation details). ADR: [0013](decisions/0013-model-v2-candidates-and-augmentation.md).
+**D61 (approved, PR #127)** (implementation details). ADR: [0013](decisions/0013-model-v2-candidates-and-augmentation.md).
 
 ## The three candidates
 

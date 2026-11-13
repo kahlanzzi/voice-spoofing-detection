@@ -6680,8 +6680,8 @@ access.
 after V1b and set S); no F5 loader; no `api/`, notebook, requirements or `AGENTS.md` change; no
 new dependency (no `torchcontrib`). Not pushed.
 
-**Decisions:** D61 proposed (Donia author); approval by Iheb, Malak and Khalil in this PR before
-any v2 training.
+**Decisions:** D61 proposed (Donia author); approved by Iheb, Malak and Khalil in GitHub on PR #127
+(2026-11-13), approval commit before merge and before any v2 training.
 
 **AI assistance:** **Claude** (claude.ai) wrote the prompt with Donia. **Claude Code** (Claude Opus
 5.5) ported AASIST, implemented the CRNN, v2 checkpoint, config loader, schedule and tests, wrote
@@ -6690,6 +6690,7 @@ faithfulness check. Donia reviews. AI does not approve, push or merge.
 
 **What's next:** review and D61 approval (Iheb, Malak, Khalil) → approval commit → merge → PR V2b
 (training loop, M over S, batch-size benchmark into `configs/v2_candidates.yaml`) after V1b and set S.
+D61 approved (PR #127, 2026-11-13); merge pending.
 
 ---
 
@@ -6702,7 +6703,7 @@ faithfulness check. Donia reviews. AI does not approve, push or merge.
 - [x] Implement V1a's strict train-only augmentation module and synthetic tests without corpus access (D50/D56; Entry 169; awaiting review and merge).
 - [ ] V1b: pin and audit the noise/RIR corpora (licence, archive hash, 50/50 by-file split) and exact ffmpeg/codec tools before any v2 training (D50 (5)).
 - [ ] Compute benchmark per v2 candidate; batch sizes in `configs/` before training (D49). Slots exist as `null` in `configs/v2_candidates.yaml`; `require_batch_sizes()` blocks training until set (Entry 170; PR V2b).
-- [ ] Approve D61 (Iheb, Malak, Khalil) and add its approval commit before any v2 training (Entry 170).
+- [x] Approve D61 (Iheb, Malak, Khalil) and add its approval commit before any v2 training (Entry 170). (PR #127, 2026-11-13)
 - [ ] PR V2b: v2 training loop, selection metric M over set S, F5 model loader dispatching on `architecture` (D49, D61 (6)), after V1b and set S (Entry 170).
 - [x] Draft the extension authentication design and security-review text in SDD v2.0 before implementation (D51; Entry 165; human approval and merge pending).
 - [ ] Choose the hosting provider and record it (D54 (9)); load test on staging, then record K, L, `analysis_timeout_s` and `L_MAX` (D53 (3)).
@@ -7104,7 +7105,7 @@ faithfulness check. Donia reviews. AI does not approve, push or merge.
 
 ## Current status — updated 2026-11-13 (Entry 170)
 
-**Track V, model v2 candidates (Entry 170):** PR V2a on `feat/stageV2-candidates` adds the three D49 candidates (`cnn-aug` = v1 4-block CNN, `crnn`, `aasist` ported from `clovaai/aasist` `a04c986` with credit and licence), the v2 safetensors checkpoint with the D59 layout and hash rule (`cnn_checkpoint` unchanged), `configs/v2_candidates.yaml` with a strict loader (batch sizes `null` until the D49 benchmark) and the D61 cosine schedule. Trainable parameters 97,761 / 319,585 / 297,705; the port matches the reference exactly before the output layer (max difference 0.0). D61 (implementation details) proposed. No training, no data access; not pushed. Next: review and D61 approval, then PR V2b after V1b and set S.
+**Track V, model v2 candidates (Entry 170):** PR V2a on `feat/stageV2-candidates` adds the three D49 candidates (`cnn-aug` = v1 4-block CNN, `crnn`, `aasist` ported from `clovaai/aasist` `a04c986` with credit and licence), the v2 safetensors checkpoint with the D59 layout and hash rule (`cnn_checkpoint` unchanged), `configs/v2_candidates.yaml` with a strict loader (batch sizes `null` until the D49 benchmark) and the D61 cosine schedule. Trainable parameters 97,761 / 319,585 / 297,705; the port matches the reference exactly before the output layer (max difference 0.0). D61 (implementation details) approved (PR #127). No training, no data access; not pushed. Next: PR V2b after V1b and set S.
 
 **Track V V1a (Entry 169):** the strict D50/D56 train-only augmentation configuration, five-family
 pipeline, independent RawBoost algorithm 1 with pinned-reference parity, guarded codec backend and
