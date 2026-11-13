@@ -6694,6 +6694,26 @@ D61 approved (PR #127, 2026-11-13); merge pending.
 
 ---
 
+### Entry 171 — Stage 11 report: platform-bound `p` re-derivation documented (2026-11-13)
+
+**Owner:** Donia Mabrouk.
+
+**Scope [doc]:** Stage 11 report (`docs/stage11_report.md`), Entry 161, D58. Docs only: no code,
+test, result, threshold or evidence change; no data access.
+
+**What changed:** `docs/stage11_report.md` Limitations gains one bullet: integrity check 8
+(`rederive.bundle.p_bytes`) reproduces byte for byte only on the run's platform (Colab T4, runtime
+2026.10); on local Windows 69 of 2,658 recomputed `p` differ by at most 1 ulp (max 1.4e-17) with no
+decision change (Entry 161 (a), (b)). The check stays byte-exact (no tolerance added after the run);
+the stored `p` values are the reported ones. Closes the Entry 161 open item.
+
+**AI assistance:** **Claude** (claude.ai) drafted the bullet and this entry from Entry 161 as a patch.
+Donia reviews. AI does not approve, push or merge.
+
+**What's next:** review and merge (docs only, no decision).
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -6972,7 +6992,7 @@ D61 approved (PR #127, 2026-11-13); merge pending.
 **Stage 11 results (Entry 161)**
 - [x] Stage 11 brief `docs/stages/` (D32), with the interpretation of the results (Donia). (merged as #119, Entry 162)
 - [x] Khalil's teach-back of the Stage 11 brief (D32), then a closeout PR marking Stage 11 done in `AGENTS.md`. (Khalil, Iheb and Malak, face to face, 2026-11-10, no corrections; closeout on `docs/stage11-closeout`, Entry 163)
-- [ ] `stage11_report`'s byte-exact `p` re-derivation reproduces only on the run's platform (T4, 2026.10); document in `docs/stage11_report.md` Limitations in a later PR (no code change) (Entry 161).
+- [x] `stage11_report`'s byte-exact `p` re-derivation reproduces only on the run's platform (T4, 2026.10); document in `docs/stage11_report.md` Limitations in a later PR (no code change) (Entry 161). (Entry 171)
 - [ ] Stage 12: ModelBundle v1 freeze (F4) after Stage 11 closes; v1 replaces the mock in the API (D48).
 
 **Stage 17 API (Part E, Entry 100)**
@@ -7103,7 +7123,9 @@ D61 approved (PR #127, 2026-11-13); merge pending.
 
 ---
 
-## Current status — updated 2026-11-13 (Entry 170)
+## Current status — updated 2026-11-13 (Entry 171)
+
+**Stage 11 report (Entry 171):** the platform-bound byte-exact `p` re-derivation (Entry 161) is now in `docs/stage11_report.md` Limitations; docs only.
 
 **Track V, model v2 candidates (Entry 170):** PR V2a on `feat/stageV2-candidates` adds the three D49 candidates (`cnn-aug` = v1 4-block CNN, `crnn`, `aasist` ported from `clovaai/aasist` `a04c986` with credit and licence), the v2 safetensors checkpoint with the D59 layout and hash rule (`cnn_checkpoint` unchanged), `configs/v2_candidates.yaml` with a strict loader (batch sizes `null` until the D49 benchmark) and the D61 cosine schedule. Trainable parameters 97,761 / 319,585 / 297,705; the port matches the reference exactly before the output layer (max difference 0.0). D61 (implementation details) approved (PR #127). No training, no data access; not pushed. Next: PR V2b after V1b and set S.
 

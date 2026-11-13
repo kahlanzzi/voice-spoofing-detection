@@ -153,6 +153,16 @@ byte-identical files (no timestamp).
   intervals collapsed; the counts next to them carry the information.
 - **Approved F2 value.** The manifest must equal the approved F2 hash (`APPROVED_F2_MANIFEST_SHA256`);
   tests replace it with their synthetic manifest's hash.
+- **Byte-exact `p` re-derivation is platform-bound.** Integrity check 8 compares the recomputed
+  `policy.calibration.transform(raw_score)` with the stored `p` byte for byte
+  (`rederive.bundle.p_bytes`). On the run's platform (Colab T4, runtime 2026.10, Python 3.13.16,
+  Intel Xeon @ 2.00 GHz) the report reproduces byte for byte from the stored files (Entry 161 (b)).
+  On another platform the check can stop: on local Windows (Python 3.14.7, numpy 2.5.3) 69 of
+  2,658 recomputed `p` differ by at most 1 ulp (max 1.4e-17), with no three-way or forced-binary
+  decision change (Entry 161 (a)) [hypothesis: `np.exp` differs across platforms, the same
+  processor-bound float effect as D58]. To re-derive the report, run it on the run's platform. The
+  check stays byte-exact on purpose (no tolerance was set before the run, and none is added after
+  it); the stored `p` values are the ones reported.
 - Tested on synthetic data only; the real report is produced by notebook 06 (PR C).
 
 ## Tests (`tests/evaluation/test_stage11_report.py`)
