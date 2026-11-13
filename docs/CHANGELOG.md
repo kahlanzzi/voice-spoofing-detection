@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 11 report Limitations: byte-exact `p` re-derivation reproduces only on the run's platform (69 of 2,658 `p` differ by ≤ 1 ulp on local Windows, no decision change); docs only (Entry 171).
 - Model v2 candidates (Track V, PR V2a, Entry 170): `crnn` and `aasist` (ported from `clovaai/aasist` `a04c986`, MIT, credited; `licenses/AASIST-LICENSE`) models, v2 safetensors checkpoint with the D59 layout and hash rule (`cnn_checkpoint` unchanged), `configs/v2_candidates.yaml` with strict loader (batch sizes null until the D49 benchmark), per-step cosine schedule; `docs/v2_candidates.md`; D61 approved (PR #127); no training.
 - Track V V1a train-only waveform augmentation (D50/D56): strict configuration, deterministic five-family pipeline, independent RawBoost algorithm 1 with pinned-reference parity, guarded codec backend, corpus audit/split tooling and synthetic tests; MUSAN/RIRS and ffmpeg pins remain for V1b.
 - F4 built and verified (Stage 12, Entry 168): `bundle-v1`, manifest SHA-256 `edf4a205…40efc`, from `ea5544a`; evidence `docs/audit_evidence/stage12_bundle/` (manifest, F4 record, README); Drive copy verified; D60 (F4 freeze) approved (PR #125).
