@@ -50,6 +50,7 @@ Project rules live in [AGENTS.md](../AGENTS.md).
 | [speaker_analysis.md](speaker_analysis.md) / [speaker_average.md](speaker_average.md) | Per-speaker metrics and speaker-average conventions | reporting implementation changes |
 | [synthetic_reporting.md](synthetic_reporting.md) | Synthetic integration and discrimination checks; not real model evaluation | synthetic checks change |
 | [model_bundle.md](model_bundle.md) | ModelBundle (Stage 12): format, verifying loader, tests | the bundle format changes |
+| [v2_candidates.md](v2_candidates.md) | Model v2 candidates (Track V, D49, D61): cnn-aug, crnn, credited AASIST port, v2 checkpoint, configs/v2_candidates.yaml | a v2 candidate, the v2 checkpoint or its config changes |
 
 ## API, interface design and UML
 

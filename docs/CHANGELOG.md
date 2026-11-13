@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Model v2 candidates (Track V, PR V2a, Entry 170): `crnn` and `aasist` (ported from `clovaai/aasist` `a04c986`, MIT, credited; `licenses/AASIST-LICENSE`) models, v2 safetensors checkpoint with the D59 layout and hash rule (`cnn_checkpoint` unchanged), `configs/v2_candidates.yaml` with strict loader (batch sizes null until the D49 benchmark), per-step cosine schedule; `docs/v2_candidates.md`; D61 approved (PR #127); no training.
 - Track V V1a train-only waveform augmentation (D50/D56): strict configuration, deterministic five-family pipeline, independent RawBoost algorithm 1 with pinned-reference parity, guarded codec backend, corpus audit/split tooling and synthetic tests; MUSAN/RIRS and ffmpeg pins remain for V1b.
 - F4 built and verified (Stage 12, Entry 168): `bundle-v1`, manifest SHA-256 `edf4a205…40efc`, from `ea5544a`; evidence `docs/audit_evidence/stage12_bundle/` (manifest, F4 record, README); Drive copy verified; D60 (F4 freeze) approved (PR #125).
 - Stage 12 F4 build/verify tool `src/bundle/f4.py` (`python -m src.bundle.f4 {build,verify}`): expected values read from the committed Stage 6/7/8/10 evidence and cross-checked, clean-tree provenance, checkpoint checked per file, `load_bundle_model` verification, `f4_record.json` and manifest copy beside the bundle; runs locally, no scoring; synthetic tests and a torch-free real-evidence test; no real build yet (Entry 167).

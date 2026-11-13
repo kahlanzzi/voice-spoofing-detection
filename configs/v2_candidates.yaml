@@ -1,0 +1,55 @@
+# Model v2 candidates (Track V; D49, D50, D61). Read by src/training/v2_config.py.
+# Written before any v2 training run, as D49 requires. Changing a value needs a new decision;
+# tests/training/test_v2_config.py fails if this file drifts from D49 + D61.
+# Floats are written with a decimal point (0.0001, not 1e-4): PyYAML reads 1e-4 as a string.
+decision: [D49, D50, D61]
+max_epochs: 30                      # D49
+patience: 5                         # D49
+loss: bce_with_logits               # D49, D61 (2): one logit for every candidate
+class_weights: none                 # D49
+dtype: float32                      # D49
+early_stopping:                     # D49 under D42's rule: strictly lower M improves; ties keep the earliest epoch
+  metric: selection_m
+  improvement: strictly_lower
+  tie: earliest_epoch
+selection_metric: mean_val_a_eer_over_S   # D49: M = mean val-A EER over the D50 condition set S
+search_seed: 0                      # D49: each candidate trained once with seed 0
+final_seeds: [0, 1, 2]              # D11, D49: the winner adds seeds 1 and 2
+tie_rule: [trainable_parameters_ascending, candidate_order]   # D49
+candidate_order: [cnn-aug, crnn, aasist]                      # D49: C1, C2, C3
+logmel_stats: clean_train           # D61 (5): D42 per-bin stats on the clean FoR train log-Mel
+wandb:                              # D40; the API key comes from .env (WANDB_API_KEY), never from here
+  entity: voice-spoofing-detection-must
+  project: voice-spoofing-detection
+candidates:
+  cnn-aug:                          # C1: exactly v1 (D42; D30's selected configuration)
+    n_blocks: 4
+    optimizer: {name: adam, learning_rate: 0.001, weight_decay: 0.0}
+    scheduler: none
+    batch_size: null                # D49 compute benchmark, set before training (PR V2b)
+  crnn:                             # C2 (D49)
+    conv_channels: [16, 32, 64]
+    lstm: {hidden: 64, bidirectional: true, layers: 1}
+    pooling: mean_over_time
+    dropout: 0.3
+    optimizer: {name: adam, learning_rate: 0.001, weight_decay: 0.0}
+    scheduler: none
+    batch_size: null                # D49 compute benchmark, set before training (PR V2b)
+  aasist:                           # C3 (D49, D61)
+    reference:
+      repository: https://github.com/clovaai/aasist
+      commit: a04c9863f63d44471dde8a6abcb3b082b07cd1d1
+      licence: MIT
+    model_config:                   # reference config/AASIST.conf; only nb_samp differs (D49)
+      architecture: AASIST
+      nb_samp: 32000
+      first_conv: 128
+      filts: [70, [1, 32], [32, 32], [32, 64], [64, 64]]
+      gat_dims: [64, 32]
+      pool_ratios: [0.5, 0.7, 0.5, 0.5]
+      temperatures: [2.0, 2.0, 100.0, 100.0]
+    optimizer: {name: adam, learning_rate: 0.0001, betas: [0.9, 0.999], weight_decay: 0.0001, amsgrad: false}
+    scheduler: {name: cosine_per_step, lr_min: 0.000005, total_epochs: 30}   # D61 (3)
+    swa: false                      # D61 (4)
+    freq_aug: false                 # D61 (4)
+    batch_size: null                # D49 compute benchmark, set before training (PR V2b)
