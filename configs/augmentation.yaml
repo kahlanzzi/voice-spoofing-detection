@@ -1,0 +1,83 @@
+schema_version: 1
+config_version: augmentation-v1
+decisions: [D50, D56]
+sample_rate_hz: 16000
+seed: 2026
+
+training:
+  allowed_splits: [train]
+  apply_probability: 0.8
+  family_sampling: uniform
+  families:
+    - recorded_noise
+    - reverberation
+    - codec
+    - gain
+    - rawboost
+
+recorded_noise:
+  snr_db:
+    distribution: uniform
+    min: 5.0
+    max: 30.0
+
+reverberation:
+  convolution: full_then_crop_to_input
+
+codec:
+  option_sampling: uniform
+  options:
+    - {id: mp3_24, kind: mp3, bitrate_kbps: 24}
+    - {id: mp3_48, kind: mp3, bitrate_kbps: 48}
+    - {id: mp3_96, kind: mp3, bitrate_kbps: 96}
+    - {id: opus_8, kind: opus, bitrate_kbps: 8}
+    - {id: opus_16, kind: opus, bitrate_kbps: 16}
+    - {id: opus_24, kind: opus, bitrate_kbps: 24}
+    - {id: narrowband_mulaw, kind: narrowband_mulaw, bitrate_kbps: null}
+
+gain:
+  distribution: uniform
+  min_db: -12.0
+  max_db: 6.0
+  peak_ceiling_dbfs: -1.0
+
+rawboost:
+  algorithm: 1
+  implementation: independent_from_paper
+  sample_rate_hz: 16000
+  notch_bands: 5
+  fir_coefficients: {distribution: uniform_integer, min: 10, max: 100}
+  nonlinearity_order: 5
+  centre_frequency_hz: {distribution: uniform, min: 20.0, max: 8000.0}
+  bandwidth_hz: {distribution: uniform, min: 100.0, max: 1000.0}
+  linear_gain_db: 0.0
+  higher_order_gain_offset_db: {distribution: uniform, min: -20.0, max: -5.0}
+  reference:
+    repository: https://github.com/TakHemlata/RawBoost-antispoofing
+    commit: 4f161a8b4d0d9f4a8431509ddd86c645869ef6c4
+    file: RawBoost.py
+    license: MIT
+
+held_out_from_training:
+  additive_noise_families: [white_gaussian]
+  mp3_bitrates_kbps: [32, 64, 128]
+  plain_low_pass: true
+
+corpora:
+  split_seed: 2026
+  training_fraction: 0.5
+  noise:
+    name: MUSAN
+    open_slr_id: 17
+    archive_sha256: null  # filled by V1b before corpus use
+    license_sha256: null  # filled by V1b before corpus use
+  rir:
+    name: RIRS_NOISES
+    open_slr_id: 28
+    archive_sha256: null  # filled by V1b before corpus use
+    license_sha256: null  # filled by V1b before corpus use
+
+ffmpeg:
+  executable: ffmpeg
+  expected_version: null  # filled by V1b before any real codec pass
+  expected_codec_libraries: {}  # filled by V1b from the same runtime

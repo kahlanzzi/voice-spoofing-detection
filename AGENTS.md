@@ -121,7 +121,7 @@ required CI check `checks`, branch up to date; no direct pushes.
 | 10 | Risk policy + calibration fit (FoR val-B) | C · Donia | done |
 | 11 | FoR internal test (once) | C · Donia | done |
 | 12 | **ModelBundle v1 freeze (F4)**; v1 replaces the mock in the API (D48) | C · Donia; integration: Iheb | ← CURRENT |
-| V | Model v2 track: augmentation pipeline, candidates and selection (val-A), risk policy (val-B), FoR test once (v2 model set), **F5 freeze** (D48–D50) | C · Donia; D50 pipeline: Malak | |
+| V | Model v2 track: augmentation pipeline, candidates and selection (val-A), risk policy (val-B), FoR test once (v2 model set), **F5 freeze** (D48–D50) | C · Donia; D50 pipeline: Malak | V1a implementation awaiting review; V1b next |
 | 13 | **DEEP-VOICE external run (once, guarded)**: v1, v2 and baseline in one pass, after F5 or the 2026-12-04 cut-off (D48); stores per-sample scores | D · Khalil; review: all four | |
 | 14–16 | Robustness (FoR only) · calibration analysis · error analysis | D · Malak (14), Khalil (15, 16) | |
 | 17–19 | API (FastAPI) · web app (React, D38) · tests/CI/Docker/docs | E · Iheb; Stage 19 report: all four | |

@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Track V V1a train-only waveform augmentation (D50/D56): strict configuration, deterministic five-family pipeline, independent RawBoost algorithm 1 with pinned-reference parity, guarded codec backend, corpus audit/split tooling and synthetic tests; MUSAN/RIRS and ffmpeg pins remain for V1b.
 - F4 built and verified (Stage 12, Entry 168): `bundle-v1`, manifest SHA-256 `edf4a205…40efc`, from `ea5544a`; evidence `docs/audit_evidence/stage12_bundle/` (manifest, F4 record, README); Drive copy verified; D60 (F4 freeze) approved (PR #125).
 - Stage 12 F4 build/verify tool `src/bundle/f4.py` (`python -m src.bundle.f4 {build,verify}`): expected values read from the committed Stage 6/7/8/10 evidence and cross-checked, clean-tree provenance, checkpoint checked per file, `load_bundle_model` verification, `f4_record.json` and manifest copy beside the bundle; runs locally, no scoring; synthetic tests and a torch-free real-evidence test; no real build yet (Entry 167).
 - D59 (approved, PR #123): ModelBundle layout for the two-file checkpoint (`checkpoint/` with `checkpoint.json` + `weights.safetensors`, manifest schema 2 with the combined D42 `checkpoint_sha256`); `load_bundle` cross-checks profile and checkpoint, new `load_bundle_model` loads the CNN from the verified bytes, `parse_profile` split out of `load_profile`; synthetic tests only (Entry 166).

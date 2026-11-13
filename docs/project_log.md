@@ -6568,13 +6568,67 @@ D60 approved (PR #125, 2026-11-12); merge pending.
 
 ---
 
+### Entry 169 — Track V V1a augmentation module and synthetic verification (2026-11-13)
+
+**Owner:** Malak Ben Salem. Review: Donia Mabrouk for D50/D56 and Track V alignment; Iheb
+Zemzemi and Khalil Dridi for integration and independent review.
+
+**Objective:** implement only V1a: the train-only waveform augmentation module, strict
+configuration, RawBoost algorithm 1, codec boundary, corpus-audit tooling and synthetic tests. No
+corpus download, project audio, training, validation/test access or DEEP-VOICE access was permitted.
+
+**What changed [code/config/doc]:** added `configs/augmentation.yaml`; `src/augmentation/` with a
+strict D50/D56 loader, deterministic five-family orchestrator, ffmpeg codec round-trip and an
+independent paper-based RawBoost algorithm 1; `src/audit/augmentation_corpora.py` for local
+inventory/hash/header checks and the seed-2026 50/50 by-file split; the direct SciPy pin; synthetic
+tests under `tests/augmentation/` and `tests/audit/test_augmentation_corpora.py`; and the design
+note `docs/augmentation.md`. The same 0.8 policy and code path apply to REAL and FAKE. White
+Gaussian noise, MP3 32/64/128 kbps and plain low-pass remain absent from training.
+
+**RawBoost evidence [synthetic]:** the implementation was compared on a fixed two-tone waveform
+and seed 2026 with the official MIT-licensed reference pinned by D56 at commit
+`4f161a8b4d0d9f4a8431509ddd86c645869ef6c4`. The portable oracle checks 33 numerical landmarks
+distributed over all 4,096 samples plus mean, standard deviation, minimum, maximum and L2 norm,
+with explicit floating-point tolerances. The repository contains only the test fixture values and
+attribution, not copied reference code.
+
+**Verification (real output):** focused V1a tests: `27 passed in 8.29s`. Full repository suite with
+`REQUIRE_TORCH_TESTS=1`: `1650 passed in 439.66s (0:07:19)`; zero skipped. The working copy used
+the repository virtual environment with the pinned CPU torch and CNN requirements installed. After
+merging current `main` (Stage 12 Entries 166–168), the same required-torch suite reported
+`1738 passed, 1 skipped in 318.57s (0:05:18)`: the only skip is Stage 12's existing Windows
+symlink-capability case in `tests/bundle/test_bundle.py`; it is unrelated to torch, and all
+torch-required tests ran.
+
+**CI portability correction:** the first PR run exposed a platform-only RawBoost oracle issue: the
+unquantised float32 bytes differed by harmless last bits across Windows and Linux. An
+eight-decimal quantised hash passed the local Linux reproduction but remained CPU-library-sensitive
+on GitHub (`fcada9dc…5644a`). The final test therefore uses 33 distributed reference landmarks and
+five global signal statistics with `rtol=2e-6, atol=2e-7`, the standard numerical comparison for
+floating-point DSP. This changes only the synthetic parity assertion, not the implementation or
+approved parameters.
+
+**Deferred to V1b:** download/audit MUSAN and RIRS_NOISES; record archive and licence SHA-256;
+create and commit the approved manifests and pins; record the exact ffmpeg version and codec
+libraries; then build selection set S from val-A. The codec backend and accepted corpus-audit path
+fail closed while these pins are absent. No result or improvement is claimed by V1a.
+
+**AI assistance:** Codex implemented and tested the module from approved D50/D56, inspected the
+pinned public RawBoost reference for parity, and drafted this record. Malak reviewed and approved
+local implementation commit `c162fb5` on 2026-11-13; AI does not approve or merge.
+
+**Gate:** team review, green CI and human merge. **WAITING FOR HUMAN REVIEW.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
 - [x] Approve or revise D48–D55, ADRs 0012–0015 and H8–H9 (all four) before the v1 Stage 11 claim. (PR #111, 2026-11-10)
 - [x] Approval commit: statuses to Approved; AGENTS.md hard rule 3 (v2 candidates) and roadmap; Protocol addendum for §§4, 6, 7, 9, 12 (v2 values, F5, Stage 11/14 model sets, cut-off). (Entry 151)
-- [x] Approve D56 and add its approval commit before the v1 Stage 11 claim and before V1a implementation; D50 is marked as amended for RawBoost algorithm 1 and uniform sampling over seven codec options (Entries 157–158; PR #116; merge pending).
-- [ ] Pin the noise and RIR corpora (licence, hash, 50/50 file split) and codec tools before any v2 training (D50 (5)).
+- [x] Approve D56 and add its approval commit before the v1 Stage 11 claim and before V1a implementation; D50 is marked as amended for RawBoost algorithm 1 and uniform sampling over seven codec options (Entries 157–158; PR #116, merged).
+- [x] Implement V1a's strict train-only augmentation module and synthetic tests without corpus access (D50/D56; Entry 169; awaiting review and merge).
+- [ ] V1b: pin and audit the noise/RIR corpora (licence, archive hash, 50/50 by-file split) and exact ffmpeg/codec tools before any v2 training (D50 (5)).
 - [ ] Compute benchmark per v2 candidate; batch sizes in `configs/` before training (D49).
 - [x] Draft the extension authentication design and security-review text in SDD v2.0 before implementation (D51; Entry 165; human approval and merge pending).
 - [ ] Choose the hosting provider and record it (D54 (9)); load test on staging, then record K, L, `analysis_timeout_s` and `L_MAX` (D53 (3)).
@@ -6974,7 +7028,14 @@ D60 approved (PR #125, 2026-11-12); merge pending.
 
 ---
 
-## Current status — updated 2026-11-12 (Entry 168)
+## Current status — updated 2026-11-13 (Entry 169)
+
+**Track V V1a (Entry 169):** the strict D50/D56 train-only augmentation configuration, five-family
+pipeline, independent RawBoost algorithm 1 with pinned-reference parity, guarded codec backend and
+corpus-audit tooling are implemented and verified on synthetic audio only (pre-merge:
+`1650 passed`, torch required, zero skipped; with current Stage 12 `main`: `1738 passed`, one
+unrelated Windows symlink-capability skip and no torch skip). V1a is awaiting human review. V1b remains responsible for the MUSAN,
+RIRS_NOISES and ffmpeg pins/manifests before any v2 training.
 
 **Stage 12 F4 (Entry 168):** F4 built and verified: `bundle-v1`, manifest SHA-256 `edf4a205…40efc`, on Drive `checkpoints/bundle/bundle-v1/` (Drive copy verified); evidence in `docs/audit_evidence/stage12_bundle/`; D60 (F4 freeze) approved (PR #125). Next: hand-over to Iheb (P1) and Khalil (Stage 13), Stage 12 brief.
 
@@ -7003,7 +7064,7 @@ PR, the Stage 11 brief (D32) and Khalil's teach-back, then Stage 12 (F4).
 
 **Stage 11 dry run and D58 (Entry 159):** the first dry run of notebook 06 (T4, runtime version 2026.10) stopped at the MFCC reproduction gate before any claim or test read: the T4 MFCC val-A bytes differ from Stage 7's, which reproduce only on a CPU runtime without AVX-512, while the log-Mel reproduces only on the T4. D58 (proposed, `fix/stage11-mfcc-gate`) keeps the exact log-Mel gate and replaces MFCC byte equality with a CPU-runtime reference equal to Stage 7, a fixed tolerance and identical `baseline-v1` validation decisions; the runner implements it. D58 is approved and merged (PR #117), and PR C is updated for it (Entry 160). Next: dry run again.
 
-**D56 approval (Entries 157–158):** Donia, Iheb and Khalil approved PR #116. D56 is Approved: RawBoost algorithm 1 replaces algorithm 3 for v2, preserving H9's held-out additive-Gaussian family, and the seven codec options are sampled uniformly. The approval commit awaits green CI and human merge before V1a begins.
+**D56 approval (Entries 157–158):** Donia, Iheb and Khalil approved PR #116. D56 is Approved and merged: RawBoost algorithm 1 replaces algorithm 3 for v2, preserving H9's held-out additive-Gaussian family, and the seven codec options are sampled uniformly. V1a implements this approved contract (Entry 169).
 
 **Stage 11 report (Entry 156):** PR B, merged as #114, computes the D4 metrics, CIs, H1, H5 and seed rows from the stored run files only, after integrity checks; D57 (reporting conventions) is approved via GitHub reviews on PR #114 (2026-11-10); approval commit merged with #114. PR C, notebook 06, is drafted (Entry 160).
 
@@ -7028,6 +7089,10 @@ canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI eth
 **Midterm refactor audit:** Entries 108–110 record the initial report and baseline. Entry 111 implements two small lint cleanups on the stacked cleanup branch: 937 tests pass, governance 3 passed, scoped lint findings 2 to 0, coverage and complexity unchanged. No speedup is claimed. Entry 112 adds the measured report/PDF and after captures. The work merged via #73 into combined #72 (`76c55aa`) after recorded teammate approvals and successful CI. Entry 113 corrected stale report status and merged as PR #74 (`ca45601`); separate final editorial/course acceptance remains open. Evidence-sensitive restructuring stays deferred.
 
 **What was done:**
+- **Track V V1a augmentation** on `feat/stageV1-augmentation` (Entry 169): strict D50/D56
+  configuration, deterministic train-only five-family pipeline, independent RawBoost algorithm 1
+  with pinned-reference parity, codec and corpus-audit fail-closed boundaries, and synthetic tests;
+  no corpus/project audio, training or validation/test access.
 - **Stage 11 official run and results PR** on `docs/stage11-results` (Entry 161): the run's
   evidence and registry committed byte for byte, results at `docs/results/stage11_for_test.md`,
   blobs re-hashed after the commit; no code change.
