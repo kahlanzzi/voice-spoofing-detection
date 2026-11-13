@@ -6,7 +6,11 @@ import copy
 import pytest
 import yaml
 
-from src.preprocessing.profile import PreprocessingError, load_profile
+from src.preprocessing.profile import PreprocessingError, load_profile, parse_profile
+
+# Fingerprint of configs/preprocessing.yaml, recorded as profile_fingerprint in the Stage 8
+# checkpoint metadata; the ModelBundle cross-check (D59 (4)) compares against it.
+PROFILE_FINGERPRINT = "5b4f5849a9bb63f9016dd79969ff5bfb9e37006acbff1e26bbfee4ee2bad68f2"
 
 
 def _raw(profile_path):
@@ -27,6 +31,21 @@ def test_load_profile_has_frozen_shapes_and_stable_fingerprint(profile_path):
     assert profile.features["fmax_hz"] == 7600.0
     assert profile.fingerprint() == load_profile(profile_path).fingerprint()
     assert len(profile.fingerprint()) == 64
+
+
+def test_profile_fingerprint_is_pinned_and_parse_profile_agrees(profile_path):
+    # The split of load_profile into read + parse_profile must not change the result: the file and
+    # its text give the same profile and the same pinned fingerprint.
+    profile = load_profile(profile_path)
+    assert profile.fingerprint() == PROFILE_FINGERPRINT
+    parsed = parse_profile(profile_path.read_text(encoding="utf-8"))
+    assert parsed == profile
+    assert parsed.fingerprint() == PROFILE_FINGERPRINT
+
+
+def test_parse_profile_names_the_source_on_bad_yaml():
+    with pytest.raises(PreprocessingError, match="Cannot read preprocessing profile bundle/x.yaml"):
+        parse_profile("a: [unclosed", source="bundle/x.yaml")
 
 
 @pytest.mark.parametrize(

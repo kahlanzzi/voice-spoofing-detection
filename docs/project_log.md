@@ -6374,7 +6374,201 @@ and human merge. **WAITING FOR HUMAN REVIEW.**
 
 ---
 
-### Entry 166 — Track V V1a augmentation module and synthetic verification (2026-11-12)
+### Entry 166 — Stage 12 prep: D59 proposed; bundle format for the two-file checkpoint (2026-11-12)
+
+**Numbering:** Prompt said Entry 164; 164 and 165 were taken by PRs #121-#122 (SRS v4.0, SDD v2.0),
+so this is Entry 166.
+
+**Branch:** renamed from feat/stage12-bundle-format (PR #19's name) to feat/stage12-bundle-d59 before the first push.
+
+**Owner:** Donia Mabrouk.
+
+**Scope [doc]:** Protocol §6 and §11; D2, D28, D42, D48; D59 (proposed); SRS v4.0 FR-04, FR-29,
+NFR-09; SDD v2.0 §3.5, §6.4. Code, synthetic tests and docs only: no dataset, Drive, cache, real
+checkpoint, W&B, FoR test or DEEP-VOICE access.
+
+**Facts (verified on `main` at `e580ef3`):**
+- `docs/model_bundle.md` and `src/bundle/bundle.py` (schema 1) expected a bundle of exactly four
+  plain files with ONE checkpoint file (`checkpoint` passed as a file path, copied flat).
+- The Stage 8 checkpoint (`src/models/cnn_checkpoint.py`, D42) is a FOLDER of exactly two files,
+  `checkpoint.json` + `weights.safetensors`; its recorded identity is the combined
+  `checkpoint_sha256` (bundle seed 0: `c33eb820…1958932`, `docs/audit_evidence/stage8_cnn/README.md`).
+  A schema-1 bundle could not hold it without changing the recorded hash.
+- Still open from the format step: the profile version was not checked against the profile file
+  (Limitation 1), and `load_bundle` returned the checkpoint by path only (check-then-use,
+  Limitation 2).
+
+**What we did:** on `feat/stage12-bundle-d59` from `main` at `e580ef3` (three commits):
+- **D59 (proposed)** in `docs/decisions/README.md`, in its own commit (the row only), so the
+  approval commit is a one-line status change.
+- **`src/bundle/bundle.py`** (still torch-free): `SCHEMA_VERSION = 2` (schema 1 refused);
+  `CHECKPOINT_DIR`, `CHECKPOINT_FILES`; `checkpoint_dir_sha256` (the D42 rule restated);
+  `CheckpointComponent(dir, files, sha256, version)` with the combined hash checked at parse;
+  `build_bundle(..., checkpoint_dir, expected_checkpoint_sha256, profile, policy, ...)` reads every
+  source once, refuses a combined hash other than the recorded one, copies the policy file byte for
+  byte (manifest hash = source SHA-256), checks profile version / protocol / F2 ledger and the
+  `checkpoint.json` version and `profile_fingerprint` before writing, and cleans up `checkpoint/`
+  on failure; `load_bundle` checks both folder levels, every hash, parses policy, profile and
+  `checkpoint.json` from the hashed bytes and cross-checks them (D59 (4)); `LoadedBundle` now has
+  `checkpoint_dir`, `checkpoint_sha256` and the parsed `profile` (`checkpoint_path` removed).
+- **`src/bundle/model_loader.py`** (new, torch): `load_bundle_model` = `load_bundle` +
+  `cnn_checkpoint.load_checkpoint(checkpoint_dir, expected_sha256=<manifest value>)` + a version
+  check; `cnn_checkpoint.py` unchanged.
+- **`src/preprocessing/profile.py`:** `parse_profile(text, source)` split out of `load_profile`
+  (same errors, result and fingerprint).
+- **Tests:** `tests/bundle/test_bundle.py` (36 cases on `main` → 78 now, all old cases kept and
+  adapted), new `tests/bundle/test_model_loader.py` (6), `tests/preprocessing/test_profile.py`
+  (+2: fingerprint pinned to `5b4f5849…`, source named on bad YAML).
+- **Docs:** `docs/model_bundle.md` rewritten (Format, Method, Why (g) and (h) with the SRS/SDD
+  references, Limitations, Real build (F4), Tests); `docs/CHANGELOG.md`.
+
+**Evidence:**
+- [verified] `pytest -q tests/bundle tests/preprocessing tests/models` (local, Windows, Python
+  3.14.7, torch 2.11.0+cpu, `REQUIRE_TORCH_TESTS=1`): 225 passed, 1 skipped.
+- [verified] full `pytest -q` (same venv, `REQUIRE_TORCH_TESTS=1`): 1672 passed, 1 skipped,
+  0 failed, 0 errors.
+- The one skip is `test_build_refuses_symlinked_checkpoint_file`: Windows refuses to create the
+  symlink without Developer Mode (WinError 1314); it runs on Linux CI.
+
+**Not done:** no real bundle built; no `api/`, `src/evaluation/`, notebook, requirements or
+`AGENTS.md` change; `cnn_checkpoint.py` untouched.
+
+**Decisions:** D59 proposed (Donia author); approved by Iheb, Malak and Khalil in GitHub on PR #123
+(2026-11-12), approval commit before merge.
+
+**AI assistance:** **Claude** (claude.ai) wrote the prompt with Donia. **Claude Code** (Claude Opus
+5.5) implemented the loader, model loader, profile split, tests and docs, wrote the D59 row, this
+entry and the CHANGELOG line, and ran the tests. Donia reviews. AI does not approve, push or merge.
+
+**What's next:** D59 approval by Iheb, Malak and Khalil in GitHub → approval commit (status to
+Approved) → merge → F4 build PR (Stage 12). D59 approved (PR #123, 2026-11-12); merge pending.
+
+---
+
+### Entry 167 — Stage 12: F4 build/verify tool (2026-11-12)
+
+**Owner:** Donia Mabrouk.
+
+**Scope [doc]:** Protocol v1.0 §6, §11, §12; D2, D28, D36, D42, D58, D59; SRS v4.0 FR-29, NFR-09;
+SDD v2.0 §3.5. Code, synthetic tests and docs only: no dataset, Drive, real checkpoint, W&B, FoR
+test or DEEP-VOICE access.
+
+**Facts (verified on `main` at `52fb0f7`):**
+- Every F4 input value is already in committed evidence: bundle seed 0 (stage8 and stage10
+  `run_report.json`), combined `checkpoint_sha256` `c33eb820…1958932` (both run reports), per-file
+  `dc0f8b0e…98932` (1,350 B) and `6722f858…cf835` (396,084 B) (`stage8_export_manifest.json`),
+  `cnn-v1`, policy `a74f1f51…` (stage10 `risk_policy_sha256` = SHA-256 of the committed
+  `risk_policy.json`), profile config `7bd35bfd…` and fingerprint `5b4f5849…`, F2 ledger
+  `c9fc2e23…` (stage6), `baseline-v1` `42cc4d53…` (stage7).
+- D59 (merged, PR #123) gives `build_bundle`, `load_bundle` and `load_bundle_model`; nothing built
+  a real bundle yet.
+
+**What we did:** on `feat/stage12-f4-tool` from `main` at `52fb0f7` (two commits):
+- **`src/bundle/f4.py`** (CLI `python -m src.bundle.f4 {build,verify}`): `expected_from_evidence`
+  reads each evidence file once and cross-checks the sources (seed and checkpoint hash stage8 vs
+  stage10, per-file hashes give the combined hash, policy hash and version, profile config hash,
+  fingerprint and protocol, F2 ledger stage6 vs profile); `build` checks provenance (40-hex HEAD,
+  clean tree; git injectable), the checkpoint folder per file against the export manifest, calls
+  `build_bundle`, verifies with `load_bundle_model` and every manifest value, then writes
+  `f4_record.json` and a `bundle_manifest.json` copy next to the bundle (exclusive create, never
+  overwritten; a failure after the build removes everything); `verify` compares a copy with its
+  record. torch is imported inside `build`/`verify` only.
+- **Where it runs:** locally, not on Colab. The build copies and hashes bytes only (no features, no
+  scoring), so no processor-bound gate (D58) applies, and the two checkpoint files are checked
+  against the Stage 8 hashes, so a download error cannot pass. Rejected: a Colab notebook (runtime
+  pin, Drive flush/remount, an extra notebook for a byte copy).
+- **No scoring check:** the checkpoint bytes are proved identical to those Stage 10 fitted on and
+  Stage 11 scored (same `checkpoint_sha256` in both run reports) and are loaded by the reviewed
+  loader, so re-scoring would test nothing new.
+- **Tests:** `tests/bundle/test_f4.py` (33, torch, synthetic evidence tree) and
+  `tests/bundle/test_f4_evidence.py` (3, no torch: real evidence values pinned, layering).
+- **Docs:** `docs/model_bundle.md` "Real build (F4)" (sources, procedure, CLI, record, local-build
+  and no-scoring reasons, Drive path, what is committed) and Tests; `docs/CHANGELOG.md`.
+- **Review fixes (1):** the per-file checkpoint check's `source` named the local download folder,
+  which would have been committed in `f4_record.json`; it now reads "vs downloaded copy of
+  `checkpoints/cnn/cnn-v1/seed_0`" (Drive-relative). Every other value reaching the record was
+  audited (relative or constant). `test_build_then_verify` asserts no local path in the record text.
+- **Review fixes (2):** `build` refuses, before anything is written, an `out_dir`, its parent or a
+  `checkpoint_dir` inside the repository (AGENTS.md rule 7); three new tests, each writes nothing.
+
+**Deviations from the prompt:**
+- The profile is parsed with `parse_profile` from the bytes already hashed, not `load_profile`, so
+  the evidence file is read once (same parser, same fingerprint).
+- Extra cross-checks beyond the table: policy file `version` = stage10 `version`; profile
+  `protocol_version` = `1.0`; profile `f2_ledger_sha256` = stage6 ledger; per-file export hashes
+  give the combined hash. Each is a recorded check.
+- The record's checkpoint `source` is the Drive-relative export path
+  (`checkpoints/cnn/cnn-v1/seed_0`), not the local download folder, so no local path is recorded.
+  The record also holds `bundle_seed`.
+- `main()` takes `root` and `git` keyword arguments so the CLI test runs without a repository.
+
+**Evidence:**
+- [verified] `pytest -q tests/bundle` (local, Windows, Python 3.14.7, torch 2.11.0+cpu,
+  `REQUIRE_TORCH_TESTS=1`): 122 passed, 1 skipped (the Windows symlink case from Entry 166).
+- [verified] full `pytest -q` (same venv, `REQUIRE_TORCH_TESTS=1`): 1711 passed, 1 skipped,
+  0 failed.
+- [verified] `expected_from_evidence()` with `torch` and `safetensors` blocked in `sys.modules`
+  returns `c33eb820…` with 9 checks passing (module is torch-free at import).
+
+**Not done:** no real build, no Drive access, no record committed, no API change.
+
+**Decisions:** none new. The F4 freeze row D60 comes with the build evidence PR.
+
+**AI assistance:** **Claude** (claude.ai) wrote the prompt with Donia. **Claude Code** (Claude Opus
+5.5) implemented `f4.py`, the tests and the docs, wrote this entry and the CHANGELOG line, and ran
+the tests. Donia reviews. AI does not approve, push or merge.
+
+**What's next:** review and merge of this PR → local F4 build from a clean `main` (checkpoint
+downloaded from Drive `seed_0/`) → upload to `MyDrive/voice-spoofing-detection/checkpoints/bundle/bundle-v1/`
+and `verify` there → build evidence PR (`docs/audit_evidence/stage12_bundle/`, D60) → API wiring (D48).
+
+---
+
+### Entry 168 — Stage 12: F4 built and verified; D60 proposed (2026-11-12)
+
+**Owner:** Donia Mabrouk.
+
+**Scope [doc]:** Protocol v1.0 §12; D2, D36, D42, D59, D60 (proposed); SRS v4.0 FR-29, PC-04. The
+build read the two Stage 8 checkpoint files (downloaded from Drive) and committed evidence only: no
+dataset, cache, audio, W&B, FoR test or DEEP-VOICE access, no scoring.
+
+**Facts (Donia's run, 2026-11-12; checked in review):**
+- Built from `main` at `ea5544a768876001ee66c8a7446b688c042bdf72` (merge of PR #124), clean tree,
+  locally (Windows 11, Python 3.14.7, torch 2.11.0+cpu, numpy 2.5.3, safetensors 0.8.0), outside
+  the repository.
+- Downloaded `checkpoints/cnn/cnn-v1/seed_0/`: `checkpoint.json` 1,350 B `dc0f8b0e…98932`,
+  `weights.safetensors` 396,084 B `6722f858…cf835` (certutil before the build = Stage 8 export manifest).
+- `python -m src.bundle.f4 build … --out <outside>\f4\out\bundle-v1` → **`manifest_sha256`
+  `edf4a205e12fc948a68575ebaa929145481aaa535d34e3353ef9535f92840efc`**, `created_at`
+  2026-11-12T22:40:45Z, `F4 build OK`; 29/29 checks `ok`. Manifest copy = in-bundle manifest (certutil).
+- Uploaded to Drive `checkpoints/bundle/bundle-v1/`; downloaded again (zip), extracted, `verify` →
+  same `manifest_sha256`, `F4 verify OK`.
+- Review (Claude, Linux, at `ea5544a`): the manifest is reproduced byte for byte from the committed
+  evidence plus `code_commit` and `created_at`; the 7 `evidence_sha256` equal the committed files; no
+  local path, no CRLF; record canonical JSON.
+
+**What we did:** on `docs/stage12-f4-evidence` from `main` at `ea5544a`:
+- **D60 (proposed)** in `docs/decisions/README.md`, own commit (the row only).
+- `docs/audit_evidence/stage12_bundle/`: `bundle_manifest.json` (`edf4a205…`), `f4_record.json`
+  (`b8f0f539…`), README (Drive layout and hashes, checks, how Iheb and Khalil verify and load F4).
+- `docs/model_bundle.md` "Real build (F4)": built, with the link; Open items; Current status; CHANGELOG.
+
+**Not done:** API wiring (Iheb, P1, D48 (5)); Stage 12 brief and teach-back (D32).
+
+**Decisions:** D60 proposed (Donia author); approved by Iheb, Malak and Khalil in GitHub on PR #125
+(2026-11-12), approval commit before merge.
+
+**AI assistance:** **Claude** (claude.ai) guided the run step by step, checked the record and
+manifest independently, and wrote the D60 row, the README and this entry as a patch. Donia ran the
+build, upload and verify. AI does not approve, push or merge.
+
+**What's next:** D60 approval → approval commit → merge → hand-over (Iheb P1: replace `MockAnalyzer`
+with `load_bundle_model`; Khalil: Stage 13 v1 model set) → Stage 12 brief and teach-back.
+D60 approved (PR #125, 2026-11-12); merge pending.
+
+---
+
+### Entry 169 — Track V V1a augmentation module and synthetic verification (2026-11-13)
 
 **Owner:** Malak Ben Salem. Review: Donia Mabrouk for D50/D56 and Track V alignment; Iheb
 Zemzemi and Khalil Dridi for integration and independent review.
@@ -6399,7 +6593,11 @@ only the test fixture values and attribution, not copied reference code.
 
 **Verification (real output):** focused V1a tests: `27 passed in 8.29s`. Full repository suite with
 `REQUIRE_TORCH_TESTS=1`: `1650 passed in 439.66s (0:07:19)`; zero skipped. The working copy used
-the repository virtual environment with the pinned CPU torch and CNN requirements installed.
+the repository virtual environment with the pinned CPU torch and CNN requirements installed. After
+merging current `main` (Stage 12 Entries 166–168), the same required-torch suite reported
+`1738 passed, 1 skipped in 318.57s (0:05:18)`: the only skip is Stage 12's existing Windows
+symlink-capability case in `tests/bundle/test_bundle.py`; it is unrelated to torch, and all
+torch-required tests ran.
 
 **Deferred to V1b:** download/audit MUSAN and RIRS_NOISES; record archive and licence SHA-256;
 create and commit the approved manifests and pins; record the exact ffmpeg version and codec
@@ -6407,11 +6605,10 @@ libraries; then build selection set S from val-A. The codec backend and accepted
 fail closed while these pins are absent. No result or improvement is claimed by V1a.
 
 **AI assistance:** Codex implemented and tested the module from approved D50/D56, inspected the
-pinned public RawBoost reference for parity, and drafted this record. Malak reviews every change;
-AI does not approve, commit, push or merge.
+pinned public RawBoost reference for parity, and drafted this record. Malak reviewed and approved
+local implementation commit `c162fb5` on 2026-11-13; AI does not approve or merge.
 
-**Gate:** team review, green CI and Malak's explicit approval before commit/push. **WAITING FOR
-HUMAN REVIEW.**
+**Gate:** team review, green CI and human merge. **WAITING FOR HUMAN REVIEW.**
 
 ---
 
@@ -6421,7 +6618,7 @@ HUMAN REVIEW.**
 - [x] Approve or revise D48–D55, ADRs 0012–0015 and H8–H9 (all four) before the v1 Stage 11 claim. (PR #111, 2026-11-10)
 - [x] Approval commit: statuses to Approved; AGENTS.md hard rule 3 (v2 candidates) and roadmap; Protocol addendum for §§4, 6, 7, 9, 12 (v2 values, F5, Stage 11/14 model sets, cut-off). (Entry 151)
 - [x] Approve D56 and add its approval commit before the v1 Stage 11 claim and before V1a implementation; D50 is marked as amended for RawBoost algorithm 1 and uniform sampling over seven codec options (Entries 157–158; PR #116, merged).
-- [x] Implement V1a's strict train-only augmentation module and synthetic tests without corpus access (D50/D56; Entry 166; awaiting review and merge).
+- [x] Implement V1a's strict train-only augmentation module and synthetic tests without corpus access (D50/D56; Entry 169; awaiting review and merge).
 - [ ] V1b: pin and audit the noise/RIR corpora (licence, archive hash, 50/50 by-file split) and exact ffmpeg/codec tools before any v2 training (D50 (5)).
 - [ ] Compute benchmark per v2 candidate; batch sizes in `configs/` before training (D49).
 - [x] Draft the extension authentication design and security-review text in SDD v2.0 before implementation (D51; Entry 165; human approval and merge pending).
@@ -6563,10 +6760,13 @@ HUMAN REVIEW.**
 
 **Stage 12 ModelBundle (Entry 35)**
 - [x] Human review of `feat/stage12-bundle-format`; CI green on Python 3.13: merged as PR #19.
-- [ ] Stage 12: add the profile-version check once the F3 profile format is frozen.
-- [ ] Stage 12/17: load the checkpoint from verified bytes (or re-verify at load).
+- [x] Stage 12: add the profile-version check once the F3 profile format is frozen. (D59, Entry 166, PR #123)
+- [x] Stage 12/17: load the checkpoint from verified bytes (or re-verify at load). (D59, Entry 166, PR #123)
 - [ ] Stage 8: save checkpoints in a non-executable form (safetensors or state_dict + weights_only=True).
-- [ ] F4: record manifest_sha256 in the freeze decision.
+- [x] F4: record manifest_sha256 in the freeze decision. (D60, `edf4a205…`, Entry 168, PR #125)
+- [x] F4 real build with `python -m src.bundle.f4 build` from a clean `main`, Drive upload and `verify`, then the evidence PR (`docs/audit_evidence/stage12_bundle/`, D60) (Entry 167). (Built and verified 2026-11-12, Entry 168)
+- [ ] Hand-over of F4: Iheb (API P1, replace `MockAnalyzer`), Khalil (Stage 13); each runs `verify` on their copy (Entry 168).
+- [ ] Stage 12 brief and teach-back (D32).
 
 **Stage briefs (D32, Entry 37)**
 - [x] Team review of `docs/stage6-stage-briefs` (approves D32): approved by all three, 2026-10-18.
@@ -6819,13 +7019,20 @@ HUMAN REVIEW.**
 
 ---
 
-## Current status — updated 2026-11-12 (Entry 166)
+## Current status — updated 2026-11-13 (Entry 169)
 
-**Track V V1a (Entry 166):** the strict D50/D56 train-only augmentation configuration, five-family
+**Track V V1a (Entry 169):** the strict D50/D56 train-only augmentation configuration, five-family
 pipeline, independent RawBoost algorithm 1 with pinned-reference parity, guarded codec backend and
-corpus-audit tooling are implemented and verified on synthetic audio only (`1650 passed`, torch
-required, zero skipped). V1a is awaiting human review. V1b remains responsible for the MUSAN,
+corpus-audit tooling are implemented and verified on synthetic audio only (pre-merge:
+`1650 passed`, torch required, zero skipped; with current Stage 12 `main`: `1738 passed`, one
+unrelated Windows symlink-capability skip and no torch skip). V1a is awaiting human review. V1b remains responsible for the MUSAN,
 RIRS_NOISES and ffmpeg pins/manifests before any v2 training.
+
+**Stage 12 F4 (Entry 168):** F4 built and verified: `bundle-v1`, manifest SHA-256 `edf4a205…40efc`, on Drive `checkpoints/bundle/bundle-v1/` (Drive copy verified); evidence in `docs/audit_evidence/stage12_bundle/`; D60 (F4 freeze) approved (PR #125). Next: hand-over to Iheb (P1) and Khalil (Stage 13), Stage 12 brief.
+
+**Stage 12 F4 tool (Entry 167):** `src/bundle/f4.py` builds and verifies F4 from the committed evidence (every expected value read in code, sources cross-checked, clean-tree provenance, per-file checkpoint check, `load_bundle_model` verification, F4 record next to the bundle); runs locally, no scoring. Synthetic tests plus a torch-free test of the real evidence values (full suite 1708 passed, 1 skipped). On `feat/stage12-f4-tool`, not pushed. Next: review, then the real build, Drive upload and verify, and the build evidence PR with D60.
+
+**Stage 12 prep (Entry 166):** D59 (approved, PR #123) fixes the ModelBundle layout for the two-file Stage 8 checkpoint: a `checkpoint/` folder copied byte for byte, manifest schema 2 with the combined `checkpoint_sha256` (`c33eb820…` for F4), cross-checks of profile and checkpoint against the manifest, and `load_bundle_model` loading the CNN from the verified bytes. Implemented on `feat/stage12-bundle-d59` with synthetic tests (full suite 1672 passed, 1 skipped). Next: the F4 build PR.
 
 **Reference documents (Entries 164–165):** SRS v4.0 and SDD v2.0 are drafted as matching
 Markdown/PDF source pairs. The old unversioned SRS and SDD PDFs remain unchanged history. SRS v4.0
@@ -6848,7 +7055,7 @@ PR, the Stage 11 brief (D32) and Khalil's teach-back, then Stage 12 (F4).
 
 **Stage 11 dry run and D58 (Entry 159):** the first dry run of notebook 06 (T4, runtime version 2026.10) stopped at the MFCC reproduction gate before any claim or test read: the T4 MFCC val-A bytes differ from Stage 7's, which reproduce only on a CPU runtime without AVX-512, while the log-Mel reproduces only on the T4. D58 (proposed, `fix/stage11-mfcc-gate`) keeps the exact log-Mel gate and replaces MFCC byte equality with a CPU-runtime reference equal to Stage 7, a fixed tolerance and identical `baseline-v1` validation decisions; the runner implements it. D58 is approved and merged (PR #117), and PR C is updated for it (Entry 160). Next: dry run again.
 
-**D56 approval (Entries 157–158):** Donia, Iheb and Khalil approved PR #116. D56 is Approved and merged: RawBoost algorithm 1 replaces algorithm 3 for v2, preserving H9's held-out additive-Gaussian family, and the seven codec options are sampled uniformly. V1a implements this approved contract (Entry 166).
+**D56 approval (Entries 157–158):** Donia, Iheb and Khalil approved PR #116. D56 is Approved and merged: RawBoost algorithm 1 replaces algorithm 3 for v2, preserving H9's held-out additive-Gaussian family, and the seven codec options are sampled uniformly. V1a implements this approved contract (Entry 169).
 
 **Stage 11 report (Entry 156):** PR B, merged as #114, computes the D4 metrics, CIs, H1, H5 and seed rows from the stored run files only, after integrity checks; D57 (reporting conventions) is approved via GitHub reviews on PR #114 (2026-11-10); approval commit merged with #114. PR C, notebook 06, is drafted (Entry 160).
 
@@ -6873,7 +7080,7 @@ canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI eth
 **Midterm refactor audit:** Entries 108–110 record the initial report and baseline. Entry 111 implements two small lint cleanups on the stacked cleanup branch: 937 tests pass, governance 3 passed, scoped lint findings 2 to 0, coverage and complexity unchanged. No speedup is claimed. Entry 112 adds the measured report/PDF and after captures. The work merged via #73 into combined #72 (`76c55aa`) after recorded teammate approvals and successful CI. Entry 113 corrected stale report status and merged as PR #74 (`ca45601`); separate final editorial/course acceptance remains open. Evidence-sensitive restructuring stays deferred.
 
 **What was done:**
-- **Track V V1a augmentation** on `feat/stageV1-augmentation` (Entry 166): strict D50/D56
+- **Track V V1a augmentation** on `feat/stageV1-augmentation` (Entry 169): strict D50/D56
   configuration, deterministic train-only five-family pipeline, independent RawBoost algorithm 1
   with pinned-reference parity, codec and corpus-audit fail-closed boundaries, and synthetic tests;
   no corpus/project audio, training or validation/test access.

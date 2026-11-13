@@ -93,9 +93,22 @@ def load_profile(path: Path) -> PreprocessingProfile:
     if not path.is_file():
         raise PreprocessingError(f"Preprocessing profile does not exist: {path}")
     try:
-        raw = yaml.safe_load(path.read_text(encoding="utf-8"))
-    except (OSError, yaml.YAMLError) as exc:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
         raise PreprocessingError(f"Cannot read preprocessing profile {path}: {exc}") from exc
+    return parse_profile(text, source=str(path))
+
+
+def parse_profile(text: str, source: str = "<text>") -> PreprocessingProfile:
+    """Fully validate a preprocessing profile from its YAML text (source names it in errors).
+
+    load_profile reads the file and calls this; the ModelBundle loader calls it on the bytes it
+    hashed, so the profile that is checked is the profile that is used (D59 (4)).
+    """
+    try:
+        raw = yaml.safe_load(text)
+    except yaml.YAMLError as exc:
+        raise PreprocessingError(f"Cannot read preprocessing profile {source}: {exc}") from exc
 
     top = _keys(
         "profile",

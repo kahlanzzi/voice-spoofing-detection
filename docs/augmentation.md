@@ -58,4 +58,4 @@ $env:REQUIRE_TORCH_TESTS='1'
 python -m pytest -q
 ```
 
-The V1a implementation record is Entry 166 in `docs/project_log.md`.
+The V1a implementation record is Entry 169 in `docs/project_log.md`.
