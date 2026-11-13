@@ -33,8 +33,9 @@ equations and the D56 parameter pin. It does not copy the reference implementati
 MIT-licensed reference is pinned to commit
 `4f161a8b4d0d9f4a8431509ddd86c645869ef6c4`; the synthetic parity test compares the float32 output
 for a fixed two-tone input and seed against a fixture produced from that pinned reference. The test
-hashes the complete output after eight-decimal quantisation so harmless last-bit SciPy differences
-between Windows and Linux do not change the result. No reference repository or data is vendored.
+uses distributed numerical landmarks and global signal statistics with explicit tolerances so
+harmless last-bit SciPy/CPU differences do not change the result. No reference repository or data
+is vendored.
 
 ## Codec and corpus gates
 
