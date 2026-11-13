@@ -6587,8 +6587,9 @@ Gaussian noise, MP3 32/64/128 kbps and plain low-pass remain absent from trainin
 
 **RawBoost evidence [synthetic]:** the implementation was compared on a fixed two-tone waveform
 and seed 2026 with the official MIT-licensed reference pinned by D56 at commit
-`4f161a8b4d0d9f4a8431509ddd86c645869ef6c4`. The expected float32 little-endian output SHA-256 is
-`4cd28f77faae77702ccc647a242a7bf615f0a8510dbca3e1bca71cb20e0e53da`. The repository contains
+`4f161a8b4d0d9f4a8431509ddd86c645869ef6c4`. The cross-platform full-output signature, after
+eight-decimal quantisation and little-endian float64 encoding, is
+`26372e7c512a4985cf841f167d9635cf670ebd2f1036b8696e4c682f37f15e73`. The repository contains
 only the test fixture values and attribution, not copied reference code.
 
 **Verification (real output):** focused V1a tests: `27 passed in 8.29s`. Full repository suite with
@@ -6598,6 +6599,12 @@ merging current `main` (Stage 12 Entries 166–168), the same required-torch sui
 `1738 passed, 1 skipped in 318.57s (0:05:18)`: the only skip is Stage 12's existing Windows
 symlink-capability case in `tests/bundle/test_bundle.py`; it is unrelated to torch, and all
 torch-required tests ran.
+
+**CI portability correction:** the first PR run exposed a platform-only RawBoost oracle issue: the
+unquantised float32 bytes hashed to `4cd28f77…e53da` on Windows and `9dc42124…5e69d` on Linux even
+though reference landmarks and summary values were identical. The test now hashes all 4,096
+samples after eight-decimal quantisation; Windows and Linux both produce `26372e7c…f15e73`. This
+changes only the synthetic parity assertion, not the implementation or approved parameters.
 
 **Deferred to V1b:** download/audit MUSAN and RIRS_NOISES; record archive and licence SHA-256;
 create and commit the approved manifests and pins; record the exact ffmpeg version and codec
