@@ -6568,6 +6568,78 @@ D60 approved (PR #125, 2026-11-12); merge pending.
 
 ---
 
+### Entry 170 — Track V: model v2 candidates (models, v2 checkpoint, config); D61 proposed (2026-11-13)
+
+**Numbering:** Malak's open branch `feat/stageV1-augmentation` uses Entry 169, so this is Entry 170.
+
+**Owner:** Donia Mabrouk (Track V, part C).
+
+**Scope [doc]:** D49 (C1–C3, selection, tie rule), D50, D59 (7), D61 (proposed); ADR 0013. Code,
+synthetic tests and docs only: no dataset, Drive, cache, W&B, training run, FoR test or DEEP-VOICE
+access.
+
+**Facts (verified on `main` at `0adc798`):**
+- D49 names the three candidates and asks for AASIST "from a reference implementation pinned by
+  commit … with the reference architecture and its optimizer and learning-rate schedule recorded
+  in `configs/` before training"; the reference (`clovaai/aasist` at `a04c986`) uses two logits
+  with weighted cross-entropy, 100 epochs, optional SWA and an optional frequency mask, which
+  conflict with D49 (one logit and BCE for every candidate, 30 epochs, best-epoch restore). D61
+  fixes these before any training.
+- `src/models/cnn_checkpoint.py` (F4's loader) accepts the v1 CNN only; `src/bundle/bundle.py`
+  holds any two-file checkpoint folder with the combined hash.
+- The reference model runs at 32,000 samples without change: the spectral axis (23 nodes, `pos_S`)
+  does not depend on the length; the temporal axis has 14 nodes at 32,000 [verified on the port].
+
+**What we did:** on `feat/stageV2-candidates` from `main` at `0adc798` (three commits):
+- **D61 (proposed)** in `docs/decisions/README.md`, own commit (the row only).
+- **`src/models/crnn.py`** (C2): three D42 blocks → (n, 64, 8, 24) → per-frame flatten (n, 24, 512)
+  → BiLSTM 64 per direction → mean over time → Dropout(0.3) → `Linear(128, 1)`.
+- **`src/models/aasist.py`** (C3): `models/AASIST.py` ported with credit (docstring: repository,
+  commit, file, licence) and only the D61 changes, each marked `# D61`: `out_layer` `Linear(160, 1)`,
+  `forward(x)` on (n, 32000) float32 returning (n,) logits, the `Freq_aug` / mask path and `random`
+  import removed. `licenses/AASIST-LICENSE`: the reference `LICENSE` and `NOTICE` verbatim.
+- **`src/models/v2_checkpoint.py`**: the D59 two-file layout with `cnn_checkpoint`'s own read and
+  hash functions (imported, `cnn_checkpoint.py` unchanged), a strict v2 metadata schema, `norm.*`
+  tensors only for log-Mel models, `save_v2_checkpoint` / `load_v2_checkpoint` /
+  `v2_checkpoint_sha256` / `trainable_parameters`.
+- **`configs/v2_candidates.yaml`** + **`src/training/v2_config.py`** (strict loader, drift guard;
+  `batch_size` `null` per candidate, `require_batch_sizes()` raises while null) and
+  **`src/training/v2_schedule.py`** (`cosine_lr`, reference formula).
+- **Tests:** `tests/models/test_crnn.py` (11), `tests/models/test_aasist.py` (14, one needs
+  `AASIST_REF_DIR`), `tests/models/test_v2_checkpoint.py` (62), `tests/training/test_v2_config.py` (67).
+- **Docs:** new `docs/v2_candidates.md` (candidates, D61 reasons, AASIST credit and diff, checkpoint
+  format, config, parameter counts, tests); `docs/README.md` index line; `docs/CHANGELOG.md`.
+
+**Evidence** (local, Windows 11, Python 3.14.7, torch 2.11.0+cpu, safetensors 0.8.0,
+`REQUIRE_TORCH_TESTS=1`):
+- [verified] Trainable parameters (pinned in tests): `cnn-aug` **97,761**, `crnn` **319,585**,
+  `aasist` **297,705** (the reference's 297,866 with two outputs, less 160 weights and 1 bias).
+- [verified] AASIST faithfulness (`AASIST_REF_DIR` = reference clone at `a04c986`, outside the
+  repo): reference weights after two train-mode passes copied into the port; the 160-d embedding
+  before `out_layer` on a (3, 32000) input: **max |port − reference| = 0.000e+00** (tolerance
+  atol 1e-6, rtol 1e-5): `1 passed`.
+- [verified] `pytest -q tests/models tests/training`: 367 passed, 1 skipped (the faithfulness test without `AASIST_REF_DIR`); with it, `pytest -q tests/models/test_aasist.py -rs`: 14 passed.
+- [verified] full `pytest -q`: 1864 passed, 2 skipped, 0 failed, 0 errors; the four new files add 154 tests. The skips are the faithfulness test (no `AASIST_REF_DIR`) and
+  `test_build_refuses_symlinked_checkpoint_file` (Windows symlink, Entry 166).
+- [verified] `git diff main -- src/models/cnn.py src/models/cnn_checkpoint.py` is empty.
+
+**Not done:** no training loop, no selection metric M over S, no batch-size benchmark (PR V2b,
+after V1b and set S); no F5 loader; no `api/`, notebook, requirements or `AGENTS.md` change; no
+new dependency (no `torchcontrib`). Not pushed.
+
+**Decisions:** D61 proposed (Donia author); approval by Iheb, Malak and Khalil in this PR before
+any v2 training.
+
+**AI assistance:** **Claude** (claude.ai) wrote the prompt with Donia. **Claude Code** (Claude Opus
+5.5) ported AASIST, implemented the CRNN, v2 checkpoint, config loader, schedule and tests, wrote
+the D61 row, `docs/v2_candidates.md`, this entry and the CHANGELOG line, and ran the tests and the
+faithfulness check. Donia reviews. AI does not approve, push or merge.
+
+**What's next:** review and D61 approval (Iheb, Malak, Khalil) → approval commit → merge → PR V2b
+(training loop, M over S, batch-size benchmark into `configs/v2_candidates.yaml`) after V1b and set S.
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -6575,7 +6647,9 @@ D60 approved (PR #125, 2026-11-12); merge pending.
 - [x] Approval commit: statuses to Approved; AGENTS.md hard rule 3 (v2 candidates) and roadmap; Protocol addendum for §§4, 6, 7, 9, 12 (v2 values, F5, Stage 11/14 model sets, cut-off). (Entry 151)
 - [x] Approve D56 and add its approval commit before the v1 Stage 11 claim and before V1a implementation; D50 is marked as amended for RawBoost algorithm 1 and uniform sampling over seven codec options (Entries 157–158; PR #116; merge pending).
 - [ ] Pin the noise and RIR corpora (licence, hash, 50/50 file split) and codec tools before any v2 training (D50 (5)).
-- [ ] Compute benchmark per v2 candidate; batch sizes in `configs/` before training (D49).
+- [ ] Compute benchmark per v2 candidate; batch sizes in `configs/` before training (D49). Slots exist as `null` in `configs/v2_candidates.yaml`; `require_batch_sizes()` blocks training until set (Entry 170; PR V2b).
+- [ ] Approve D61 (Iheb, Malak, Khalil) and add its approval commit before any v2 training (Entry 170).
+- [ ] PR V2b: v2 training loop, selection metric M over set S, F5 model loader dispatching on `architecture` (D49, D61 (6)), after V1b and set S (Entry 170).
 - [x] Draft the extension authentication design and security-review text in SDD v2.0 before implementation (D51; Entry 165; human approval and merge pending).
 - [ ] Choose the hosting provider and record it (D54 (9)); load test on staging, then record K, L, `analysis_timeout_s` and `L_MAX` (D53 (3)).
 - [x] Draft SRS v4.0 Markdown/PDF pair and version index from D48-D56 (Entry 164; human review and merge pending).
@@ -6974,7 +7048,9 @@ D60 approved (PR #125, 2026-11-12); merge pending.
 
 ---
 
-## Current status — updated 2026-11-12 (Entry 168)
+## Current status — updated 2026-11-13 (Entry 170)
+
+**Track V, model v2 candidates (Entry 170):** PR V2a on `feat/stageV2-candidates` adds the three D49 candidates (`cnn-aug` = v1 4-block CNN, `crnn`, `aasist` ported from `clovaai/aasist` `a04c986` with credit and licence), the v2 safetensors checkpoint with the D59 layout and hash rule (`cnn_checkpoint` unchanged), `configs/v2_candidates.yaml` with a strict loader (batch sizes `null` until the D49 benchmark) and the D61 cosine schedule. Trainable parameters 97,761 / 319,585 / 297,705; the port matches the reference exactly before the output layer (max difference 0.0). D61 (implementation details) proposed. No training, no data access; not pushed. Next: review and D61 approval, then PR V2b after V1b and set S.
 
 **Stage 12 F4 (Entry 168):** F4 built and verified: `bundle-v1`, manifest SHA-256 `edf4a205…40efc`, on Drive `checkpoints/bundle/bundle-v1/` (Drive copy verified); evidence in `docs/audit_evidence/stage12_bundle/`; D60 (F4 freeze) approved (PR #125). Next: hand-over to Iheb (P1) and Khalil (Stage 13), Stage 12 brief.
 
@@ -7028,6 +7104,7 @@ canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI eth
 **Midterm refactor audit:** Entries 108–110 record the initial report and baseline. Entry 111 implements two small lint cleanups on the stacked cleanup branch: 937 tests pass, governance 3 passed, scoped lint findings 2 to 0, coverage and complexity unchanged. No speedup is claimed. Entry 112 adds the measured report/PDF and after captures. The work merged via #73 into combined #72 (`76c55aa`) after recorded teammate approvals and successful CI. Entry 113 corrected stale report status and merged as PR #74 (`ca45601`); separate final editorial/course acceptance remains open. Evidence-sensitive restructuring stays deferred.
 
 **What was done:**
+- **Track V PR V2a, model v2 candidates** on `feat/stageV2-candidates` (Entry 170): `src/models/crnn.py`, `src/models/aasist.py` (credited port, `licenses/AASIST-LICENSE`), `src/models/v2_checkpoint.py`, `configs/v2_candidates.yaml`, `src/training/v2_config.py`, `src/training/v2_schedule.py`, 154 tests, `docs/v2_candidates.md`; D61 proposed.
 - **Stage 11 official run and results PR** on `docs/stage11-results` (Entry 161): the run's
   evidence and registry committed byte for byte, results at `docs/results/stage11_for_test.md`,
   blobs re-hashed after the commit; no code change.

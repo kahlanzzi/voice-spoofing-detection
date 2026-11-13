@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Model v2 candidates (Track V, PR V2a, Entry 170): `crnn` and `aasist` (ported from `clovaai/aasist` `a04c986`, MIT, credited; `licenses/AASIST-LICENSE`) models, v2 safetensors checkpoint with the D59 layout and hash rule (`cnn_checkpoint` unchanged), `configs/v2_candidates.yaml` with strict loader (batch sizes null until the D49 benchmark), per-step cosine schedule; `docs/v2_candidates.md`; D61 proposed; no training.
 - F4 built and verified (Stage 12, Entry 168): `bundle-v1`, manifest SHA-256 `edf4a205…40efc`, from `ea5544a`; evidence `docs/audit_evidence/stage12_bundle/` (manifest, F4 record, README); Drive copy verified; D60 (F4 freeze) approved (PR #125).
 - Stage 12 F4 build/verify tool `src/bundle/f4.py` (`python -m src.bundle.f4 {build,verify}`): expected values read from the committed Stage 6/7/8/10 evidence and cross-checked, clean-tree provenance, checkpoint checked per file, `load_bundle_model` verification, `f4_record.json` and manifest copy beside the bundle; runs locally, no scoring; synthetic tests and a torch-free real-evidence test; no real build yet (Entry 167).
 - D59 (approved, PR #123): ModelBundle layout for the two-file checkpoint (`checkpoint/` with `checkpoint.json` + `weights.safetensors`, manifest schema 2 with the combined D42 `checkpoint_sha256`); `load_bundle` cross-checks profile and checkpoint, new `load_bundle_model` loads the CNN from the verified bytes, `parse_profile` split out of `load_profile`; synthetic tests only (Entry 166).
