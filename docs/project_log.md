@@ -7023,6 +7023,64 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
+### Entry 181 — Track V V1c selection-set and resource-cache implementation (2026-11-15)
+
+**Owner:** Malak Ben Salem. Review: Donia Mabrouk (Track V consumer and protocol alignment).
+
+**Scope [code/test/doc]:** implement the reusable V1c code required to turn V1b's frozen recipe into
+the model-v2 selection-set format and to build the verified training-half augmentation-resource cache.
+This entry covers implementation and synthetic validation only. It does not claim the real Colab T4
+materialization, the real training-half cache build or their evidence.
+
+**Frozen selection recipe [verified on synthetic fixtures]:**
+`src/augmentation/selection_set_recipe.py` extracts notebook 07's deterministic seed, noise fitting,
+condition application and canonical little-endian float32 waveform hash without Colab paths. The five
+condition names are exactly `clean`, `recorded_noise_10db`, `reverberation`, `opus_16` and
+`narrowband_mulaw`; synthetic known-answer tests freeze all five output hashes.
+
+**Selection-set builder [implemented/tested]:** `python -m src.augmentation.selection_set_build`
+requires V1b's frozen recipe SHA-256 `71a340f0…72533`, val-A-only F2 rows, complete corpus/FFmpeg
+pins and every recorded source, resource and generated-waveform hash. It applies the unchanged F3
+waveform/log-Mel transforms, writes S through `write_selection_set`, verifies both waveform and
+log-Mel forms with `load_selection_set`, checks the Stage 8 val-A clean reference and prints the final
+selection-set hash.
+
+**Training resources and codec boundary [implemented/tested]:**
+`src/augmentation/resource_cache.py` admits only the audited training halves (MUSAN 465;
+RIRS_NOISES 30,162), verifies each file before decode, requires 16 kHz, chooses multichannel RIRs by
+the deterministic seed-2026 rule, refuses empty/non-finite/all-zero resources, writes outside the
+repository and reloads read-only views under a strict hash/metadata contract. `FFmpegCodecBackend`
+caches only a successful pin check once per instance; a failed or missing pin is checked and refused
+again rather than cached.
+
+**Compatibility [verified]:** model-v2 S consumers, fixtures, W&B allow-list tests and
+`docs/v2_training.md` now use the exact V1b condition names. No stored output bytes or augmentation
+codec arithmetic were changed.
+
+**Checks [verified]:** final focused V1c/model-v2 tests: `45 passed in 13.62s`; final
+Torch-required full suite: `REQUIRE_TORCH_TESTS=1 python -m pytest -q` → `2043 passed, 2 skipped
+in 407.99s (0:06:47)`; governance: `89 passed in 1.31s`; `compileall`, `git diff --check` and the
+secret-pattern scan passed.
+
+**Safety:** all new audio fixtures are synthetic. No DEEP-VOICE path was accessed; no real corpus
+audio, generated waveform, archive, NPZ resource cache, model checkpoint or secret is committed.
+
+**AI assistance:** Codex implemented the modules and tests from Donia's V1c specification and drafted
+the records. Malak reviewed and approved the implementation commit on 2026-11-15; AI does not
+approve, push or merge.
+
+**Status:** implementation and synthetic validation are complete locally. Real Colab T4 selection-set
+materialization, training-half cache build/verification and small evidence export remain open.
+
+**Gate:** **IMPLEMENTATION COMMIT APPROVED BY MALAK; WAITING FOR HUMAN REVIEW AND REAL COLAB
+EVIDENCE.** V1c cannot close until both real builders verify and the permitted evidence is reviewed.
+
+**What's next:** approve and commit the implementation, obtain review, run both real V1c builders on
+the declared Colab runtime outside the repository, commit only the small permitted evidence and then
+record the V1c closeout. V2b-4 remains blocked until those artifacts verify.
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -7034,10 +7092,11 @@ module, training-format S build/verification, training-half resource cache and o
 - [x] Compute benchmark per v2 candidate; batch sizes in `configs/` before training (D49). Slots exist as `null` in `configs/v2_candidates.yaml`; `require_batch_sizes()` blocks training until set (Entry 170; PR V2b). Done: 256 / 256 / 32 (Entry 173).
 - [x] V2b-2: run `python -m src.tuning.v2_benchmark` on Colab T4 (2026.10) and write the batch sizes into `configs/v2_candidates.yaml` (D49; Entry 172). (Entry 173; evidence `docs/audit_evidence/v2b2_benchmark/`; review pending)
 - [ ] Per-epoch resume within a run before V2b-4: a worst-case run (30 epochs × ~10–17 min) may not fit one Colab session; V2b-1 resumes only between runs (Entry 173).
-- [ ] V1c: move the notebook recipe into a pure `src/augmentation/` module and prove byte parity for all five conditions on synthetic audio (D50/D56; Entry 180).
+- [x] V1c: move the notebook recipe into a pure `src/augmentation/` module and prove byte parity for all five conditions on synthetic audio (D50/D56; Entries 180–181).
 - [ ] V1c: materialize S with `write_selection_set` on Colab T4 runtime 2026.10 and verify both forms with `load_selection_set`, including the Stage 8 val-A known answer (D50 (4), D58; Entries 172, 180).
-- [ ] V1c: build and verify the deterministic training-half MUSAN/RIR resource cache outside the repo; refuse selection-half or all-zero resources (D50 (5); Entry 180).
-- [ ] V1c: make `FFmpegCodecBackend` verify its pin once per backend instance without changing encode/decode output bytes (codec 0.42 s/item dominates augmentation; Entries 172–173, 180).
+- [x] V1c: implement and synthetically verify the deterministic training-half MUSAN/RIR resource-cache builder/loader; it refuses selection-half and all-zero resources and writes outside the repo (D50 (5); Entry 181).
+- [ ] V1c: run the real training-half MUSAN/RIR resource-cache build and verification outside the repo and retain only the permitted small evidence (D50 (5); Entries 180–181).
+- [x] V1c: make `FFmpegCodecBackend` verify its pin once per backend instance without changing encode/decode output bytes (codec 0.42 s/item dominates augmentation; Entries 172–173, 180–181).
 - [ ] V2b-4: search CLI/notebook wired to the V1c corpus loader; T4 rehearsal (`check_clean_transform`, two short runs for observed crnn/cuDNN determinism), then the search (Entry 172).
 - [ ] V2b-3: read `n_all_zero_clips` from the raw train cache (`build` / `verify` print it with the first 10 paths). If it is > 0, a decision (**D62**) is needed before any training (`run_search` refuses such a cache): `Augmenter`'s `recorded_noise` refuses a silent clip [verified], and Malak's S builder (`noise_10db`) has the same issue on val-A (Entry 172; `docs/v2_training.md`).
 - [x] Approve D61 (Iheb, Malak, Khalil) and add its approval commit before any v2 training (Entry 170). (PR #127, 2026-11-13)
@@ -7450,7 +7509,7 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
-## Current status — updated 2026-11-15 (Entry 180)
+## Current status — updated 2026-11-15 (Entry 181)
 
 **Stage 12 closed (Entry 174):** F4 (`bundle-v1`, `edf4a205…40efc`) is frozen (D60) and handed over: Iheb and Khalil each verified their copy (`F4 verify OK`, 2026-11-15). Brief `docs/stages/stage12-bundle-freeze.md` accepted after the D32 teach-back (Iheb, Khalil, Malak, face to face, 2026-11-15; no corrections). **Track V is current.** Replacing the API mock with F4 is Iheb's P1 (2026-11-24).
 
@@ -7462,6 +7521,13 @@ deterministic training/selection halves, FFmpeg `6.1.1-3ubuntu5` pin, notebook 0
 records V1b and passes the Torch-enabled full suite (2002 passed, 2 skipped) and governance (88 passed).
 V1b is complete; V1c must build the training-format S folder and training-half resource cache on the
 declared T4 runtime before V2b-4.
+
+**Track V V1c implementation (Entry 181):** on `feat/stageV1-selection-set-build`, the pure frozen
+recipe, hash-verifying selection-set builder, strict training-half resource-cache builder/loader, exact
+condition names and successful-once FFmpeg verification are implemented and synthetically tested. The
+Torch-required full suite passes (`2043 passed, 2 skipped`). No real corpus audio was accessed or
+committed. V1c is not closed: the real Colab T4 S materialization, real training-half cache build and
+small permitted evidence still have to be run and reviewed before V2b-4.
 
 **Track V, PR V2b-2 (Entry 173):** on `feat/stageV2-batch-sizes` (from `main` `9c46baf`, not pushed): the D49 benchmark ran on the Colab T4 (runtime 2026.10, commit `9c46baf`, two GPU runs with byte-identical peaks) and chose **`cnn-aug` 256, `crnn` 256, `aasist` 32**, now in `configs/v2_candidates.yaml`; evidence byte for byte in `docs/audit_evidence/v2b2_benchmark/` with a torch-free drift guard. The unpinned CPU throughput (planning only) shows the codec (0.42 s/item) dominating augmentation, about 8–17 min of augmentation per epoch with 1–2 workers. No code change, no data, no training. Open: per-epoch resume before V2b-4; V1c (S and resource cache); V2b-4 rehearsal and search.
 

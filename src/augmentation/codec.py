@@ -20,6 +20,7 @@ class FFmpegCodecBackend:
         self.expected_version = settings["expected_version"]
         self.expected_libraries = dict(settings["expected_codec_libraries"])
         self.sample_rate = int(sample_rate)
+        self._pin_verified = False
 
     def version_text(self) -> str:
         try:
@@ -32,6 +33,8 @@ class FFmpegCodecBackend:
         return completed.stdout
 
     def verify_pin(self) -> None:
+        if self._pin_verified:
+            return
         if not self.expected_version or not self.expected_libraries:
             raise AugmentationError("ffmpeg version and codec-library pins must be filled by V1b before use")
         text = self.version_text()
@@ -44,6 +47,7 @@ class FFmpegCodecBackend:
             marker = f"{library} {version}"
             if marker not in text:
                 raise AugmentationError(f"ffmpeg codec-library pin missing from runtime: {marker}")
+        self._pin_verified = True
 
     @staticmethod
     def _run(command: list[str]) -> None:

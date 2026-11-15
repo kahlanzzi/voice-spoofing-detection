@@ -45,10 +45,10 @@ def _epoch(**changes):
 def test_exact_key_sets():
     assert EPOCH_KEYS == (
         "epoch", "train_loss", "selection_m",
-        "val_a_eer_clean", "val_a_eer_noise_10db", "val_a_eer_reverberation", "val_a_eer_opus_16",
-        "val_a_eer_narrowband",
-        "val_a_auc_clean", "val_a_auc_noise_10db", "val_a_auc_reverberation", "val_a_auc_opus_16",
-        "val_a_auc_narrowband",
+        "val_a_eer_clean", "val_a_eer_recorded_noise_10db", "val_a_eer_reverberation",
+        "val_a_eer_opus_16", "val_a_eer_narrowband_mulaw",
+        "val_a_auc_clean", "val_a_auc_recorded_noise_10db", "val_a_auc_reverberation",
+        "val_a_auc_opus_16", "val_a_auc_narrowband_mulaw",
         "learning_rate", "epoch_seconds", "train_seconds", "selection_seconds",
         "family_clean", "family_recorded_noise", "family_reverberation", "family_codec",
         "family_gain", "family_rawboost",

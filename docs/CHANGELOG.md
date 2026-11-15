@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Track V V1c implementation: pure frozen selection-recipe functions, a hash-verifying selection-set builder, a deterministic training-half MUSAN/RIRS resource cache, exact V1b condition names and once-per-instance successful FFmpeg pin verification; synthetic/full-suite validation is complete, while the real Colab T4 materialization and cache evidence remain pending (Entry 181).
 - Track V V1b corpus and tool pins: audited MUSAN/RIRS_NOISES inventories and licences, deterministic 50/50 by-file halves, pinned FFmpeg 6.1.1-3ubuntu5, the 6,650-row val-A selection-set recipe and validation evidence; PR #131 CI compatibility follow-up recorded in Entry 180.
 - Stage 12 closed: brief `docs/stages/stage12-bundle-freeze.md` accepted after the D32 teach-back (2026-11-15) and the verified F4 hand-over (Iheb and Khalil: `F4 verify OK`, `edf4a205…`, 2026-11-15) (Entry 174); docs only.
 - D49 batch sizes from the Colab T4 benchmark (Track V, PR V2b-2, Entry 173): `configs/v2_candidates.yaml` `cnn-aug` 256, `crnn` 256, `aasist` 32; evidence `docs/audit_evidence/v2b2_benchmark/` (two GPU runs with identical peaks, unpinned CPU throughput for planning, Colab cells, README with hashes); torch-free drift guard `tests/training/test_v2_batch_size_evidence.py`; null-refusal tests use null copies; no code change.

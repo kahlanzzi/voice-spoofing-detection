@@ -42,7 +42,8 @@ spawn workers (Windows) it is pickled to each worker.
 One folder, outside the repository (AGENTS.md rule 7):
 
 - `selection_set_manifest.json` — `schema_version` 1; `source_split` `"val-A"`; `seed` 2026;
-  `conditions`: `clean`, `noise_10db`, `reverberation`, `opus_16`, `narrowband` in this order, each
+  `conditions`: `clean`, `recorded_noise_10db`, `reverberation`, `opus_16`,
+  `narrowband_mulaw` in this order, exactly matching the pinned V1b recipe, each
   `{name, parameters}` (`parameters` a JSON object, e.g. SNR, codec option, corpus half);
   `f2_manifest_sha256`; `profile_fingerprint`; `profile_config_sha256`; `augmentation_config_sha256`;
   `code_commit`; `runtime` (object of strings: Colab runtime version, python, numpy, librosa, CPU
@@ -77,7 +78,8 @@ clips: nothing is dropped.
 **Why it matters [verified]:** `Augmenter._recorded_noise` raises when `signal_rms <= 0`
 ("recorded-noise mixing requires non-silent signal and noise"). Training draws `recorded_noise` for about 16 % of items each
 epoch, so a run that meets an all-zero clip on that family stops, deterministically, on the same
-item every time. Malak's S builder has the same issue on val-A for the `noise_10db` condition.
+item every time. Malak's S builder has the same issue on val-A for the
+`recorded_noise_10db` condition.
 
 **Gate:** if `n_all_zero_clips > 0` when the cache is built on the training runtime (V2b-3), a
 decision (**D62**) is needed **before any training**, covering both the train cache and S. The
@@ -217,7 +219,9 @@ refusals) and fake pins).
 
 - **V2b-2 (done, Entry 173):** benchmark run on the Colab T4 (2026.10); batch sizes 256 / 256 / 32
   written into `configs/v2_candidates.yaml` (D49).
-- **V1b (Malak):** confirm the S layout and build S with `write_selection_set` on the training
-  runtime; verify it with `load_selection_set` (including the Stage 8 val-A known answer).
+- **V1b (done, Entry 180):** corpus/tool pins and the 6,650-row val-A recipe are frozen.
+- **V1c (Malak):** materialize the recipe in the training S folder format, verify both forms against
+  `load_selection_set` and the Stage 8 val-A known answer, and build the audited training-half
+  augmentation-resource cache outside the repository.
 - **V2b-4:** CLI and notebook wired to the V1b corpus loader; rehearsal on T4 (`check_clean_transform`
   against the Stage 8 train cache, a short run twice for the observed determinism), then the search.
