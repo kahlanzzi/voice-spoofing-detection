@@ -7100,6 +7100,42 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
+### Entry 186 — Track V PR V5a: F5 model loader dispatching on `architecture` (2026-11-15)
+
+- **Owner:** Donia Mabrouk (Part C). Branch `feat/stageV2-bundle-loader` from `main` `b78c15d`.
+  Entry number: 185 is reserved for Malak's V1c.
+- **Why [doc]:** Execution Plan v3.0 §9 V5 and §10; D59 (7) (F5 uses the F4 layout and hash
+  rule) and D61 (6) (the F5 loader dispatches on `architecture`). Khalil's Stage 13 runner
+  (`verify_f5_artifacts`, `build_frozen_scorers`) takes the F5 verifier and loader by injection, so
+  the loader is provided and tested now, before any v2 model exists. No new decision.
+- **What changed:** `src/bundle/model_loader.py`: `load_bundle_model` reads `checkpoint.json`
+  (hashed against the manifest's per-file value before parsing); no `architecture` → v1 →
+  `cnn_checkpoint.load_checkpoint` as for F4; `architecture` in D49 → `v2_checkpoint.load_v2_checkpoint`;
+  both with `expected_sha256` = manifest anchor. After a v2 load: loaded `architecture` = dispatched,
+  CPU, eval mode, `mean`/`std` float32 (64,) for `cnn-aug`/`crnn`, `None` for `aasist`; version
+  check as before. `BundleModel` gains `architecture` (default `"cnn"`); `mean`/`std` typed optional.
+- **Not changed:** `src/bundle/bundle.py` (still torch-free), `cnn_checkpoint.py`,
+  `v2_checkpoint.py`, `f4.py`, `external_run.py`, `configs/`. F4 loading: same checks, errors and
+  values; the only new F4-path check is the dispatch read's hash, which can fire only if
+  `checkpoint.json` is replaced between `load_bundle` and the load (it was refused before too, as
+  `checkpoint_sha256 mismatch`; now as `SHA-256 mismatch for checkpoint.json`).
+- **Tests [verified, CPU, synthetic]:** `tests/bundle/test_model_loader_v2.py` (22): each
+  architecture round trip (equal output), v1 → `"cnn"` and the same values as `load_checkpoint`;
+  refusals: weights changed after build and after `load_bundle`, `architecture` edited (hash, also
+  after `load_bundle`), unknown architecture (schema, re-anchored), `profile_fingerprint` mismatch
+  (build and re-anchored load), aasist with norm tensors, log-Mel without them, the loader's own
+  architecture / eval / statistics / version checks; hand-over: `verify_f5_artifacts(...,
+  bundle_verifier=load_bundle, bundle_loader=load_bundle_model)` with a synthetic F5 record, then
+  `build_frozen_scorers` → one finite float per window for each architecture. Existing
+  `tests/bundle` pass unchanged. No dataset path, no DEEP-VOICE access.
+- **Checks [verified, local Windows, Python 3.14, torch CPU]:** `REQUIRE_TORCH_TESTS=1 pytest -q` → `2076 passed, 2 skipped in 759.60s`; `pytest -q
+  tests/governance` → `89 passed`. CI on 3.13 not yet run (branch not pushed).
+- **AI assistance:** Claude Code (Claude Opus 5.5) wrote the code, tests and docs from Donia's brief;
+  team review required before acceptance (Khalil as consumer of the loader, D26).
+- **Gate:** **WAITING FOR APPROVAL.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -7120,7 +7156,7 @@ module, training-format S build/verification, training-half resource cache and o
 - [ ] V2b-3: read `n_all_zero_clips` from the raw train cache (`build` / `verify` print it with the first 10 paths). If it is > 0, a decision (**D62**) is needed before any training (`run_search` refuses such a cache): `Augmenter`'s `recorded_noise` refuses a silent clip [verified], and Malak's S builder (`noise_10db`) has the same issue on val-A (Entry 172; `docs/v2_training.md`).
 - [x] Approve D61 (Iheb, Malak, Khalil) and add its approval commit before any v2 training (Entry 170). (PR #127, 2026-11-13)
 - [x] PR V2b-1: v2 training loop, selection metric M over set S, resumable search, benchmark code (Entry 172; review pending).
-- [ ] F5 model loader dispatching on `architecture` (D61 (6)), when F5 is built (Entry 170).
+- [x] F5 model loader dispatching on `architecture` (D61 (6)), when F5 is built (Entry 170). Done ahead of F5 on synthetic bundles, with the Stage 13 hand-over test (PR V5a, Entry 186; review pending).
 - [x] Draft the extension authentication design and security-review text in SDD v2.0 before implementation (D51; Entry 165; human approval and merge pending).
 - [ ] Choose the hosting provider and record it (D54 (9)); load test on staging, then record K, L, `analysis_timeout_s` and `L_MAX` (D53 (3)).
 - [x] SRS v4.0 Markdown/PDF pair and version index merged in PR #121 (Entry 164).
@@ -7156,7 +7192,7 @@ module, training-format S build/verification, training-half resource cache and o
 - [x] Review proposed D33–D35 and ADR 0007; record explicit approval or requested revisions (Entry 48). (approved by all four, PR #29, 2026-10-19)
 - [x] Add and run synthetic tests for one-pass scoring, incomplete-claim finalization, D58 report/runtime verification, and H8 output (Entry 179; focused suite 33 passed; broad suite 1555 passed, 2 skipped with API/Compose tests excluded).
 - [x] Run full dependency-complete CI for the merged Stage 13 preparation: PR #134 head passed `checks`, `e2e` and `web`; the PR records `2002 passed, 2 skipped` and 88 governance tests. Local Entry 179 still records its separate `argon2` collection limitation.
-- [ ] Integrate and review the actual architecture-aware F5 loader once F5 is built; verify its real frozen record and smoke-check its model scorer on synthetic waveforms.
+- [ ] Integrate and review the actual architecture-aware F5 loader once F5 is built; verify its real frozen record and smoke-check its model scorer on synthetic waveforms. Loader available: `load_bundle_model` (Entry 186); synthetic hand-over passes; the real F5 record remains.
 - [ ] Produce the passed D58 rehearsal report on the pinned runtime, verify durable claim behavior on the approved Drive target, then complete peer review and the Stage 13 brief.
 - [x] Before Stage 13, approve and record the speaker-average undefined-value convention alongside
   the file-level view and governance allowlist decisions. No convention is approved by this update. (D33–D35 approved, PR #29, 2026-10-19)
@@ -7531,7 +7567,7 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
-## Current status — updated 2026-11-15 (Entry 184)
+## Current status — updated 2026-11-15 (Entry 186)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -7543,7 +7579,9 @@ folder and deterministic training-half resource cache, verify the recipe on the 
 and add the one-time FFmpeg pin check. V2 candidate/training code and the benchmark batch sizes are
 merged, but model training, search, selection, risk policy and F5 freeze remain. PR V2b-R (Entry
 184, waiting for review) makes a v2 run resumable per epoch, so a Colab disconnect costs at most the
-current epoch. See the open items above and [Execution Plan v3.0](reference/Execution_Plan_v3.0.md).
+current epoch. PR V5a (Entry 186, waiting for review) adds the F5 model loader: `load_bundle_model`
+dispatches on the checkpoint's `architecture` (D61 (6)) and passes a synthetic hand-over with the
+Stage 13 runner for all three candidates. See the open items above and [Execution Plan v3.0](reference/Execution_Plan_v3.0.md).
 
 **Khalil / Stage 13 — preparation merged; external run not ready.** Runner preparation from Entries
 175–179 merged in PR #133. The synthetic Stage 13 suite reported 33 passed; PR #134 subsequently
