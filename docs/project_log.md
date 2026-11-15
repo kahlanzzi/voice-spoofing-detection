@@ -6867,7 +6867,7 @@ S; Malak) -> V2b-4 (CLI, rehearsal, search).
 
 ---
 
-### Entry 174 — Stage 12: F4 hand-over verified; brief drafted (D32) (2026-11-15)
+### Entry 174 — Stage 12 closed: F4 hand-over verified, brief accepted (D32) (2026-11-15)
 
 **Owner:** Donia Mabrouk (Part C).
 
@@ -6884,18 +6884,26 @@ This closes the Entry 168 hand-over item.
 - New brief `docs/stages/stage12-bundle-freeze.md` (template, D32): inputs and outputs, steps
   (format PR #19, D59 PR #123, tool PR #124, build and Drive verify, D60 PR #125, hand-over), key
   decisions, evidence with sources, limitations (the API integration is Iheb's P1, not this stage's
-  evidence), 9 teach-back questions, how to verify a copy. Status: in review.
-- `docs/stages/README.md`: row 12 links the brief, status "in review".
+  evidence), 9 teach-back questions, how to verify a copy. Status: accepted (below).
+- `docs/stages/README.md`: row 12 links the brief, status "accepted".
 - `AGENTS.md` roadmap: the Track V row status brought up to date (V1a, V1b (PR #131), V2a, V2b-1,
-  V2b-2 merged; next V1c, V2b-3, V2b-4). Row 12 stays "CURRENT" until the closeout PR.
+  V2b-2 merged; next V1c, V2b-3, V2b-4); Track V is now CURRENT. Row 12: done.
 - Open items: the hand-over item is ticked; the Stage 8 "non-executable checkpoint" item is ticked as
   already satisfied by D42 (safetensors weights + strict JSON, never pickle; `cnn_checkpoint` never
   calls `torch.load`); the old Stage 12 roadmap item is split: F4 done, API replacement tracked as
   Iheb's P1.
 
-**Proposed for the closeout (Donia to confirm at the teach-back):** Stage 12 closes on F4 frozen and
-handed over (both consumers verified). Replacing `MockAnalyzer` with F4 (D48 (5)) is integration
-work owned by Iheb (P1, planned 2026-11-24) and is tracked under Stage 17, not as a Stage 12 gate.
+**Teach-back (D32) [reported by Donia]:** Iheb and Khalil (required, the C→E and C→D consumers) and
+Malak answered the brief's §7 questions without the author, face to face, on 2026-11-15; Donia
+attended as author, correcting only. No corrections came up, so the brief was not revised; its status
+is accepted. The written confirmation is the approval of this PR (D26). The brief and the closeout are
+in one PR because the teach-back took place before the brief PR merged.
+
+**Closeout scope (agreed at the teach-back):** Stage 12 closes on F4 frozen and handed over (both
+consumers verified). Replacing `MockAnalyzer` with F4 (D48 (5)) is integration work owned by Iheb
+(P1, planned 2026-11-24), tracked under Stage 17 as its own open item, not as a Stage 12 gate.
+
+**Status:** Stage 12 is done. Track V (model v2, F5) is current.
 
 **Decisions:** none.
 
@@ -6903,8 +6911,9 @@ work owned by Iheb (P1, planned 2026-11-24) and is tracked under Stage 17, not a
 as a patch from the Stage 12 evidence and Entries 35, 166–168. Donia reviews. AI does not approve,
 push or merge.
 
-**What's next:** D32 teach-back (Iheb and Khalil required, Malak), then the closeout PR (brief
-accepted, roadmap "Stage 12 done", CHANGELOG).
+**Gate:** approval of this PR by Iheb, Khalil and Malak is the written confirmation of the teach-back.
+
+**What's next:** Track V: V1c (Malak), V2b-3 (raw train cache), per-epoch resume, V2b-4.
 
 ---
 
@@ -7072,7 +7081,7 @@ accepted, roadmap "Stage 12 done", CHANGELOG).
 - [x] F4: record manifest_sha256 in the freeze decision. (D60, `edf4a205…`, Entry 168, PR #125)
 - [x] F4 real build with `python -m src.bundle.f4 build` from a clean `main`, Drive upload and `verify`, then the evidence PR (`docs/audit_evidence/stage12_bundle/`, D60) (Entry 167). (Built and verified 2026-11-12, Entry 168)
 - [x] Hand-over of F4: Iheb (API P1, replace `MockAnalyzer`), Khalil (Stage 13); each runs `verify` on their copy (Entry 168). (Both `F4 verify OK`, `edf4a205…`, 2026-11-15, Entry 174)
-- [ ] Stage 12 brief and teach-back (D32). (Brief drafted, Entry 174; teach-back: Iheb and Khalil required, Malak)
+- [x] Stage 12 brief and teach-back (D32). (Brief accepted; teach-back by Iheb, Khalil and Malak, face to face, 2026-11-15; Entry 174)
 
 **Stage briefs (D32, Entry 37)**
 - [x] Team review of `docs/stage6-stage-briefs` (approves D32): approved by all three, 2026-10-18.
@@ -7328,7 +7337,7 @@ accepted, roadmap "Stage 12 done", CHANGELOG).
 
 ## Current status — updated 2026-11-15 (Entry 174)
 
-**Stage 12 (Entry 174):** F4 (`bundle-v1`, `edf4a205…40efc`) is frozen (D60) and handed over: Iheb and Khalil each verified their copy (`F4 verify OK`, 2026-11-15). The brief `docs/stages/stage12-bundle-freeze.md` is drafted (in review). Next: D32 teach-back (Iheb and Khalil required, Malak), then the closeout PR. Replacing the API mock with F4 is Iheb's P1 (2026-11-24).
+**Stage 12 closed (Entry 174):** F4 (`bundle-v1`, `edf4a205…40efc`) is frozen (D60) and handed over: Iheb and Khalil each verified their copy (`F4 verify OK`, 2026-11-15). Brief `docs/stages/stage12-bundle-freeze.md` accepted after the D32 teach-back (Iheb, Khalil, Malak, face to face, 2026-11-15; no corrections). **Track V is current.** Replacing the API mock with F4 is Iheb's P1 (2026-11-24).
 
 **Track V, PR V2b-2 (Entry 173):** on `feat/stageV2-batch-sizes` (from `main` `9c46baf`, not pushed): the D49 benchmark ran on the Colab T4 (runtime 2026.10, commit `9c46baf`, two GPU runs with byte-identical peaks) and chose **`cnn-aug` 256, `crnn` 256, `aasist` 32**, now in `configs/v2_candidates.yaml`; evidence byte for byte in `docs/audit_evidence/v2b2_benchmark/` with a torch-free drift guard. The unpinned CPU throughput (planning only) shows the codec (0.42 s/item) dominating augmentation, about 8–17 min of augmentation per epoch with 1–2 workers. No code change, no data, no training. Open: per-epoch resume before V2b-4; ask Malak about checking the ffmpeg pin once per process. Next: review, then V2b-3 (raw cache), V1b (S, Malak), V2b-4 (rehearsal and search).
 

@@ -5,7 +5,7 @@
 | **Stage** | 12 — ModelBundle v1 freeze (F4) |
 | **Owner** | Donia Mabrouk (D26, Part C) |
 | **Reviewer(s)** | D32 teach-back: Iheb Zemzemi (C→E consumer: API) and Khalil Dridi (C→D consumer: Stage 13), required; Malak Ben Salem |
-| **Status** | In review |
+| **Status** | Accepted — D32 teach-back: Iheb and Khalil (required) and Malak, face to face, 2026-11-15; Donia attended as author, correcting only; no corrections to the brief; confirmed by approval of PR (docs/stage12-brief) |
 | **Date** | 2026-11-15 |
 | **Related PRs** | #19 (bundle format, Entry 35), #123 (D59 layout), #124 (F4 tool), #125 (F4 evidence, D60) |
 
