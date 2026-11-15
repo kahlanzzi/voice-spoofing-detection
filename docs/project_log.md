@@ -6798,7 +6798,8 @@ tests. Donia reviews. AI does not approve, push or merge.
 - [ ] Compute benchmark per v2 candidate; batch sizes in `configs/` before training (D49). Slots exist as `null` in `configs/v2_candidates.yaml`; `require_batch_sizes()` blocks training until set (Entry 170; PR V2b).
 - [ ] V2b-2: run `python -m src.tuning.v2_benchmark` on Colab T4 (2026.10) and write the batch sizes into `configs/v2_candidates.yaml` (D49; Entry 172).
 - [ ] V2b-3: Malak confirms the S layout in `docs/v2_training.md` and builds S with `write_selection_set` on the training runtime; verify with `load_selection_set` incl. the Stage 8 val-A known answer (D50 (4), D58; Entry 172).
-- [ ] V2b-4: search CLI/notebook wired to the V1b corpus loader; T4 rehearsal (`check_clean_transform`, two short runs for observed crnn/cuDNN determinism, count of zero-RMS train clips), then the search (Entry 172).
+- [ ] V2b-4: search CLI/notebook wired to the V1b corpus loader; T4 rehearsal (`check_clean_transform`, two short runs for observed crnn/cuDNN determinism), then the search (Entry 172).
+- [ ] V2b-3: read `n_all_zero_clips` from the raw train cache (`build` / `verify` print it with the first 10 paths). If it is > 0, a decision (**D62**) is needed before any training: `Augmenter`'s `recorded_noise` refuses a silent clip, and Malak's S builder (`noise_10db`) has the same issue on val-A (Entry 172; `docs/v2_training.md`).
 - [ ] Discuss with Malak whether the per-call `ffmpeg -version` in `FFmpegCodecBackend.round_trip` matters, if the benchmark shows a large codec cost (Entry 172).
 - [x] Approve D61 (Iheb, Malak, Khalil) and add its approval commit before any v2 training (Entry 170). (PR #127, 2026-11-13)
 - [x] PR V2b-1: v2 training loop, selection metric M over set S, resumable search, benchmark code (Entry 172; review pending).

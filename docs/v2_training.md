@@ -67,6 +67,22 @@ T4 2026.10, D58), the val-A size (1,330 = 660 REAL / 670 FAKE), and optionally t
 condition equals the Stage 8 val-A log-Mel cache byte for byte (free known-answer check:
 `4502eea2…` on T4).
 
+## All-zero clips (gate before training)
+
+The raw cache counts the train clips whose decoded samples are all exactly 0.0 and records the count
+as `n_all_zero_clips` in `train_raw.json` (strict key, recounted from the samples on load); `build`
+and `verify` print it and the first 10 such paths (or `none`). The cache still builds with such
+clips: nothing is dropped.
+
+**Why it matters:** `Augmenter`'s `recorded_noise` refuses a silent clip ("recorded-noise mixing
+requires non-silent signal and noise"). Training draws `recorded_noise` for about 16 % of items each
+epoch, so a run that meets an all-zero clip on that family stops, deterministically, on the same
+item every time. Malak's S builder has the same issue on val-A for the `noise_10db` condition.
+
+**Gate:** if `n_all_zero_clips > 0` when the cache is built on the training runtime (V2b-3), a
+decision (**D62**) is needed **before any training**, covering both the train cache and S. The
+options (e.g. how the noise family treats a silent clip) are for that decision, not for this code.
+
 ## Item seed
 
 `item_seed(aug_seed, run_seed, epoch, clip_index) =
