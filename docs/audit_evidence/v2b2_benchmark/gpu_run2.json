@@ -1,0 +1,161 @@
+{
+  "augmentation_config_sha256": "512653b3af02b1a9ff31c09a39b7597784f1fcb099c827075df656ba330cec84",
+  "benchmark": {
+    "candidate_batch_sizes": [
+      16,
+      32,
+      64,
+      128,
+      256
+    ],
+    "max_vram_fraction": 0.8,
+    "measured_steps": 10,
+    "optimizer_step": true,
+    "warmup_steps": 3
+  },
+  "choice_errors": {},
+  "chosen_batch_size": {
+    "aasist": 32,
+    "cnn-aug": 256,
+    "crnn": 256
+  },
+  "code_commit": "9c46bafba7e220867f3b5fdd7b4d66ebc0573991",
+  "codec_timing": null,
+  "data_read": false,
+  "device": "cuda",
+  "environment": {
+    "cpu_count": "2",
+    "cuda_available": "true",
+    "cuda_version": "13.0",
+    "cudnn_version": "92700",
+    "device": "cuda",
+    "gpu_name": "Tesla T4",
+    "numpy": "2.5.3",
+    "platform": "Linux-6.6.159+-x86_64-with-glibc2.39",
+    "python": "3.13.16",
+    "safetensors": "0.8.0",
+    "torch": "2.11.0+cu130",
+    "wandb": "0.31.0"
+  },
+  "ffmpeg_version_observed": null,
+  "notes": [
+    "GPU rows include the candidate's real optimizer step (Stage 6 measured forward/backward only); the peak can only be higher, so the chosen batch is at least as safe.",
+    "FFmpegCodecBackend.round_trip runs `ffmpeg -version` on every call; its cost is included in the codec time.",
+    "CPU throughput uses synthetic audio and synthetic noise/RIR resources; real RIR lengths change the reverberation cost.",
+    "Selection-set scoring time is not estimated (GPU).",
+    "The epoch estimate assumes the per-item time scales linearly with the number of workers; Colab's 2 vCPUs (often one physical core) may not give that."
+  ],
+  "profile_fingerprint": "5b4f5849a9bb63f9016dd79969ff5bfb9e37006acbff1e26bbfee4ee2bad68f2",
+  "rows": [
+    {
+      "batch_size": 16,
+      "candidate": "cnn-aug",
+      "mean_step_seconds": 0.010535119299981943,
+      "peak_allocated_bytes": 232463360,
+      "status": "ok"
+    },
+    {
+      "batch_size": 32,
+      "candidate": "cnn-aug",
+      "mean_step_seconds": 0.014318263300003764,
+      "peak_allocated_bytes": 324660224,
+      "status": "ok"
+    },
+    {
+      "batch_size": 64,
+      "candidate": "cnn-aug",
+      "mean_step_seconds": 0.021729942800004665,
+      "peak_allocated_bytes": 525933568,
+      "status": "ok"
+    },
+    {
+      "batch_size": 128,
+      "candidate": "cnn-aug",
+      "mean_step_seconds": 0.04230361180000273,
+      "peak_allocated_bytes": 981625856,
+      "status": "ok"
+    },
+    {
+      "batch_size": 256,
+      "candidate": "cnn-aug",
+      "mean_step_seconds": 0.0882398230999911,
+      "peak_allocated_bytes": 1893527040,
+      "status": "ok"
+    },
+    {
+      "batch_size": 16,
+      "candidate": "crnn",
+      "mean_step_seconds": 0.007655706800005646,
+      "peak_allocated_bytes": 236527104,
+      "status": "ok"
+    },
+    {
+      "batch_size": 32,
+      "candidate": "crnn",
+      "mean_step_seconds": 0.012377980999997363,
+      "peak_allocated_bytes": 328375808,
+      "status": "ok"
+    },
+    {
+      "batch_size": 64,
+      "candidate": "crnn",
+      "mean_step_seconds": 0.021947320100014166,
+      "peak_allocated_bytes": 529350144,
+      "status": "ok"
+    },
+    {
+      "batch_size": 128,
+      "candidate": "crnn",
+      "mean_step_seconds": 0.04360426450000432,
+      "peak_allocated_bytes": 987622912,
+      "status": "ok"
+    },
+    {
+      "batch_size": 256,
+      "candidate": "crnn",
+      "mean_step_seconds": 0.09008363219999183,
+      "peak_allocated_bytes": 1897988096,
+      "status": "ok"
+    },
+    {
+      "batch_size": 16,
+      "candidate": "aasist",
+      "mean_step_seconds": 0.5177283497999724,
+      "peak_allocated_bytes": 3539112960,
+      "status": "ok"
+    },
+    {
+      "batch_size": 32,
+      "candidate": "aasist",
+      "mean_step_seconds": 0.9823232109999935,
+      "peak_allocated_bytes": 6985602048,
+      "status": "ok"
+    },
+    {
+      "batch_size": 64,
+      "candidate": "aasist",
+      "mean_step_seconds": 1.92514212880003,
+      "peak_allocated_bytes": 13895315968,
+      "status": "ok"
+    },
+    {
+      "batch_size": 128,
+      "candidate": "aasist",
+      "mean_step_seconds": null,
+      "peak_allocated_bytes": null,
+      "status": "oom"
+    },
+    {
+      "batch_size": 256,
+      "candidate": "aasist",
+      "mean_step_seconds": null,
+      "peak_allocated_bytes": null,
+      "status": "oom"
+    }
+  ],
+  "schema_version": 1,
+  "throughput": null,
+  "total_vram_bytes": 15637086208,
+  "v2_config_sha256": "527c368183e676f2f156cd90033e938fc2a644cdd83e9aa6144b51c36bd46841",
+  "weights_saved": false
+}

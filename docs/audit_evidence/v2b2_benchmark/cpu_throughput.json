@@ -1,0 +1,134 @@
+{
+  "augmentation_config_sha256": "512653b3af02b1a9ff31c09a39b7597784f1fcb099c827075df656ba330cec84",
+  "benchmark": {
+    "candidate_batch_sizes": [
+      16
+    ],
+    "max_vram_fraction": 0.8,
+    "measured_steps": 10,
+    "optimizer_step": true,
+    "warmup_steps": 3
+  },
+  "choice_errors": {},
+  "chosen_batch_size": {
+    "cnn-aug": null
+  },
+  "code_commit": "9c46bafba7e220867f3b5fdd7b4d66ebc0573991",
+  "codec_timing": "unpinned",
+  "data_read": false,
+  "device": "cpu",
+  "environment": {
+    "cpu_count": "2",
+    "cuda_available": "true",
+    "cuda_version": "13.0",
+    "cudnn_version": "92700",
+    "device": "cpu",
+    "gpu_name": "Tesla T4",
+    "numpy": "2.5.3",
+    "platform": "Linux-6.6.159+-x86_64-with-glibc2.39",
+    "python": "3.13.16",
+    "safetensors": "0.8.0",
+    "torch": "2.11.0+cu130",
+    "wandb": "0.31.0"
+  },
+  "ffmpeg_version_observed": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+  "notes": [
+    "GPU rows include the candidate's real optimizer step (Stage 6 measured forward/backward only); the peak can only be higher, so the chosen batch is at least as safe.",
+    "FFmpegCodecBackend.round_trip runs `ffmpeg -version` on every call; its cost is included in the codec time.",
+    "CPU throughput uses synthetic audio and synthetic noise/RIR resources; real RIR lengths change the reverberation cost.",
+    "Selection-set scoring time is not estimated (GPU).",
+    "The epoch estimate assumes the per-item time scales linearly with the number of workers; Colab's 2 vCPUs (often one physical core) may not give that."
+  ],
+  "profile_fingerprint": "5b4f5849a9bb63f9016dd79969ff5bfb9e37006acbff1e26bbfee4ee2bad68f2",
+  "rows": [
+    {
+      "batch_size": 16,
+      "candidate": "cnn-aug",
+      "mean_step_seconds": 0.1698548657000174,
+      "peak_allocated_bytes": null,
+      "status": "ok"
+    }
+  ],
+  "schema_version": 1,
+  "throughput": {
+    "draws": 190,
+    "estimated_epoch_seconds": {
+      "logmel": {
+        "1": 1015.353895093434,
+        "2": 507.676947546717,
+        "4": 253.8384737733585
+      },
+      "waveform": {
+        "1": 926.151906764476,
+        "2": 463.075953382238,
+        "4": 231.537976691119
+      }
+    },
+    "families": {
+      "clean": {
+        "mean_seconds": 0.0004891073500289167,
+        "n": 20,
+        "p95_seconds": 0.0005548649001411831
+      },
+      "codec": {
+        "mean_seconds": 0.4215178100000344,
+        "n": 20,
+        "p95_seconds": 0.5083309006000492
+      },
+      "gain": {
+        "mean_seconds": 0.0007840394000140805,
+        "n": 20,
+        "p95_seconds": 0.0009173703499868699
+      },
+      "rawboost": {
+        "mean_seconds": 0.034560248500008585,
+        "n": 20,
+        "p95_seconds": 0.053461350049917665
+      },
+      "recorded_noise": {
+        "mean_seconds": 0.0009611567500201091,
+        "n": 20,
+        "p95_seconds": 0.0010639080999453655
+      },
+      "reverberation": {
+        "mean_seconds": 0.0037525679000509626,
+        "n": 20,
+        "p95_seconds": 0.0043398346000344664
+      }
+    },
+    "family_share": {
+      "clean": 0.19999999999999996,
+      "codec": 0.16,
+      "gain": 0.16,
+      "rawboost": 0.16,
+      "recorded_noise": 0.16,
+      "reverberation": 0.16
+    },
+    "items_per_family": 20,
+    "per_item_mean_seconds": {
+      "logmel": 0.08185697316135392,
+      "waveform": 0.07466558422802935
+    },
+    "stages": {
+      "augment": {
+        "mean_seconds": 0.07701082165002618,
+        "n": 120,
+        "p95_seconds": 0.4521745634000013
+      },
+      "f3": {
+        "mean_seconds": 0.0007156311500030673,
+        "n": 120,
+        "p95_seconds": 0.0010695020999719415
+      },
+      "logmel_stats": {
+        "mean_seconds": 0.007191388933324561,
+        "n": 120,
+        "p95_seconds": 0.008242391799979027
+      }
+    },
+    "train_clips": 12404
+  },
+  "total_vram_bytes": null,
+  "v2_config_sha256": "527c368183e676f2f156cd90033e938fc2a644cdd83e9aa6144b51c36bd46841",
+  "weights_saved": false
+}
