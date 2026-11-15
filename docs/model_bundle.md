@@ -236,6 +236,31 @@ Committed (with the build evidence PR, which also adds the F4 freeze decision D6
 checkpoint is never committed (AGENTS.md hard rule 7). The API then loads F4 through
 `load_bundle_model` in place of the mock (D48).
 
+## F5 / model v2 (D59 (7), D61 (6))
+**Same layout, same hash rule.** An F5 bundle is an F4 bundle whose `checkpoint/` holds a model v2
+checkpoint (`src/models/v2_checkpoint.py`): the same two files (`checkpoint.json`,
+`weights.safetensors`), the same combined `checkpoint_sha256`, manifest schema 2 unchanged.
+`src/bundle/bundle.py` is unchanged and stays torch-free; `load_bundle` verifies an F5 bundle
+exactly like F4 (hashes, policy, profile, `version` and `profile_fingerprint` cross-checks).
+
+**Loader dispatch.** `load_bundle_model` decides the format from `checkpoint.json` (its bytes
+hashed against the manifest's per-file value before they are parsed): the v2 schema has
+`architecture` (`cnn-aug`, `crnn`, `aasist`, D49), the v1 D42 schema has none.
+- v1 → `cnn_checkpoint.load_checkpoint(..., expected_sha256=<manifest value>)`, unchanged;
+- v2 → `v2_checkpoint.load_v2_checkpoint(..., expected_sha256=<manifest value>)`; then the loaded
+  `architecture` must be the dispatched one, the model on CPU in eval mode, and `mean`/`std`
+  float32 (64,) for `cnn-aug`/`crnn`, `None` for `aasist`.
+Both loaders hash the bytes they load, so check-then-use stays closed. An architecture outside D49
+is refused.
+
+**What Stage 13 and the API receive.** A `BundleModel` with `bundle` (`LoadedBundle`: `profile`,
+`policy`, `manifest`, `manifest_sha256`), `model` (CPU, eval mode), `metadata` (the validated
+checkpoint metadata; v2 has `architecture`), `mean`/`std` (`None` only for `aasist`) and
+`architecture` (`"cnn"` for v1, else the v2 name). Stage 13 passes `load_bundle` as
+`bundle_verifier` and `load_bundle_model` as `bundle_loader` to `verify_f5_artifacts`; the scorer
+builder then feeds the log-Mel (normalized with `mean`/`std`) to `cnn-aug`/`crnn` and the
+frozen-profile waveform to `aasist`. The API must branch on `architecture` the same way.
+
 ## Tests
 `tests/bundle/test_bundle.py` (no torch; dummy `checkpoint.json` with `version` and
 `profile_fingerprint`, dummy weight bytes, a tmp copy of `configs/preprocessing.yaml`, a tmp policy
@@ -268,6 +293,18 @@ the real profile's):
 | (g) check-then-use | `test_weight_changed_after_load_bundle_is_refused` (a weight byte changes between `load_bundle` and `load_checkpoint` → `checkpoint_sha256 mismatch`) |
 | (h) version | `test_checkpoint_version_mismatch_is_refused`, `test_model_loader_checks_loaded_version_itself` |
 | Layering | `test_model_loader_does_not_import_research_code` |
+
+`tests/bundle/test_model_loader_v2.py` (torch; synthetic v2 checkpoints with random weights for
+each D49 architecture, the real profile, `build_bundle` → `load_bundle_model`):
+
+| Point | Test |
+|---|---|
+| Dispatch, round trip | `test_v2_bundle_loads_by_architecture` (architecture, eval, CPU, mean/std rule, equal output), `test_v1_bundle_dispatches_to_cnn_loader_unchanged` (`"cnn"`, same values as `load_checkpoint`, v2 loader not called) |
+| Hash | `test_v2_weights_replaced_after_build_are_refused`, `test_v2_weights_replaced_after_load_bundle_are_refused`, `test_architecture_edited_in_checkpoint_json_is_refused`, `test_architecture_edited_after_load_bundle_is_refused` |
+| Schema, profile | `test_unknown_architecture_is_refused_by_schema`, `test_profile_fingerprint_mismatch_is_refused` (build and re-anchored load) |
+| Norm tensors | `test_aasist_checkpoint_with_norm_tensors_is_refused`, `test_logmel_checkpoint_without_norm_tensors_is_refused` |
+| Loader's own checks | `test_loader_checks_loaded_architecture_itself`, `test_loader_checks_eval_mode_and_statistics_itself`, `test_loader_checks_v2_version_against_manifest` |
+| Stage 13 hand-over | `test_handover_to_stage13_runner` (`verify_f5_artifacts` with a synthetic F5 record, then `build_frozen_scorers`: one finite float per window for each architecture) |
 
 `tests/bundle/test_f4.py` (torch; a synthetic evidence tree with the real file names and fields, a
 tiny real D42 checkpoint whose real hashes are written into fake stage8/stage10 reports, git
