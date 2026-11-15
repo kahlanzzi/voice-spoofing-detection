@@ -7134,6 +7134,8 @@ module, training-format S build/verification, training-half resource cache and o
   team review required before acceptance (Khalil as consumer of the loader, D26).
 - **Gate:** **WAITING FOR APPROVAL.**
 
+---
+
 ### Entry 187 — Revised D63 contract proposal for team approval (2026-11-15)
 
 - **Owner:** Khalil Dridi.
@@ -7149,8 +7151,8 @@ module, training-format S build/verification, training-half resource cache and o
 ### Entry 188 — Track V PR V4a: v2 risk-policy run, code only (2026-11-15)
 
 - **Owner:** Donia Mabrouk (Part C). Branch `feat/stageV4-risk-run` from `main` `e7bd0e1`.
-  Entry number: 183 is used on Malak's V1c branch and 185 stays reserved for it (Entry 186); 187 is
-  Khalil's D63 revision (PR #139); 188 is the next free number on main and the open branches.
+  Entry number: 185 is reserved for Malak's V1c (her branch still says 183); 186 is V5a; 187 is
+  Khalil's D63 revision (PR #139).
 - **Why [doc]:** Execution Plan v3.0 §9 V4 (due Mon 30 Nov). Protocol §6 addendum and D49: the v2 risk
   policy uses the §6 method unchanged on clean val-B for the bundle seed only (D45). `risk_run.py`
   is v1-only (D42 checkpoint, val-A EER reproduction), so the v2 run is written now against the v2
