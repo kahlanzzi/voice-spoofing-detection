@@ -6917,7 +6917,62 @@ push or merge.
 
 ---
 
-### Entry 175 — Track V V1b corpus/tool pins and selection-set recipe closed out (2026-11-15)
+### Entry 175 — Stage 13 guarded-run preparation (2026-11-15)
+
+- **Owner:** Khalil Dridi.
+- **Change:** On `feat/stage13-runner-prep`, added the exact D35 allowlist entries, a strict path-driven config template, per-window Stage 6 preprocessing/scoring primitives, F4-anchored bundle/baseline preflight, frozen metadata-manifest hash verification, and a dataset-wide atomic claim with read-back verification and persisted failure status. The verified profile and policy are taken from the loaded bundle; no separate profile path is accepted.
+- **Checks:** [verified] Ruff passed. [verified] Focused tests: `12 passed in 0.59s`. [verified] Remaining suite excluding the uncollectable API groups: `1534 passed, 2 skipped in 139.13s`. Full `pytest -q` did not collect: two API test groups require `argon2`, which is absent from the available Python environment (`ModuleNotFoundError`). `git diff --check` passed.
+- **Safety:** Synthetic fixtures and fake loaders only. No external audio was opened or scored; no claim was created. This is preparation, not authorization to run.
+- **Remaining:** complete D33/D34 reporting and stored-score outputs; load/verify the v2 model after F5 or apply D48's v1+baseline cutoff; complete end-to-end ordering/durability tests on the approved storage target; peer review and Stage 13 brief.
+- **AI assistance:** Codex drafted the code and synthetic tests; Khalil reviews before acceptance.
+
+---
+
+### Entry 176 — Stage 13 stored-score reporting and paired comparison (2026-11-15)
+
+- **Owner:** Khalil Dridi.
+- **Change:** Extended `feat/stage13-runner-prep` with a hash-bound stored-score CSV/sidecar reader and writer, metadata-only frozen-manifest parsing, complete-window and row-integrity validation, D33 eight-speaker summaries, D34 filtered/unfiltered CNN file means, and D36 paired CNN-minus-baseline EER with source-speaker clustered bootstrap intervals.
+- **Checks [verified]:** focused Stage 13 and governance tests: `26 passed in 2.04s`; Ruff passed; `git diff --check` passed. Broad suite excluding `tests/api` and `tests/deploy/test_deploy_compose.py`: `1548 passed, 2 skipped in 300.19s`. Full `pytest -q` remains unable to collect those two groups because `argon2` is absent (`ModuleNotFoundError`).
+- **Safety:** Synthetic manifests, score rows and fake model objects only. No DEEP-VOICE audio, checkpoint inference or dataset claim was used.
+- **Remaining:** complete guarded audio scoring and failure-finalization orchestration; add the D48 F5-or-cutoff and D58 baseline-MFCC gates; add file-level clustered CIs and strict report serialization; review durability on the approved Drive target; run the full suite in an environment with API dependencies; team review and Stage 13 brief. This branch is not ready to execute the external run.
+- **AI assistance:** Codex added the reporting helper and synthetic tests; Khalil reviews before acceptance.
+
+---
+
+### Entry 177 — Stage 13 cutoff guard and report output (2026-11-15)
+
+- **Owner:** Khalil Dridi.
+- **Change:** Added the D48 cutoff gate before the dataset-wide claim: before 2026-12-04 23:59 Africa/Tunis, F5 must be verified through an injected architecture-aware verifier and loader; after the cutoff, the v1-plus-baseline fallback is permitted. Added D34 source-speaker-clustered file-level intervals and a strict JSON report writer that converts undefined values to `null`, verifies read-back, and refuses overwrite.
+- **Checks [verified]:** focused Stage 13 and governance tests: `29 passed in 2.16s`; Ruff passed; `git diff --check` passed. Broad suite excluding `tests/api` and `tests/deploy/test_deploy_compose.py`: `1551 passed, 2 skipped in 283.51s`. Full `pytest -q` cannot collect those groups because `argon2` is absent (`ModuleNotFoundError`).
+- **Safety:** Synthetic manifests, rows, and fake F5 loaders only. No DEEP-VOICE audio, checkpoint inference or dataset claim was used.
+- **Remaining:** implement the one-pass guarded audio scorer and failure-finalization orchestration; wire and test D58's T4-vs-CPU MFCC reproduction gate; integrate the actual F5 loader when F5 exists; validate durability on the approved Drive target; run full dependency-complete CI; obtain team review and write the Stage 13 brief. The runner remains unready for execution.
+- **AI assistance:** Codex drafted the gate, file-level interval and report code plus synthetic tests; Khalil reviews before acceptance.
+
+---
+
+### Entry 178 — Stage 13 model-bound scoring and D58/H8 gates (2026-11-15)
+
+- **Owner:** Khalil Dridi.
+- **Change:** Added a single-pass scorer that builds its v1, baseline and D49 v2 scoring functions from the already verified in-memory artifacts; no scorer callback can substitute a different model. The D58 gate now requires a hash-pinned, passing Stage 11 rehearsal report that matches the F4 baseline/profile, approved Stage 7 MFCC references and exact current T4 runtime, before a dataset claim. The claim records the D58 report hash. Post-claim errors are finalized as incomplete. The report computes H8 as paired v1-minus-v2 EER on the filtered view and unfiltered sensitivity view, or records the cutoff exclusion.
+- **Checks [verified]:** `py_compile` passed after the latest source edits; Ruff check/format passed before the final H8 role-routing adjustment, but could not be rerun because Ruff is not installed in the available Python environment; `git diff --check` passed. Tests were not run in this continuation.
+- **Safety:** Static checks only. No DEEP-VOICE audio was opened or scored, no model inference was run, and no dataset claim was created.
+- **Remaining:** integrate the actual F5 verifier/loader when F5 exists; confirm the checked-in passed D58 rehearsal report matches the exact Stage 13 T4 runtime (repeat the rehearsal if it does not); add/run synthetic tests for the new orchestration and D58/H8 checks; verify durable Drive claim behavior; complete peer review and the Stage 13 brief. The runner is not ready for execution.
+- **AI assistance:** Codex drafted the scoring adapters, D58 verifier, H8 output and project-log update; Khalil reviews before acceptance.
+
+---
+
+### Entry 179 — Synthetic Stage 13 scoring and gate checks (2026-11-15)
+
+- **Owner:** Khalil Dridi.
+- **Change:** Added synthetic checks for D58 report hashing/runtime rejection, H8 paired v1-versus-v2 CNN scoring, one-pass scoring over generated waveforms, and incomplete-claim finalization. Updated the prepared-run tests for valid run IDs, the D58 gate and model-bound scorers.
+- **Checks [verified]:** focused Stage 13 and governance tests: `33 passed in 7.02s`; Ruff check/format and `git diff --check` passed. The broad suite excluding `tests/api` and `tests/deploy/test_deploy_compose.py` passed (`1555 passed, 2 skipped in 246.65s`). Full-suite collection is blocked because the available environment lacks `argon2` (`ModuleNotFoundError`).
+- **Safety:** All new audio is generated in-memory by synthetic decoders. No DEEP-VOICE audio was opened or scored, no frozen model inference was run, and no dataset claim was created.
+- **Remaining:** integrate the real F5 verifier/loader; confirm the pinned D58 report matches the eventual T4 runtime; run full dependency-complete CI; verify Drive durability; complete peer review and the Stage 13 brief. The runner remains unready for the external run.
+- **AI assistance:** Codex drafted the synthetic tests and updated the project log; Khalil reviews before acceptance.
+
+---
+
+### Entry 180 — Track V V1b corpus/tool pins and selection-set recipe closed out (2026-11-15)
 
 **Owner:** Malak Ben Salem. Review: Donia Mabrouk (D50 pipeline consumer alignment).
 
@@ -6975,14 +7030,14 @@ module, training-format S build/verification, training-half resource cache and o
 - [x] Approval commit: statuses to Approved; AGENTS.md hard rule 3 (v2 candidates) and roadmap; Protocol addendum for §§4, 6, 7, 9, 12 (v2 values, F5, Stage 11/14 model sets, cut-off). (Entry 151)
 - [x] Approve D56 and add its approval commit before the v1 Stage 11 claim and before V1a implementation; D50 is marked as amended for RawBoost algorithm 1 and uniform sampling over seven codec options (Entries 157–158; PR #116, merged).
 - [x] Implement V1a's strict train-only augmentation module and synthetic tests without corpus access (D50/D56; Entry 169; PR #126 merged).
-- [x] V1b: pin and audit the noise/RIR corpora (licence, archive hash, 50/50 by-file split) and exact ffmpeg/codec tools before any v2 training (D50 (5); PR #131, Entry 175).
+- [x] V1b: pin and audit the noise/RIR corpora (licence, archive hash, 50/50 by-file split) and exact ffmpeg/codec tools before any v2 training (D50 (5); PR #131, Entry 180).
 - [x] Compute benchmark per v2 candidate; batch sizes in `configs/` before training (D49). Slots exist as `null` in `configs/v2_candidates.yaml`; `require_batch_sizes()` blocks training until set (Entry 170; PR V2b). Done: 256 / 256 / 32 (Entry 173).
 - [x] V2b-2: run `python -m src.tuning.v2_benchmark` on Colab T4 (2026.10) and write the batch sizes into `configs/v2_candidates.yaml` (D49; Entry 172). (Entry 173; evidence `docs/audit_evidence/v2b2_benchmark/`; review pending)
 - [ ] Per-epoch resume within a run before V2b-4: a worst-case run (30 epochs × ~10–17 min) may not fit one Colab session; V2b-1 resumes only between runs (Entry 173).
-- [ ] V1c: move the notebook recipe into a pure `src/augmentation/` module and prove byte parity for all five conditions on synthetic audio (D50/D56; Entry 175).
-- [ ] V1c: materialize S with `write_selection_set` on Colab T4 runtime 2026.10 and verify both forms with `load_selection_set`, including the Stage 8 val-A known answer (D50 (4), D58; Entries 172, 175).
-- [ ] V1c: build and verify the deterministic training-half MUSAN/RIR resource cache outside the repo; refuse selection-half or all-zero resources (D50 (5); Entry 175).
-- [ ] V1c: make `FFmpegCodecBackend` verify its pin once per backend instance without changing encode/decode output bytes (codec 0.42 s/item dominates augmentation; Entries 172–173, 175).
+- [ ] V1c: move the notebook recipe into a pure `src/augmentation/` module and prove byte parity for all five conditions on synthetic audio (D50/D56; Entry 180).
+- [ ] V1c: materialize S with `write_selection_set` on Colab T4 runtime 2026.10 and verify both forms with `load_selection_set`, including the Stage 8 val-A known answer (D50 (4), D58; Entries 172, 180).
+- [ ] V1c: build and verify the deterministic training-half MUSAN/RIR resource cache outside the repo; refuse selection-half or all-zero resources (D50 (5); Entry 180).
+- [ ] V1c: make `FFmpegCodecBackend` verify its pin once per backend instance without changing encode/decode output bytes (codec 0.42 s/item dominates augmentation; Entries 172–173, 180).
 - [ ] V2b-4: search CLI/notebook wired to the V1c corpus loader; T4 rehearsal (`check_clean_transform`, two short runs for observed crnn/cuDNN determinism), then the search (Entry 172).
 - [ ] V2b-3: read `n_all_zero_clips` from the raw train cache (`build` / `verify` print it with the first 10 paths). If it is > 0, a decision (**D62**) is needed before any training (`run_search` refuses such a cache): `Augmenter`'s `recorded_noise` refuses a silent clip [verified], and Malak's S builder (`noise_10db`) has the same issue on val-A (Entry 172; `docs/v2_training.md`).
 - [x] Approve D61 (Iheb, Malak, Khalil) and add its approval commit before any v2 training (Entry 170). (PR #127, 2026-11-13)
@@ -7005,15 +7060,23 @@ module, training-format S build/verification, training-half resource cache and o
   accepted, set D33–D35 to Approved (Entry 58). (PR #29, 2026-10-19)
 
 **Khalil: Stage 13 preparation**
-- [ ] Implement the D35 per-window frozen preprocessing integration test (Entry 55).
+- [x] Implement the D35 per-window frozen preprocessing integration test (Entry 55); synthetic test verifies each complete window is independently preprocessed and the remainder is dropped (Entry 175).
+- [x] Add stored-score integrity checks, D33 eight-speaker summaries, D34 CNN file means and the D36 paired EER bootstrap (Entry 176; synthetic rows only).
+- [x] Add D34 source-speaker-clustered file-level intervals and strict JSON report export (Entry 177; synthetic rows only).
+- [x] Enforce the D48 F5-before-cutoff / v1-plus-baseline-after-cutoff model-set rule before the one-time claim (Entry 177; fake F5 loader only).
+- [x] Build scoring functions from verified F4/F5 loaded models and report H8's paired v1-minus-v2 filtered result plus unfiltered sensitivity (Entry 178; static checks only).
+- [x] Require a hash-pinned D58 rehearsal report matching the verified baseline/profile and exact current runtime before claiming the dataset (Entry 178; tests and real report pending).
 - [x] Rename synthetic-test branch to the D23-compliant `chore/stage13-synthetic-reporting`.
 - [ ] Complete PR #27 integration, retarget to main, and review updated synthetic tests (Entry 51).
-- [x] PR #26 merged as `72a9646`; explicit D33–D35 decision confirmations remain pending.
+- [x] PR #26 merged as `72a9646`; D33–D36 were explicitly approved by all four in PR #29.
 - [x] PR #21 merged into main as `65ce1d2`; PR #23 base changed to main.
 - [x] PR #23 integrated and merged as `3f2f4bb` after passing CI (Entries 42–44).
 - [x] PR #24 merged into main as `6786c12` (Entries 45–46).
 - [x] Review proposed D33–D35 and ADR 0007; record explicit approval or requested revisions (Entry 48). (approved by all four, PR #29, 2026-10-19)
-- [ ] Complete clustered CIs, speaker completeness checks and filter/file-level reporting.
+- [x] Add and run synthetic tests for one-pass scoring, incomplete-claim finalization, D58 report/runtime verification, and H8 output (Entry 179; focused suite 33 passed; broad suite 1555 passed, 2 skipped with API/Compose tests excluded).
+- [ ] Run full dependency-complete CI; current available Python environment cannot collect the API/Compose groups because `argon2` is missing (Entry 179).
+- [ ] Integrate and review the actual architecture-aware F5 loader once F5 is built; verify its real frozen record and smoke-check its model scorer on synthetic waveforms.
+- [ ] Produce the passed D58 rehearsal report on the pinned runtime, verify durable claim behavior on the approved Drive target, then complete peer review and the Stage 13 brief.
 - [x] Before Stage 13, approve and record the speaker-average undefined-value convention alongside
   the file-level view and governance allowlist decisions. No convention is approved by this update. (D33–D35 approved, PR #29, 2026-10-19)
 
@@ -7034,7 +7097,7 @@ module, training-format S build/verification, training-half resource cache and o
 - [x] Delete merged branches: remote has only `main` (Entry 19).
 - [x] Review and merge PR `docs/stage3-protocol-skeleton` (Entry 19): merged as PR #8; branch deleted (Entry 20).
 - [x] Review and merge PR `chore/stage5-ai-tooling` (Entry 27): merged as PR #14. Using Context7 is optional per member: set `CONTEXT7_API_KEY` locally (never committed) and approve the project MCP server in your own tool (ADR 0006).
-- [x] Stage 13 governance: decide (new decision, before Stage 13) how the guarded external-run code is added to the DEEP-VOICE allowlist of `tests/governance/test_deepvoice_access.py`. (decided by D35, PR #29, 2026-10-19; implementation pending)
+- [x] Stage 13 governance: decide (new decision, before Stage 13) how the guarded external-run code is added to the DEEP-VOICE allowlist of `tests/governance/test_deepvoice_access.py`. (decided by D35, PR #29, 2026-10-19; exact-file implementation and tests in Entry 175)
 - [x] `LICENSE` (MIT, code only, D25) and the README statement that datasets are not redistributed: in `chore/repo-structure` instead of a separate PR B (Entry 17).
 - [x] Decide whether branch protection should require code-owner review: **no** (review of Entry 16).
 - [x] Compare `CONTRIBUTING.md`, the `.github/` templates, `docs/decisions/TEMPLATE.md` and ADR 0001 with the actual CS 488 template and align them (keep D20 checkbox, stacked PRs, D23 naming, human in the loop): done on `chore/repo-structure` (Entry 17).
@@ -7387,11 +7450,13 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
-## Current status — updated 2026-11-15 (Entry 175)
+## Current status — updated 2026-11-15 (Entry 180)
 
 **Stage 12 closed (Entry 174):** F4 (`bundle-v1`, `edf4a205…40efc`) is frozen (D60) and handed over: Iheb and Khalil each verified their copy (`F4 verify OK`, 2026-11-15). Brief `docs/stages/stage12-bundle-freeze.md` accepted after the D32 teach-back (Iheb, Khalil, Malak, face to face, 2026-11-15; no corrections). **Track V is current.** Replacing the API mock with F4 is Iheb's P1 (2026-11-24).
 
-**Track V V1b (Entry 175):** PR #131 merged the audited MUSAN/RIRS_NOISES archive and licence pins,
+**Stage 13 preparation (Entries 175–179):** `feat/stage13-runner-prep` has the exact D35 allowlist; per-window Stage 6 preprocessing; F4/baseline and metadata-manifest preflight; atomic claim primitives; hash-verified score files; D33/D34 summaries and clustered CIs; D36 paired EER intervals; strict JSON export; the D48 cutoff gate; model-bound one-pass scoring; post-claim incomplete-run finalization; the hash-pinned D58 rehearsal/runtime gate; and H8's paired filtered result plus unfiltered sensitivity. Synthetic tests cover D58 hash/runtime rejection, H8 CNN-to-CNN pairing, one-pass scoring and incomplete-claim handling. Focused Stage 13/governance tests: `33 passed`; broad suite excluding API and Compose deployment tests: `1555 passed, 2 skipped`. Full-suite collection is blocked because `argon2` is missing in the available environment. Ruff check/format, `py_compile` and `git diff --check` passed. Config points to the checked-in passed D58 rehearsal report; exact runtime match must still be confirmed when staging the run. All audio in new tests is generated; no DEEP-VOICE audio, frozen model inference or dataset claim was used. **Not ready to execute Stage 13:** actual F5 loader/frozen record, exact-runtime D58 confirmation (repeat rehearsal if the environment differs), dependency-complete CI, Drive durability review, and team review remain.
+
+**Track V V1b (Entry 180):** PR #131 merged the audited MUSAN/RIRS_NOISES archive and licence pins,
 deterministic training/selection halves, FFmpeg `6.1.1-3ubuntu5` pin, notebook 07, evidence and the
 6,650-row val-A selection recipe (`71a340f0…`). The follow-up keeps real pins in pinned test copies,
 records V1b and passes the Torch-enabled full suite (2002 passed, 2 skipped) and governance (88 passed).
@@ -7409,7 +7474,7 @@ declared T4 runtime before V2b-4.
 **Track V V1a (Entry 169):** PR #126 merged the strict D50/D56 train-only augmentation
 configuration, five-family pipeline, independent RawBoost algorithm 1 with pinned-reference parity,
 guarded codec backend and corpus-audit tooling, verified on synthetic audio only. V1b pins/manifests
-are now merged and closed in Entry 175; the next Malak-owned step is V1c.
+are now merged and closed in Entry 180; the next Malak-owned step is V1c.
 
 **Stage 12 F4 (Entry 168):** F4 built and verified: `bundle-v1`, manifest SHA-256 `edf4a205…40efc`, on Drive `checkpoints/bundle/bundle-v1/` (Drive copy verified); evidence in `docs/audit_evidence/stage12_bundle/`; D60 (F4 freeze) approved (PR #125). Next: hand-over to Iheb (P1) and Khalil (Stage 13), Stage 12 brief.
 
@@ -7629,13 +7694,13 @@ canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI eth
 - Stage briefs (`docs/stages/`, D32): 00–10 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), 07 (PR #43), 08–09 (PR #54), and 10 (PR #61).
 
 **Branches:**
-- `origin/main`: checked at `ca45601` (Part 6 status correction PR #74 merged; includes combined Part 6 PR #72 and AI ethics PR #71).
+- `origin/main`: checked at `6ebdd01` when Stage 13 Entry 175 was prepared; PR #133 is based on current main at `704e0ed`.
 - `docs/stage11-midterm-ai-ethics-malak`: Entry 107 AI ethics and usage reflection, merged as PR #71 (`98fd8d7`).
 - `docs/stage11-midterm-uml-malak`: Entries 104–106, merged as PR #70 (`85829e1`).
 - `docs/stage11-midterm-backlog-malak`: Entry 102 backlog, merged as PR #69 (`023bfa4`).
 - `docs/stage8-cnn-selection`: merged as PR #52 (remote branch deleted).
 - `docs/stage16-d43-loudness-diagnostic`: D43 proposal and approval (Entry 87), merged as PR #53 (`a022e7a`) (remote branch deleted).
-- `feat/stage13-window-runner`: D35 per-window integration test; its log entry needs renumbering to 85.
+- `feat/stage13-window-runner`: older unmerged prototype; do not merge blindly. Entry 175 is a clean-`main` replacement for its initial safe primitives and tests.
 - `fix/stage10-d44-platt-stop`: D44 Platt stop rule (Entry 89), merged as PR #55 (remote branch deleted).
 - `docs/stage10-d44-approval`: D44 approval record (Entry 90), merged as PR #56 (`4720bc2`) (remote branch deleted).
 - `docs/stage10-d45-seed-policy-scope`: D45 proposal and approval (Entry 91), merged as PR #57 (`13a7d38`).
@@ -7651,17 +7716,12 @@ canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI eth
 - `feat/stage11-runner`: Stage 11 runner, PR A (Entry 154, written as Entry 102), PR #68; D46 approved (PR #67, Entry 153).
 - `feat/stage11-report`: Stage 11 metrics report, PR B (Entry 156); D57 proposed.
 - `fix/stage11-mfcc-gate`: D58 proposal and the runner's processor-bound MFCC gate (Entry 159).
-- PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; implementation remains a
-  prerequisite before Stage 13.
+- PRs #26, #27, #29 and #35 are merged. D33–D36 are approved by all four; the implementation is in progress on `feat/stage13-runner-prep` and remains a prerequisite before Stage 13.
 
 **What we want:**
 - A model that detects **synthetic voices**, not dataset accidents, followed by one honest external test.
 
 **What's next:**
-1. D33–D36 are approved; ADR 0007/0009 implementation (runner, both artifacts verified before any audio read) is required before Stage 13.
-   Briefs 00–06 are accepted.
-2. Before Stage 13, implement the approved file-level view, speaker-average convention and guarded
-   runner; resolve the external-run governance allowlist.
-3. Stage 7 is closed (PR #43); Stages 8–9: the official run is complete (Entry 86), validation only; PR D merged as #52; D43 approved (PR #53, Entry 87; implementation only at Stage 16, after the D41 storage implementation); the 08–09 teach-backs are done (Entry 88); Stage 10 is closed (Entry 96); next: Stage 11 (FoR test, once), after its runtime and environment plan (Entry 94) and the reviewed D41 registry and storage implementation (D41, ADR 0010). Preserve the recorded validation-only scope of Entries 74 and 86.
-4. D41/ADR 0010 registry and per-clip storage implementation merged in PR #62 (Entry 99). The D46 runtime/environment proposal is in open PR #67 and the Stage 11 runner in open PR #68; review and merge the required prerequisites before any FoR test access.
-5. Then run the real Part C work on the frozen F3 preprocessing profile; the W&B project is set up (entity `voice-spoofing-detection-must`, project `voice-spoofing-detection`, D40), and teammates' Member invites are pending (see Open items).
+1. Integrate and verify the real architecture-aware F5 loader and frozen record when F5 is ready.
+2. Confirm the checked-in D58 rehearsal report matches the exact T4 runtime; repeat the rehearsal if it differs.
+3. Verify durable Drive claim/read-back behavior, run full dependency-complete CI, then finish peer review and the Stage 13 brief. Keep DEEP-VOICE unopened until every run gate is satisfied.

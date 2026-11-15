@@ -16,7 +16,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 # Prefixes (directories end with "/") and exact files allowed to reference DEEP-VOICE paths.
 ALLOWED = (
     "src/audit/",
+    "src/evaluation/external_run.py",  # sole reviewed Stage 13 orchestration entry point (D35)
     "configs/audit.yaml",
+    "configs/external_run.yaml",  # path-driven Stage 13 configuration (D35)
     "notebooks/01_stage1_dataset_audit.ipynb",
     "docs/",
     "tests/",
@@ -93,3 +95,11 @@ def test_allowed_prefixes_do_not_leak():
     assert not is_allowed("configs/audit_v2.yaml")
     assert not is_allowed("src/auditing/x.py")
     assert not is_allowed("notebooks/02_stage8_training.ipynb")
+
+
+def test_stage13_allowlist_is_exact():
+    assert is_allowed("src/evaluation/external_run.py")
+    assert is_allowed("configs/external_run.yaml")
+    assert not is_allowed("src/evaluation/external_run_extra.py")
+    assert not is_allowed("src/evaluation/unrelated_loader.py")
+    assert not is_allowed("configs/external_run_extra.yaml")
