@@ -17,6 +17,7 @@ torch = require_torch()
 
 import src.tuning.v2_search as vs  # noqa: E402
 from src.evaluation.seeds import select_bundle_seed  # noqa: E402
+from src.features.raw_train_cache import build_raw_train_cache  # noqa: E402
 from src.models.v2_checkpoint import build_model, load_v2_checkpoint, trainable_parameters  # noqa: E402
 from src.preprocessing.profile import PreprocessingError  # noqa: E402
 from src.training.selection_set import load_selection_set  # noqa: E402
@@ -218,6 +219,19 @@ def test_refuses_missing_resources_and_repo_output(inputs, patched, tmp_path):
         _run(inputs, tmp_path / "out", resources=AugmentationResources())
     with pytest.raises(ValueError, match="inside the repository"):
         _run(inputs, PROFILE_PATH.parent / "v2_search_should_not_exist")
+
+
+def test_refuses_raw_cache_with_all_zero_clip_before_training(inputs, patched, tmp_path, monkeypatch):
+    base = tmp_path / "zero"
+    root, manifest, manifest_path = write_dataset(base, sizes={"train": 4}, zero_clips=(2,))
+    raw_dir = base / "raw"
+    build_raw_train_cache(root, manifest, "train", raw_dir, f2_manifest_sha256=sha(manifest_path),
+                          code_commit=COMMIT)
+    monkeypatch.setattr(vs, "F2_MANIFEST_SHA256", sha(manifest_path))
+    with pytest.raises(ValueError, match=r"holds 1 all-zero clip.*decision D62 needed before "
+                                         r"training \(docs/v2_training.md\)"):
+        _run(inputs, tmp_path / "out", raw_cache_dir=raw_dir)
+    assert patched == [] and not (tmp_path / "out").exists()
 
 
 def test_refuses_stats_cache_mismatch(inputs, patched, tmp_path, monkeypatch):

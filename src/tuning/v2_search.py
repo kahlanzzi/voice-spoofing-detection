@@ -252,6 +252,11 @@ def run_search(*, raw_cache_dir, stage8_train_logmel_dir, selection_set_dir, pro
     profile = load_profile(profile_path)
     manifest = load_f2_manifest(manifest_path)
     raw = load_raw_train_cache(raw_cache_dir, expected_f2_manifest_sha256=F2_MANIFEST_SHA256)
+    n_zero = raw.meta["n_all_zero_clips"]
+    if n_zero > 0:
+        raise ValueError(f"raw train cache holds {n_zero} all-zero clip(s) (Augmenter's "
+                         f"recorded_noise refuses a silent clip): decision D62 needed before "
+                         f"training (docs/v2_training.md)")
     _check_paths(manifest, TRAIN_SPLIT, raw.paths, raw.labels)
     groups = manifest.set_index("path").loc[raw.paths.tolist(), "group"].astype(str).to_numpy()
     if not np.array_equal(groups, raw.groups.astype(object)):
