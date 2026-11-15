@@ -138,6 +138,7 @@ def patched(inputs, monkeypatch):
 
 def _run(inputs, out, **changes):
     args = dict(raw_cache_dir=inputs["raw"], stage8_train_logmel_dir=inputs["lm"] / "train",
+                stage8_val_a_logmel_dir=inputs["lm"] / "val-A",
                 selection_set_dir=inputs["base"] / "S", profile_path=PROFILE_PATH,
                 v2_config_path=inputs["v2"], augmentation_config_path=inputs["aug"],
                 manifest_path=inputs["manifest_path"], resources=fake_resources(), out_dir=out,
@@ -167,6 +168,8 @@ def test_end_to_end_outputs(inputs, patched, tmp_path, capsys):
     assert report["selection_set_sha256"] == sha(inputs["base"] / "S" / "selection_set_manifest.json")
     stage8 = json.loads((inputs["lm"] / "train" / "train.json").read_text(encoding="utf-8"))["npz_sha256"]
     assert report["train_stats_npz_sha256"]["aasist_seed0"] is None
+    val_a = json.loads((inputs["lm"] / "val-A" / "val-A.json").read_text(encoding="utf-8"))["npz_sha256"]
+    assert report["val_a_cache_npz_sha256"] == val_a
     assert report["train_stats_npz_sha256"]["crnn_seed1"] == stage8
     selection = json.loads((out / "selection_report.json").read_text(encoding="utf-8"))
     assert selection["selected"] == "crnn" and selection["tie_rule_decided"] is False
@@ -179,6 +182,7 @@ def test_end_to_end_outputs(inputs, patched, tmp_path, capsys):
         assert meta["determinism"]["num_workers"] == 0
         assert (mean is None) == (run["candidate"] == "aasist")
         assert run["provenance"]["train_stats_npz_sha256"] == meta["train_stats_npz_sha256"]
+        assert run["provenance"]["val_a_cache_npz_sha256"] == val_a
 
 
 def test_tie_rule_recorded(inputs, patched, tmp_path, monkeypatch):
@@ -243,6 +247,49 @@ def test_refuses_stats_cache_mismatch(inputs, patched, tmp_path, monkeypatch):
     monkeypatch.setattr(vs, "load_logmel_cache", flipped)
     with pytest.raises(ValueError, match="differ from the Stage 8 train cache"):
         _run(inputs, tmp_path / "out")
+
+
+def test_val_a_known_answer_passed_for_both_forms(inputs, patched, tmp_path, monkeypatch):
+    seen = []
+    real = vs.load_selection_set
+
+    def recording(*args, **kw):
+        seen.append((kw["form"], kw["clean_reference_logmel"]))
+        return real(*args, **kw)
+    monkeypatch.setattr(vs, "load_selection_set", recording)
+    _run(inputs, tmp_path / "out")
+    assert {f for f, _ in seen} == {"logmel", "waveform"}
+    for _, ref in seen:
+        assert ref is not None and ref[3]["split"] == "val-A"
+
+
+def test_refuses_val_a_cache_one_ulp_off(inputs, patched, tmp_path, monkeypatch):
+    real = vs.load_logmel_cache
+
+    def nudged(out_dir, split, *args, **kw):
+        features, labels, paths, meta = real(out_dir, split, *args, **kw)
+        if split == "val-A":
+            features = features.copy()
+            features[0, 0, 0, 0] = np.nextafter(features[0, 0, 0, 0], np.float32(np.inf))
+        return features, labels, paths, meta
+    monkeypatch.setattr(vs, "load_logmel_cache", nudged)
+    with pytest.raises(ValueError, match="clean log-Mel differs"):
+        _run(inputs, tmp_path / "out")
+    assert patched == []
+
+
+def test_refuses_val_a_cache_from_other_profile_config(inputs, patched, tmp_path, monkeypatch):
+    real = vs.load_logmel_cache
+
+    def other(out_dir, split, *args, **kw):
+        features, labels, paths, meta = real(out_dir, split, *args, **kw)
+        if split == "val-A":
+            meta = {**meta, "profile_config_sha256": "e" * 64}
+        return features, labels, paths, meta
+    monkeypatch.setattr(vs, "load_logmel_cache", other)
+    with pytest.raises(ValueError, match="Stage 8 val-A cache was built from profile config"):
+        _run(inputs, tmp_path / "out")
+    assert patched == []
 
 
 def test_resume_removes_partial_reuses_complete_and_keeps_reports(inputs, patched, tmp_path, capsys):

@@ -6,7 +6,8 @@ seeds 1 and 2 -> bundle seed = select_bundle_seed over the three M values (media
 seed). Every run is logged through its own allow-list V2RunLogger (D40).
 
 Inputs: the raw train cache (src.features.raw_train_cache), the Stage 8 train log-Mel cache (only
-for the clean-train statistics of D61 (5) and as a cross-check of paths and labels), the selection
+for the clean-train statistics of D61 (5) and as a cross-check of paths and labels), the Stage 8
+val-A log-Mel cache (the known answer: S's clean condition must equal it byte for byte), the selection
 set S (src.training.selection_set), the F2 manifest, the F3 profile, configs/v2_candidates.yaml
 (batch sizes required) and configs/augmentation.yaml (corpus and ffmpeg pins required, V1b).
 `resources` (the audited training halves of the noise and RIR corpora) is passed in because the
@@ -63,6 +64,7 @@ from src.tuning.cnn_search import _check_paths, _json_text, environment
 
 SCHEMA_VERSION = 1
 TRAIN_SPLIT = "train"
+VAL_A_SPLIT = "val-A"
 RUNS_DIR = "runs"
 PARTIAL_SUFFIX = ".partial"
 CHECKPOINT_DIR = "checkpoint"
@@ -162,7 +164,7 @@ def _write_reports(out_dir: Path, reports: dict[str, dict]) -> dict:
         for key in ("checkpoint_sha256", "selected", "bundle_seed", "code_commit",
                     "v2_config_sha256", "augmentation_config_sha256", "selection_set_sha256",
                     "raw_train_cache_npz_sha256", "f2_manifest_sha256", "profile_fingerprint",
-                    "train_stats_npz_sha256"):
+                    "train_stats_npz_sha256", "val_a_cache_npz_sha256"):
             if existing.get(key) != expected[key]:
                 raise ValueError(f"{final}: {key} differs from the completed runs; reports are "
                                  f"never overwritten")
@@ -209,14 +211,15 @@ def _load_complete_run(folder: Path, expected_provenance: dict) -> dict:
     _, _, _, meta = load_v2_checkpoint(folder / CHECKPOINT_DIR, expected_sha256=actual)
     if record.get("provenance") != expected_provenance:
         raise ValueError(f"{folder}: provenance differs from the current inputs; a completed run is "
-                         f"reused only with the same code, configs, S, raw cache, stats, F2 and F3 "
+                         f"reused only with the same code, configs, S, val-A cache, raw cache, stats, F2 and F3 "
                          f"(recorded {record.get('provenance')}, current {expected_provenance})")
     if (meta["architecture"], meta["seed"]) != (record["candidate"], record["seed"]):
         raise ValueError(f"{folder}: checkpoint metadata does not match {RUN_JSON}")
     return record
 
 
-def run_search(*, raw_cache_dir, stage8_train_logmel_dir, selection_set_dir, profile_path,
+def run_search(*, raw_cache_dir, stage8_train_logmel_dir, stage8_val_a_logmel_dir,
+               selection_set_dir, profile_path,
                v2_config_path, augmentation_config_path, manifest_path,
                resources: AugmentationResources, out_dir, version: str, logger_mode: str,
                device: str, num_workers: int) -> dict[str, Any]:
@@ -273,6 +276,12 @@ def run_search(*, raw_cache_dir, stage8_train_logmel_dir, selection_set_dir, pro
     mean, std = fit_bin_stats(features)  # clean train (D61 (5))
     del features
     stats_sha256 = meta["npz_sha256"]
+    val_a = load_logmel_cache(Path(stage8_val_a_logmel_dir), VAL_A_SPLIT, profile,
+                              expected_f2_manifest_sha256=F2_MANIFEST_SHA256)
+    if val_a[3]["profile_config_sha256"] != profile_config_sha256:
+        raise ValueError(f"Stage 8 val-A cache was built from profile config "
+                         f"{val_a[3]['profile_config_sha256']}, profile file is "
+                         f"{profile_config_sha256}")
 
     f2_sha256 = sha256_file(manifest_path)
     aug_sha256 = sha256_file(augmentation_config_path)
@@ -282,7 +291,7 @@ def run_search(*, raw_cache_dir, stage8_train_logmel_dir, selection_set_dir, pro
         if form not in s_cache:
             s_cache.clear()  # one form in memory at a time
             s_cache[form] = load_selection_set(selection_set_dir, profile, form=form,
-                                               f2_manifest=manifest)
+                                               f2_manifest=manifest, clean_reference_logmel=val_a)
         return s_cache[form]
 
     first = selection_for("logmel")
@@ -302,6 +311,7 @@ def run_search(*, raw_cache_dir, stage8_train_logmel_dir, selection_set_dir, pro
         "f2_manifest_sha256": f2_sha256,
         "raw_train_cache_npz_sha256": raw.meta["npz_sha256"],
         "selection_set_sha256": s_sha256,
+        "val_a_cache_npz_sha256": val_a[3]["npz_sha256"],
     }
 
     def provenance(candidate: str) -> dict:
