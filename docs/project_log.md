@@ -6793,6 +6793,80 @@ tests. Donia reviews. AI does not approve, push or merge.
 
 ---
 
+### Entry 173 — Track V PR V2b-2: D49 batch sizes from the T4 benchmark (2026-11-15)
+
+**Numbering:** Entry 173 was free on `main` (`9c46baf`) and on the remote branches
+`feat/stage13-window-runner` (last 84) and `feat/stageV1-corpus-pins` (last 169) (checked 2026-11-15).
+
+**Owner:** Donia Mabrouk (Track V, part C).
+
+**Scope [doc]:** D49 (batch size per candidate from the compute benchmark, written before training),
+D61 (7); D39 / Stage 6 selection rule. No new decision: D49 / D61 (7) say the benchmark writes these
+values before training. Config, evidence, tests and docs only; **no change under `src/`**. No dataset
+read, no training, no FoR test split or DEEP-VOICE access.
+
+**What was run (Colab, by Donia):** T4 runtime 2026.10 (python 3.13.16, torch 2.11.0+cu130, Tesla
+T4 15360 MiB, 2 CPUs), clean detached checkout of `9c46bafba7e220867f3b5fdd7b4d66ebc0573991`; the exact
+cells are `docs/audit_evidence/v2b2_benchmark/colab_cells.md`.
+- `pytest tests/training tests/tuning/test_v2_benchmark.py tests/models` (`REQUIRE_TORCH_TESTS=1`):
+  428 passed, 1 skipped (`AASIST_REF_DIR`).
+- `python -m src.tuning.v2_benchmark --device cuda --throughput-items 0`, twice (`gpu_run1`, `gpu_run2`).
+- once `--device cpu --candidates cnn-aug --batch-sizes 16 --throughput-items 20
+  --codec-unpinned-timing` (`cpu_throughput`; ffmpeg 6.1.1-3ubuntu5, unpinned, planning only).
+
+**Result [verified from the committed JSON]:** both GPU runs choose **`cnn-aug` 256, `crnn` 256,
+`aasist` 32**, with empty `choice_errors`. Budget = 15,637,086,208 B × 0.80 = 12,509,668,966.4 B.
+Peaks at the chosen sizes: 1,893,527,040 / 1,897,988,096 / 6,985,602,048 B. `aasist` 64 peaks at
+13,895,315,968 B > budget; `aasist` 128 and 256 OOM. Every row's status and peak is byte-identical
+between the runs; the files differ only in `mean_step_seconds`. GPU rows include each candidate's
+real optimizer step (Stage 6 measured forward/backward only), so the choice is at least as safe.
+
+**CPU throughput (unpinned, planning only) [verified from the JSON]:** codec 0.42 s/item (mean;
+p95 0.51) dominates augmentation (0.077 s/item mean over all families); estimated augmentation time
+per epoch (12,404 clips) for log-Mel 1015 / 508 / 254 s and waveform 926 / 463 / 232 s with 1 / 2 /
+4 workers, assuming linear scaling with workers, which Colab's 2 vCPUs may not give.
+`FFmpegCodecBackend.round_trip` runs `ffmpeg -version` on every call; that cost is included.
+
+**What we did:** on `feat/stageV2-batch-sizes` (already at `main` `9c46baf`), in small commits:
+- **Evidence:** `docs/audit_evidence/v2b2_benchmark/`: `gpu_run1.json`, `gpu_run2.json`,
+  `cpu_throughput.json` copied byte for byte (SHA-256 checked against the expected values before
+  committing: `74f8024a…695de0`, `2efeb019…66cb5fa9`, `039d0779…493f68`), `colab_cells.md`
+  (Donia's `v2b2_colab_cells.md`, taken from the Downloads folder: it was not in `Desktop\v2b2\`),
+  and a README (runtime, procedure, rows table, 80 % arithmetic, chosen sizes, why the hashes differ,
+  optimizer-step difference, CPU table, hashes). All four files are LF-only, so `eol=lf` does not
+  change their bytes.
+- **`configs/v2_candidates.yaml`:** `batch_size` 256 / 256 / 32, comment `# D49 benchmark (Entry 173,
+  docs/audit_evidence/v2b2_benchmark/)`; no other change.
+- **Tests:** `test_v2_config.py` expects 256/256/32 and a new test checks `require_batch_sizes()` on
+  the committed file; the "raises while null" test uses a tmp null copy. New torch-free
+  `tests/training/test_v2_batch_size_evidence.py` (5): committed sizes equal `chosen_batch_size` in
+  both GPU runs; rows' status and peaks identical; each chosen size equals `choose_batch_size` with
+  the recorded `total_vram_bytes` and 0.80; the three hashes equal the README's.
+  `tests/_v2_fakes.py` `v2_config_copy` replaces any `batch_size` value (tiny tests keep 8; `None`
+  writes null; `NULL_BATCH_SIZES`); `test_v2_search.py` refusal "batch_size is null" and
+  `test_v2_wandb_logger.py` use a null copy, and the committed config is now accepted by `V2RunLogger`.
+- **Docs:** `docs/v2_candidates.md`, `docs/v2_training.md` (sizes set, evidence link), CHANGELOG.
+
+**Evidence** (local, Windows 11, `.venv`, Python and torch as in Entry 172):
+- [verified] full `pytest -q` (`REQUIRE_TORCH_TESTS=1`): **2002 passed, 2 skipped** in 385.05 s
+  (tail line `2002 passed, 2 skipped in 385.05s (0:06:25)`; main before: 1996 passed, 2 skipped; +1 in
+  `test_v2_config.py`, +5 in the new drift guard). Skips unchanged: AASIST faithfulness (no
+  `AASIST_REF_DIR`) and the Windows symlink test.
+- [verified] `git diff main --stat -- src` is empty.
+
+**Not done:** no training, no S build (V1b), no raw cache build (V2b-3), no rehearsal (V2b-4). Not
+pushed.
+
+**AI assistance:** **Claude** (claude.ai) wrote the prompt and the Colab cells with Donia; Donia ran
+the cells. **Claude Code** (Claude Opus 5.5) checked the hashes, copied the evidence, wrote the
+README, the config change, the tests, this entry and the doc updates, and ran the tests. Donia
+reviews. AI does not approve, push or merge.
+
+**What's next:** review (Donia) -> V2b-3 (raw cache, `n_all_zero_clips`), V1b (corpora, ffmpeg pin,
+S; Malak) -> V2b-4 (CLI, rehearsal, search).
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -6801,8 +6875,10 @@ tests. Donia reviews. AI does not approve, push or merge.
 - [x] Approve D56 and add its approval commit before the v1 Stage 11 claim and before V1a implementation; D50 is marked as amended for RawBoost algorithm 1 and uniform sampling over seven codec options (Entries 157–158; PR #116, merged).
 - [x] Implement V1a's strict train-only augmentation module and synthetic tests without corpus access (D50/D56; Entry 169; awaiting review and merge).
 - [ ] V1b: pin and audit the noise/RIR corpora (licence, archive hash, 50/50 by-file split) and exact ffmpeg/codec tools before any v2 training (D50 (5)).
-- [ ] Compute benchmark per v2 candidate; batch sizes in `configs/` before training (D49). Slots exist as `null` in `configs/v2_candidates.yaml`; `require_batch_sizes()` blocks training until set (Entry 170; PR V2b).
-- [ ] V2b-2: run `python -m src.tuning.v2_benchmark` on Colab T4 (2026.10) and write the batch sizes into `configs/v2_candidates.yaml` (D49; Entry 172).
+- [x] Compute benchmark per v2 candidate; batch sizes in `configs/` before training (D49). Slots exist as `null` in `configs/v2_candidates.yaml`; `require_batch_sizes()` blocks training until set (Entry 170; PR V2b). Done: 256 / 256 / 32 (Entry 173).
+- [x] V2b-2: run `python -m src.tuning.v2_benchmark` on Colab T4 (2026.10) and write the batch sizes into `configs/v2_candidates.yaml` (D49; Entry 172). (Entry 173; evidence `docs/audit_evidence/v2b2_benchmark/`; review pending)
+- [ ] Per-epoch resume within a run before V2b-4: a worst-case run (30 epochs × ~10–17 min) may not fit one Colab session; V2b-1 resumes only between runs (Entry 173).
+- [ ] Ask Malak whether `FFmpegCodecBackend.round_trip` can verify the ffmpeg pin once per process instead of per call (codec 0.42 s/item dominates augmentation; Malak's module) (Entry 173).
 - [ ] V1b (Malak): confirm the S layout in `docs/v2_training.md` and build S with `write_selection_set` on the training runtime; verify with `load_selection_set` incl. the Stage 8 val-A known answer (D50 (4), D58; Entry 172).
 - [ ] V2b-4: search CLI/notebook wired to the V1b corpus loader; T4 rehearsal (`check_clean_transform`, two short runs for observed crnn/cuDNN determinism), then the search (Entry 172).
 - [ ] V2b-3: read `n_all_zero_clips` from the raw train cache (`build` / `verify` print it with the first 10 paths). If it is > 0, a decision (**D62**) is needed before any training (`run_search` refuses such a cache): `Augmenter`'s `recorded_noise` refuses a silent clip [verified], and Malak's S builder (`noise_10db`) has the same issue on val-A (Entry 172; `docs/v2_training.md`).
@@ -7208,9 +7284,11 @@ tests. Donia reviews. AI does not approve, push or merge.
 
 ---
 
-## Current status — updated 2026-11-15 (Entry 172)
+## Current status — updated 2026-11-15 (Entry 173)
 
-**Track V, PR V2b-1 (Entry 172):** on `feat/stageV2-training` (from `main` `e9c6093`, not pushed): the model v2 training code with synthetic tests only — raw FoR train waveform cache, the set S format (writer for Malak's V1b builder + strict loader), the per-item seed rule (items identical for any `num_workers`), `train_v2` with early stopping on M, the v2 W&B logger, a resumable `v2_search`, and the D49 batch-size benchmark (with the optimizer step) plus CPU throughput; `docs/v2_training.md`. Full suite 1996 passed, 2 skipped. No data touched, no training, batch sizes still `null`. Next: review, then V2b-2 (benchmark on T4), V2b-3 (raw cache), V1b (S, Malak), V2b-4 (rehearsal and search).
+**Track V, PR V2b-2 (Entry 173):** on `feat/stageV2-batch-sizes` (from `main` `9c46baf`, not pushed): the D49 benchmark ran on the Colab T4 (runtime 2026.10, commit `9c46baf`, two GPU runs with byte-identical peaks) and chose **`cnn-aug` 256, `crnn` 256, `aasist` 32**, now in `configs/v2_candidates.yaml`; evidence byte for byte in `docs/audit_evidence/v2b2_benchmark/` with a torch-free drift guard. The unpinned CPU throughput (planning only) shows the codec (0.42 s/item) dominating augmentation, about 8–17 min of augmentation per epoch with 1–2 workers. No code change, no data, no training. Open: per-epoch resume before V2b-4; ask Malak about checking the ffmpeg pin once per process. Next: review, then V2b-3 (raw cache), V1b (S, Malak), V2b-4 (rehearsal and search).
+
+**Track V, PR V2b-1 (Entry 172):** merged as PR #129 (`9c46baf`); was on `feat/stageV2-training` (from `main` `e9c6093`): the model v2 training code with synthetic tests only — raw FoR train waveform cache, the set S format (writer for Malak's V1b builder + strict loader), the per-item seed rule (items identical for any `num_workers`), `train_v2` with early stopping on M, the v2 W&B logger, a resumable `v2_search`, and the D49 batch-size benchmark (with the optimizer step) plus CPU throughput; `docs/v2_training.md`. Full suite 1996 passed, 2 skipped. No data touched, no training; batch sizes were set by V2b-2 (Entry 173).
 
 **Stage 11 report (Entry 171):** the platform-bound byte-exact `p` re-derivation (Entry 161) is now in `docs/stage11_report.md` Limitations; docs only.
 
