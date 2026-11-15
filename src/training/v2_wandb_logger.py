@@ -72,9 +72,16 @@ def _check_config(config: dict) -> None:
 class V2RunLogger:
     """One v2 W&B run: config at start, log_epoch per epoch, log_summary at the end, then finish()."""
 
-    def __init__(self, mode: str, config_dict: dict, run_name: str) -> None:
+    def __init__(self, mode: str, config_dict: dict, run_name: str, *,
+                 resume_id: str | None = None) -> None:
+        """resume_id: re-open that existing run (wandb.init(id=..., resume="must")) after a
+        per-epoch resume; refused in "disabled" mode, where there is no run."""
         if mode not in MODES:
             raise ValueError(f"mode must be one of {MODES}, got {mode!r}")
+        if resume_id is not None and (mode == "disabled" or not isinstance(resume_id, str)
+                                      or not resume_id.strip()):
+            raise ValueError(f"resume_id must be a non-empty string in online/offline mode, got "
+                             f"{resume_id!r} in mode {mode!r}")
         if not isinstance(run_name, str) or not run_name.strip():
             raise ValueError(f"run_name must be a non-empty string, got {run_name!r}")
         if not isinstance(config_dict, dict):
@@ -88,10 +95,16 @@ class V2RunLogger:
             import wandb  # lazy: only online / offline runs need it
 
             target = config_dict["wandb"]
+            resume = {} if resume_id is None else {"id": resume_id, "resume": "must"}
             self._run = wandb.init(
                 entity=target["entity"], project=target["project"], name=run_name, mode=mode,
-                config=dict(config_dict), settings=wandb.Settings(**SETTINGS),
+                config=dict(config_dict), settings=wandb.Settings(**SETTINGS), **resume,
             )
+
+    @property
+    def run_id(self) -> str | None:
+        """The W&B run id (stored in the resume state); None in "disabled" mode."""
+        return None if self._run is None else str(self._run.id)
 
     def _send(self, where: str, data: dict, keys, nullable=frozenset()) -> dict:
         if self._finished:

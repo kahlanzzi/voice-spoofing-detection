@@ -73,6 +73,43 @@ def test_disabled_mode_validates_and_sends_nothing(base_config, monkeypatch):
         logger.log_epoch(_epoch())
 
 
+class _FakeRun:
+    def __init__(self, run_id):
+        self.id, self.logged, self.summary, self.finished = run_id, [], {}, False
+
+    def log(self, data):
+        self.logged.append(data)
+
+    def finish(self):
+        self.finished = True
+
+
+def _fake_wandb(monkeypatch):
+    calls = []
+
+    def init(**kw):
+        calls.append(kw)
+        return _FakeRun(kw.get("id", "new-run-id"))
+
+    module = type(sys)("wandb")
+    module.init, module.Settings = init, lambda **kw: dict(kw)
+    monkeypatch.setitem(sys.modules, "wandb", module)
+    return calls
+
+
+def test_resume_reopens_the_same_run_and_exposes_its_id(base_config, monkeypatch):
+    calls = _fake_wandb(monkeypatch)
+    first = V2RunLogger("offline", _config(base_config), "cnn-v2-crnn-s0")
+    assert first.run_id == "new-run-id" and "resume" not in calls[0] and "id" not in calls[0]
+    again = V2RunLogger("online", _config(base_config), "cnn-v2-crnn-s0", resume_id=first.run_id)
+    assert (calls[1]["id"], calls[1]["resume"]) == ("new-run-id", "must")
+    assert again.run_id == "new-run-id"
+    assert V2RunLogger("disabled", _config(base_config), "r").run_id is None
+    for mode, rid in (("disabled", "abc"), ("online", ""), ("offline", 3)):
+        with pytest.raises(ValueError, match="resume_id"):
+            V2RunLogger(mode, _config(base_config), "r", resume_id=rid)
+
+
 def test_train_stats_null_only_for_aasist(base_config):
     V2RunLogger("disabled", _config(base_config, "aasist"), "r")
     with pytest.raises(ValueError, match="only for aasist"):

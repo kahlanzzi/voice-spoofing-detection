@@ -7054,6 +7054,50 @@ module, training-format S build/verification, training-half resource cache and o
 - **AI assistance:** Codex drafted the proposal; team review is required before acceptance.
 - **Gate:** **PROPOSED — WAITING FOR TEAM REVIEW.** D63 and Entry 182 are provisional while this PR is open.
 
+### Entry 184 — Track V PR V2b-R: per-epoch resume within a v2 run (2026-11-15)
+
+- **Owner:** Donia Mabrouk (Part C). Branch `feat/stageV2-epoch-resume` from `main` `37b236b`.
+- **Why [doc]:** Execution Plan v3.0 §9 V3 and §13 risk "v2 training does not fit the free T4 time":
+  the D49 benchmark (Entry 173) gives ~10–17 min per epoch, so a 30-epoch run takes 5–8 h; V2b-1
+  resumed only between runs and deleted a run's `.partial` on any failure.
+- **What changed:** new `src/training/v2_resume.py` (state after every epoch in
+  `<run>.partial/resume/`: `state.safetensors` with weights, best weights, flattened Adam state,
+  torch CPU/CUDA and sampler RNG; canonical `state.json` with counters, history, NumPy/Python RNG,
+  determinism, W&B id, provenance, run settings and the tensor file's SHA-256; atomic swap through
+  `resume.tmp/` and `resume.old/`; no pickle, no `torch.save`). `train_v2` gains `resume_dir` and
+  `provenance`, verifies and restores a state, continues at the next epoch with the D61 schedule
+  from the saved global step, and returns a stopped run without training. `V2RunLogger` gains
+  `resume_id` (`resume="must"`) and `run_id`. `v2_search` keeps `.partial` on failure; at start it
+  resumes a valid state, removes a `.partial` without one and refuses (keeps) an invalid or foreign
+  one; `resume/` is deleted only after the renamed run verifies.
+- **Not changed:** D49/D61 training, early stopping, schedule, seeds, selection rule,
+  `src/augmentation/**`, `src/models/**`, `configs/**`. No new W&B key (D40). No data access.
+- **Deviation (accepted in review, 2026-11-15):** the brief allowed only `resume_dir` as a new `train_v2` argument, but
+  also asks `train_v2` to check the saved provenance against the caller's; `train_v2` does not know
+  the provenance otherwise, so it also takes `provenance` (required with `resume_dir`, refused
+  without it).
+- **Tests [verified, CPU, synthetic]:** `tests/training/test_v2_resume.py` (real training on a
+  4-clip / 2-row subset): for cnn-aug, crnn and aasist, 3 epochs straight equal 2 epochs + crash
+  right after the epoch-2 state + resume (`state_dict`, best epoch, best M, history except
+  `*_seconds`), also with `num_workers=2`; optimizer steps 0–3 then 4–5 with the step-4 learning
+  rate; stopped runs (patience, max epochs) train nothing on resume; refusals (tampered tensors,
+  provenance, candidate, seed, run settings, W&B id, missing key, missing tensor, NaN, non-canonical
+  JSON); atomic-swap recovery; RNG and Adam round trips. `tests/tuning/test_v2_search.py`: crash in
+  the second candidate, restart, only its remaining epoch trains, reports equal an uninterrupted
+  search (identical checkpoint hashes); invalid `.partial` refused and kept; leftover `resume/` in a
+  complete run cleaned after verification. Logger: resume re-opens the same id.
+- **Observation:** `set_seed` records `cublas_workspace_config_preset`, which is `false` only for
+  the first run of a process; so a run's `determinism` dict can differ between sessions while the
+  weights are identical. Pre-existing behaviour, unchanged; the search test pins the variable.
+- **Checks [verified, local Windows, Python 3.14.7, torch 2.11.0+cpu]:** `REQUIRE_TORCH_TESTS=1
+  pytest -q` → `2054 passed, 2 skipped in 219.86s`; `pytest -q tests/governance` → `89 passed`; the
+  new resume tests take ~44 s together (target ~60 s). CI on 3.13 not yet run (branch not pushed).
+- **GPU:** not run. On GPU a resumed run is reproducible only as observed (D42); the V2b-4 rehearsal
+  can measure it with a forced interruption.
+- **AI assistance:** Claude Code (Claude Opus 5.5) wrote the code, tests and docs from Donia's brief;
+  team review required before acceptance.
+- **Gate:** **WAITING FOR APPROVAL.**
+
 ---
 
 ## Open items
@@ -7066,7 +7110,8 @@ module, training-format S build/verification, training-half resource cache and o
 - [x] V1b: pin and audit the noise/RIR corpora (licence, archive hash, 50/50 by-file split) and exact ffmpeg/codec tools before any v2 training (D50 (5); PR #131, Entry 180); follow-up pin-preservation and closeout fixes merged in PR #134.
 - [x] Compute benchmark per v2 candidate; batch sizes in `configs/` before training (D49). Slots exist as `null` in `configs/v2_candidates.yaml`; `require_batch_sizes()` blocks training until set (Entry 170; PR V2b). Done: 256 / 256 / 32 (Entry 173).
 - [x] V2b-2: run `python -m src.tuning.v2_benchmark` on Colab T4 (2026.10) and write the batch sizes into `configs/v2_candidates.yaml` (D49; Entry 172). (Entry 173; evidence `docs/audit_evidence/v2b2_benchmark/`; review pending)
-- [ ] Per-epoch resume within a run before V2b-4: a worst-case run (30 epochs × ~10–17 min) may not fit one Colab session; V2b-1 resumes only between runs (Entry 173).
+- [x] Per-epoch resume within a run before V2b-4: a worst-case run (30 epochs × ~10–17 min) may not fit one Colab session; V2b-1 resumes only between runs (Entry 173). Done in PR V2b-R (Entry 184; review pending).
+- [x] V2b-R review: `train_v2` gained `provenance` next to `resume_dir` (the brief allowed only `resume_dir`; the provenance check needs it) — accept or revise (Entry 184). Accepted in Donia's review (2026-11-15).
 - [ ] V1c: move the notebook recipe into a pure `src/augmentation/` module and prove byte parity for all five conditions on synthetic audio (D50/D56; Entry 180).
 - [ ] V1c: materialize S with `write_selection_set` on Colab T4 runtime 2026.10 and verify both forms with `load_selection_set`, including the Stage 8 val-A known answer (D50 (4), D58; Entries 172, 180).
 - [ ] V1c: build and verify the deterministic training-half MUSAN/RIR resource cache outside the repo; refuse selection-half or all-zero resources (D50 (5); Entry 180).
@@ -7486,7 +7531,7 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
-## Current status — updated 2026-11-15 (Entry 182)
+## Current status — updated 2026-11-15 (Entry 184)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -7496,8 +7541,9 @@ the D32 teach-back (Entry 174). Replacing the API mock with F4 remains Iheb’s 
 the pin-preserving test and review follow-up in PR #134. V1c is next: build the training-format S
 folder and deterministic training-half resource cache, verify the recipe on the declared T4 runtime,
 and add the one-time FFmpeg pin check. V2 candidate/training code and the benchmark batch sizes are
-merged, but model training, search, selection, risk policy and F5 freeze remain. See the open items
-above and [Execution Plan v3.0](reference/Execution_Plan_v3.0.md).
+merged, but model training, search, selection, risk policy and F5 freeze remain. PR V2b-R (Entry
+184, waiting for review) makes a v2 run resumable per epoch, so a Colab disconnect costs at most the
+current epoch. See the open items above and [Execution Plan v3.0](reference/Execution_Plan_v3.0.md).
 
 **Khalil / Stage 13 — preparation merged; external run not ready.** Runner preparation from Entries
 175–179 merged in PR #133. The synthetic Stage 13 suite reported 33 passed; PR #134 subsequently

@@ -110,7 +110,8 @@ so the D50 mix (0.2 clean, 0.16 per family, 1/7 per codec option) can be checked
 ## Training loop and early stopping (`src/training/train_v2.py`)
 
 `train_v2(candidate, *, config, run_seed, raw_cache, selection, augmenter, profile, mean, std,
-max_epochs, patience, batch_size, num_workers, logger, device)` has no val-B, test or external input.
+max_epochs, patience, batch_size, num_workers, logger, device, resume_dir=None, provenance=None)` has
+no val-B, test or external input (`resume_dir` and `provenance`: see Resumability).
 
 1. `set_seed(run_seed)` first; `build_model(candidate)`; optimizer from the config: cnn-aug / crnn
    Adam (lr 1e-3, weight decay 0), constant; aasist Adam (lr 1e-4, betas 0.9/0.999, weight decay
@@ -152,17 +153,59 @@ provenance and `run_report.json`.
 
 ## Resumability
 
-`out_dir/runs/<candidate>_seed<k>/` is either complete (`checkpoint/` from `save_v2_checkpoint` with
-full metadata — `selection_m`, `augmentation_config_sha256`, `selection_set_sha256`,
-`train_stats_npz_sha256` or null, `determinism` with `num_workers` — plus `run.json` with the
-history, the checkpoint hash and the provenance hashes) or absent. A run is built in
-`<name>.partial/` and renamed when complete. At start every `*.partial` is removed (the count is
-printed), every complete run's checkpoint hash is verified, and a complete run is reused only if its
-provenance (code commit, v2 and augmentation config hashes, S, raw cache, stats, F2, F3) equals the
-current one; otherwise the search refuses. The final `search_report.json`, `selection_report.json`
-and `run_report.json` are written once (run report last); if they exist they are verified against
-the runs and returned, never overwritten. There is no CLI yet: V2b-4 adds it once the V1b corpus
-loader exists.
+**Between runs.** `out_dir/runs/<candidate>_seed<k>/` is either complete (`checkpoint/` from
+`save_v2_checkpoint` with full metadata — `selection_m`, `augmentation_config_sha256`,
+`selection_set_sha256`, `train_stats_npz_sha256` or null, `determinism` with `num_workers` — plus
+`run.json` with the history, the checkpoint hash and the provenance hashes) or absent. A run is
+built in `<name>.partial/` and renamed when complete. Every complete run's checkpoint hash is
+verified, and a complete run is reused only if its provenance (code commit, v2 and augmentation
+config hashes, S, raw cache, stats, F2, F3) equals the current one; otherwise the search refuses.
+The final `search_report.json`, `selection_report.json` and `run_report.json` are written once (run
+report last); if they exist they are verified against the runs and returned, never overwritten.
+
+**Within a run, per epoch (PR V2b-R, Entry 184; Execution Plan v3.0 §9 V3, §13).** A worst-case run
+(30 epochs × ~10–17 min on the T4, Entry 173) may not fit one Colab session. After every completed
+epoch (S scored, best and patience updated, epoch logged) `train_v2` writes the full training state
+to `<name>.partial/resume/` (`src/training/v2_resume.py`); no pickle, no `torch.save`:
+
+- `state.safetensors`: `model.*` (current weights), `best.*` (best epoch's weights), the Adam state
+  flattened as `opt.<param_index>.exp_avg` / `.exp_avg_sq` / `.step`, `rng.torch_cpu`,
+  `rng.torch_cuda` (CUDA only), `rng.sampler` (the EpochSampler generator);
+- `state.json` (canonical: sorted keys, indent 2, NaN refused): schema version, candidate, run seed,
+  last completed epoch, global optimizer step, best M and epoch, patience counter, full history,
+  NumPy and Python `random` states, determinism dict, W&B run id, provenance, run settings (max
+  epochs, patience, batch size, steps per epoch, train size, device type), peak GPU memory so far,
+  and the SHA-256 of `state.safetensors`.
+
+The write is atomic: the new state goes to `resume.tmp/`, then `resume/` → `resume.old/`,
+`resume.tmp/` → `resume/`, and `resume.old/` is removed. At any interruption one complete state
+remains (`resume/`, or `resume.old/`, which is renamed back on read).
+
+On restart, `run_search` scans `runs/*.partial`: one **with** a resume state of the same candidate,
+seed and provenance is resumed; one **without** (stopped before its first epoch ended) is removed
+(the count is printed); one whose state is invalid (hash, keys, NaN, canonical form, counters) or has
+another provenance is **refused and kept**, since trained epochs are never deleted silently (inspect
+it, then remove it by hand to retrain). `train_v2` verifies the state again (also run settings and
+the W&B run id), calls `set_seed(run_seed)` and builds as usual, then loads weights, Adam state and
+counters and finally overwrites every RNG state; it continues at the next epoch, and the D61 cosine
+schedule continues from the saved global step. A state whose run had already stopped (patience or
+max epochs) returns the result without training. Epochs already logged are not logged again; in
+online/offline mode the same W&B run is re-opened (`wandb.init(id=…, resume="must")`), so the logger
+mode must not change between sessions. `resume/` is deleted only after the renamed run folder
+verifies (a leftover is deleted on the next start, after verification).
+
+**Guarantee.** On CPU a resumed run gives exactly the uninterrupted run's best `state_dict`, best
+epoch, best M and history (all fields except `*_seconds`), for every candidate and for `num_workers`
+0 or 2 (tested). On GPU, reproducibility is reported as observed (D42), as for uninterrupted runs.
+The `determinism` dict and the timing fields describe the session that finished the run.
+
+**Operating rule:** the provenance includes the code commit, so a search must run from one fixed
+commit from start to finish (the notebook checks out that commit); pulling a newer main mid-search
+makes every saved state refuse to resume.
+
+**What a Colab disconnect costs:** at most the epoch in progress (~10–17 min on the T4). A narrow
+case: a stop between logging an epoch to W&B and writing its state retrains that epoch and logs it
+once more. There is no CLI yet: V2b-4 adds it once the V1b corpus loader exists.
 
 ## Batch-size benchmark (`src/tuning/v2_benchmark.py`)
 
@@ -207,7 +250,8 @@ rehearsal (two identical runs) and reported only as observed (D42).
 
 `tests/features/test_raw_train_cache.py`, `tests/training/test_selection_set.py`,
 `tests/training/test_v2_data.py`, `tests/training/test_v2_wandb_logger.py`,
-`tests/training/test_train_v2.py`, `tests/tuning/test_v2_search.py`,
+`tests/training/test_train_v2.py`, `tests/training/test_v2_resume.py` (per-epoch resume on a
+4-clip subset, real CPU training), `tests/tuning/test_v2_search.py`,
 `tests/tuning/test_v2_benchmark.py`, `tests/training/test_v2_batch_size_evidence.py` (config vs
 the V2b-2 evidence, torch-free); fakes in `tests/_v2_fakes.py` (24-clip raw cache, 10-clip S,
 deterministic fake codec, tiny noise/RIR, config copies with batch size 8 (or null, for the

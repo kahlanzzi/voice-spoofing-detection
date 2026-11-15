@@ -14,11 +14,16 @@ set S (src.training.selection_set), the F2 manifest, the F3 profile, configs/v2_
 corpus loader belongs to V1b. There is no CLI `main` in this PR: it is wired in V2b-4, once the V1b
 loader exists.
 
-Resumable per run: out_dir/runs/<candidate>_seed<k>/ is either complete (checkpoint/ written by
-save_v2_checkpoint + run.json) or absent. A run is built in <name>.partial/ and renamed only when
-complete. At start, every *.partial folder is removed (the count is printed), every complete run's
-checkpoint hash is verified, and a complete run is reused only if its provenance equals the current
-one; otherwise the search refuses. The final reports (search_report.json, selection_report.json,
+Resumable per run and per epoch: out_dir/runs/<candidate>_seed<k>/ is either complete (checkpoint/
+written by save_v2_checkpoint + run.json) or absent. A run is built in <name>.partial/, where
+train_v2 keeps its per-epoch resume state (resume/, src.training.v2_resume), and renamed only when
+complete; on any exception the .partial folder is kept. At start: a .partial with a valid resume state
+of the same candidate, seed and provenance is resumed at its next epoch; a .partial without one
+(stopped before its first epoch ended) is removed (the count is printed); a .partial whose state is
+invalid or has another provenance is refused and kept (trained epochs are never deleted silently).
+Every complete run's checkpoint hash is verified, and a complete run is reused only if its provenance
+equals the current one; otherwise the search refuses. resume/ is deleted only once the renamed run
+folder is complete and verified. The final reports (search_report.json, selection_report.json,
 run_report.json) are written once; if they exist they are verified and returned, never overwritten.
 
 Only train and val-A are read; there is no val-B, held-out or external path (D9).
@@ -59,6 +64,7 @@ from src.training.normalization import fit_bin_stats
 from src.training.selection_set import load_selection_set
 from src.training.train_v2 import V2TrainResult, train_v2
 from src.training.v2_config import load_v2_config
+from src.training.v2_resume import RESUME_DIR, has_state, read_state, remove_state, state_folders
 from src.training.v2_wandb_logger import MODES, V2RunLogger
 from src.tuning.cnn_search import _check_paths, _json_text, environment
 
@@ -187,19 +193,54 @@ def _write_new(path: Path, text: str) -> None:
     tmp.rename(path)
 
 
-def _clean_partials(runs: Path, out_dir: Path) -> int:
-    removed = 0
-    for folder in (runs, out_dir):
-        for path in sorted(folder.iterdir()):
-            if path.name.endswith(PARTIAL_SUFFIX):
-                shutil.rmtree(path) if path.is_dir() else path.unlink()
-                removed += 1
-    return removed
+def _remove(path: Path) -> None:
+    shutil.rmtree(path) if path.is_dir() else path.unlink()
+
+
+def _scan_partials(runs: Path, out_dir: Path, allowed: set[str],
+                   provenance: Callable[[str], dict]) -> tuple[int, dict[str, dict]]:
+    """Remove the .partial entries that hold no trained epoch; return (count, resumable states).
+
+    A run's .partial with a resume state must be valid for its candidate, seed and the current
+    provenance; otherwise the search refuses and the folder is kept.
+    """
+    removed, resumable = 0, {}
+    for path in sorted(out_dir.iterdir()):  # unfinished report files
+        if path.name.endswith(PARTIAL_SUFFIX):
+            _remove(path)
+            removed += 1
+    for path in sorted(runs.iterdir()):
+        if not path.name.endswith(PARTIAL_SUFFIX):
+            continue
+        name = path.name[:-len(PARTIAL_SUFFIX)]
+        resume = path / RESUME_DIR
+        if not path.is_dir() or not has_state(resume):
+            _remove(path)
+            removed += 1
+            continue
+        if name not in allowed:
+            raise ValueError(f"{path}: holds a resume state but is not a run of this search; it is "
+                             f"kept: inspect it and remove it by hand")
+        candidate, seed = name.rsplit("_seed", 1)
+        try:
+            meta, _ = read_state(resume, candidate=candidate, run_seed=int(seed),
+                                 provenance=provenance(candidate))
+        except ValueError as exc:
+            raise ValueError(f"{path}: holds trained epochs but its resume state cannot be resumed "
+                             f"({exc}); it is kept, never deleted silently: inspect it and remove "
+                             f"it by hand to retrain the run") from exc
+        resumable[name] = meta
+    return removed, resumable
 
 
 def _load_complete_run(folder: Path, expected_provenance: dict) -> dict:
-    """Verify one complete run folder; return its run.json, or raise."""
-    names = sorted(p.name for p in folder.iterdir())
+    """Verify one complete run folder; return its run.json, or raise.
+
+    A resume state left over from training (the process stopped between the rename and its
+    deletion) is deleted only after the run verifies.
+    """
+    leftovers = {p.name for p in state_folders(folder / RESUME_DIR)}
+    names = sorted(p.name for p in folder.iterdir() if p.name not in leftovers)
     if names != sorted([CHECKPOINT_DIR, RUN_JSON]):
         raise ValueError(f"{folder}: a complete run holds exactly {CHECKPOINT_DIR}/ and {RUN_JSON}, "
                          f"found {names}")
@@ -215,6 +256,7 @@ def _load_complete_run(folder: Path, expected_provenance: dict) -> dict:
                          f"(recorded {record.get('provenance')}, current {expected_provenance})")
     if (meta["architecture"], meta["seed"]) != (record["candidate"], record["seed"]):
         raise ValueError(f"{folder}: checkpoint metadata does not match {RUN_JSON}")
+    remove_state(folder / RESUME_DIR)
     return record
 
 
@@ -320,11 +362,15 @@ def run_search(*, raw_cache_dir, stage8_train_logmel_dir, stage8_val_a_logmel_di
 
     runs = out_dir / RUNS_DIR
     runs.mkdir(parents=True, exist_ok=True)
-    removed = _clean_partials(runs, out_dir)
-    print(f"v2_search: removed {removed} incomplete *{PARTIAL_SUFFIX} folder(s)")
     allowed = {run_dir_name(c, s) for c in config.candidate_order for s in config.settings["final_seeds"]}
+    removed, resumable = _scan_partials(runs, out_dir, allowed, provenance)
+    print(f"v2_search: removed {removed} incomplete *{PARTIAL_SUFFIX} folder(s)")
+    for name, state in sorted(resumable.items()):
+        print(f"v2_search: {name} resumes after epoch {state['last_epoch']}")
     complete = {}
     for folder in sorted(runs.iterdir()):
+        if folder.name.endswith(PARTIAL_SUFFIX) and folder.name[:-len(PARTIAL_SUFFIX)] in resumable:
+            continue
         if folder.name not in allowed or not folder.is_dir():
             raise ValueError(f"{folder}: unexpected entry in {runs}")
         candidate = folder.name.rsplit("_seed", 1)[0]
@@ -346,56 +392,59 @@ def run_search(*, raw_cache_dir, stage8_train_logmel_dir, stage8_val_a_logmel_di
                                     "augmentation_config_sha256", "train_stats_npz_sha256")},
         }
         partial = runs / f"{name}{PARTIAL_SUFFIX}"
-        partial.mkdir()
+        state = resumable.pop(name, None)  # verified at start
+        partial.mkdir(exist_ok=state is not None)
+        # On any exception the .partial folder is kept: its resume state (if an epoch finished)
+        # is resumed by the next run_search; without one it is removed then.
+        logger = V2RunLogger(logger_mode, wandb_config, wandb_name,
+                             resume_id=None if state is None else state["wandb_run_id"])
         try:
-            logger = V2RunLogger(logger_mode, wandb_config, wandb_name)
-            try:
-                result: V2TrainResult = train_v2(
-                    candidate, config=config, run_seed=seed, raw_cache=raw,
-                    selection=selection_for(S_FORMS[INPUTS[candidate]]), augmenter=augmenter,
-                    profile=profile, mean=mean if logmel else None, std=std if logmel else None,
-                    max_epochs=config.settings["max_epochs"], patience=config.settings["patience"],
-                    batch_size=batch_sizes[candidate], num_workers=num_workers, logger=logger,
-                    device=device,
-                )
-            finally:
-                logger.finish()
-            model = build_model(candidate)
-            model.load_state_dict(result.state_dict, strict=True)
-            metadata = {
-                "schema_version": CHECKPOINT_SCHEMA_VERSION, "architecture": candidate,
-                "version": version, "input": INPUTS[candidate],
-                "input_shape": list(INPUT_SHAPES[INPUTS[candidate]]), "seed": seed,
-                "best_epoch": result.best_epoch, "selection_m": result.best_selection_m,
-                "code_commit": commit, "environment": env,
-                "profile_fingerprint": prov["profile_fingerprint"],
-                "f2_manifest_sha256": prov["f2_manifest_sha256"],
-                "augmentation_config_sha256": prov["augmentation_config_sha256"],
-                "selection_set_sha256": prov["selection_set_sha256"],
-                "train_stats_npz_sha256": prov["train_stats_npz_sha256"],
-                "determinism": result.determinism,
-                "trainable_parameters": trainable_parameters(model),
-            }
-            folder = save_v2_checkpoint(model, metadata, partial / CHECKPOINT_DIR,
-                                        mean=mean if logmel else None, std=std if logmel else None)
-            record = {
-                "schema_version": SCHEMA_VERSION, "candidate": candidate, "seed": seed,
-                "version": version, "run_name": wandb_name, "batch_size": batch_sizes[candidate],
-                "num_workers": num_workers, "best_epoch": result.best_epoch,
-                "best_selection_m": result.best_selection_m, "epochs_run": result.epochs_run,
-                "history": list(result.history),
-                "peak_gpu_memory_bytes": result.peak_gpu_memory_bytes,
-                "trainable_parameters": result.trainable_parameters,
-                "checkpoint_sha256": v2_checkpoint_sha256(folder),
-                "determinism": result.determinism, "environment": env,
-                "wandb_mode": logger_mode, "provenance": prov,
-            }
-            (partial / RUN_JSON).write_text(_json_text(record), encoding="utf-8")
-            partial.rename(runs / name)
-        except BaseException:
-            shutil.rmtree(partial, ignore_errors=True)
-            raise
-        record = json.loads((runs / name / RUN_JSON).read_text(encoding="utf-8"))
+            result: V2TrainResult = train_v2(
+                candidate, config=config, run_seed=seed, raw_cache=raw,
+                selection=selection_for(S_FORMS[INPUTS[candidate]]), augmenter=augmenter,
+                profile=profile, mean=mean if logmel else None, std=std if logmel else None,
+                max_epochs=config.settings["max_epochs"], patience=config.settings["patience"],
+                batch_size=batch_sizes[candidate], num_workers=num_workers, logger=logger,
+                device=device, resume_dir=partial / RESUME_DIR, provenance=prov,
+            )
+        finally:
+            logger.finish()
+        for stale in (partial / CHECKPOINT_DIR, partial / RUN_JSON):
+            if stale.exists():  # written by a session that stopped before the rename
+                _remove(stale)
+        model = build_model(candidate)
+        model.load_state_dict(result.state_dict, strict=True)
+        metadata = {
+            "schema_version": CHECKPOINT_SCHEMA_VERSION, "architecture": candidate,
+            "version": version, "input": INPUTS[candidate],
+            "input_shape": list(INPUT_SHAPES[INPUTS[candidate]]), "seed": seed,
+            "best_epoch": result.best_epoch, "selection_m": result.best_selection_m,
+            "code_commit": commit, "environment": env,
+            "profile_fingerprint": prov["profile_fingerprint"],
+            "f2_manifest_sha256": prov["f2_manifest_sha256"],
+            "augmentation_config_sha256": prov["augmentation_config_sha256"],
+            "selection_set_sha256": prov["selection_set_sha256"],
+            "train_stats_npz_sha256": prov["train_stats_npz_sha256"],
+            "determinism": result.determinism,
+            "trainable_parameters": trainable_parameters(model),
+        }
+        folder = save_v2_checkpoint(model, metadata, partial / CHECKPOINT_DIR,
+                                    mean=mean if logmel else None, std=std if logmel else None)
+        record = {
+            "schema_version": SCHEMA_VERSION, "candidate": candidate, "seed": seed,
+            "version": version, "run_name": wandb_name, "batch_size": batch_sizes[candidate],
+            "num_workers": num_workers, "best_epoch": result.best_epoch,
+            "best_selection_m": result.best_selection_m, "epochs_run": result.epochs_run,
+            "history": list(result.history),
+            "peak_gpu_memory_bytes": result.peak_gpu_memory_bytes,
+            "trainable_parameters": result.trainable_parameters,
+            "checkpoint_sha256": v2_checkpoint_sha256(folder),
+            "determinism": result.determinism, "environment": env,
+            "wandb_mode": logger_mode, "provenance": prov,
+        }
+        (partial / RUN_JSON).write_text(_json_text(record), encoding="utf-8")
+        partial.rename(runs / name)
+        record = _load_complete_run(runs / name, prov)  # verifies, then deletes resume/
         complete[name] = record
         return record
 
