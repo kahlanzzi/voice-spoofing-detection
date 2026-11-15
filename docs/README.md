@@ -51,6 +51,7 @@ Project rules live in [AGENTS.md](../AGENTS.md).
 | [synthetic_reporting.md](synthetic_reporting.md) | Synthetic integration and discrimination checks; not real model evaluation | synthetic checks change |
 | [model_bundle.md](model_bundle.md) | ModelBundle (Stage 12): format, verifying loader, tests | the bundle format changes |
 | [v2_candidates.md](v2_candidates.md) | Model v2 candidates (Track V, D49, D61): cnn-aug, crnn, credited AASIST port, v2 checkpoint, configs/v2_candidates.yaml | a v2 candidate, the v2 checkpoint or its config changes |
+| [v2_training.md](v2_training.md) | Model v2 training (Track V, D49, D50, D61): raw train cache, set S format, item-seed rule, training loop and early stopping on M, resumable search, batch-size benchmark | the v2 training data path, S, the search or the benchmark changes |
 
 ## API, interface design and UML
 
