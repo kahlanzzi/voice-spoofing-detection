@@ -5,15 +5,19 @@ import sys
 
 import pytest
 
-from src.training.v2_config import load_v2_config
-from src.training.v2_wandb_logger import (
+from tests._torch import require_torch
+
+torch = require_torch()  # v2_wandb_logger imports torch through v2_data
+
+from src.training.v2_config import load_v2_config  # noqa: E402
+from src.training.v2_wandb_logger import (  # noqa: E402
     CONFIG_KEYS,
     EPOCH_KEYS,
     RUN_KEYS,
     SUMMARY_KEYS,
     V2RunLogger,
 )
-from tests._v2_fakes import V2_CONFIG_PATH, v2_config_copy
+from tests._v2_fakes import V2_CONFIG_PATH, v2_config_copy  # noqa: E402
 
 
 @pytest.fixture(scope="module")
