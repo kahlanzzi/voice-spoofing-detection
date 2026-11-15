@@ -1,0 +1,15 @@
+# Stage 13 guarded-run template (D35/D36/D48/D58). This does not authorize a real run.
+# Replace paths only in the reviewed invocation/config copy; keep the registry on durable Drive.
+schema_version: 1
+dataset: DEEP-VOICE
+registry_dir: <durable-drive-registry-directory>
+bundle_dir: <verified-bundle-v1-directory>
+baseline_dir: <frozen-baseline-v1-directory>
+f4_record: docs/audit_evidence/stage12_bundle/f4_record.json
+v2_bundle_dir: null  # required before the D48 cutoff; set with f5_record after F5 is frozen
+f5_record: null
+manifest_path: data/manifests/deepvoice_frozen_manifest.csv
+manifest_sha256: 7c7a3e52ef254841f53bc08018bd3f9fe7ad83d6cd84531832513c616695355f
+d58_rehearsal_report: docs/audit_evidence/stage11_run/rehearsal/rehearsal_report.json
+d58_rehearsal_report_sha256: a0fde5fefc0f0496dda30d6c35080c71638a322321af52efc24df666a3b2f4fa
+output_dir: <durable-drive-score-output-directory>
