@@ -80,10 +80,21 @@ Project rules live in [AGENTS.md](../AGENTS.md).
 
 ## Current implementation and review pointers
 
-- Research roadmap: Stage 11 is current; [D46 runtime plan PR #67](https://github.com/kahlanzzi/voice-spoofing-detection/pull/67) and [runner PR #68](https://github.com/kahlanzzi/voice-spoofing-detection/pull/68) remain under review. This index does not authorize a test-split run.
-- API contract: approved; merged code currently exposes a mock status endpoint, not the complete analysis/history flow. Frontend/backend implementation is Iheb’s ongoing work; see the [backlog](midterm/backlog.md).
+- **Snapshot (2026-11-15):** Stage 12 is closed with F4 verified and handed over (Entry 174). Track V
+  is current: V1b is closed after [PR #134](https://github.com/kahlanzzi/voice-spoofing-detection/pull/134),
+  and V1c is next. See [Execution Plan v3.0](reference/Execution_Plan_v3.0.md) and [current project
+  status](project_log.md).
+- **Stage 13:** Khalil’s guarded-run preparation merged in
+  [PR #133](https://github.com/kahlanzzi/voice-spoofing-detection/pull/133). It is preparation only;
+  no DEEP-VOICE audio has been opened or scored and no external-run claim exists. The run still
+  depends on D48’s frozen model-set rule, an exact-runtime D58 rehearsal, verified durable Drive claim
+  behavior, final checks, peer review and the Stage 13 brief. This index does not authorize the run.
+- **Application:** the approved API contract and the sign-in, analysis, History, notes and stats
+  routes are implemented. The React MVP supports sign-in, upload, a mock verdict and History; the
+  analyzer still uses mock results pending Iheb’s F4 integration (P1). Some later interface work
+  remains; see the [backlog](midterm/backlog.md) and [current project status](project_log.md).
 - Part 6 report/PDF status correction merged in [PR #74](https://github.com/kahlanzzi/voice-spoofing-detection/pull/74); this documentation refresh does not duplicate it.
-- All pointers describe the checked snapshot (2026-11-01), not completion of unpublished work. Update them as implementation/review PRs merge.
+- These pointers describe the checked snapshot (2026-11-15). Update them as implementation and review PRs merge.
 
 ## The one rule
 
