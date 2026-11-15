@@ -13,7 +13,7 @@ import pandas as pd
 import soundfile as sf
 import yaml
 
-from src.augmentation import AugmentationResources
+from src.augmentation import AugmentationResources, load_augmentation_config
 from src.features.logmel_cache import build_logmel_cache
 from src.features.raw_train_cache import build_raw_train_cache
 from src.preprocessing.features import log_mel_spectrogram
@@ -172,19 +172,18 @@ def v2_config_copy(path: Path, sizes=None) -> Path:
 
 
 def aug_config_copy(path: Path, *, pinned: bool = True) -> Path:
-    """Copy augmentation config with deterministic fake pins or explicit null pins."""
+    """Copy the real pins, or explicitly remove every V1b pin for refusal tests."""
     data = yaml.safe_load(AUG_CONFIG_PATH.read_text(encoding="utf-8"))
-    pin = "a" * 64 if pinned else None
-    for corpus in ("noise", "rir"):
-        data["corpora"][corpus]["archive_sha256"] = pin
-        data["corpora"][corpus]["license_sha256"] = pin
-    if pinned:
-        data["ffmpeg"]["expected_version"] = "ffmpeg version fake"
-        data["ffmpeg"]["expected_codec_libraries"] = {"libopus": "1.0"}
-    else:
+    if not pinned:
+        for corpus in ("noise", "rir"):
+            data["corpora"][corpus]["archive_sha256"] = None
+            data["corpora"][corpus]["license_sha256"] = None
         data["ffmpeg"]["expected_version"] = None
         data["ffmpeg"]["expected_codec_libraries"] = {}
     path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+    loaded = load_augmentation_config(path)
+    assert loaded.corpus_pins_complete is pinned
+    assert loaded.ffmpeg_pin_complete is pinned
     return path
 
 
