@@ -6972,22 +6972,74 @@ push or merge.
 
 ---
 
+### Entry 180 — Track V V1b corpus/tool pins and selection-set recipe closed out (2026-11-15)
+
+**Owner:** Malak Ben Salem. Review: Donia Mabrouk (D50 pipeline consumer alignment).
+
+**Scope [doc]:** Track V V1b under D49, D50 and D56. This entry closes the corpus/tool pin and
+selection-recipe work merged in PR #131 and records its CI follow-up. No training, model fitting,
+DEEP-VOICE access, audio, archive or generated waveform is committed.
+
+**Corpus and tool pins [verified]:** MUSAN noise-only: 930 files, deterministic seed-2026 halves
+465 training / 465 selection, archive SHA-256 `86d1061c…55ee1`, CC BY 4.0 text SHA-256
+`9ba9550a…29411`. RIRS_NOISES RIR-only: 60,325 files, 30,162 training / 30,163 selection, archive
+SHA-256 `3b50cfde…05dc7`, Apache 2.0 text SHA-256 `cfc7749b…23d30`. FFmpeg is pinned to
+`6.1.1-3ubuntu5`; the eight `libav*`/`libsw*` version lines and required `libmp3lame`, `libopus` and
+`pcm_mulaw` encoders are recorded in `docs/audit_evidence/trackV_v1b/`.
+
+**Selection recipe S [verified]:** `data/manifests/augmentation/selection_set_s.csv` contains 6,650
+unique `(source_path, condition)` rows from 1,330 val-A files and the five D50 conditions, generated
+from repository commit `945dc249…`; file SHA-256 `71a340f0…72533`. Structural validation checked all
+6,650 source links and condition seeds and all 2,660 resource-bearing rows. The recipe is not yet the
+training-format S folder; that materialization and verification belong to V1c.
+
+**Run environment [verified/doc]:** the committed notebook records Colab Linux with Python 3.13.18.
+The Colab release label and accelerator/CPU model were not recorded, so they are reported as **not
+recorded** rather than inferred. Corpus archives, the FoR archive and generated outputs remained in
+temporary/Drive storage; only manifests, hashes, licence/source pages and small evidence were committed.
+
+**CI compatibility fixes [verified]:** notebook safe-extraction comparison kept on one line so the
+governance parser does not mistake `!=` for IPython syntax; unpinned V2 tests now create explicit null
+corpus/FFmpeg pins. This follow-up preserves the real committed pins for `pinned=True` and asserts
+both completeness flags for the generated copy. Production code under `src/` is unchanged.
+
+**Evidence:** `configs/augmentation.yaml`, `data/manifests/augmentation/`, notebook 07 and
+`docs/audit_evidence/trackV_v1b/`; PR #131 commits `b2935b5` and `f2e034c`.
+
+**Checks [verified]:** `REQUIRE_TORCH_TESTS=1 python -m pytest -q` → `2002 passed, 2 skipped in
+575.35s (0:09:35)`; `python -m pytest -q tests/governance` → `88 passed in 1.93s`.
+
+**AI assistance:** Codex helped Malak recover and clean the Colab notebook, diagnose CI, implement
+the test-only compatibility fixes, verify evidence and draft this closeout. Donia supplied and reviewed
+the V1b/V1c specification. Malak ran the data cells and approved commits; AI does not approve or merge.
+
+**Status:** V1b corpus/tool pins and S recipe are complete. V1c remains open for the pure recipe
+module, training-format S build/verification, training-half resource cache and one-time FFmpeg pin check.
+
+**Gate:** **WAITING FOR HUMAN REVIEW** of the follow-up PR.
+
+**What's next:** merge this closeout, then start V1c from current `main` on
+`feat/stageV1-selection-set-build`; V2b-4 remains blocked on the V1c artifacts.
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
 - [x] Approve or revise D48–D55, ADRs 0012–0015 and H8–H9 (all four) before the v1 Stage 11 claim. (PR #111, 2026-11-10)
 - [x] Approval commit: statuses to Approved; AGENTS.md hard rule 3 (v2 candidates) and roadmap; Protocol addendum for §§4, 6, 7, 9, 12 (v2 values, F5, Stage 11/14 model sets, cut-off). (Entry 151)
 - [x] Approve D56 and add its approval commit before the v1 Stage 11 claim and before V1a implementation; D50 is marked as amended for RawBoost algorithm 1 and uniform sampling over seven codec options (Entries 157–158; PR #116, merged).
-- [x] Implement V1a's strict train-only augmentation module and synthetic tests without corpus access (D50/D56; Entry 169; awaiting review and merge).
-- [ ] V1b: pin and audit the noise/RIR corpora (licence, archive hash, 50/50 by-file split) and exact ffmpeg/codec tools before any v2 training (D50 (5)).
+- [x] Implement V1a's strict train-only augmentation module and synthetic tests without corpus access (D50/D56; Entry 169; PR #126 merged).
+- [x] V1b: pin and audit the noise/RIR corpora (licence, archive hash, 50/50 by-file split) and exact ffmpeg/codec tools before any v2 training (D50 (5); PR #131, Entry 180).
 - [x] Compute benchmark per v2 candidate; batch sizes in `configs/` before training (D49). Slots exist as `null` in `configs/v2_candidates.yaml`; `require_batch_sizes()` blocks training until set (Entry 170; PR V2b). Done: 256 / 256 / 32 (Entry 173).
 - [x] V2b-2: run `python -m src.tuning.v2_benchmark` on Colab T4 (2026.10) and write the batch sizes into `configs/v2_candidates.yaml` (D49; Entry 172). (Entry 173; evidence `docs/audit_evidence/v2b2_benchmark/`; review pending)
 - [ ] Per-epoch resume within a run before V2b-4: a worst-case run (30 epochs × ~10–17 min) may not fit one Colab session; V2b-1 resumes only between runs (Entry 173).
-- [ ] Ask Malak whether `FFmpegCodecBackend.round_trip` can verify the ffmpeg pin once per process instead of per call (codec 0.42 s/item dominates augmentation; Malak's module) (Entry 173).
-- [ ] V1b (Malak): confirm the S layout in `docs/v2_training.md` and build S with `write_selection_set` on the training runtime; verify with `load_selection_set` incl. the Stage 8 val-A known answer (D50 (4), D58; Entry 172).
-- [ ] V2b-4: search CLI/notebook wired to the V1b corpus loader; T4 rehearsal (`check_clean_transform`, two short runs for observed crnn/cuDNN determinism), then the search (Entry 172).
+- [ ] V1c: move the notebook recipe into a pure `src/augmentation/` module and prove byte parity for all five conditions on synthetic audio (D50/D56; Entry 180).
+- [ ] V1c: materialize S with `write_selection_set` on Colab T4 runtime 2026.10 and verify both forms with `load_selection_set`, including the Stage 8 val-A known answer (D50 (4), D58; Entries 172, 180).
+- [ ] V1c: build and verify the deterministic training-half MUSAN/RIR resource cache outside the repo; refuse selection-half or all-zero resources (D50 (5); Entry 180).
+- [ ] V1c: make `FFmpegCodecBackend` verify its pin once per backend instance without changing encode/decode output bytes (codec 0.42 s/item dominates augmentation; Entries 172–173, 180).
+- [ ] V2b-4: search CLI/notebook wired to the V1c corpus loader; T4 rehearsal (`check_clean_transform`, two short runs for observed crnn/cuDNN determinism), then the search (Entry 172).
 - [ ] V2b-3: read `n_all_zero_clips` from the raw train cache (`build` / `verify` print it with the first 10 paths). If it is > 0, a decision (**D62**) is needed before any training (`run_search` refuses such a cache): `Augmenter`'s `recorded_noise` refuses a silent clip [verified], and Malak's S builder (`noise_10db`) has the same issue on val-A (Entry 172; `docs/v2_training.md`).
-- [ ] Discuss with Malak whether the per-call `ffmpeg -version` in `FFmpegCodecBackend.round_trip` matters, if the benchmark shows a large codec cost (Entry 172).
 - [x] Approve D61 (Iheb, Malak, Khalil) and add its approval commit before any v2 training (Entry 170). (PR #127, 2026-11-13)
 - [x] PR V2b-1: v2 training loop, selection metric M over set S, resumable search, benchmark code (Entry 172; review pending).
 - [ ] F5 model loader dispatching on `architecture` (D61 (6)), when F5 is built (Entry 170).
@@ -7398,13 +7450,20 @@ push or merge.
 
 ---
 
-## Current status — updated 2026-11-15 (Entry 179)
+## Current status — updated 2026-11-15 (Entry 180)
 
 **Stage 12 closed (Entry 174):** F4 (`bundle-v1`, `edf4a205…40efc`) is frozen (D60) and handed over: Iheb and Khalil each verified their copy (`F4 verify OK`, 2026-11-15). Brief `docs/stages/stage12-bundle-freeze.md` accepted after the D32 teach-back (Iheb, Khalil, Malak, face to face, 2026-11-15; no corrections). **Track V is current.** Replacing the API mock with F4 is Iheb's P1 (2026-11-24).
 
 **Stage 13 preparation (Entries 175–179):** `feat/stage13-runner-prep` has the exact D35 allowlist; per-window Stage 6 preprocessing; F4/baseline and metadata-manifest preflight; atomic claim primitives; hash-verified score files; D33/D34 summaries and clustered CIs; D36 paired EER intervals; strict JSON export; the D48 cutoff gate; model-bound one-pass scoring; post-claim incomplete-run finalization; the hash-pinned D58 rehearsal/runtime gate; and H8's paired filtered result plus unfiltered sensitivity. Synthetic tests cover D58 hash/runtime rejection, H8 CNN-to-CNN pairing, one-pass scoring and incomplete-claim handling. Focused Stage 13/governance tests: `33 passed`; broad suite excluding API and Compose deployment tests: `1555 passed, 2 skipped`. Full-suite collection is blocked because `argon2` is missing in the available environment. Ruff check/format, `py_compile` and `git diff --check` passed. Config points to the checked-in passed D58 rehearsal report; exact runtime match must still be confirmed when staging the run. All audio in new tests is generated; no DEEP-VOICE audio, frozen model inference or dataset claim was used. **Not ready to execute Stage 13:** actual F5 loader/frozen record, exact-runtime D58 confirmation (repeat rehearsal if the environment differs), dependency-complete CI, Drive durability review, and team review remain.
 
-**Track V, PR V2b-2 (Entry 173):** on `feat/stageV2-batch-sizes` (from `main` `9c46baf`, not pushed): the D49 benchmark ran on the Colab T4 (runtime 2026.10, commit `9c46baf`, two GPU runs with byte-identical peaks) and chose **`cnn-aug` 256, `crnn` 256, `aasist` 32**, now in `configs/v2_candidates.yaml`; evidence byte for byte in `docs/audit_evidence/v2b2_benchmark/` with a torch-free drift guard. The unpinned CPU throughput (planning only) shows the codec (0.42 s/item) dominating augmentation, about 8–17 min of augmentation per epoch with 1–2 workers. No code change, no data, no training. Open: per-epoch resume before V2b-4; ask Malak about checking the ffmpeg pin once per process. Next: review, then V2b-3 (raw cache), V1b (S, Malak), V2b-4 (rehearsal and search).
+**Track V V1b (Entry 180):** PR #131 merged the audited MUSAN/RIRS_NOISES archive and licence pins,
+deterministic training/selection halves, FFmpeg `6.1.1-3ubuntu5` pin, notebook 07, evidence and the
+6,650-row val-A selection recipe (`71a340f0…`). The follow-up keeps real pins in pinned test copies,
+records V1b and passes the Torch-enabled full suite (2002 passed, 2 skipped) and governance (88 passed).
+V1b is complete; V1c must build the training-format S folder and training-half resource cache on the
+declared T4 runtime before V2b-4.
+
+**Track V, PR V2b-2 (Entry 173):** on `feat/stageV2-batch-sizes` (from `main` `9c46baf`, not pushed): the D49 benchmark ran on the Colab T4 (runtime 2026.10, commit `9c46baf`, two GPU runs with byte-identical peaks) and chose **`cnn-aug` 256, `crnn` 256, `aasist` 32**, now in `configs/v2_candidates.yaml`; evidence byte for byte in `docs/audit_evidence/v2b2_benchmark/` with a torch-free drift guard. The unpinned CPU throughput (planning only) shows the codec (0.42 s/item) dominating augmentation, about 8–17 min of augmentation per epoch with 1–2 workers. No code change, no data, no training. Open: per-epoch resume before V2b-4; V1c (S and resource cache); V2b-4 rehearsal and search.
 
 **Track V, PR V2b-1 (Entry 172):** merged as PR #129 (`9c46baf`); was on `feat/stageV2-training` (from `main` `e9c6093`): the model v2 training code with synthetic tests only — raw FoR train waveform cache, the set S format (writer for Malak's V1b builder + strict loader), the per-item seed rule (items identical for any `num_workers`), `train_v2` with early stopping on M, the v2 W&B logger, a resumable `v2_search`, and the D49 batch-size benchmark (with the optimizer step) plus CPU throughput; `docs/v2_training.md`. Full suite 1996 passed, 2 skipped. No data touched, no training; batch sizes were set by V2b-2 (Entry 173).
 
@@ -7412,12 +7471,10 @@ push or merge.
 
 **Track V, model v2 candidates (Entry 170):** PR V2a on `feat/stageV2-candidates` adds the three D49 candidates (`cnn-aug` = v1 4-block CNN, `crnn`, `aasist` ported from `clovaai/aasist` `a04c986` with credit and licence), the v2 safetensors checkpoint with the D59 layout and hash rule (`cnn_checkpoint` unchanged), `configs/v2_candidates.yaml` with a strict loader (batch sizes `null` until the D49 benchmark) and the D61 cosine schedule. Trainable parameters 97,761 / 319,585 / 297,705; the port matches the reference exactly before the output layer (max difference 0.0). D61 (implementation details) approved (PR #127). No training, no data access; not pushed. Next: PR V2b after V1b and set S.
 
-**Track V V1a (Entry 169):** the strict D50/D56 train-only augmentation configuration, five-family
-pipeline, independent RawBoost algorithm 1 with pinned-reference parity, guarded codec backend and
-corpus-audit tooling are implemented and verified on synthetic audio only (pre-merge:
-`1650 passed`, torch required, zero skipped; with current Stage 12 `main`: `1738 passed`, one
-unrelated Windows symlink-capability skip and no torch skip). V1a is awaiting human review. V1b remains responsible for the MUSAN,
-RIRS_NOISES and ffmpeg pins/manifests before any v2 training.
+**Track V V1a (Entry 169):** PR #126 merged the strict D50/D56 train-only augmentation
+configuration, five-family pipeline, independent RawBoost algorithm 1 with pinned-reference parity,
+guarded codec backend and corpus-audit tooling, verified on synthetic audio only. V1b pins/manifests
+are now merged and closed in Entry 180; the next Malak-owned step is V1c.
 
 **Stage 12 F4 (Entry 168):** F4 built and verified: `bundle-v1`, manifest SHA-256 `edf4a205…40efc`, on Drive `checkpoints/bundle/bundle-v1/` (Drive copy verified); evidence in `docs/audit_evidence/stage12_bundle/`; D60 (F4 freeze) approved (PR #125). Next: hand-over to Iheb (P1) and Khalil (Stage 13), Stage 12 brief.
 

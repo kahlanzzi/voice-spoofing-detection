@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Track V V1b corpus and tool pins: audited MUSAN/RIRS_NOISES inventories and licences, deterministic 50/50 by-file halves, pinned FFmpeg 6.1.1-3ubuntu5, the 6,650-row val-A selection-set recipe and validation evidence; PR #131 CI compatibility follow-up recorded in Entry 180.
 - Stage 12 closed: brief `docs/stages/stage12-bundle-freeze.md` accepted after the D32 teach-back (2026-11-15) and the verified F4 hand-over (Iheb and Khalil: `F4 verify OK`, `edf4a205…`, 2026-11-15) (Entry 174); docs only.
 - D49 batch sizes from the Colab T4 benchmark (Track V, PR V2b-2, Entry 173): `configs/v2_candidates.yaml` `cnn-aug` 256, `crnn` 256, `aasist` 32; evidence `docs/audit_evidence/v2b2_benchmark/` (two GPU runs with identical peaks, unpinned CPU throughput for planning, Colab cells, README with hashes); torch-free drift guard `tests/training/test_v2_batch_size_evidence.py`; null-refusal tests use null copies; no code change.
 - Model v2 training code (Track V, PR V2b-1, Entry 172): raw FoR train waveform cache, set S format with writer and strict loader (contract for V1b), per-item seed rule and worker-independent dataset, `train_v2` with early stopping on M, v2 W&B allow-list logger, resumable `v2_search` (selection, seeds, reports), D49 batch-size benchmark with CPU throughput; `docs/v2_training.md`; synthetic tests only, no data access, batch sizes still null.
