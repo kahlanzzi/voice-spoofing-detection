@@ -6915,6 +6915,8 @@ push or merge.
 
 **What's next:** Track V: V1c (Malak), V2b-3 (raw train cache), per-epoch resume, V2b-4.
 
+---
+
 ### Entry 175 — Stage 13 guarded-run preparation (2026-11-15)
 
 - **Owner:** Khalil Dridi.
