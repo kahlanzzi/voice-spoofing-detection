@@ -7134,11 +7134,11 @@ module, training-format S build/verification, training-half resource cache and o
   team review required before acceptance (Khalil as consumer of the loader, D26).
 - **Gate:** **WAITING FOR APPROVAL.**
 
-### Entry 187 — Track V PR V4a: v2 risk-policy run, code only (2026-11-15)
+### Entry 188 — Track V PR V4a: v2 risk-policy run, code only (2026-11-15)
 
 - **Owner:** Donia Mabrouk (Part C). Branch `feat/stageV4-risk-run` from `main` `e7bd0e1`.
   Entry number: 183 is used on Malak's V1c branch and 185 stays reserved for it (Entry 186); 187 is
-  the next free number on main and the open branches.
+  Khalil's D63 revision (PR #139); 188 is the next free number on main and the open branches.
 - **Why [doc]:** Execution Plan v3.0 §9 V4 (due Mon 30 Nov). Protocol §6 addendum and D49: the v2 risk
   policy uses the §6 method unchanged on clean val-B for the bundle seed only (D45). `risk_run.py`
   is v1-only (D42 checkpoint, val-A EER reproduction), so the v2 run is written now against the v2
@@ -7201,7 +7201,7 @@ module, training-format S build/verification, training-half resource cache and o
 - [x] Approve D61 (Iheb, Malak, Khalil) and add its approval commit before any v2 training (Entry 170). (PR #127, 2026-11-13)
 - [x] PR V2b-1: v2 training loop, selection metric M over set S, resumable search, benchmark code (Entry 172; review pending).
 - [x] F5 model loader dispatching on `architecture` (D61 (6)), when F5 is built (Entry 170). Done ahead of F5 on synthetic bundles, with the Stage 13 hand-over test (PR V5a, Entry 186; review pending).
-- [ ] V4: v2 risk policy (Protocol §6 unchanged, clean val-B, bundle seed only; D45, D49). Code done: `src/tuning/v2_risk_run.py` (PR V4a, Entry 187; review pending). Run pending: after the search, commit its reports to `docs/audit_evidence/v2_search/`, then run with `--version risk-v2`; if aasist wins, build the F3 waveform val-B source first (Execution Plan v3.0 §9 V4).
+- [ ] V4: v2 risk policy (Protocol §6 unchanged, clean val-B, bundle seed only; D45, D49). Code done: `src/tuning/v2_risk_run.py` (PR V4a, Entry 188; review pending). Run pending: after the search, commit its reports to `docs/audit_evidence/v2_search/`, then run with `--version risk-v2`; if aasist wins, build the F3 waveform val-B source first (Execution Plan v3.0 §9 V4).
 - [x] Draft the extension authentication design and security-review text in SDD v2.0 before implementation (D51; Entry 165; human approval and merge pending).
 - [ ] Choose the hosting provider and record it (D54 (9)); load test on staging, then record K, L, `analysis_timeout_s` and `L_MAX` (D53 (3)).
 - [x] SRS v4.0 Markdown/PDF pair and version index merged in PR #121 (Entry 164).
@@ -7612,7 +7612,7 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
-## Current status — updated 2026-11-15 (Entry 187)
+## Current status — updated 2026-11-15 (Entry 188)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -7626,7 +7626,7 @@ merged, but model training, search, selection, risk policy and F5 freeze remain.
 184, waiting for review) makes a v2 run resumable per epoch, so a Colab disconnect costs at most the
 current epoch. PR V5a (Entry 186, waiting for review) adds the F5 model loader: `load_bundle_model`
 dispatches on the checkpoint's `architecture` (D61 (6)) and passes a synthetic hand-over with the
-Stage 13 runner for all three candidates. PR V4a (Entry 187, waiting for review) adds the v2
+Stage 13 runner for all three candidates. PR V4a (Entry 188, waiting for review) adds the v2
 risk-policy run (Protocol §6 unchanged, bundle seed only, exact M reproduction); the real run waits
 for the search evidence. See the open items above and [Execution Plan v3.0](reference/Execution_Plan_v3.0.md).
 
