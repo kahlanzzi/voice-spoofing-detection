@@ -7134,6 +7134,18 @@ module, training-format S build/verification, training-half resource cache and o
   team review required before acceptance (Khalil as consumer of the loader, D26).
 - **Gate:** **WAITING FOR APPROVAL.**
 
+### Entry 187 — Revised D63 contract proposal for team approval (2026-11-15)
+
+- **Owner:** Khalil Dridi.
+- **Review feedback:** The reviewer agrees with the direction but requires D55's threshold, uncertain band and derivation context, D52 per-window values, the unrounded policy input, and calibration tied to the same `policy_version`. D62 is unused because no all-zero clips were found; V2b-4 will record that result.
+- **Proposal:** D63 keeps its number and now defines one coordinated contract: upload `spoof_probability` is the D34 mean of kept-window calibrated probabilities; the frozen policy applies to that full-precision mean; response and stored upload details include the policy's threshold, uncertain band and provenance; upload and live timelines carry per-window values and labels. Mock and unrecoverable historical values remain unavailable. Confidence semantics and Stage 13 gates do not change.
+- **Approval and coordination:** D63 remains Proposed pending all-four approval and a merged approval/status commit. Coordinate with Iheb on the implementation base and single API/database migration before his P1 integration.
+- **Scope:** This PR changes decision documentation only. No API, database, UI, SRS, model, or Stage 13 implementation is authorized or changed here. SRS v4.0 remains current until the synchronized v4.1 pair is reviewed and adopted; update the reference index and AGENTS.md only when v4.1 becomes current.
+- **AI assistance:** Codex revised the proposal from the review feedback; human approval is required.
+- **Gate:** **PROPOSED — WAITING FOR ALL-FOUR APPROVAL.**
+
+---
+
 ### Entry 188 — Track V PR V4a: v2 risk-policy run, code only (2026-11-15)
 
 - **Owner:** Donia Mabrouk (Part C). Branch `feat/stageV4-risk-run` from `main` `e7bd0e1`.
@@ -7206,7 +7218,8 @@ module, training-format S build/verification, training-half resource cache and o
 - [ ] Choose the hosting provider and record it (D54 (9)); load test on staging, then record K, L, `analysis_timeout_s` and `L_MAX` (D53 (3)).
 - [x] SRS v4.0 Markdown/PDF pair and version index merged in PR #121 (Entry 164).
 - [ ] Khalil confirms the SRS v4.0 owner review; GitHub currently records Donia's approval on PR #121.
-- [ ] Review proposed D63/ADR 0016: decide whether to expose calibrated `spoof_probability`; do not change the API/SRS contract or implement it until the team approves. The ID and log entry are provisional while this PR is open.
+- [ ] Obtain all-four approval for revised D63/ADR 0016 in its decision PR and merge the approval/status commit before implementation (Entry 187).
+- [ ] Coordinate with Iheb on the full API contract and one database migration; implement only after D63 approval, then adopt the synchronized SRS v4.1 Markdown/PDF pair and update source-of-truth pointers when v4.1 becomes current.
 - [x] SDD v2.0 Markdown/PDF pair and version index merged in PR #122 (Entry 165).
 - [ ] Iheb confirms the SDD v2.0 owner review and all four reviewers explicitly accept the D51 extension-authentication design before extension implementation; PR #122 currently records Donia's approvals only.
 - [ ] Stage 13 runner (D35) and Stage 11 runner (PR #68) accept the v2 model set (D48 (3), (7)).
@@ -7644,11 +7657,11 @@ integration is Iheb’s P1 work; the mock verdict must not be presented as a rea
 
 **Khalil’s next project work.** Check and sign off the SRS v4.0 draft you own: PR #121 is merged, but
 the GitHub review list currently records Donia’s approval only. Continue Stage 13 preparation only
-within the gates above. A D63 proposal to expose `spoof_probability` is pending team decision; this proposal does not authorize API/SRS implementation. The D52 warm-up analysis is scheduled for W3 (23–29 November); Stages 15–16
+within the gates above. The revised D63 proposal awaits all-four approval in its decision PR. It covers unrounded calibrated `p` tied to `policy_version`, policy threshold/band provenance, and upload/live per-window values. No implementation is authorized until the approval/status commit is merged and the API/migration plan is coordinated with Iheb. The D52 warm-up analysis is scheduled for W3 (23–29 November); Stages 15–16
 follow later in the plan.
 
 **What is next:**
 1. Track V proceeds with Malak’s V1c and the remaining v2 training/selection work.
-2. Khalil confirms the SRS v4.0 owner review and keeps the Stage 13 gates closed until their evidence
-   is complete.
+2. The team reviews revised D63 and coordinates one API/migration change with Iheb. Khalil confirms
+   the SRS v4.0 owner review and keeps Stage 13 preparation within its gates.
 3. Do not open, score or claim DEEP-VOICE until the single-run prerequisites and team review pass.
