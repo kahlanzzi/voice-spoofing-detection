@@ -69,15 +69,23 @@ corpora:
   noise:
     name: MUSAN
     open_slr_id: 17
-    archive_sha256: null  # filled by V1b before corpus use
-    license_sha256: null  # filled by V1b before corpus use
+    archive_sha256: "86d1061c7e15b5c9e906777685c519701df51bfde3001e1070dcc9ffac955ee1"
+    license_sha256: "9ba9550ad48438d0836ddab3da480b3b69ffa0aac7b7878b5a0039e7ab429411"
   rir:
     name: RIRS_NOISES
     open_slr_id: 28
-    archive_sha256: null  # filled by V1b before corpus use
-    license_sha256: null  # filled by V1b before corpus use
+    archive_sha256: "3b50cfde915b3984738169b4beb341e9f6b8062ae4c2076146c5db71c2c05dc7"
+    license_sha256: "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
 
 ffmpeg:
   executable: ffmpeg
-  expected_version: null  # filled by V1b before any real codec pass
-  expected_codec_libraries: {}  # filled by V1b from the same runtime
+  expected_version: "6.1.1-3ubuntu5"
+  expected_codec_libraries:
+    libavcodec: "    60. 31.102 / 60. 31.102"
+    libavdevice: "   60.  3.100 / 60.  3.100"
+    libavfilter: "    9. 12.100 /  9. 12.100"
+    libavformat: "   60. 16.100 / 60. 16.100"
+    libavutil: "     58. 29.100 / 58. 29.100"
+    libpostproc: "   57.  3.100 / 57.  3.100"
+    libswresample: "  4. 12.100 /  4. 12.100"
+    libswscale: "     7.  5.100 /  7.  5.100"

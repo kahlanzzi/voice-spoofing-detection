@@ -1,0 +1,17 @@
+{
+  "archive_member_count": 2050,
+  "archive_sha256": "86d1061c7e15b5c9e906777685c519701df51bfde3001e1070dcc9ffac955ee1",
+  "categories": {
+    "free-sound": 843,
+    "sound-bible": 87
+  },
+  "corpus": "MUSAN",
+  "declared_license": "CC BY 4.0",
+  "extracted_member_count": 936,
+  "license_sha256": "9ba9550ad48438d0836ddab3da480b3b69ffa0aac7b7878b5a0039e7ab429411",
+  "noise_files": 930,
+  "open_slr_id": 17,
+  "resource_page_sha256": "4cf0be3b3ffd0ac78499998adaec48909d16431a0717575beee80cf175520fbc",
+  "schema_version": 1,
+  "scope": "noise_only"
+}

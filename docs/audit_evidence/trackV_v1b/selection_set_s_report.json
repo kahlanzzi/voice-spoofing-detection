@@ -1,0 +1,41 @@
+{
+  "audio_outputs_committed": false,
+  "condition_counts": {
+    "clean": 1330,
+    "narrowband_mulaw": 1330,
+    "opus_16": 1330,
+    "recorded_noise_10db": 1330,
+    "reverberation": 1330
+  },
+  "conditions": [
+    "clean",
+    "recorded_noise_10db",
+    "reverberation",
+    "opus_16",
+    "narrowband_mulaw"
+  ],
+  "decisions": [
+    "D49",
+    "D50",
+    "D56"
+  ],
+  "ffmpeg_version": "6.1.1-3ubuntu5",
+  "for_archive_sha256": "9bddb83503ab442e9c7f54a1b7b9c02bc0ce32ed93f7863f28de5f59b6540b46",
+  "for_revision": "ff8c82c79e7bbefef811941bac9775c9328e9055",
+  "manifest_file": "selection_set_s.csv",
+  "manifest_file_sha256": "71a340f009b5b0a20e295f4031c15fe2471b1174444b4b0fa2d3014f34c72533",
+  "manifest_semantic_sha256": "8cf4858c51f78a1fd5bce78042f7d490529eb1230a149fe52a0a1f856e9046a7",
+  "musan_inventory_sha256": "2ce6c6e6be1bc8d5054ddbd4b90612727e682f662947dfce3910c7a4e8b5b4d8",
+  "name": "D50 selection condition set S",
+  "records": 6650,
+  "repo_base_commit": "945dc249ef14cd125ba576568bd047861e2471e4",
+  "resource_choice_policy": "SHA-256-derived per-source/per-condition RandomState seed from global seed 2026",
+  "rir_channel_policy": "one seeded channel from the selected RIR file; channel index recorded",
+  "rirs_inventory_sha256": "2a5d9152f15cd5666e6b78efd49d2202ad69a67fac09d7a95174c740aafd0117",
+  "schema_version": 1,
+  "selection_seed": 2026,
+  "source_files": 1330,
+  "source_manifest_sha256": "badfe948fb7b833357783dd18be00f6bb36253cf8699dc4c4beb4df2b07706f8",
+  "source_split": "val-A",
+  "waveform_hash_encoding": "little-endian float32 sample bytes"
+}
