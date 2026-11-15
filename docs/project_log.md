@@ -7072,7 +7072,7 @@ module, training-format S build/verification, training-half resource cache and o
   one; `resume/` is deleted only after the renamed run verifies.
 - **Not changed:** D49/D61 training, early stopping, schedule, seeds, selection rule,
   `src/augmentation/**`, `src/models/**`, `configs/**`. No new W&B key (D40). No data access.
-- **Deviation for review:** the brief allowed only `resume_dir` as a new `train_v2` argument, but
+- **Deviation (accepted in review, 2026-11-15):** the brief allowed only `resume_dir` as a new `train_v2` argument, but
   also asks `train_v2` to check the saved provenance against the caller's; `train_v2` does not know
   the provenance otherwise, so it also takes `provenance` (required with `resume_dir`, refused
   without it).
@@ -7111,7 +7111,7 @@ module, training-format S build/verification, training-half resource cache and o
 - [x] Compute benchmark per v2 candidate; batch sizes in `configs/` before training (D49). Slots exist as `null` in `configs/v2_candidates.yaml`; `require_batch_sizes()` blocks training until set (Entry 170; PR V2b). Done: 256 / 256 / 32 (Entry 173).
 - [x] V2b-2: run `python -m src.tuning.v2_benchmark` on Colab T4 (2026.10) and write the batch sizes into `configs/v2_candidates.yaml` (D49; Entry 172). (Entry 173; evidence `docs/audit_evidence/v2b2_benchmark/`; review pending)
 - [x] Per-epoch resume within a run before V2b-4: a worst-case run (30 epochs × ~10–17 min) may not fit one Colab session; V2b-1 resumes only between runs (Entry 173). Done in PR V2b-R (Entry 184; review pending).
-- [ ] V2b-R review: `train_v2` gained `provenance` next to `resume_dir` (the brief allowed only `resume_dir`; the provenance check needs it) — accept or revise (Entry 184).
+- [x] V2b-R review: `train_v2` gained `provenance` next to `resume_dir` (the brief allowed only `resume_dir`; the provenance check needs it) — accept or revise (Entry 184). Accepted in Donia's review (2026-11-15).
 - [ ] V1c: move the notebook recipe into a pure `src/augmentation/` module and prove byte parity for all five conditions on synthetic audio (D50/D56; Entry 180).
 - [ ] V1c: materialize S with `write_selection_set` on Colab T4 runtime 2026.10 and verify both forms with `load_selection_set`, including the Stage 8 val-A known answer (D50 (4), D58; Entries 172, 180).
 - [ ] V1c: build and verify the deterministic training-half MUSAN/RIR resource cache outside the repo; refuse selection-half or all-zero resources (D50 (5); Entry 180).

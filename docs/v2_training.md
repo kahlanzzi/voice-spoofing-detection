@@ -199,6 +199,10 @@ epoch, best M and history (all fields except `*_seconds`), for every candidate a
 0 or 2 (tested). On GPU, reproducibility is reported as observed (D42), as for uninterrupted runs.
 The `determinism` dict and the timing fields describe the session that finished the run.
 
+**Operating rule:** the provenance includes the code commit, so a search must run from one fixed
+commit from start to finish (the notebook checks out that commit); pulling a newer main mid-search
+makes every saved state refuse to resume.
+
 **What a Colab disconnect costs:** at most the epoch in progress (~10–17 min on the T4). A narrow
 case: a stop between logging an epoch to W&B and writing its state retrains that epoch and logs it
 once more. There is no CLI yet: V2b-4 adds it once the V1b corpus loader exists.
