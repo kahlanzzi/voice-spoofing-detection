@@ -5,12 +5,14 @@
 
 **Team:** Donia Mabrouk, Iheb Zemzemi, Malak Ben Salem, Khalil Dridi
 **Course:** Semester AI project (MUST University); repository structure from the CS 488 template
-**Status (2026-11-06):** Stages 0–10 are complete; Stage 11 is current. Its runtime-plan
-[PR #67](https://github.com/kahlanzzi/voice-spoofing-detection/pull/67) and runner
-[PR #68](https://github.com/kahlanzzi/voice-spoofing-detection/pull/68) are under review.
-The MVP (sign in, upload, verdict, History) runs on `main` on a mock analyzer; the real model is
-not connected. See [current status](docs/project_log.md) and the
-[prioritized backlog](docs/midterm/backlog.md).
+**Status (2026-11-15):** Stage 12 (F4) is complete; Track V (model v2) is current. V1b corpus and
+tool pins are closed after [PR #134](https://github.com/kahlanzzi/voice-spoofing-detection/pull/134);
+V1c is next. Khalil's Stage 13 runner preparation merged in
+[PR #133](https://github.com/kahlanzzi/voice-spoofing-detection/pull/133), but the external run is
+not ready: the applicable model set must be frozen under D48, the exact-runtime D58 rehearsal and
+durable Drive claim must be verified, and the final review gates must pass. The Docker MVP still
+uses a mock analyzer; F4 integration in the API is Iheb's P1 work. See [current status](docs/project_log.md),
+the [docs index](docs/README.md), and [Execution Plan v3.0](docs/reference/Execution_Plan_v3.0.md).
 
 ---
 
