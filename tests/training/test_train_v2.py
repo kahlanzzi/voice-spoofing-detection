@@ -165,7 +165,7 @@ def test_signature_has_no_val_b_test_or_external_input():
     assert not [n for n in names if any(p in n.lower() for p in ("val_b", "valb", "test", "external"))]
     assert names == ["candidate", "config", "run_seed", "raw_cache", "selection", "augmenter",
                      "profile", "mean", "std", "max_epochs", "patience", "batch_size",
-                     "num_workers", "logger", "device"]
+                     "num_workers", "logger", "device", "resume_dir", "provenance"]
 
 
 def test_same_seed_gives_identical_result(env):
