@@ -17,7 +17,7 @@ from src.training.v2_wandb_logger import (  # noqa: E402
     SUMMARY_KEYS,
     V2RunLogger,
 )
-from tests._v2_fakes import V2_CONFIG_PATH, v2_config_copy  # noqa: E402
+from tests._v2_fakes import NULL_BATCH_SIZES, V2_CONFIG_PATH, v2_config_copy  # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -116,8 +116,11 @@ def test_epoch_and_summary_refusals(base_config):
         V2RunLogger("dryrun", _config(base_config), "r")
 
 
-def test_committed_config_has_null_batch_sizes_refused(base_config):
-    # The committed file keeps null batch sizes until V2b-2; a run config with null is refused.
-    committed = load_v2_config(V2_CONFIG_PATH).to_dict()
+def test_null_batch_sizes_refused_and_committed_config_accepted(tmp_path):
+    # Before V2b-2 the file held null batch sizes; a run config with null is refused.
+    null = load_v2_config(v2_config_copy(tmp_path / "null.yaml", NULL_BATCH_SIZES)).to_dict()
     with pytest.raises(ValueError, match="must be an int"):
-        V2RunLogger("disabled", _config(committed), "r")
+        V2RunLogger("disabled", _config(null), "r")
+    # The committed file now holds the D49 benchmark sizes (V2b-2) and is accepted as it is.
+    committed = load_v2_config(V2_CONFIG_PATH).to_dict()
+    V2RunLogger("disabled", _config(committed), "r").finish()

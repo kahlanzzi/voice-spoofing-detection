@@ -149,14 +149,23 @@ def write_s(out_dir: Path, arrays, profile, f2_sha: str, aug_sha: str, **kw) -> 
                                profile=profile, **kw)
 
 
+NULL_BATCH_SIZES = {"cnn-aug": None, "crnn": None, "aasist": None}  # the file before V2b-2
+
+
 def v2_config_copy(path: Path, sizes=None) -> Path:
-    """configs/v2_candidates.yaml with integer batch sizes (null in the committed file)."""
+    """configs/v2_candidates.yaml with the given batch sizes (default 8 each, so the tiny tests stay
+    small; the committed file holds the D49 benchmark values). A None size writes null."""
     sizes = sizes or {"cnn-aug": 8, "crnn": 8, "aasist": 8}
-    lines, order = [], iter(["cnn-aug", "crnn", "aasist"])
+    lines, order, replaced = [], iter(["cnn-aug", "crnn", "aasist"]), 0
     for line in V2_CONFIG_PATH.read_text(encoding="utf-8").splitlines():
-        if re.match(r"\s+batch_size: null", line):
-            line = line.replace("null", str(sizes[next(order)]), 1)
+        match = re.match(r"(\s+batch_size: )(\S+)", line)
+        if match:
+            size = sizes[next(order)]
+            value = "null" if size is None else str(size)
+            line = match.group(1) + value + line[match.end():]
+            replaced += 1
         lines.append(line)
+    assert replaced == 3, f"expected 3 batch_size lines in {V2_CONFIG_PATH}, found {replaced}"
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path
 

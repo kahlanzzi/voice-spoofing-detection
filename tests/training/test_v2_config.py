@@ -16,7 +16,8 @@ from tests._torch import require_torch
 CONFIG_PATH = Path(__file__).resolve().parents[2] / "configs" / "v2_candidates.yaml"
 NAMES = ("cnn-aug", "crnn", "aasist")
 
-# D49 + D61 written out by hand, independent of EXPECTED in the module; batch sizes still null.
+# D49 + D61 written out by hand, independent of EXPECTED in the module; batch sizes from the D49
+# benchmark (V2b-2, docs/audit_evidence/v2b2_benchmark/).
 D49_D61 = {
     "decision": ["D49", "D50", "D61"],
     "max_epochs": 30,
@@ -38,7 +39,7 @@ D49_D61 = {
             "n_blocks": 4,
             "optimizer": {"name": "adam", "learning_rate": 0.001, "weight_decay": 0.0},
             "scheduler": "none",
-            "batch_size": None,
+            "batch_size": 256,
         },
         "crnn": {
             "conv_channels": [16, 32, 64],
@@ -47,7 +48,7 @@ D49_D61 = {
             "dropout": 0.3,
             "optimizer": {"name": "adam", "learning_rate": 0.001, "weight_decay": 0.0},
             "scheduler": "none",
-            "batch_size": None,
+            "batch_size": 256,
         },
         "aasist": {
             "reference": {"repository": "https://github.com/clovaai/aasist",
@@ -61,7 +62,7 @@ D49_D61 = {
             "scheduler": {"name": "cosine_per_step", "lr_min": 0.000005, "total_epochs": 30},
             "swa": False,
             "freq_aug": False,
-            "batch_size": None,
+            "batch_size": 32,
         },
     },
 }
@@ -109,13 +110,21 @@ def test_config_matches_model_constants():
     assert config.candidate("aasist")["model_config"] == MODEL_CONFIG
 
 
-def test_require_batch_sizes_raises_while_null(tmp_path):
-    # Training code cannot start before the D49 benchmark writes every batch size.
+def test_committed_batch_sizes_are_the_d49_benchmark_values():
     config = load_v2_config(CONFIG_PATH)
+    assert config.batch_sizes() == {"cnn-aug": 256, "crnn": 256, "aasist": 32}
+    assert config.require_batch_sizes() == {"cnn-aug": 256, "crnn": 256, "aasist": 32}
+
+
+def test_require_batch_sizes_raises_while_null(tmp_path):
+    # Training cannot start before the D49 benchmark writes every batch size (the file before V2b-2).
+    cfg = copy.deepcopy(D49_D61)
+    for name in NAMES:
+        cfg["candidates"][name]["batch_size"] = None
+    config = load_v2_config(_write(tmp_path, cfg))
     assert config.batch_sizes() == {"cnn-aug": None, "crnn": None, "aasist": None}
     with pytest.raises(ValueError, match=r"batch_size is null for \['cnn-aug', 'crnn', 'aasist'\]"):
         config.require_batch_sizes()
-    cfg = copy.deepcopy(D49_D61)
     cfg["candidates"]["cnn-aug"]["batch_size"] = 256
     cfg["candidates"]["crnn"]["batch_size"] = 128
     partial = load_v2_config(_write(tmp_path, cfg))

@@ -25,6 +25,7 @@ from src.training.train_v2 import V2TrainResult  # noqa: E402
 from src.training.v2_config import load_v2_config  # noqa: E402
 from tests._v2_fakes import (  # noqa: E402
     COMMIT,
+    NULL_BATCH_SIZES,
     PROFILE_PATH,
     S_COUNTS,
     V2_CONFIG_PATH,
@@ -93,7 +94,8 @@ def inputs(tmp_path_factory):
     write_s(base / "S_other_aug", arrays, prof, sha(manifest_path), "d" * 64, recompute_rows=1)
     return {"base": base, "raw": raw_dir, "lm": lm, "manifest_path": manifest_path,
             "aug": aug_path, "aug_unpinned": aug_config_copy(base / "aug_unpinned.yaml", pinned=False),
-            "v2": v2_config_copy(base / "v2.yaml")}
+            "v2": v2_config_copy(base / "v2.yaml"),
+            "v2_null": v2_config_copy(base / "v2_null.yaml", NULL_BATCH_SIZES)}
 
 
 class PatchedCodec(FakeCodec):
@@ -194,14 +196,15 @@ def test_tie_rule_recorded(inputs, patched, tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize("key, value, match", [
-    ("v2_config_path", V2_CONFIG_PATH, "batch_size is null"),
+    ("v2_config_path", "v2_null", "batch_size is null"),  # the file before V2b-2
     ("augmentation_config_path", "aug_unpinned", "pins must be complete"),
     ("selection_set_dir", "S_other_aug", "augmentation_config_sha256"),
     ("logger_mode", "online-ish", "logger_mode"),
     ("num_workers", -1, "num_workers"),
 ])
 def test_refusals(inputs, patched, tmp_path, key, value, match):
-    value = {"aug_unpinned": inputs["aug_unpinned"], "S_other_aug": inputs["base"] / "S_other_aug"}.get(value, value)
+    value = {"aug_unpinned": inputs["aug_unpinned"], "S_other_aug": inputs["base"] / "S_other_aug",
+             "v2_null": inputs["v2_null"]}.get(value, value)
     with pytest.raises(ValueError, match=match):
         _run(inputs, tmp_path / "out", **{key: value})
     assert patched == []
