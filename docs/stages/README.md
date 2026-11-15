@@ -80,7 +80,7 @@ flowchart LR
 | 9 Model selection | Donia | `stage09-model-selection.md` | accepted (D32 teach-back: Iheb, Malak and Khalil, face to face, 2026-10-26; Donia attended as author, correcting only; no corrections to the brief; confirmed by approval of the docs/stage8-9-closeout PR) |
 | 10 Risk policy + calibration | Donia | `stage10-risk-policy.md` | accepted (D32 teach-back: Iheb, Malak and Khalil, face to face, 2026-10-28; Donia attended as author, correcting only; no corrections to the brief; confirmed by approval of PR #61) |
 | 11 FoR internal test | Donia | [`stage11-for-test.md`](stage11-for-test.md) | accepted (D32 teach-back: Khalil, Iheb and Malak, face to face, 2026-11-10; Donia attended as author, correcting only; no corrections to the brief; confirmed by approval of the docs/stage11-closeout PR) |
-| 12 ModelBundle freeze (F4) | Donia | `stage12-bundle-freeze.md` | after the stage closes |
+| 12 ModelBundle freeze (F4) | Donia | [`stage12-bundle-freeze.md`](stage12-bundle-freeze.md) | in review (D32 teach-back: Iheb and Khalil required, Malak) |
 | 13 DEEP-VOICE external run | Khalil | `stage13-external-run.md` | after the stage closes |
 | 14 Robustness | Malak | `stage14-robustness.md` | after the stage closes |
 | 15 Calibration analysis | Khalil | `stage15-calibration.md` | after the stage closes |
