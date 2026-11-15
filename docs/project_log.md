@@ -6714,6 +6714,85 @@ Donia reviews. AI does not approve, push or merge.
 
 ---
 
+### Entry 172 — Track V PR V2b-1: model v2 training code, set S format, benchmark (2026-11-15)
+
+**Numbering:** Entry 172 was free on `main` (`e9c6093`) and on the remote branches
+`feat/stage13-window-runner` and `feat/stageV1-corpus-pins` (checked 2026-11-15; open PRs not
+listed: `gh` is not installed here).
+
+**Owner:** Donia Mabrouk (Track V, part C). S builder and corpus loader: Malak (V1b).
+
+**Scope [doc]:** D9, D40, D42, D49, D50/D56, D58, D61; Protocol §9. Code, synthetic tests and docs
+only: no dataset, cache build, Drive, W&B online run, training run, FoR test split or DEEP-VOICE
+access. No new decision.
+
+**What we did:** on `feat/stageV2-training`, created from `main` at `e9c6093` (the branch did not
+exist yet), in small commits:
+- **`src/features/raw_train_cache.py`** (+ CLI `build` / `verify`): the FoR train split only, every
+  clip as decoded (hash-checked; 1-D and 16,000 Hz enforced), `train_raw.npz` (`samples`, `offsets`,
+  `labels`, `paths`, `groups`) + strict `train_raw.json`; refused inside the repository; streamed hash.
+- **`src/training/selection_set.py`**: the S folder format (manifest with every file hash, one npz
+  per condition with F3 waveform and log-Mel), `write_selection_set` (for Malak's V1b builder; takes
+  `profile` as a required keyword so it can check the fingerprint and the log-Mel recompute) and
+  the strict `load_selection_set` (val-A only, seed 2026, condition order, F2 rows, byte-exact
+  log-Mel recompute, optional Stage 8 val-A known answer, one form in memory).
+- **`src/training/v2_data.py`**: `item_seed` (SeedSequence of aug seed, run seed, epoch, clip
+  index), `transform_item` (augment -> F3 -> input), `V2TrainDataset`, `EpochSampler`, collate,
+  family/codec counts, `check_clean_transform`.
+- **`src/training/train_v2.py`**: one run (configured Adam; D61 cosine for aasist over 30 x steps
+  per epoch; M = mean of the five S EERs; strict-improvement early stopping, earliest best restored).
+- **`src/training/v2_wandb_logger.py`**: allow-list logger reusing the v1 checks (v1 unchanged).
+- **`src/tuning/v2_search.py`**: resumable search, selection (lowest M; ties fewer parameters, then
+  order), winner seeds 1 and 2, bundle seed, reports never overwritten; S's clean condition checked
+  byte for byte against the Stage 8 val-A cache (known answer, both forms; its `npz_sha256` recorded
+  as `val_a_cache_npz_sha256`); a raw cache with all-zero clips refused (D62); no CLI (V2b-4).
+- **`src/tuning/v2_benchmark.py`**: D49 batch-size benchmark (Stage 6 rule plus the real optimizer
+  step) and CPU per-item throughput; unpinned codec timing only with `--codec-unpinned-timing`. The
+  epoch estimate assumes linear scaling with workers, which Colab's 2 vCPUs (often one physical core)
+  may not give.
+- **Docs:** new `docs/v2_training.md`; `docs/README.md` index row; `docs/CHANGELOG.md`.
+
+**Findings while implementing [verified, synthetic]:**
+- `PreprocessingProfile` and `AugmentationConfig` hold `MappingProxyType` fields and do not pickle,
+  so a dataset holding them fails with spawn workers. Handled in `v2_data` (`__getstate__` /
+  `__setstate__` rebuild equal frozen objects); `src/preprocessing` and `src/augmentation` unchanged.
+- A DataLoader without its own generator draws each new iterator's base seed from the global torch
+  RNG (once with persistent workers, every epoch with `num_workers=0`), which would make dropout
+  depend on `num_workers`. The loader now has a private generator.
+- [verified] `Augmenter` raises if `recorded_noise` is drawn for an all-silent clip
+  (`Augmenter._recorded_noise` raises when `signal_rms <= 0`; D39 keeps silent inputs). If any FoR
+  train clip is all zero, a run would stop on that item, deterministically. The raw cache counts
+  such clips (`n_all_zero_clips`) and `run_search` now refuses a cache with any (D62 needed).
+
+**Evidence** (local, Windows 11, Python 3.14.7, torch 2.11.0+cpu, `REQUIRE_TORCH_TESTS=1`):
+- [verified] full `pytest -q` after the review fixes: **1996 passed, 2 skipped** in 396.48 s
+  (tail line `1996 passed, 2 skipped in 396.48s (0:06:36)`; main before: 1891 passed, 2 skipped).
+  The skips are unchanged: AASIST faithfulness (no `AASIST_REF_DIR`) and the Windows
+  symlink test.
+- [verified] `pytest -q tests/training tests/tuning tests/governance -k "v2 or selection or raw_train
+  or governance"`: 235 passed, 178 deselected; `tests/governance`: 88 passed (FoR test and DEEP-VOICE
+  guards unchanged).
+- [verified] the 100 new tests: 77.0 s together on this machine; the slowest are the 2-worker spawn
+  run (17 s) and the 1-epoch aasist run (12 s; one first run took 69 s, not reproduced).
+- [verified] items byte-identical with `num_workers` 0 and 2 (spawn) and batch sizes 8 and 5; the
+  clean path equals `extract_features` and the Stage 8 cache rows (synthetic known answer).
+- [verified] `git diff main` is empty for `src/augmentation`, `configs`, `src/models`,
+  `src/preprocessing`, the existing `src/features` files, `train_cnn.py`, `wandb_logger.py`,
+  `cnn_config.py`, `normalization.py`, `determinism.py`, `v2_config.py`, `v2_schedule.py`,
+  `cnn_search.py`. Batch sizes stay `null`.
+
+**Not done:** no benchmark run (V2b-2), no S build (V1b/V2b-3), no CLI or notebook for the search,
+no rehearsal or training (V2b-4); no F5 loader. Not pushed.
+
+**AI assistance:** **Claude** (claude.ai) wrote the prompt with Donia. **Claude Code** (Claude Opus
+5.5) wrote the code, tests, `docs/v2_training.md`, this entry and the CHANGELOG line, and ran the
+tests. Donia reviews. AI does not approve, push or merge.
+
+**What's next:** review (Donia; S layout: Malak) -> V2b-2 benchmark on the T4 -> batch sizes in
+`configs/v2_candidates.yaml`.
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -6723,8 +6802,14 @@ Donia reviews. AI does not approve, push or merge.
 - [x] Implement V1a's strict train-only augmentation module and synthetic tests without corpus access (D50/D56; Entry 169; awaiting review and merge).
 - [ ] V1b: pin and audit the noise/RIR corpora (licence, archive hash, 50/50 by-file split) and exact ffmpeg/codec tools before any v2 training (D50 (5)).
 - [ ] Compute benchmark per v2 candidate; batch sizes in `configs/` before training (D49). Slots exist as `null` in `configs/v2_candidates.yaml`; `require_batch_sizes()` blocks training until set (Entry 170; PR V2b).
+- [ ] V2b-2: run `python -m src.tuning.v2_benchmark` on Colab T4 (2026.10) and write the batch sizes into `configs/v2_candidates.yaml` (D49; Entry 172).
+- [ ] V1b (Malak): confirm the S layout in `docs/v2_training.md` and build S with `write_selection_set` on the training runtime; verify with `load_selection_set` incl. the Stage 8 val-A known answer (D50 (4), D58; Entry 172).
+- [ ] V2b-4: search CLI/notebook wired to the V1b corpus loader; T4 rehearsal (`check_clean_transform`, two short runs for observed crnn/cuDNN determinism), then the search (Entry 172).
+- [ ] V2b-3: read `n_all_zero_clips` from the raw train cache (`build` / `verify` print it with the first 10 paths). If it is > 0, a decision (**D62**) is needed before any training (`run_search` refuses such a cache): `Augmenter`'s `recorded_noise` refuses a silent clip [verified], and Malak's S builder (`noise_10db`) has the same issue on val-A (Entry 172; `docs/v2_training.md`).
+- [ ] Discuss with Malak whether the per-call `ffmpeg -version` in `FFmpegCodecBackend.round_trip` matters, if the benchmark shows a large codec cost (Entry 172).
 - [x] Approve D61 (Iheb, Malak, Khalil) and add its approval commit before any v2 training (Entry 170). (PR #127, 2026-11-13)
-- [ ] PR V2b: v2 training loop, selection metric M over set S, F5 model loader dispatching on `architecture` (D49, D61 (6)), after V1b and set S (Entry 170).
+- [x] PR V2b-1: v2 training loop, selection metric M over set S, resumable search, benchmark code (Entry 172; review pending).
+- [ ] F5 model loader dispatching on `architecture` (D61 (6)), when F5 is built (Entry 170).
 - [x] Draft the extension authentication design and security-review text in SDD v2.0 before implementation (D51; Entry 165; human approval and merge pending).
 - [ ] Choose the hosting provider and record it (D54 (9)); load test on staging, then record K, L, `analysis_timeout_s` and `L_MAX` (D53 (3)).
 - [x] Draft SRS v4.0 Markdown/PDF pair and version index from D48-D56 (Entry 164; human review and merge pending).
@@ -7123,7 +7208,9 @@ Donia reviews. AI does not approve, push or merge.
 
 ---
 
-## Current status — updated 2026-11-13 (Entry 171)
+## Current status — updated 2026-11-15 (Entry 172)
+
+**Track V, PR V2b-1 (Entry 172):** on `feat/stageV2-training` (from `main` `e9c6093`, not pushed): the model v2 training code with synthetic tests only — raw FoR train waveform cache, the set S format (writer for Malak's V1b builder + strict loader), the per-item seed rule (items identical for any `num_workers`), `train_v2` with early stopping on M, the v2 W&B logger, a resumable `v2_search`, and the D49 batch-size benchmark (with the optimizer step) plus CPU throughput; `docs/v2_training.md`. Full suite 1996 passed, 2 skipped. No data touched, no training, batch sizes still `null`. Next: review, then V2b-2 (benchmark on T4), V2b-3 (raw cache), V1b (S, Malak), V2b-4 (rehearsal and search).
 
 **Stage 11 report (Entry 171):** the platform-bound byte-exact `p` re-derivation (Entry 161) is now in `docs/stage11_report.md` Limitations; docs only.
 
