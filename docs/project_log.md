@@ -7043,6 +7043,19 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
+### Entry 182 — Proposed SRS/API probability-field decision (2026-11-15)
+
+- **Owner:** Khalil Dridi.
+- **Scope:** Documentation proposal only: provisional D63 and ADR 0016. No API, SRS, PDF, database, UI or model implementation changed.
+- **Finding [verified]:** On `main` at `fd5f620`, SRS v4.0 FR-06 and D55's decision board call for calibrated `p`, while D55 and the API design freeze an eight-field response with `confidence` but no probability field. Confidence is `max(p, 1 - p)`, rounded to two decimals; it is not a full-precision probability contract across all results.
+- **Proposal:** Add `spoof_probability` to successful and stored results; preserve confidence semantics; represent mock and unrecoverable historical values as `null`; update the API, UI and SRS Markdown/PDF only after team approval.
+- **Review basis:** `AGENTS.md`, `CONTRIBUTING.md`, D26, D55, SRS v4.0 FR-06, `docs/api_design.md`, and `docs/results/risk_policy_fit.md`.
+- **Checks:** Compared the proposal with current `main`; reviewed its relative links and whitespace. No code tests were run for this documentation-only proposal.
+- **AI assistance:** Codex drafted the proposal; team review is required before acceptance.
+- **Gate:** **PROPOSED — WAITING FOR TEAM REVIEW.** D63 and Entry 182 are provisional while this PR is open.
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -7067,6 +7080,7 @@ module, training-format S build/verification, training-half resource cache and o
 - [ ] Choose the hosting provider and record it (D54 (9)); load test on staging, then record K, L, `analysis_timeout_s` and `L_MAX` (D53 (3)).
 - [x] SRS v4.0 Markdown/PDF pair and version index merged in PR #121 (Entry 164).
 - [ ] Khalil confirms the SRS v4.0 owner review; GitHub currently records Donia's approval on PR #121.
+- [ ] Review proposed D63/ADR 0016: decide whether to expose calibrated `spoof_probability`; do not change the API/SRS contract or implement it until the team approves. The ID and log entry are provisional while this PR is open.
 - [x] SDD v2.0 Markdown/PDF pair and version index merged in PR #122 (Entry 165).
 - [ ] Iheb confirms the SDD v2.0 owner review and all four reviewers explicitly accept the D51 extension-authentication design before extension implementation; PR #122 currently records Donia's approvals only.
 - [ ] Stage 13 runner (D35) and Stage 11 runner (PR #68) accept the v2 model set (D48 (3), (7)).
@@ -7472,7 +7486,7 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
-## Current status — updated 2026-11-15 (Entry 181)
+## Current status — updated 2026-11-15 (Entry 182)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -7499,7 +7513,7 @@ integration is Iheb’s P1 work; the mock verdict must not be presented as a rea
 
 **Khalil’s next project work.** Check and sign off the SRS v4.0 draft you own: PR #121 is merged, but
 the GitHub review list currently records Donia’s approval only. Continue Stage 13 preparation only
-within the gates above. The D52 warm-up analysis is scheduled for W3 (23–29 November); Stages 15–16
+within the gates above. A D63 proposal to expose `spoof_probability` is pending team decision; this proposal does not authorize API/SRS implementation. The D52 warm-up analysis is scheduled for W3 (23–29 November); Stages 15–16
 follow later in the plan.
 
 **What is next:**
