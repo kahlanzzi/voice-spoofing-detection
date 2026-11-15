@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import soundfile as sf
+import yaml
 
 from src.augmentation import AugmentationResources
 from src.features.logmel_cache import build_logmel_cache
@@ -171,13 +172,19 @@ def v2_config_copy(path: Path, sizes=None) -> Path:
 
 
 def aug_config_copy(path: Path, *, pinned: bool = True) -> Path:
-    """configs/augmentation.yaml with fake corpus and ffmpeg pins (V1b fills the real ones)."""
-    text = AUG_CONFIG_PATH.read_text(encoding="utf-8")
+    """Copy augmentation config with deterministic fake pins or explicit null pins."""
+    data = yaml.safe_load(AUG_CONFIG_PATH.read_text(encoding="utf-8"))
+    pin = "a" * 64 if pinned else None
+    for corpus in ("noise", "rir"):
+        data["corpora"][corpus]["archive_sha256"] = pin
+        data["corpora"][corpus]["license_sha256"] = pin
     if pinned:
-        text = re.sub(r"(archive_sha256|license_sha256): null", lambda m: f"{m.group(1)}: {'a' * 64}", text)
-        text = text.replace("expected_version: null", 'expected_version: "ffmpeg version fake"')
-        text = text.replace("expected_codec_libraries: {}", "expected_codec_libraries: {libopus: 1.0}")
-    path.write_text(text, encoding="utf-8")
+        data["ffmpeg"]["expected_version"] = "ffmpeg version fake"
+        data["ffmpeg"]["expected_codec_libraries"] = {"libopus": "1.0"}
+    else:
+        data["ffmpeg"]["expected_version"] = None
+        data["ffmpeg"]["expected_codec_libraries"] = {}
+    path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
     return path
 
 

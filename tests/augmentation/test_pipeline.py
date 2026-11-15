@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+import yaml
 
 from src.augmentation import (
     AugmentationError,
@@ -96,8 +97,18 @@ def test_each_family_preserves_shape_dtype_and_finiteness(augmenter, monkeypatch
     assert np.isfinite(result.waveform).all()
 
 
-def test_unpinned_default_codec_backend_refuses_execution(monkeypatch):
-    augmenter = Augmenter(CONFIG)
+def test_unpinned_default_codec_backend_refuses_execution(tmp_path, monkeypatch):
+    config_path = Path(__file__).resolve().parents[2] / "configs" / "augmentation.yaml"
+    raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    raw["ffmpeg"]["expected_version"] = None
+    raw["ffmpeg"]["expected_codec_libraries"] = {}
+    unpinned_path = tmp_path / "augmentation.yaml"
+    unpinned_path.write_text(
+        yaml.safe_dump(raw, sort_keys=False),
+        encoding="utf-8",
+    )
+    unpinned_config = load_augmentation_config(unpinned_path)
+    augmenter = Augmenter(unpinned_config)
     monkeypatch.setattr(augmenter, "sample_family", lambda rng: "codec")
     with pytest.raises(AugmentationError, match="pins must be filled by V1b"):
         augmenter.augment(_tone(), split="train", label="REAL", seed=0)

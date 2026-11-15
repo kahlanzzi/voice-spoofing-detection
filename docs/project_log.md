@@ -6867,7 +6867,55 @@ S; Malak) -> V2b-4 (CLI, rehearsal, search).
 
 ---
 
-### Entry 174 — Stage 13 guarded-run preparation (2026-11-15)
+### Entry 174 — Stage 12 closed: F4 hand-over verified, brief accepted (D32) (2026-11-15)
+
+**Owner:** Donia Mabrouk (Part C).
+
+**Scope [doc]:** Stage 12 (ModelBundle v1, F4; D2, D36, D59, D60), D32. Docs only: no code, test,
+config, evidence or decision change; no data access.
+
+**F4 hand-over [verified, reported by Donia]:** on 2026-11-15, Iheb Zemzemi (API, P1) and Khalil
+Dridi (Stage 13) each ran `python -m src.bundle.f4 verify` on their own copy of Drive
+`checkpoints/bundle/bundle-v1/` and both got `manifest_sha256:
+edf4a205e12fc948a68575ebaa929145481aaa535d34e3353ef9535f92840efc` and `F4 verify OK`, equal to D60.
+This closes the Entry 168 hand-over item.
+
+**What changed:**
+- New brief `docs/stages/stage12-bundle-freeze.md` (template, D32): inputs and outputs, steps
+  (format PR #19, D59 PR #123, tool PR #124, build and Drive verify, D60 PR #125, hand-over), key
+  decisions, evidence with sources, limitations (the API integration is Iheb's P1, not this stage's
+  evidence), 9 teach-back questions, how to verify a copy. Status: accepted (below).
+- `docs/stages/README.md`: row 12 links the brief, status "accepted".
+- `AGENTS.md` roadmap: the Track V row status brought up to date (V1a, V1b (PR #131), V2a, V2b-1,
+  V2b-2 merged; next V1c, V2b-3, V2b-4); Track V is now CURRENT. Row 12: done.
+- Open items: the hand-over item is ticked; the Stage 8 "non-executable checkpoint" item is ticked as
+  already satisfied by D42 (safetensors weights + strict JSON, never pickle; `cnn_checkpoint` never
+  calls `torch.load`); the old Stage 12 roadmap item is split: F4 done, API replacement tracked as
+  Iheb's P1.
+
+**Teach-back (D32) [reported by Donia]:** Iheb and Khalil (required, the C→E and C→D consumers) and
+Malak answered the brief's §7 questions without the author, face to face, on 2026-11-15; Donia
+attended as author, correcting only. No corrections came up, so the brief was not revised; its status
+is accepted. The written confirmation is the approval of this PR (D26). The brief and the closeout are
+in one PR because the teach-back took place before the brief PR merged.
+
+**Closeout scope (agreed at the teach-back):** Stage 12 closes on F4 frozen and handed over (both
+consumers verified). Replacing `MockAnalyzer` with F4 (D48 (5)) is integration work owned by Iheb
+(P1, planned 2026-11-24), tracked under Stage 17 as its own open item, not as a Stage 12 gate.
+
+**Status:** Stage 12 is done. Track V (model v2, F5) is current.
+
+**Decisions:** none.
+
+**AI assistance:** **Claude** (claude.ai) drafted the brief, this entry and the index/roadmap edits
+as a patch from the Stage 12 evidence and Entries 35, 166–168. Donia reviews. AI does not approve,
+push or merge.
+
+**Gate:** approval of this PR by Iheb, Khalil and Malak is the written confirmation of the teach-back.
+
+**What's next:** Track V: V1c (Malak), V2b-3 (raw train cache), per-epoch resume, V2b-4.
+
+### Entry 175 — Stage 13 guarded-run preparation (2026-11-15)
 
 - **Owner:** Khalil Dridi.
 - **Change:** On `feat/stage13-runner-prep`, added the exact D35 allowlist entries, a strict path-driven config template, per-window Stage 6 preprocessing/scoring primitives, F4-anchored bundle/baseline preflight, frozen metadata-manifest hash verification, and a dataset-wide atomic claim with read-back verification and persisted failure status. The verified profile and policy are taken from the loaded bundle; no separate profile path is accepted.
@@ -6878,7 +6926,7 @@ S; Malak) -> V2b-4 (CLI, rehearsal, search).
 
 ---
 
-### Entry 175 — Stage 13 stored-score reporting and paired comparison (2026-11-15)
+### Entry 176 — Stage 13 stored-score reporting and paired comparison (2026-11-15)
 
 - **Owner:** Khalil Dridi.
 - **Change:** Extended `feat/stage13-runner-prep` with a hash-bound stored-score CSV/sidecar reader and writer, metadata-only frozen-manifest parsing, complete-window and row-integrity validation, D33 eight-speaker summaries, D34 filtered/unfiltered CNN file means, and D36 paired CNN-minus-baseline EER with source-speaker clustered bootstrap intervals.
@@ -6889,7 +6937,7 @@ S; Malak) -> V2b-4 (CLI, rehearsal, search).
 
 ---
 
-### Entry 176 — Stage 13 cutoff guard and report output (2026-11-15)
+### Entry 177 — Stage 13 cutoff guard and report output (2026-11-15)
 
 - **Owner:** Khalil Dridi.
 - **Change:** Added the D48 cutoff gate before the dataset-wide claim: before 2026-12-04 23:59 Africa/Tunis, F5 must be verified through an injected architecture-aware verifier and loader; after the cutoff, the v1-plus-baseline fallback is permitted. Added D34 source-speaker-clustered file-level intervals and a strict JSON report writer that converts undefined values to `null`, verifies read-back, and refuses overwrite.
@@ -6900,7 +6948,7 @@ S; Malak) -> V2b-4 (CLI, rehearsal, search).
 
 ---
 
-### Entry 177 — Stage 13 model-bound scoring and D58/H8 gates (2026-11-15)
+### Entry 178 — Stage 13 model-bound scoring and D58/H8 gates (2026-11-15)
 
 - **Owner:** Khalil Dridi.
 - **Change:** Added a single-pass scorer that builds its v1, baseline and D49 v2 scoring functions from the already verified in-memory artifacts; no scorer callback can substitute a different model. The D58 gate now requires a hash-pinned, passing Stage 11 rehearsal report that matches the F4 baseline/profile, approved Stage 7 MFCC references and exact current T4 runtime, before a dataset claim. The claim records the D58 report hash. Post-claim errors are finalized as incomplete. The report computes H8 as paired v1-minus-v2 EER on the filtered view and unfiltered sensitivity view, or records the cutoff exclusion.
@@ -6911,7 +6959,7 @@ S; Malak) -> V2b-4 (CLI, rehearsal, search).
 
 ---
 
-### Entry 178 — Synthetic Stage 13 scoring and gate checks (2026-11-15)
+### Entry 179 — Synthetic Stage 13 scoring and gate checks (2026-11-15)
 
 - **Owner:** Khalil Dridi.
 - **Change:** Added synthetic checks for D58 report hashing/runtime rejection, H8 paired v1-versus-v2 CNN scoring, one-pass scoring over generated waveforms, and incomplete-claim finalization. Updated the prepared-run tests for valid run IDs, the D58 gate and model-bound scorers.
@@ -6958,12 +7006,12 @@ S; Malak) -> V2b-4 (CLI, rehearsal, search).
   accepted, set D33–D35 to Approved (Entry 58). (PR #29, 2026-10-19)
 
 **Khalil: Stage 13 preparation**
-- [x] Implement the D35 per-window frozen preprocessing integration test (Entry 55); synthetic test verifies each complete window is independently preprocessed and the remainder is dropped (Entry 174).
-- [x] Add stored-score integrity checks, D33 eight-speaker summaries, D34 CNN file means and the D36 paired EER bootstrap (Entry 175; synthetic rows only).
-- [x] Add D34 source-speaker-clustered file-level intervals and strict JSON report export (Entry 176; synthetic rows only).
-- [x] Enforce the D48 F5-before-cutoff / v1-plus-baseline-after-cutoff model-set rule before the one-time claim (Entry 176; fake F5 loader only).
-- [x] Build scoring functions from verified F4/F5 loaded models and report H8's paired v1-minus-v2 filtered result plus unfiltered sensitivity (Entry 177; static checks only).
-- [x] Require a hash-pinned D58 rehearsal report matching the verified baseline/profile and exact current runtime before claiming the dataset (Entry 177; tests and real report pending).
+- [x] Implement the D35 per-window frozen preprocessing integration test (Entry 55); synthetic test verifies each complete window is independently preprocessed and the remainder is dropped (Entry 175).
+- [x] Add stored-score integrity checks, D33 eight-speaker summaries, D34 CNN file means and the D36 paired EER bootstrap (Entry 176; synthetic rows only).
+- [x] Add D34 source-speaker-clustered file-level intervals and strict JSON report export (Entry 177; synthetic rows only).
+- [x] Enforce the D48 F5-before-cutoff / v1-plus-baseline-after-cutoff model-set rule before the one-time claim (Entry 177; fake F5 loader only).
+- [x] Build scoring functions from verified F4/F5 loaded models and report H8's paired v1-minus-v2 filtered result plus unfiltered sensitivity (Entry 178; static checks only).
+- [x] Require a hash-pinned D58 rehearsal report matching the verified baseline/profile and exact current runtime before claiming the dataset (Entry 178; tests and real report pending).
 - [x] Rename synthetic-test branch to the D23-compliant `chore/stage13-synthetic-reporting`.
 - [ ] Complete PR #27 integration, retarget to main, and review updated synthetic tests (Entry 51).
 - [x] PR #26 merged as `72a9646`; D33–D36 were explicitly approved by all four in PR #29.
@@ -6971,8 +7019,8 @@ S; Malak) -> V2b-4 (CLI, rehearsal, search).
 - [x] PR #23 integrated and merged as `3f2f4bb` after passing CI (Entries 42–44).
 - [x] PR #24 merged into main as `6786c12` (Entries 45–46).
 - [x] Review proposed D33–D35 and ADR 0007; record explicit approval or requested revisions (Entry 48). (approved by all four, PR #29, 2026-10-19)
-- [x] Add and run synthetic tests for one-pass scoring, incomplete-claim finalization, D58 report/runtime verification, and H8 output (Entry 178; focused suite 33 passed; broad suite 1555 passed, 2 skipped with API/Compose tests excluded).
-- [ ] Run full dependency-complete CI; current available Python environment cannot collect the API/Compose groups because `argon2` is missing (Entry 178).
+- [x] Add and run synthetic tests for one-pass scoring, incomplete-claim finalization, D58 report/runtime verification, and H8 output (Entry 179; focused suite 33 passed; broad suite 1555 passed, 2 skipped with API/Compose tests excluded).
+- [ ] Run full dependency-complete CI; current available Python environment cannot collect the API/Compose groups because `argon2` is missing (Entry 179).
 - [ ] Integrate and review the actual architecture-aware F5 loader once F5 is built; verify its real frozen record and smoke-check its model scorer on synthetic waveforms.
 - [ ] Produce the passed D58 rehearsal report on the pinned runtime, verify durable claim behavior on the approved Drive target, then complete peer review and the Stage 13 brief.
 - [x] Before Stage 13, approve and record the speaker-average undefined-value convention alongside
@@ -6995,7 +7043,7 @@ S; Malak) -> V2b-4 (CLI, rehearsal, search).
 - [x] Delete merged branches: remote has only `main` (Entry 19).
 - [x] Review and merge PR `docs/stage3-protocol-skeleton` (Entry 19): merged as PR #8; branch deleted (Entry 20).
 - [x] Review and merge PR `chore/stage5-ai-tooling` (Entry 27): merged as PR #14. Using Context7 is optional per member: set `CONTEXT7_API_KEY` locally (never committed) and approve the project MCP server in your own tool (ADR 0006).
-- [x] Stage 13 governance: decide (new decision, before Stage 13) how the guarded external-run code is added to the DEEP-VOICE allowlist of `tests/governance/test_deepvoice_access.py`. (decided by D35, PR #29, 2026-10-19; exact-file implementation and tests in Entry 174)
+- [x] Stage 13 governance: decide (new decision, before Stage 13) how the guarded external-run code is added to the DEEP-VOICE allowlist of `tests/governance/test_deepvoice_access.py`. (decided by D35, PR #29, 2026-10-19; exact-file implementation and tests in Entry 175)
 - [x] `LICENSE` (MIT, code only, D25) and the README statement that datasets are not redistributed: in `chore/repo-structure` instead of a separate PR B (Entry 17).
 - [x] Decide whether branch protection should require code-owner review: **no** (review of Entry 16).
 - [x] Compare `CONTRIBUTING.md`, the `.github/` templates, `docs/decisions/TEMPLATE.md` and ADR 0001 with the actual CS 488 template and align them (keep D20 checkbox, stacked PRs, D23 naming, human in the loop): done on `chore/repo-structure` (Entry 17).
@@ -7090,11 +7138,11 @@ S; Malak) -> V2b-4 (CLI, rehearsal, search).
 - [x] Human review of `feat/stage12-bundle-format`; CI green on Python 3.13: merged as PR #19.
 - [x] Stage 12: add the profile-version check once the F3 profile format is frozen. (D59, Entry 166, PR #123)
 - [x] Stage 12/17: load the checkpoint from verified bytes (or re-verify at load). (D59, Entry 166, PR #123)
-- [ ] Stage 8: save checkpoints in a non-executable form (safetensors or state_dict + weights_only=True).
+- [x] Stage 8: save checkpoints in a non-executable form (safetensors or state_dict + weights_only=True). (Satisfied by D42: safetensors + strict JSON, no pickle; Entry 174)
 - [x] F4: record manifest_sha256 in the freeze decision. (D60, `edf4a205…`, Entry 168, PR #125)
 - [x] F4 real build with `python -m src.bundle.f4 build` from a clean `main`, Drive upload and `verify`, then the evidence PR (`docs/audit_evidence/stage12_bundle/`, D60) (Entry 167). (Built and verified 2026-11-12, Entry 168)
-- [ ] Hand-over of F4: Iheb (API P1, replace `MockAnalyzer`), Khalil (Stage 13); each runs `verify` on their copy (Entry 168).
-- [ ] Stage 12 brief and teach-back (D32).
+- [x] Hand-over of F4: Iheb (API P1, replace `MockAnalyzer`), Khalil (Stage 13); each runs `verify` on their copy (Entry 168). (Both `F4 verify OK`, `edf4a205…`, 2026-11-15, Entry 174)
+- [x] Stage 12 brief and teach-back (D32). (Brief accepted; teach-back by Iheb, Khalil and Malak, face to face, 2026-11-15; Entry 174)
 
 **Stage briefs (D32, Entry 37)**
 - [x] Team review of `docs/stage6-stage-briefs` (approves D32): approved by all three, 2026-10-18.
@@ -7217,7 +7265,8 @@ S; Malak) -> V2b-4 (CLI, rehearsal, search).
 - [x] Stage 11 brief `docs/stages/` (D32), with the interpretation of the results (Donia). (merged as #119, Entry 162)
 - [x] Khalil's teach-back of the Stage 11 brief (D32), then a closeout PR marking Stage 11 done in `AGENTS.md`. (Khalil, Iheb and Malak, face to face, 2026-11-10, no corrections; closeout on `docs/stage11-closeout`, Entry 163)
 - [x] `stage11_report`'s byte-exact `p` re-derivation reproduces only on the run's platform (T4, 2026.10); document in `docs/stage11_report.md` Limitations in a later PR (no code change) (Entry 161). (Entry 171)
-- [ ] Stage 12: ModelBundle v1 freeze (F4) after Stage 11 closes; v1 replaces the mock in the API (D48).
+- [x] Stage 12: ModelBundle v1 freeze (F4) after Stage 11 closes. (D60, Entry 168; hand-over verified, Entry 174)
+- [ ] v1 replaces the mock in the API (D48 (5)): Iheb, P1, planned 2026-11-24 (Stage 17; Entry 174).
 
 **Stage 17 API (Part E, Entry 100)**
 - [x] Team review of the API contract `docs/api_design.md`, including the proposed `invalid_request` (400) code. (approved, PR #65, Donia, 2026-10-30; Entry 101)
@@ -7347,9 +7396,11 @@ S; Malak) -> V2b-4 (CLI, rehearsal, search).
 
 ---
 
-## Current status — updated 2026-11-15 (Entry 178)
+## Current status — updated 2026-11-15 (Entry 179)
 
-**Stage 13 preparation (Entries 174–178):** `feat/stage13-runner-prep` has the exact D35 allowlist; per-window Stage 6 preprocessing; F4/baseline and metadata-manifest preflight; atomic claim primitives; hash-verified score files; D33/D34 summaries and clustered CIs; D36 paired EER intervals; strict JSON export; the D48 cutoff gate; model-bound one-pass scoring; post-claim incomplete-run finalization; the hash-pinned D58 rehearsal/runtime gate; and H8's paired filtered result plus unfiltered sensitivity. Synthetic tests cover D58 hash/runtime rejection, H8 CNN-to-CNN pairing, one-pass scoring and incomplete-claim handling. Focused Stage 13/governance tests: `33 passed`; broad suite excluding API and Compose deployment tests: `1555 passed, 2 skipped`. Full-suite collection is blocked because `argon2` is missing in the available environment. Ruff check/format, `py_compile` and `git diff --check` passed. Config points to the checked-in passed D58 rehearsal report; exact runtime match must still be confirmed when staging the run. All audio in new tests is generated; no DEEP-VOICE audio, frozen model inference or dataset claim was used. **Not ready to execute Stage 13:** actual F5 loader/frozen record, exact-runtime D58 confirmation (repeat rehearsal if the environment differs), dependency-complete CI, Drive durability review, and team review remain.
+**Stage 12 closed (Entry 174):** F4 (`bundle-v1`, `edf4a205…40efc`) is frozen (D60) and handed over: Iheb and Khalil each verified their copy (`F4 verify OK`, 2026-11-15). Brief `docs/stages/stage12-bundle-freeze.md` accepted after the D32 teach-back (Iheb, Khalil, Malak, face to face, 2026-11-15; no corrections). **Track V is current.** Replacing the API mock with F4 is Iheb's P1 (2026-11-24).
+
+**Stage 13 preparation (Entries 175–179):** `feat/stage13-runner-prep` has the exact D35 allowlist; per-window Stage 6 preprocessing; F4/baseline and metadata-manifest preflight; atomic claim primitives; hash-verified score files; D33/D34 summaries and clustered CIs; D36 paired EER intervals; strict JSON export; the D48 cutoff gate; model-bound one-pass scoring; post-claim incomplete-run finalization; the hash-pinned D58 rehearsal/runtime gate; and H8's paired filtered result plus unfiltered sensitivity. Synthetic tests cover D58 hash/runtime rejection, H8 CNN-to-CNN pairing, one-pass scoring and incomplete-claim handling. Focused Stage 13/governance tests: `33 passed`; broad suite excluding API and Compose deployment tests: `1555 passed, 2 skipped`. Full-suite collection is blocked because `argon2` is missing in the available environment. Ruff check/format, `py_compile` and `git diff --check` passed. Config points to the checked-in passed D58 rehearsal report; exact runtime match must still be confirmed when staging the run. All audio in new tests is generated; no DEEP-VOICE audio, frozen model inference or dataset claim was used. **Not ready to execute Stage 13:** actual F5 loader/frozen record, exact-runtime D58 confirmation (repeat rehearsal if the environment differs), dependency-complete CI, Drive durability review, and team review remain.
 
 **Track V, PR V2b-2 (Entry 173):** on `feat/stageV2-batch-sizes` (from `main` `9c46baf`, not pushed): the D49 benchmark ran on the Colab T4 (runtime 2026.10, commit `9c46baf`, two GPU runs with byte-identical peaks) and chose **`cnn-aug` 256, `crnn` 256, `aasist` 32**, now in `configs/v2_candidates.yaml`; evidence byte for byte in `docs/audit_evidence/v2b2_benchmark/` with a torch-free drift guard. The unpinned CPU throughput (planning only) shows the codec (0.42 s/item) dominating augmentation, about 8–17 min of augmentation per epoch with 1–2 workers. No code change, no data, no training. Open: per-epoch resume before V2b-4; ask Malak about checking the ffmpeg pin once per process. Next: review, then V2b-3 (raw cache), V1b (S, Malak), V2b-4 (rehearsal and search).
 
@@ -7584,13 +7635,13 @@ canonical UML package is merged in PR #70 (`85829e1`). The evidence-based AI eth
 - Stage briefs (`docs/stages/`, D32): 00–10 accepted; 02–03 accepted (PR #40), 04–06 (PR #37), 07 (PR #43), 08–09 (PR #54), and 10 (PR #61).
 
 **Branches:**
-- `origin/main`: checked at `6ebdd01` for Entry 174; current work is on `feat/stage13-runner-prep`.
+- `origin/main`: checked at `6ebdd01` when Stage 13 Entry 175 was prepared; PR #133 is based on current main at `704e0ed`.
 - `docs/stage11-midterm-ai-ethics-malak`: Entry 107 AI ethics and usage reflection, merged as PR #71 (`98fd8d7`).
 - `docs/stage11-midterm-uml-malak`: Entries 104–106, merged as PR #70 (`85829e1`).
 - `docs/stage11-midterm-backlog-malak`: Entry 102 backlog, merged as PR #69 (`023bfa4`).
 - `docs/stage8-cnn-selection`: merged as PR #52 (remote branch deleted).
 - `docs/stage16-d43-loudness-diagnostic`: D43 proposal and approval (Entry 87), merged as PR #53 (`a022e7a`) (remote branch deleted).
-- `feat/stage13-window-runner`: older unmerged prototype; do not merge blindly. Entry 174 is a clean-`main` replacement for its initial safe primitives and tests.
+- `feat/stage13-window-runner`: older unmerged prototype; do not merge blindly. Entry 175 is a clean-`main` replacement for its initial safe primitives and tests.
 - `fix/stage10-d44-platt-stop`: D44 Platt stop rule (Entry 89), merged as PR #55 (remote branch deleted).
 - `docs/stage10-d44-approval`: D44 approval record (Entry 90), merged as PR #56 (`4720bc2`) (remote branch deleted).
 - `docs/stage10-d45-seed-policy-scope`: D45 proposal and approval (Entry 91), merged as PR #57 (`13a7d38`).

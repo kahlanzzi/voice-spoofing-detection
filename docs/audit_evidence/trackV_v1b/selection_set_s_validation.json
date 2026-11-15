@@ -1,0 +1,20 @@
+{
+  "condition_counts": {
+    "clean": 1330,
+    "narrowband_mulaw": 1330,
+    "opus_16": 1330,
+    "recorded_noise_10db": 1330,
+    "reverberation": 1330
+  },
+  "condition_seeds_checked": 6650,
+  "note": "Structural validation from the persisted final manifest; generation itself asserted every waveform shape and finite-value contract.",
+  "records_checked": 6650,
+  "resource_records_checked": 2660,
+  "result": "passed",
+  "schema_version": 1,
+  "selection_manifest_sha256": "71a340f009b5b0a20e295f4031c15fe2471b1174444b4b0fa2d3014f34c72533",
+  "selection_semantic_sha256": "8cf4858c51f78a1fd5bce78042f7d490529eb1230a149fe52a0a1f856e9046a7",
+  "source_manifest_links_checked": 6650,
+  "sources_checked": 1330,
+  "unique_source_condition_keys": 6650
+}
