@@ -74,14 +74,15 @@ as `n_all_zero_clips` in `train_raw.json` (strict key, recounted from the sample
 and `verify` print it and the first 10 such paths (or `none`). The cache still builds with such
 clips: nothing is dropped.
 
-**Why it matters:** `Augmenter`'s `recorded_noise` refuses a silent clip ("recorded-noise mixing
-requires non-silent signal and noise"). Training draws `recorded_noise` for about 16 % of items each
+**Why it matters [verified]:** `Augmenter._recorded_noise` raises when `signal_rms <= 0`
+("recorded-noise mixing requires non-silent signal and noise"). Training draws `recorded_noise` for about 16 % of items each
 epoch, so a run that meets an all-zero clip on that family stops, deterministically, on the same
 item every time. Malak's S builder has the same issue on val-A for the `noise_10db` condition.
 
 **Gate:** if `n_all_zero_clips > 0` when the cache is built on the training runtime (V2b-3), a
 decision (**D62**) is needed **before any training**, covering both the train cache and S. The
 options (e.g. how the noise family treats a silent clip) are for that decision, not for this code.
+`run_search` refuses such a cache, naming the count.
 
 ## Item seed
 
@@ -141,8 +142,13 @@ trained with seeds 1 and 2 → bundle seed = `select_bundle_seed` over the three
 ties to the lower seed). Before reading anything: a clean worktree (`code_version`), argument
 checks and `require_batch_sizes()`. The corpus and ffmpeg pins must be complete and
 `verify_pin()` is called once (the codec family is never skipped). The raw cache's paths, labels
-and groups must match F2, its paths and labels must equal the Stage 8 train cache's, and S's
-augmentation-config, F2 and profile-config hashes must equal the current files'.
+and groups must match F2, it must hold no all-zero clip (`n_all_zero_clips > 0` is refused:
+decision D62 needed before training), its paths and labels must equal the Stage 8 train cache's, and
+S's augmentation-config, F2 and profile-config hashes must equal the current files'. The Stage 8
+val-A log-Mel cache (`stage8_val_a_logmel_dir`, required; same F2 and profile checks as the train
+cache) is the known answer: S's clean condition must equal it byte for byte for both forms
+(`clean_reference_logmel`); its `npz_sha256` is recorded as `val_a_cache_npz_sha256` in the
+provenance and `run_report.json`.
 
 ## Resumability
 
@@ -174,6 +180,8 @@ new folder outside the repository; it does not edit the config (V2b-2 does).
 - **CPU:** per-item transform time on synthetic 2 s audio with synthetic noise/RIR resources, per
   family (augment) and per stage (augment / F3 / log-Mel + stats), mean and p95, then an estimated
   epoch time = 12,404 × (0.2 × clean + 0.16 × each family + F3 [+ log-Mel]) ÷ workers (1, 2, 4).
+  The estimate assumes linear scaling with workers, which Colab's 2 vCPUs (often one physical core)
+  may not give.
   The S scoring time is not estimated (GPU). Real RIR lengths change the reverberation cost.
 - **Codec:** through `FFmpegCodecBackend` if `ffmpeg` is pinned; otherwise only with
   `--codec-unpinned-timing`, via `UnpinnedTimingCodecBackend` (defined in the benchmark module only),
@@ -200,7 +208,7 @@ deterministic fake codec, tiny noise/RIR, config copies with integer batch sizes
 
 - **V2b-2:** run the benchmark on the Colab T4 (2026.10) and write the batch sizes into
   `configs/v2_candidates.yaml` (D49).
-- **V2b-3:** Malak's V1b builds S with `write_selection_set` on the training runtime; verify it with
-  `load_selection_set` (including the Stage 8 val-A known answer).
+- **V1b (Malak):** confirm the S layout and build S with `write_selection_set` on the training
+  runtime; verify it with `load_selection_set` (including the Stage 8 val-A known answer).
 - **V2b-4:** CLI and notebook wired to the V1b corpus loader; rehearsal on T4 (`check_clean_transform`
   against the Stage 8 train cache, a short run twice for the observed determinism), then the search.

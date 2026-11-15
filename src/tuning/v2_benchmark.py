@@ -12,8 +12,9 @@ can only be >= Stage 6's, so the choice is at least as safe. No weights saved, n
 CPU part: per-item transform time on synthetic 2 s audio (fixed seed) with synthetic noise/RIR
 resources: per family (clean, recorded_noise, reverberation, codec, gain, rawboost) the augment
 time, and per stage (augment / F3 / log-Mel + stats) mean and p95 seconds; then an estimated epoch
-time = 12,404 x (D50 mix: clean share + equal family shares) / workers. The S scoring time is not
-estimated (GPU). Codec: FFmpegCodecBackend if configs/augmentation.yaml pins ffmpeg; otherwise only
+time = 12,404 x (D50 mix: clean share + equal family shares) / workers, which assumes linear
+scaling with workers (Colab's 2 vCPUs, often one physical core, may not give it). The S scoring time
+is not estimated (GPU). Codec: FFmpegCodecBackend if configs/augmentation.yaml pins ffmpeg; otherwise only
 with --codec-unpinned-timing, through UnpinnedTimingCodecBackend (defined here, timing only), which
 records the ffmpeg version instead of verifying it and marks the result codec_timing "unpinned".
 FFmpegCodecBackend.round_trip runs `ffmpeg -version` on every call; that cost is measured as part of
@@ -72,6 +73,8 @@ NOTES = (
     "CPU throughput uses synthetic audio and synthetic noise/RIR resources; real RIR lengths change "
     "the reverberation cost.",
     "Selection-set scoring time is not estimated (GPU).",
+    "The epoch estimate assumes the per-item time scales linearly with the number of workers; "
+    "Colab's 2 vCPUs (often one physical core) may not give that.",
 )
 
 

@@ -6743,9 +6743,13 @@ exist yet), in small commits:
   per epoch; M = mean of the five S EERs; strict-improvement early stopping, earliest best restored).
 - **`src/training/v2_wandb_logger.py`**: allow-list logger reusing the v1 checks (v1 unchanged).
 - **`src/tuning/v2_search.py`**: resumable search, selection (lowest M; ties fewer parameters, then
-  order), winner seeds 1 and 2, bundle seed, reports never overwritten; no CLI (V2b-4).
+  order), winner seeds 1 and 2, bundle seed, reports never overwritten; S's clean condition checked
+  byte for byte against the Stage 8 val-A cache (known answer, both forms; its `npz_sha256` recorded
+  as `val_a_cache_npz_sha256`); a raw cache with all-zero clips refused (D62); no CLI (V2b-4).
 - **`src/tuning/v2_benchmark.py`**: D49 batch-size benchmark (Stage 6 rule plus the real optimizer
-  step) and CPU per-item throughput; unpinned codec timing only with `--codec-unpinned-timing`.
+  step) and CPU per-item throughput; unpinned codec timing only with `--codec-unpinned-timing`. The
+  epoch estimate assumes linear scaling with workers, which Colab's 2 vCPUs (often one physical core)
+  may not give.
 - **Docs:** new `docs/v2_training.md`; `docs/README.md` index row; `docs/CHANGELOG.md`.
 
 **Findings while implementing [verified, synthetic]:**
@@ -6755,9 +6759,10 @@ exist yet), in small commits:
 - A DataLoader without its own generator draws each new iterator's base seed from the global torch
   RNG (once with persistent workers, every epoch with `num_workers=0`), which would make dropout
   depend on `num_workers`. The loader now has a private generator.
-- [hypothesis] `Augmenter` raises if `recorded_noise` is drawn for an all-silent clip (D39 keeps
-  silent inputs). If any FoR train clip is all zero, a run would stop on that item, deterministically.
-  The V2b-4 rehearsal should count zero-RMS clips in the raw cache before the search.
+- [verified] `Augmenter` raises if `recorded_noise` is drawn for an all-silent clip
+  (`Augmenter._recorded_noise` raises when `signal_rms <= 0`; D39 keeps silent inputs). If any FoR
+  train clip is all zero, a run would stop on that item, deterministically. The raw cache counts
+  such clips (`n_all_zero_clips`) and `run_search` now refuses a cache with any (D62 needed).
 
 **Evidence** (local, Windows 11, Python 3.14.7, torch 2.11.0+cpu, `REQUIRE_TORCH_TESTS=1`):
 - [verified] full `pytest -q`: **1991 passed, 2 skipped** in 320.65 s (main before: 1891 passed,
@@ -6797,9 +6802,9 @@ tests. Donia reviews. AI does not approve, push or merge.
 - [ ] V1b: pin and audit the noise/RIR corpora (licence, archive hash, 50/50 by-file split) and exact ffmpeg/codec tools before any v2 training (D50 (5)).
 - [ ] Compute benchmark per v2 candidate; batch sizes in `configs/` before training (D49). Slots exist as `null` in `configs/v2_candidates.yaml`; `require_batch_sizes()` blocks training until set (Entry 170; PR V2b).
 - [ ] V2b-2: run `python -m src.tuning.v2_benchmark` on Colab T4 (2026.10) and write the batch sizes into `configs/v2_candidates.yaml` (D49; Entry 172).
-- [ ] V2b-3: Malak confirms the S layout in `docs/v2_training.md` and builds S with `write_selection_set` on the training runtime; verify with `load_selection_set` incl. the Stage 8 val-A known answer (D50 (4), D58; Entry 172).
+- [ ] V1b (Malak): confirm the S layout in `docs/v2_training.md` and build S with `write_selection_set` on the training runtime; verify with `load_selection_set` incl. the Stage 8 val-A known answer (D50 (4), D58; Entry 172).
 - [ ] V2b-4: search CLI/notebook wired to the V1b corpus loader; T4 rehearsal (`check_clean_transform`, two short runs for observed crnn/cuDNN determinism), then the search (Entry 172).
-- [ ] V2b-3: read `n_all_zero_clips` from the raw train cache (`build` / `verify` print it with the first 10 paths). If it is > 0, a decision (**D62**) is needed before any training: `Augmenter`'s `recorded_noise` refuses a silent clip, and Malak's S builder (`noise_10db`) has the same issue on val-A (Entry 172; `docs/v2_training.md`).
+- [ ] V2b-3: read `n_all_zero_clips` from the raw train cache (`build` / `verify` print it with the first 10 paths). If it is > 0, a decision (**D62**) is needed before any training (`run_search` refuses such a cache): `Augmenter`'s `recorded_noise` refuses a silent clip [verified], and Malak's S builder (`noise_10db`) has the same issue on val-A (Entry 172; `docs/v2_training.md`).
 - [ ] Discuss with Malak whether the per-call `ffmpeg -version` in `FFmpegCodecBackend.round_trip` matters, if the benchmark shows a large codec cost (Entry 172).
 - [x] Approve D61 (Iheb, Malak, Khalil) and add its approval commit before any v2 training (Entry 170). (PR #127, 2026-11-13)
 - [x] PR V2b-1: v2 training loop, selection metric M over set S, resumable search, benchmark code (Entry 172; review pending).
