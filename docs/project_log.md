@@ -7134,6 +7134,50 @@ module, training-format S build/verification, training-half resource cache and o
   team review required before acceptance (Khalil as consumer of the loader, D26).
 - **Gate:** **WAITING FOR APPROVAL.**
 
+### Entry 187 — Track V PR V4a: v2 risk-policy run, code only (2026-11-15)
+
+- **Owner:** Donia Mabrouk (Part C). Branch `feat/stageV4-risk-run` from `main` `e7bd0e1`.
+  Entry number: 183 is used on Malak's V1c branch and 185 stays reserved for it (Entry 186); 187 is
+  the next free number on main and the open branches.
+- **Why [doc]:** Execution Plan v3.0 §9 V4 (due Mon 30 Nov). Protocol §6 addendum and D49: the v2 risk
+  policy uses the §6 method unchanged on clean val-B for the bundle seed only (D45). `risk_run.py`
+  is v1-only (D42 checkpoint, val-A EER reproduction), so the v2 run is written now against the v2
+  search report format on main and reviewed before the search ends (Fri 27 Nov). No new decision.
+- **What changed:** new `src/tuning/v2_risk_run.py`. Winner (`selected`) and `bundle_seed` read from
+  the committed `docs/audit_evidence/v2_search/` (path fixed in code; folder not yet present) and
+  required to agree between `run_report.json` and `selection_report.json`. The checkpoint is loaded
+  with `load_v2_checkpoint(expected_sha256=checkpoint_sha256[run_dir_name(winner, seed)])` and must
+  name the winner and the bundle seed. Provenance `{expected, actual}`: `profile_fingerprint`,
+  `f2_manifest_sha256`, `selection_set_sha256`. M is recomputed on CPU with `train_v2`'s
+  `selection_tensors` / `evaluate_selection` / `selection_m` and must equal `selection_m` exactly (on
+  mismatch, both values and the five EERs are printed). val-B: Stage 8 log-Mel cache (through
+  `risk_run._load_split`) with the checkpoint's mean/std for `cnn-aug`/`crnn`; an injected F3
+  waveform source (`() -> waveforms, labels, paths`, exactly the F2 val-B rows) for `aasist`, refused
+  without one. Two CPU passes equal; `fit_risk_policy` unchanged with the byte-identical refit check;
+  Stage 10 files and formats; `run_report.json` adds `architecture`, `bundle_seed`,
+  `checkpoint_sha256`, the recomputed M and EERs, `val_b_input` and the search reports' hashes. Reused
+  from `risk_run` by import (`_load_split`, `_split_rows`, `diagnostics`, `environment`, constants);
+  nothing there needed generalizing. Docs: "v2 risk policy (V4)" in `docs/v2_training.md`, CHANGELOG.
+- **Not changed:** `risk_run.py`, `src/risk/`, `train_v2.py`, `v2_search.py`, checkpoints, models,
+  `configs/`. No real run; no FoR audio, dataset path or DEEP-VOICE access.
+- **Tests [verified, CPU, synthetic]:** `tests/tuning/test_v2_risk_run.py` (28): round trip and
+  byte determinism for `crnn` and `cnn-aug` (reads only S and val-B), `aasist` with a fake F3
+  waveform source and refused without one; evidence disagreement (winner, seed), missing hash,
+  unknown winner, missing evidence; checkpoint hash, wrong architecture, wrong seed; each provenance
+  mismatch (before val-B); M mismatch (both values and the EERs in the message; also one ulp off);
+  waveform source checks; existing output folder; removal on failure; no other split, split argument
+  or W&B import; CLI. The fixture checkpoints are seeded untrained models whose one-logit output is
+  negated if they rank synthetic val-B backwards (Platt refuses a <= 0); their `selection_m` is
+  computed with `train_v2`'s functions.
+- **Checks [verified, local Windows, Python 3.14, torch CPU]:** `REQUIRE_TORCH_TESTS=1 pytest -q` → `2104 passed, 2 skipped in 921.48s`;
+  `pytest -q tests/governance` → `89 passed`. CI on 3.13 not yet run (branch not pushed).
+- **Open [hypothesis]:** M is recorded on the T4 GPU and recomputed on CPU; exact equality held for
+  v1's val-A EER at Stage 10 but is untested for v2 (crnn LSTM, aasist). If it fails on the real
+  run, the run stops by design and any tolerance needs a team decision.
+- **AI assistance:** Claude Code (Claude Opus 5.5) wrote the code, tests and docs from Donia's brief;
+  team review required before acceptance (D26).
+- **Gate:** **WAITING FOR APPROVAL.**
+
 ---
 
 ## Open items
@@ -7157,6 +7201,7 @@ module, training-format S build/verification, training-half resource cache and o
 - [x] Approve D61 (Iheb, Malak, Khalil) and add its approval commit before any v2 training (Entry 170). (PR #127, 2026-11-13)
 - [x] PR V2b-1: v2 training loop, selection metric M over set S, resumable search, benchmark code (Entry 172; review pending).
 - [x] F5 model loader dispatching on `architecture` (D61 (6)), when F5 is built (Entry 170). Done ahead of F5 on synthetic bundles, with the Stage 13 hand-over test (PR V5a, Entry 186; review pending).
+- [ ] V4: v2 risk policy (Protocol §6 unchanged, clean val-B, bundle seed only; D45, D49). Code done: `src/tuning/v2_risk_run.py` (PR V4a, Entry 187; review pending). Run pending: after the search, commit its reports to `docs/audit_evidence/v2_search/`, then run with `--version risk-v2`; if aasist wins, build the F3 waveform val-B source first (Execution Plan v3.0 §9 V4).
 - [x] Draft the extension authentication design and security-review text in SDD v2.0 before implementation (D51; Entry 165; human approval and merge pending).
 - [ ] Choose the hosting provider and record it (D54 (9)); load test on staging, then record K, L, `analysis_timeout_s` and `L_MAX` (D53 (3)).
 - [x] SRS v4.0 Markdown/PDF pair and version index merged in PR #121 (Entry 164).
@@ -7567,7 +7612,7 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
-## Current status — updated 2026-11-15 (Entry 186)
+## Current status — updated 2026-11-15 (Entry 187)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -7581,7 +7626,9 @@ merged, but model training, search, selection, risk policy and F5 freeze remain.
 184, waiting for review) makes a v2 run resumable per epoch, so a Colab disconnect costs at most the
 current epoch. PR V5a (Entry 186, waiting for review) adds the F5 model loader: `load_bundle_model`
 dispatches on the checkpoint's `architecture` (D61 (6)) and passes a synthetic hand-over with the
-Stage 13 runner for all three candidates. See the open items above and [Execution Plan v3.0](reference/Execution_Plan_v3.0.md).
+Stage 13 runner for all three candidates. PR V4a (Entry 187, waiting for review) adds the v2
+risk-policy run (Protocol §6 unchanged, bundle seed only, exact M reproduction); the real run waits
+for the search evidence. See the open items above and [Execution Plan v3.0](reference/Execution_Plan_v3.0.md).
 
 **Khalil / Stage 13 — preparation merged; external run not ready.** Runner preparation from Entries
 175–179 merged in PR #133. The synthetic Stage 13 suite reported 33 passed; PR #134 subsequently
