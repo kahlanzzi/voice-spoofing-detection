@@ -178,4 +178,30 @@ def test_cli_verify(data, capsys, monkeypatch):
     monkeypatch.setattr(raw_module.load_raw_train_cache, "__kwdefaults__",
                         {"expected_f2_manifest_sha256": data["f2"]})
     raw_module.main(["verify", "--dir", str(data["out"])])
-    assert json.loads(capsys.readouterr().out) == data["meta"]
+    printed = capsys.readouterr().out
+    text, summary = printed.split("\nn_all_zero_clips: ")
+    assert json.loads(text) == data["meta"] and data["meta"]["n_all_zero_clips"] == 0
+    assert summary == "0\nall-zero clips (first 10): none\n"
+
+
+def test_all_zero_clip_is_counted_kept_and_checked(tmp_path, capsys, monkeypatch):
+    root, manifest, manifest_path = write_dataset(tmp_path, sizes={"train": 4}, zero_clips=(2,))
+    f2 = sha(manifest_path)
+    out = tmp_path / "out"
+    meta = build_raw_train_cache(root, manifest, "train", out, f2_manifest_sha256=f2, code_commit=COMMIT)
+    assert meta["n_all_zero_clips"] == 1  # counted, and the cache still builds
+    cache = load_raw_train_cache(out, expected_f2_manifest_sha256=f2)
+    zero_path = manifest.iloc[2]["path"]  # the silent clip written by write_dataset
+    zero = cache.paths.tolist().index(zero_path)  # rows are sorted by path
+    assert not cache.clip(zero).any() and len(cache) == 4
+    assert sum(not cache.clip(i).any() for i in range(4)) == 1
+    monkeypatch.setattr(raw_module.load_raw_train_cache, "__kwdefaults__",
+                        {"expected_f2_manifest_sha256": f2})
+    raw_module.main(["verify", "--dir", str(out)])
+    assert capsys.readouterr().out.endswith(
+        f"n_all_zero_clips: 1\nall-zero clips (first 10): \n  {zero_path}\n")
+    meta_path = out / JSON_NAME
+    changed = {**json.loads(meta_path.read_text(encoding="utf-8")), "n_all_zero_clips": 0}
+    meta_path.write_text(json.dumps(changed), encoding="utf-8")
+    with pytest.raises(ValueError, match="n_all_zero_clips is 0, the samples hold 1"):
+        load_raw_train_cache(out, expected_f2_manifest_sha256=f2)

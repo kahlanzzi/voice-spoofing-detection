@@ -9,7 +9,10 @@ One folder (outside the repository, AGENTS.md rule 7) holding:
   concatenated, as decoded), `offsets` int64 (n + 1, offsets[0] = 0, clip i is
   samples[offsets[i]:offsets[i + 1]]), `labels` int8 (1 = FAKE), `paths` unicode (sorted, unique,
   as the Stage 8 caches), `groups` unicode (F2 group IDs);
-- train_raw.json: strict keys binding the arrays to the F2 manifest, the code commit and the npz.
+- train_raw.json: strict keys binding the arrays to the F2 manifest, the code commit and the npz,
+  plus n_all_zero_clips: the number of clips whose decoded samples are all exactly 0.0. Such clips
+  are kept (the cache still builds), but Augmenter's recorded_noise refuses a silent clip, so a
+  count > 0 needs a decision (D62) before any training (docs/v2_training.md).
 
 Train split only: any other split is refused before a file is read. Every sample hash is checked
 before decoding; a clip that is not 1-D or not 16,000 Hz is refused (FoR is 16 kHz mono PCM16, and
@@ -58,6 +61,7 @@ JSON_NAME = "train_raw.json"
 NPZ_KEYS = frozenset({"samples", "offsets", "labels", "paths", "groups"})
 JSON_KEYS = frozenset({
     "schema_version", "split", "n_rows", "n_spoof", "n_bonafide", "sample_rate", "total_samples",
+    "n_all_zero_clips",
     "f2_manifest_sha256", "code_commit", "npz_sha256",
 })
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -74,6 +78,12 @@ def _check_split(split: str) -> None:
     if split != SPLIT:
         raise ValueError(f"split must be {SPLIT!r}, got {split!r}: the raw cache holds only the "
                          f"split D50 augments; validation and held-out splits are never augmented")
+
+
+def all_zero_indices(samples: np.ndarray, offsets: np.ndarray) -> list[int]:
+    """Indices of the clips whose samples are all exactly 0.0 (one clip at a time, no large copy)."""
+    return [i for i in range(len(offsets) - 1)
+            if not np.any(samples[offsets[i]:offsets[i + 1]])]
 
 
 def _unicode(values: list[str]) -> np.ndarray:
@@ -134,6 +144,7 @@ def build_raw_train_cache(
             "n_bonafide": int((labels == 0).sum()),
             "sample_rate": SAMPLE_RATE,
             "total_samples": int(samples.size),
+            "n_all_zero_clips": len(all_zero_indices(samples, offsets)),
             "f2_manifest_sha256": f2_manifest_sha256,
             "code_commit": code_commit,
             "npz_sha256": sha256_file(npz_path),
@@ -186,9 +197,9 @@ def load_raw_train_cache(
     missing, unknown = sorted(JSON_KEYS - set(meta)), sorted(set(meta) - JSON_KEYS)
     if missing or unknown:
         raise ValueError(f"metadata keys check failed: missing {missing}, unknown {unknown}")
-    n_rows, n_spoof, n_bonafide, schema, rate, total = (
+    n_rows, n_spoof, n_bonafide, schema, rate, total, n_zero = (
         _int(meta, k) for k in ("n_rows", "n_spoof", "n_bonafide", "schema_version",
-                                "sample_rate", "total_samples"))
+                                "sample_rate", "total_samples", "n_all_zero_clips"))
     if schema != SCHEMA_VERSION:
         raise ValueError(f"metadata check failed: unsupported schema_version {schema!r}")
     if meta["split"] != SPLIT:
@@ -241,6 +252,10 @@ def load_raw_train_cache(
                              f"{values.shape}")
     if n_rows > 1 and not (paths[:-1] < paths[1:]).all():
         raise ValueError("paths check failed: paths must be unique and sorted")
+    zero = all_zero_indices(samples, offsets)
+    if len(zero) != n_zero:
+        raise ValueError(f"metadata check failed: n_all_zero_clips is {n_zero}, the samples hold "
+                         f"{len(zero)} all-zero clips")
     for array in (samples, offsets, labels, paths, groups):
         array.setflags(write=False)
     return RawTrainCache(samples=samples, offsets=offsets, labels=labels, paths=paths,
@@ -269,10 +284,21 @@ def main(argv: list[str] | None = None) -> None:
     verify.add_argument("--dir", required=True, type=Path, help="Cache folder")
     args = parser.parse_args(argv)
     if args.command == "build":
-        meta = run(args.root, args.manifest, args.out)
+        run(args.root, args.manifest, args.out)
+        cache = load_raw_train_cache(args.out)  # verifies what was just written
     else:
-        meta = load_raw_train_cache(args.dir).meta
-    print(json.dumps(meta, indent=2, sort_keys=True))
+        cache = load_raw_train_cache(args.dir)
+    print(json.dumps(cache.meta, indent=2, sort_keys=True))
+    print(zero_clip_summary(cache))
+
+
+def zero_clip_summary(cache: RawTrainCache, limit: int = 10) -> str:
+    """'n_all_zero_clips: N' and the first `limit` paths of all-zero clips (or 'none')."""
+    paths = [str(cache.paths[i]) for i in all_zero_indices(cache.samples, cache.offsets)[:limit]]
+    lines = [f"n_all_zero_clips: {cache.meta['n_all_zero_clips']}",
+             f"all-zero clips (first {limit}): " + ("none" if not paths else "")]
+    lines += [f"  {p}" for p in paths]
+    return "\n".join(lines)
 
 
 if __name__ == "__main__":

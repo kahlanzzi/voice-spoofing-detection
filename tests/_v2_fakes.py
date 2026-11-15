@@ -58,7 +58,8 @@ def fake_resources(seed: int = 7) -> AugmentationResources:
     return AugmentationResources(noise_waveforms=(noise,), rir_waveforms=(rir,))
 
 
-def write_dataset(base: Path, sizes=SIZES, seed: int = 2026, rate: int = 16000, channels: int = 1):
+def write_dataset(base: Path, sizes=SIZES, seed: int = 2026, rate: int = 16000, channels: int = 1,
+                  zero_clips=()):
     """Synthetic FoR-like WAVs (random lengths 1.5-2.5 s) and an F2-like manifest; return paths."""
     rng = np.random.default_rng(seed)
     root = base / "for"
@@ -69,6 +70,8 @@ def write_dataset(base: Path, sizes=SIZES, seed: int = 2026, rate: int = 16000, 
         tone = np.sin(2 * np.pi * rng.uniform(150, 900) * t)
         mix = (0.6 if spoof else 0.1) + rng.uniform(-0.05, 0.05)
         data = (0.3 * ((1 - mix) * tone + mix * rng.standard_normal(len(t)))).astype(np.float32)
+        if i in zero_clips:
+            data = np.zeros_like(data)  # digital silence
         if channels == 2:
             data = np.stack([data, data], axis=1)
         rel = f"{split}/{'FAKE' if spoof else 'REAL'}/{i:02d}.wav"
