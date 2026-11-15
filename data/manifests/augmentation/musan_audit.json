@@ -1,0 +1,14 @@
+{
+  "archive_sha256": "86d1061c7e15b5c9e906777685c519701df51bfde3001e1070dcc9ffac955ee1",
+  "corpus": "MUSAN",
+  "files": 930,
+  "half_counts": {
+    "selection": 465,
+    "training": 465
+  },
+  "inventory_file_sha256": "2ce6c6e6be1bc8d5054ddbd4b90612727e682f662947dfce3910c7a4e8b5b4d8",
+  "inventory_sha256": "e3e4cf39749620f77e6ace9253e3527656f0a30b1fb7c33cd8f38245b628c1bf",
+  "license_sha256": "9ba9550ad48438d0836ddab3da480b3b69ffa0aac7b7878b5a0039e7ab429411",
+  "schema_version": 1,
+  "split_seed": 2026
+}

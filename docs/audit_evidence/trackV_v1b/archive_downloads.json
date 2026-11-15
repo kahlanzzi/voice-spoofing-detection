@@ -1,0 +1,18 @@
+{
+  "archives": {
+    "MUSAN": {
+      "bytes": 11086114085,
+      "filename": "musan.tar.gz",
+      "sha256": "86d1061c7e15b5c9e906777685c519701df51bfde3001e1070dcc9ffac955ee1",
+      "url": "https://openslr.trmal.net/resources/17/musan.tar.gz"
+    },
+    "RIRS_NOISES": {
+      "bytes": 1311166223,
+      "filename": "rirs_noises.zip",
+      "sha256": "3b50cfde915b3984738169b4beb341e9f6b8062ae4c2076146c5db71c2c05dc7",
+      "url": "https://openslr.trmal.net/resources/28/rirs_noises.zip"
+    }
+  },
+  "recorded_at_utc": "2026-11-14T19:15:52.985643+00:00",
+  "schema_version": 1
+}

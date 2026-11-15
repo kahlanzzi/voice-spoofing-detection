@@ -69,12 +69,16 @@ def test_throughput_skipped_and_existing_out_refused(quick, tmp_path):
 
 
 def test_unpinned_codec_timing_needs_the_flag(quick, tmp_path, monkeypatch):
-    unpinned = load_augmentation_config(REPO / "configs" / "augmentation.yaml")
+    unpinned_path = aug_config_copy(tmp_path / "augmentation-unpinned.yaml", pinned=False)
+    unpinned = load_augmentation_config(unpinned_path)
     assert not unpinned.ffmpeg_pin_complete
     with pytest.raises(ValueError, match="--codec-unpinned-timing"):
         vb.codec_backend_for(unpinned, unpinned_timing=False)
     with pytest.raises(ValueError, match="--codec-unpinned-timing"):
-        vb.run_benchmark(tmp_path / "out", device="cpu", batch_sizes=[1], throughput_items=1)
+        vb.run_benchmark(
+            tmp_path / "out", device="cpu", batch_sizes=[1], throughput_items=1,
+            augmentation_config_path=unpinned_path,
+        )
     assert not (tmp_path / "out").exists()
     backend, label = vb.codec_backend_for(unpinned, unpinned_timing=True)
     assert label == "unpinned" and isinstance(backend, vb.UnpinnedTimingCodecBackend)

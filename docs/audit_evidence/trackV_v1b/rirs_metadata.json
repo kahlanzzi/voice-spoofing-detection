@@ -1,0 +1,19 @@
+{
+  "archive_sha256": "3b50cfde915b3984738169b4beb341e9f6b8062ae4c2076146c5db71c2c05dc7",
+  "corpus": "RIRS_NOISES",
+  "declared_license": "Apache 2.0",
+  "excluded_real_area_noise_files": 92,
+  "license_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+  "open_slr_id": 28,
+  "real_rirs": 325,
+  "resource_page_sha256": "ae80828d9bdf5915017decdfc1cd73ef2842e67a7afd56469b83f28e09e401ab",
+  "rir_files": 60325,
+  "schema_version": 1,
+  "scope": "room_impulse_responses_only",
+  "selection_rule": {
+    "excluded": "filenames containing _noise_",
+    "real": "filenames containing _rir_ or beginning with air_",
+    "simulated": "all WAV files under simulated_rirs"
+  },
+  "simulated_rirs": 60000
+}

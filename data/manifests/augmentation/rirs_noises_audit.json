@@ -1,0 +1,14 @@
+{
+  "archive_sha256": "3b50cfde915b3984738169b4beb341e9f6b8062ae4c2076146c5db71c2c05dc7",
+  "corpus": "RIRS_NOISES",
+  "files": 60325,
+  "half_counts": {
+    "selection": 30163,
+    "training": 30162
+  },
+  "inventory_file_sha256": "2a5d9152f15cd5666e6b78efd49d2202ad69a67fac09d7a95174c740aafd0117",
+  "inventory_sha256": "eb49a73c1b4109342f8a97f81993fc1795d0e202116fae24701a728307efdd99",
+  "license_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+  "schema_version": 1,
+  "split_seed": 2026
+}

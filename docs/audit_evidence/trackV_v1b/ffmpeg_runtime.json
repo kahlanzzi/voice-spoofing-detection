@@ -1,0 +1,19 @@
+{
+  "library_lines": [
+    "libavutil      58. 29.100 / 58. 29.100",
+    "libavcodec     60. 31.102 / 60. 31.102",
+    "libavformat    60. 16.100 / 60. 16.100",
+    "libavdevice    60.  3.100 / 60.  3.100",
+    "libavfilter     9. 12.100 /  9. 12.100",
+    "libswscale      7.  5.100 /  7.  5.100",
+    "libswresample   4. 12.100 /  4. 12.100",
+    "libpostproc    57.  3.100 / 57.  3.100"
+  ],
+  "required_encoder_lines": [
+    "A....D libmp3lame           libmp3lame MP3 (MPEG audio layer 3) (codec mp3)",
+    "A....D libopus              libopus Opus (codec opus)",
+    "A....D pcm_mulaw            PCM mu-law / G.711 mu-law"
+  ],
+  "schema_version": 1,
+  "version_line": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers"
+}
