@@ -170,6 +170,13 @@ loader exists.
 [--batch-sizes ...] [--throughput-items N] [--codec-unpinned-timing]` writes `benchmark.json` to a
 new folder outside the repository; it does not edit the config (V2b-2 does).
 
+**Result (V2b-2, Entry 173):** on the Colab T4 (runtime 2026.10, commit `9c46baf`), two GPU runs
+chose **`cnn-aug` 256, `crnn` 256, `aasist` 32**, with byte-identical peaks (`aasist` 64 peaks at
+13,895,315,968 B > 80 % of 15,637,086,208 B; 128 and 256 OOM). The sizes are in
+`configs/v2_candidates.yaml`; evidence, rows table and the unpinned CPU throughput (planning only)
+in [audit_evidence/v2b2_benchmark/](audit_evidence/v2b2_benchmark/README.md);
+`tests/training/test_v2_batch_size_evidence.py` keeps the config equal to it.
+
 - **GPU:** the Stage 6 rule (`choose_batch_size`, 80 % of VRAM, candidates 16–256, 3 warm-up + 10
   measured steps, from `configs/preprocessing.yaml`): per candidate and batch, `set_seed(0)`,
   `build_model`, synthetic input of its shape, random 0/1 targets, `BCEWithLogitsLoss`, forward +
@@ -201,13 +208,15 @@ rehearsal (two identical runs) and reported only as observed (D42).
 `tests/features/test_raw_train_cache.py`, `tests/training/test_selection_set.py`,
 `tests/training/test_v2_data.py`, `tests/training/test_v2_wandb_logger.py`,
 `tests/training/test_train_v2.py`, `tests/tuning/test_v2_search.py`,
-`tests/tuning/test_v2_benchmark.py`; fakes in `tests/_v2_fakes.py` (24-clip raw cache, 10-clip S,
-deterministic fake codec, tiny noise/RIR, config copies with integer batch sizes and fake pins).
+`tests/tuning/test_v2_benchmark.py`, `tests/training/test_v2_batch_size_evidence.py` (config vs
+the V2b-2 evidence, torch-free); fakes in `tests/_v2_fakes.py` (24-clip raw cache, 10-clip S,
+deterministic fake codec, tiny noise/RIR, config copies with batch size 8 (or null, for the
+refusals) and fake pins).
 
 ## Next
 
-- **V2b-2:** run the benchmark on the Colab T4 (2026.10) and write the batch sizes into
-  `configs/v2_candidates.yaml` (D49).
+- **V2b-2 (done, Entry 173):** benchmark run on the Colab T4 (2026.10); batch sizes 256 / 256 / 32
+  written into `configs/v2_candidates.yaml` (D49).
 - **V1b (Malak):** confirm the S layout and build S with `write_selection_set` on the training
   runtime; verify it with `load_selection_set` (including the Stage 8 val-A known answer).
 - **V2b-4:** CLI and notebook wired to the V1b corpus loader; rehearsal on T4 (`check_clean_transform`

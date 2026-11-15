@@ -26,7 +26,7 @@ candidates:
     n_blocks: 4
     optimizer: {name: adam, learning_rate: 0.001, weight_decay: 0.0}
     scheduler: none
-    batch_size: null                # D49 compute benchmark, set before training (PR V2b)
+    batch_size: 256                 # D49 benchmark (Entry 173, docs/audit_evidence/v2b2_benchmark/)
   crnn:                             # C2 (D49)
     conv_channels: [16, 32, 64]
     lstm: {hidden: 64, bidirectional: true, layers: 1}
@@ -34,7 +34,7 @@ candidates:
     dropout: 0.3
     optimizer: {name: adam, learning_rate: 0.001, weight_decay: 0.0}
     scheduler: none
-    batch_size: null                # D49 compute benchmark, set before training (PR V2b)
+    batch_size: 256                 # D49 benchmark (Entry 173, docs/audit_evidence/v2b2_benchmark/)
   aasist:                           # C3 (D49, D61)
     reference:
       repository: https://github.com/clovaai/aasist
@@ -52,4 +52,4 @@ candidates:
     scheduler: {name: cosine_per_step, lr_min: 0.000005, total_epochs: 30}   # D61 (3)
     swa: false                      # D61 (4)
     freq_aug: false                 # D61 (4)
-    batch_size: null                # D49 compute benchmark, set before training (PR V2b)
+    batch_size: 32                  # D49 benchmark (Entry 173, docs/audit_evidence/v2b2_benchmark/)

@@ -90,7 +90,9 @@ the GAT layers take any node count, so 32,000 samples need no architectural chan
    fitted on them would not be reproducible.
 6. **v2 checkpoint** in a new module with the D59 layout (below); `cnn_checkpoint` (F4's loader)
    unchanged.
-7. **Batch size** per candidate from the D49 compute benchmark, written before training.
+7. **Batch size** per candidate from the D49 compute benchmark, written before training: `cnn-aug`
+   256, `crnn` 256, `aasist` 32 (V2b-2, Entry 173;
+   [evidence](audit_evidence/v2b2_benchmark/README.md)).
 
 ## v2 checkpoint (`src/models/v2_checkpoint.py`)
 
@@ -127,9 +129,11 @@ no class weights, float32, early stopping on `selection_m` strictly lower / earl
 `selection_metric: mean_val_a_eer_over_S`, search seed 0, final seeds 0/1/2, tie rule, candidate
 order, `logmel_stats: clean_train`, W&B target); one block per candidate under `candidates:`.
 
-`batch_size` is `null` for every candidate until the D49 compute benchmark (PR V2b) writes a
-positive int. The loader accepts `null`; `require_batch_sizes()` raises while any is `null`, so
-training code cannot start without them. Floats are written with a decimal point (`0.0001`), as
+`batch_size` is set from the D49 compute benchmark on the Colab T4 (V2b-2, Entry 173): `cnn-aug`
+256, `crnn` 256, `aasist` 32; evidence and the 80 % VRAM arithmetic in
+[audit_evidence/v2b2_benchmark/](audit_evidence/v2b2_benchmark/README.md). The loader still accepts
+`null` (the file before V2b-2); `require_batch_sizes()` raises while any is `null`, so training code
+cannot start without them. Floats are written with a decimal point (`0.0001`), as
 PyYAML reads `1e-4` as a string.
 
 ## Tests
@@ -153,11 +157,12 @@ torch-free except one model-constants check.
   refusals; tampered weights against the recorded hash; extra/missing file; non-empty folder; save
   checks before writing; cleanup on failure; never `torch.load`; the three new model files import
   no pickle and no `src.evaluation` / `src.tuning`.
-- `tests/training/test_v2_config.py` (67): committed file equals D49 + D61; matches the model
-  constants; `require_batch_sizes()`; every changed value, type, missing or unknown key refused;
+- `tests/training/test_v2_config.py` (68): committed file equals D49 + D61 with the benchmark batch
+  sizes; matches the model constants; `require_batch_sizes()` (raises on a null copy); every changed value, type, missing or unknown key refused;
   `cosine_lr` endpoints, midpoint, quarter point, monotonic decrease, invalid arguments.
 
 ## Not yet
 
-Training loop, selection metric M over the condition set S, and the batch-size benchmark: PR V2b,
-after V1b (augmentation pipeline) and set S. No v2 model has been trained.
+Training loop, selection metric M over the condition set S, and the batch-size benchmark: PR V2b-1
+(code, Entry 172) and V2b-2 (batch sizes, Entry 173). Training needs V1b (corpus, ffmpeg pins, set S)
+and the V2b-4 rehearsal. No v2 model has been trained.
