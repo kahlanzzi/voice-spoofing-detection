@@ -246,13 +246,51 @@ in [audit_evidence/v2b2_benchmark/](audit_evidence/v2b2_benchmark/README.md);
 LSTM of crnn is bit-reproducible on the T4 is **not claimed here**: it is measured in the V2b-4
 rehearsal (two identical runs) and reported only as observed (D42).
 
+## v2 risk policy (V4, `src/tuning/v2_risk_run.py`)
+
+Protocol §6 unchanged, on clean val-B, for the bundle seed's checkpoint only (D45, D49 addendum).
+`risk_run.py` (Stage 10) stays v1-only; the v2 run reuses its val-B loader, diagnostics and file
+formats, and `fit_risk_policy` as is. Code only so far: the real run follows the search.
+
+- **Inputs:** the committed search evidence `docs/audit_evidence/v2_search/` (path fixed in code;
+  written after the search), the bundle checkpoint folder, S, the F3 profile,
+  `configs/v2_candidates.yaml` (CPU batch size of the winner), the F2 manifest and, for `cnn-aug` /
+  `crnn`, the Stage 8 val-B log-Mel cache. `selected` and `bundle_seed` must agree between
+  `run_report.json` and `selection_report.json`; the checkpoint must hash to
+  `checkpoint_sha256[<winner>_seed<k>]` and its metadata must name that architecture and seed.
+- **Provenance:** `profile_fingerprint`, `f2_manifest_sha256` and `selection_set_sha256` of the
+  inputs must equal the checkpoint's (recorded as `{expected, actual}`).
+- **Exact M reproduction:** the five S EERs and M are recomputed on CPU with `train_v2`'s own
+  `selection_tensors`, `evaluate_selection` and `selection_m`; M must equal the checkpoint's
+  `selection_m` **exactly** (as Stage 10 requires the val-A EER). On mismatch the run stops and prints
+  both values and the five EERs; any tolerance would be a team decision. M was recorded on the T4
+  GPU, so this check is also the first test of GPU-to-CPU agreement for v2 [hypothesis: it holds, as
+  it did for v1 at Stage 10].
+- **val-B scoring:** log-Mel standardized with the checkpoint's `mean`/`std`, then the same raw-logit
+  path as `train_v2`; two CPU passes must be equal. **aasist** needs an F3 waveform val-B source, a
+  function returning `(waveforms float32 (n, 32000), labels int8, paths sorted)` that must cover
+  exactly the F2 val-B rows. None exists: it is built only if aasist wins (Execution Plan v3.0 §9 V4).
+  Without one, aasist is refused, so the CLI (`--cache-dir` only) cannot fit an aasist policy.
+- **Outputs:** the Stage 10 set (`risk_policy.json` as bytes, `val_b_scores.npz`,
+  `diagnostics_report.json`, `run_report.json`); `run_report.json` adds `architecture`,
+  `bundle_seed`, `checkpoint_sha256`, `selection_m_recomputed`, `selection_eers_recomputed`,
+  `val_b_input` and the hashes of the two search reports. The output folder must be new and is
+  removed on any failure. No train, test or external path, no split argument, no W&B (D9, D31, D40).
+
+```
+python -m src.tuning.v2_risk_run --checkpoint <bundle ckpt> --selection-set <S> \
+  --profile configs/preprocessing.yaml --config configs/v2_candidates.yaml \
+  --manifest <F2 manifest> --cache-dir <Stage 8 log-Mel caches> --out <new folder> --version risk-v2
+```
+
 ## Tests (synthetic, CPU)
 
 `tests/features/test_raw_train_cache.py`, `tests/training/test_selection_set.py`,
 `tests/training/test_v2_data.py`, `tests/training/test_v2_wandb_logger.py`,
 `tests/training/test_train_v2.py`, `tests/training/test_v2_resume.py` (per-epoch resume on a
 4-clip subset, real CPU training), `tests/tuning/test_v2_search.py`,
-`tests/tuning/test_v2_benchmark.py`, `tests/training/test_v2_batch_size_evidence.py` (config vs
+`tests/tuning/test_v2_benchmark.py`, `tests/tuning/test_v2_risk_run.py` (V4a: round trips for all
+three candidates and the refusals), `tests/training/test_v2_batch_size_evidence.py` (config vs
 the V2b-2 evidence, torch-free); fakes in `tests/_v2_fakes.py` (24-clip raw cache, 10-clip S,
 deterministic fake codec, tiny noise/RIR, config copies with batch size 8 (or null, for the
 refusals) and fake pins).
