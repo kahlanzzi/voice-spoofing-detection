@@ -6765,8 +6765,9 @@ exist yet), in small commits:
   such clips (`n_all_zero_clips`) and `run_search` now refuses a cache with any (D62 needed).
 
 **Evidence** (local, Windows 11, Python 3.14.7, torch 2.11.0+cpu, `REQUIRE_TORCH_TESTS=1`):
-- [verified] full `pytest -q`: **1991 passed, 2 skipped** in 320.65 s (main before: 1891 passed,
-  2 skipped). The skips are unchanged: AASIST faithfulness (no `AASIST_REF_DIR`) and the Windows
+- [verified] full `pytest -q` after the review fixes: **1996 passed, 2 skipped** in 396.48 s
+  (tail line `1996 passed, 2 skipped in 396.48s (0:06:36)`; main before: 1891 passed, 2 skipped).
+  The skips are unchanged: AASIST faithfulness (no `AASIST_REF_DIR`) and the Windows
   symlink test.
 - [verified] `pytest -q tests/training tests/tuning tests/governance -k "v2 or selection or raw_train
   or governance"`: 235 passed, 178 deselected; `tests/governance`: 88 passed (FoR test and DEEP-VOICE
@@ -7209,7 +7210,7 @@ tests. Donia reviews. AI does not approve, push or merge.
 
 ## Current status — updated 2026-11-15 (Entry 172)
 
-**Track V, PR V2b-1 (Entry 172):** on `feat/stageV2-training` (from `main` `e9c6093`, not pushed): the model v2 training code with synthetic tests only — raw FoR train waveform cache, the set S format (writer for Malak's V1b builder + strict loader), the per-item seed rule (items identical for any `num_workers`), `train_v2` with early stopping on M, the v2 W&B logger, a resumable `v2_search`, and the D49 batch-size benchmark (with the optimizer step) plus CPU throughput; `docs/v2_training.md`. Full suite 1991 passed, 2 skipped. No data touched, no training, batch sizes still `null`. Next: review, then V2b-2 (benchmark on T4), V2b-3 (S), V2b-4 (rehearsal and search).
+**Track V, PR V2b-1 (Entry 172):** on `feat/stageV2-training` (from `main` `e9c6093`, not pushed): the model v2 training code with synthetic tests only — raw FoR train waveform cache, the set S format (writer for Malak's V1b builder + strict loader), the per-item seed rule (items identical for any `num_workers`), `train_v2` with early stopping on M, the v2 W&B logger, a resumable `v2_search`, and the D49 batch-size benchmark (with the optimizer step) plus CPU throughput; `docs/v2_training.md`. Full suite 1996 passed, 2 skipped. No data touched, no training, batch sizes still `null`. Next: review, then V2b-2 (benchmark on T4), V2b-3 (raw cache), V1b (S, Malak), V2b-4 (rehearsal and search).
 
 **Stage 11 report (Entry 171):** the platform-bound byte-exact `p` re-derivation (Entry 161) is now in `docs/stage11_report.md` Limitations; docs only.
 
