@@ -7148,6 +7148,31 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
+### Entry 189 — Proposed D64: re-freeze the V1b selection-set recipe under the declared environment (2026-11-15)
+
+- **Owner:** Donia Mabrouk (Track V lead), from Malak Ben Salem's diagnosis. Docs only.
+  Entry number: 185 is Malak's V1c, 187 Khalil's D63 revision, 188 the v2 risk-run PR (V4a);
+  renumber at merge if needed.
+- **What happened [reported by Malak]:** the official V1c S build stopped, as designed, at the
+  first reverberation waveform hash. Under SciPy 1.18.1 (the `requirements.txt` pin) the waveform
+  SHA-256 is `e3625dab…9b1682`; in an isolated subprocess with SciPy 1.16.3 it is `be19d31e…5cb18`,
+  the frozen V1b value. Notebook 07 had run with Colab's preinstalled SciPy 1.16.3. Source audio,
+  RIR resource, channel, parameters and seeds passed before the gate. No partial output, no manifest
+  or guard changed; the hash gate was not weakened and the official build was not rerun.
+- **Proposed [D64]:** regenerate the whole recipe once on the training runtime (T4 2026.10,
+  Python 3.13.16, pinned requirements, pinned FFmpeg, fixed commit); only hashes may change, shown by
+  a committed old-vs-new comparison; a library-pin guard in the recipe and S builders and in the v2
+  search notebook. Option rejected: a SciPy 1.16.3 side environment (two dependency contracts;
+  training reverberation runs with 1.18.1).
+- **Why now [doc]:** S has not been used by any training, selection or result, so re-freezing
+  changes no reported number; Execution Plan v3.0 §9 V1 gate (V1c) and V3 (rehearsal, search) wait
+  on it.
+- **AI assistance:** decision text drafted with Claude (claude.ai) from Malak's report; reviewed by
+  Donia.
+- **Gate:** **WAITING FOR APPROVAL** (Malak, Iheb, Khalil).
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -7164,6 +7189,7 @@ module, training-format S build/verification, training-half resource cache and o
 - [ ] V1c: materialize S with `write_selection_set` on Colab T4 runtime 2026.10 and verify both forms with `load_selection_set`, including the Stage 8 val-A known answer (D50 (4), D58; Entries 172, 180).
 - [ ] V1c: build and verify the deterministic training-half MUSAN/RIR resource cache outside the repo; refuse selection-half or all-zero resources (D50 (5); Entry 180).
 - [ ] V1c: make `FFmpegCodecBackend` verify its pin once per backend instance without changing encode/decode output bytes (codec 0.42 s/item dominates augmentation; Entries 172–173, 180).
+- [ ] D64 (Entry 189): approve, then regenerate the whole selection-set recipe on T4 2026.10 with pinned requirements; commit the old-vs-new comparison; add the library-pin guard (Malak). Blocks V1c.
 - [ ] V2b-4: search CLI/notebook wired to the V1c corpus loader; T4 rehearsal (`check_clean_transform`, two short runs for observed crnn/cuDNN determinism), then the search (Entry 172).
 - [ ] V2b-3: read `n_all_zero_clips` from the raw train cache (`build` / `verify` print it with the first 10 paths). If it is > 0, a decision (**D62**) is needed before any training (`run_search` refuses such a cache): `Augmenter`'s `recorded_noise` refuses a silent clip [verified], and Malak's S builder (`noise_10db`) has the same issue on val-A (Entry 172; `docs/v2_training.md`).
 - [x] Approve D61 (Iheb, Malak, Khalil) and add its approval commit before any v2 training (Entry 170). (PR #127, 2026-11-13)
