@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.metadata
 import json
 import platform
 import sys
@@ -38,6 +39,9 @@ EXPECTED_SOURCES = 1330
 EXPECTED_RECORDS = EXPECTED_SOURCES * len(CONDITIONS)
 EXPECTED_COUNTS = {"REAL": 660, "FAKE": 670}
 STAGE8_VAL_A_NPZ_SHA256 = "4502eea2f77cfd83d7e2b1d777e392fa460a13e805a936faa2788df8e7862c81"
+COLAB_RUNTIME_VERSION = "2026.10"
+PYTHON_VERSION = "3.13.16"
+TORCH_VERSION = "2.11.0+cu130"
 RECIPE_COLUMNS = (
     "source_path", "label", "subgroup", "group", "source_file_sha256", "condition",
     "condition_seed", "resource_path", "resource_file_sha256", "resource_channel",
@@ -166,15 +170,22 @@ def materialize_arrays(
 
 
 def _condition_fields() -> list[dict[str, Any]]:
+    recipe = {"recipe_file_sha256": RECIPE_SHA256}
     return [
-        {"name": "clean", "parameters": {}},
-        {"name": "recorded_noise_10db", "parameters": {"snr_db": 10.0, "corpus_half": "selection"}},
+        {"name": "clean", "parameters": dict(recipe)},
+        {"name": "recorded_noise_10db", "parameters": {
+            "snr_db": 10.0, "corpus_half": "selection", **recipe,
+        }},
         {"name": "reverberation", "parameters": {"convolution": "full_then_crop_to_input",
-                                                    "corpus_half": "selection"}},
+                                                    "corpus_half": "selection",
+                                                    "channel_policy": "seeded_single_channel",
+                                                    **recipe}},
         {"name": "opus_16", "parameters": {"bitrate_kbps": 16, "vbr": False,
-                                              "application": "voip"}},
+                                              "application": "voip", "codec_option": "opus_16",
+                                              **recipe}},
         {"name": "narrowband_mulaw", "parameters": {"intermediate_sample_rate_hz": 8000,
-                                                       "output_sample_rate_hz": 16000}},
+                                                       "output_sample_rate_hz": 16000,
+                                                       "codec_option": "narrowband_mulaw", **recipe}},
     ]
 
 
@@ -188,6 +199,36 @@ def check_stage8_reference(reference):
     return reference
 
 
+def official_runtime_record(codec_backend, colab_runtime_version: str) -> dict[str, str]:
+    """Assert and record the D58 Colab T4 runtime used for the official V1c build."""
+    import torch
+
+    python_version = platform.python_version()
+    torch_version = str(torch.__version__)
+    gpu = torch.cuda.get_device_name(0) if torch.cuda.is_available() else ""
+    checks = {
+        "Colab runtime": (colab_runtime_version, COLAB_RUNTIME_VERSION),
+        "Python": (python_version, PYTHON_VERSION),
+        "torch": (torch_version, TORCH_VERSION),
+    }
+    for name, (actual, expected) in checks.items():
+        if actual != expected:
+            raise ValueError(f"{name} must be {expected!r}, got {actual!r}")
+    if "T4" not in gpu:
+        raise ValueError(f"GPU must be a T4, got {gpu!r}")
+    return {
+        "colab_runtime_version": colab_runtime_version,
+        "gpu": gpu,
+        "python": python_version,
+        "numpy": np.__version__,
+        "librosa": importlib.metadata.version("librosa"),
+        "torch": torch_version,
+        "ffmpeg_version_line": codec_backend.version_text().splitlines()[0],
+        "platform": platform.platform(),
+        "implementation": platform.python_implementation(),
+    }
+
+
 def run(
     for_root: Path,
     f2_manifest_path: Path,
@@ -196,6 +237,7 @@ def run(
     rirs_root: Path,
     out: Path,
     clean_reference_logmel: Path,
+    colab_runtime_version: str,
 ) -> str:
     """Official clean-worktree V1c build; return the selection-set manifest SHA-256."""
     version = code_version()
@@ -218,10 +260,7 @@ def run(
         musan_noise_root=musan_noise_root, rirs_root=rirs_root,
         codec_backend=codec, codec_options={x["id"]: x for x in config.codec_options}, profile=profile,
     )
-    runtime = {
-        "python": platform.python_version(), "numpy": np.__version__,
-        "platform": platform.platform(), "implementation": platform.python_implementation(),
-    }
+    runtime = official_runtime_record(codec, colab_runtime_version)
     fields = {
         "conditions": _condition_fields(),
         "f2_manifest_sha256": sha256_file(Path(f2_manifest_path)),
@@ -252,11 +291,12 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--musan-noise-root", required=True, type=Path)
     parser.add_argument("--rirs-root", required=True, type=Path)
     parser.add_argument("--clean-reference-logmel", required=True, type=Path)
+    parser.add_argument("--colab-runtime-version", required=True)
     parser.add_argument("--out", required=True, type=Path)
     args = parser.parse_args(argv)
     digest = run(
         args.for_root, args.f2_manifest, args.recipe, args.musan_noise_root, args.rirs_root,
-        args.out, args.clean_reference_logmel,
+        args.out, args.clean_reference_logmel, args.colab_runtime_version,
     )
     print(json.dumps({"selection_set_sha256": digest, "out": str(args.out)}, indent=2))
 

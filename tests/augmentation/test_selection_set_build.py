@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
+from types import SimpleNamespace
 from pathlib import Path
 
 import numpy as np
@@ -17,6 +19,7 @@ from src.augmentation.selection_set_build import (
     check_stage8_reference,
     load_recipe,
     materialize_arrays,
+    official_runtime_record,
 )
 from src.augmentation.selection_set_recipe import CONDITIONS, apply_condition, waveform_sha256
 from src.preprocessing.profile import load_profile
@@ -116,3 +119,26 @@ def test_requires_approved_stage8_val_a_hash():
     assert check_stage8_reference(approved) is approved
     with pytest.raises(ValueError, match="differs from approved"):
         check_stage8_reference((None, None, None, {"npz_sha256": "0" * 64}))
+
+
+def test_condition_fields_pin_recipe_and_policies():
+    fields = build_module._condition_fields()
+    assert [item["name"] for item in fields] == list(CONDITIONS)
+    assert all(item["parameters"]["recipe_file_sha256"] == build_module.RECIPE_SHA256
+               for item in fields)
+    assert fields[2]["parameters"]["channel_policy"] == "seeded_single_channel"
+    assert fields[3]["parameters"]["codec_option"] == "opus_16"
+    assert fields[4]["parameters"]["codec_option"] == "narrowband_mulaw"
+
+
+def test_official_runtime_record_requires_d58_environment(monkeypatch):
+    cuda = SimpleNamespace(is_available=lambda: True, get_device_name=lambda _index: "Tesla T4")
+    monkeypatch.setitem(sys.modules, "torch", SimpleNamespace(__version__="2.11.0+cu130", cuda=cuda))
+    monkeypatch.setattr(build_module.platform, "python_version", lambda: "3.13.16")
+    monkeypatch.setattr(build_module.importlib.metadata, "version", lambda name: "0.11.0")
+    codec = SimpleNamespace(version_text=lambda: "ffmpeg version 6.1.1-3ubuntu5\nmore")
+    record = official_runtime_record(codec, "2026.10")
+    assert record["gpu"] == "Tesla T4"
+    assert record["ffmpeg_version_line"] == "ffmpeg version 6.1.1-3ubuntu5"
+    with pytest.raises(ValueError, match="Colab runtime"):
+        official_runtime_record(codec, "2026.11")

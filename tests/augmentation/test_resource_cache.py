@@ -61,7 +61,7 @@ def test_build_load_and_read_only_views(tmp_path):
     out, meta = _build(tmp_path)
     resources, loaded = load_training_resources(out, expected_noise_count=2, expected_rir_count=2)
     assert loaded == meta and len(resources.noise_waveforms) == len(resources.rir_waveforms) == 2
-    assert meta["noise_all_zero_count"] == meta["rir_all_zero_count"] == 0
+    assert meta["n_all_zero_noise"] == meta["n_all_zero_rir"] == 0
     assert not resources.noise_waveforms[0].flags.writeable
     assert training_rir_channel("r0.wav", 1) == 0
     assert training_rir_channel("r0.wav", 8) == training_rir_channel("r0.wav", 8)
@@ -102,7 +102,7 @@ def test_loader_detects_tampering(tmp_path):
     copy2 = tmp_path / "copy2"
     shutil.copytree(out, copy2)
     meta = json.loads((copy2 / JSON_NAME).read_text(encoding="utf-8"))
-    meta["noise_all_zero_count"] = 1
+    meta["n_all_zero_noise"] = 1
     (copy2 / JSON_NAME).write_text(json.dumps(meta), encoding="utf-8")
     with pytest.raises(ValueError, match="all-zero"):
         load_training_resources(copy2, expected_noise_count=2, expected_rir_count=2)

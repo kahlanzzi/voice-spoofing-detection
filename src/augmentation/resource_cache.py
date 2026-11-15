@@ -38,7 +38,7 @@ NPZ_KEYS = frozenset({
 JSON_KEYS = frozenset({
     "schema_version", "sample_rate", "split_seed", "noise_count", "rir_count",
     "noise_inventory_sha256", "rir_inventory_sha256", "noise_archive_sha256",
-    "rir_archive_sha256", "noise_all_zero_count", "rir_all_zero_count", "code_commit",
+    "rir_archive_sha256", "n_all_zero_noise", "n_all_zero_rir", "code_commit",
     "npz_sha256",
 })
 
@@ -180,7 +180,7 @@ def build_training_resources(
             "rir_inventory_sha256": rir_inventory_sha256,
             "noise_archive_sha256": noise_archive_sha256,
             "rir_archive_sha256": rir_archive_sha256,
-            "noise_all_zero_count": 0, "rir_all_zero_count": 0,
+            "n_all_zero_noise": 0, "n_all_zero_rir": 0,
             "code_commit": code_commit, "npz_sha256": sha256_file(npz_path),
         }
         (out_dir / JSON_NAME).write_text(
@@ -232,7 +232,7 @@ def load_training_resources(
         c not in "0123456789abcdef" for c in meta["code_commit"]
     ):
         raise ValueError("training resource code_commit must be 40 lowercase hex characters")
-    if meta["noise_all_zero_count"] != 0 or meta["rir_all_zero_count"] != 0:
+    if meta["n_all_zero_noise"] != 0 or meta["n_all_zero_rir"] != 0:
         raise ValueError("training resource metadata records all-zero resources")
     actual = sha256_file(npz_path)
     if actual != meta["npz_sha256"]:
