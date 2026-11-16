@@ -7256,6 +7256,7 @@ module, training-format S build/verification, training-half resource cache and o
   `ALLOWED` gains exactly `src/evaluation/stage11_v2_run.py` (file), with a comment citing D48 (7)
   and PR V4b; its pin test is updated to match. The guard would report nothing for this file
   without the entry (it uses the imported `stage11_run.SPLIT`); the entry makes the rule explicit.
+- **Existing test touched:** `tests/evaluation/test_stage11_report.py` `test_report_module_is_not_test_split_access_for_the_guard` also pins `ALLOWED`; its expected tuple gains the v2 runner (found by the full run).
 - **Not changed:** `stage11_run.py`, `stage11_report.py`, `run_registry.py`, `v2_risk_run.py`,
   `v2_search.py`, `train_v2`, models, checkpoints, `configs/`, committed evidence. No real run; no
   FoR audio, dataset path or DEEP-VOICE access.
