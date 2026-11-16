@@ -7302,6 +7302,29 @@ comparison and continue the V1c selection-set and training-resource builds. V2b-
 
 ---
 
+### Entry 191 — D64 pre-run review corrections (2026-11-16)
+
+**Owner:** Malak Ben Salem. Reviewer: Donia Mabrouk.
+
+**What changed [code/test]:** the old recipe side is now loaded only from the committed
+`data/manifests/augmentation/` CSV/report pair and is checked against both the report's byte SHA-256
+and semantic SHA-256. The regenerated report replaces the V1b commit and decision provenance with
+the fixed D64 commit, explicit D49/D50/D56/D64 decisions, exact library versions and the complete
+official runtime record. The refreeze CLI requires `--colab-runtime-version` and calls the same
+Python/torch/T4/FFmpeg runtime gate as the selection-set builder. It checks that output is outside the
+repository and creates the output folder only after the version, Git, committed-old, corpus, FFmpeg,
+runtime and invariant-comparison checks pass.
+
+**Checks [verified, local]:** focused D64/selection/v2-search tests: `44 passed in 70.76s`;
+the complete governance folder: `89 passed in 6.48s`; the Torch-required full suite:
+`2131 passed, 2 skipped in 649.37s`; Python compilation and `git diff --check` passed. No corpus was
+accessed and no T4 regeneration was run.
+
+**Gate:** **WAITING FOR REVIEW OF THE FOLLOW-UP COMMIT.** The official T4 run remains blocked until
+Donia approves the exact follow-up commit; it must then run from that clean commit only.
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -7318,7 +7341,7 @@ comparison and continue the V1c selection-set and training-resource builds. V2b-
 - [ ] V1c: materialize S with `write_selection_set` on Colab T4 runtime 2026.10 and verify both forms with `load_selection_set`, including the Stage 8 val-A known answer (D50 (4), D58; Entries 172, 180, 185).
 - [ ] V1c: build and verify the deterministic training-half MUSAN/RIR resource cache outside the repo; refuse selection-half or all-zero resources (D50 (5); Entries 180, 185).
 - [x] V1c: make `FFmpegCodecBackend` verify its pin once per backend instance without changing encode/decode output bytes (codec 0.42 s/item dominates augmentation; Entries 172–173, 185).
-- [ ] D64 (Entries 189–190; approved, PR #140): guard/comparison code is prepared and locally tested; Donia reviews the fixed commit, then Malak regenerates the whole recipe once on T4 2026.10 and commits the old-vs-new evidence. Blocks V1c.
+- [ ] D64 (Entries 189–191; approved, PR #140): guard/comparison code and the pre-run review corrections are locally tested; Donia reviews the fixed follow-up commit, then Malak regenerates the whole recipe once on T4 2026.10 and commits the old-vs-new evidence. Blocks V1c.
 - [ ] V2b-4: search CLI/notebook wired to the V1c corpus loader; T4 rehearsal (`check_clean_transform`, two short runs for observed crnn/cuDNN determinism), then the search (Entry 172).
 - [ ] V2b-3: read `n_all_zero_clips` from the raw train cache (`build` / `verify` print it with the first 10 paths). If it is > 0, a decision (**D62**) is needed before any training (`run_search` refuses such a cache): `Augmenter`'s `recorded_noise` refuses a silent clip [verified], and Malak's S builder (`noise_10db`) has the same issue on val-A (Entry 172; `docs/v2_training.md`).
 - [x] Approve D61 (Iheb, Malak, Khalil) and add its approval commit before any v2 training (Entry 170). (PR #127, 2026-11-13)
@@ -7736,7 +7759,7 @@ comparison and continue the V1c selection-set and training-resource builds. V2b-
 
 ---
 
-## Current status — updated 2026-11-16 (Entry 190)
+## Current status — updated 2026-11-16 (Entry 191)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -7776,6 +7799,11 @@ materialization, real training-half cache build and small permitted evidence.
 **D64 preparation (Entry 190):** the exact requirements-version guard and fail-closed old-vs-new
 recipe comparison are implemented and focused tests pass. No regeneration has been run. Donia must
 review the fixed commit before Malak runs the complete recipe once on T4 2026.10 from that commit.
+
+**D64 review follow-up (Entry 191):** the old side is cryptographically bound to the committed V1b
+files, the new report records D64 commit/library/runtime provenance, and the official T4 runtime gate
+runs before output creation. The complete governance folder passes. The T4 regeneration remains
+blocked pending Donia's review of the follow-up commit.
 
 **Khalil’s next project work.** Check and sign off the SRS v4.0 draft you own: PR #121 is merged, but
 the GitHub review list currently records Donia’s approval only. Continue Stage 13 preparation only

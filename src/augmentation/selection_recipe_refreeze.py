@@ -13,6 +13,7 @@ import pandas as pd
 from src.augmentation.codec import FFmpegCodecBackend
 from src.augmentation.config import load_augmentation_config
 from src.augmentation.selection_set_build import _records
+from src.augmentation.selection_set_build import official_runtime_record
 from src.augmentation.selection_set_recipe import (
     CONDITIONS,
     RECIPE_COLUMNS,
@@ -20,6 +21,7 @@ from src.augmentation.selection_set_recipe import (
     waveform_sha256,
 )
 from src.augmentation.version_guard import require_versions
+from src.features.raw_train_cache import check_outside_repo
 from src.preprocessing.validation import (
     code_version,
     load_f2_manifest,
@@ -42,6 +44,51 @@ def _write_csv(frame: pd.DataFrame, path: Path) -> None:
     temporary = path.with_suffix(path.suffix + ".tmp")
     frame.to_csv(temporary, index=False, lineterminator="\n")
     temporary.replace(path)
+
+
+def load_committed_old(repo: Path) -> tuple[Path, pd.DataFrame, dict[str, Any]]:
+    """Load and cryptographically bind the old side to the committed V1b recipe and report."""
+    manifest_dir = Path(repo) / "data" / "manifests" / "augmentation"
+    recipe_path = manifest_dir / "selection_set_s.csv"
+    report_path = manifest_dir / "selection_set_s_report.json"
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    recipe = pd.read_csv(recipe_path, dtype=str, keep_default_na=False)
+    actual_file = sha256_file(recipe_path)
+    expected_file = str(report.get("manifest_file_sha256", ""))
+    if actual_file != expected_file:
+        raise ValueError(
+            f"committed old recipe SHA-256 {actual_file} differs from report {expected_file}"
+        )
+    actual_semantic = _semantic_sha256(recipe)
+    expected_semantic = str(report.get("manifest_semantic_sha256", ""))
+    if actual_semantic != expected_semantic:
+        raise ValueError(
+            f"committed old semantic SHA-256 {actual_semantic} differs from report {expected_semantic}"
+        )
+    return recipe_path, recipe, report
+
+
+def make_new_report(
+    old_report: dict[str, Any],
+    *,
+    recipe_sha256: str,
+    semantic_sha256: str,
+    commit: str,
+    versions: dict[str, str],
+    runtime: dict[str, str],
+) -> dict[str, Any]:
+    """Create the D64 report without carrying forward the old run provenance."""
+    report = dict(old_report)
+    report.update({
+        "manifest_file_sha256": recipe_sha256,
+        "manifest_semantic_sha256": semantic_sha256,
+        "repo_base_commit": commit,
+        "d64_refreeze_commit": commit,
+        "decisions": ["D49", "D50", "D56", "D64"],
+        "library_versions": dict(versions),
+        "runtime": dict(runtime),
+    })
+    return report
 
 
 def _resource_halves(frame: pd.DataFrame, noise_rows, rir_rows) -> dict[str, str]:
@@ -120,31 +167,31 @@ def compare_recipes(
 def regenerate(
     for_root: Path,
     f2_manifest_path: Path,
-    old_recipe_path: Path,
-    old_report_path: Path,
     musan_noise_root: Path,
     rirs_root: Path,
     out: Path,
+    colab_runtime_version: str,
 ) -> dict[str, Any]:
     """Run D64 from one clean reviewed commit and retain old/new recipe evidence."""
     versions = require_versions()
     version = code_version()
     out = Path(out)
+    check_outside_repo(out, "D64 recipe refreeze")
     if out.exists():
         raise ValueError(f"D64 output already exists: {out}")
-    out.mkdir(parents=True)
     repo = Path(__file__).resolve().parents[2]
+    old_recipe_path, old, old_report = load_committed_old(repo)
     config = load_augmentation_config(repo / "configs" / "augmentation.yaml")
     if not config.corpus_pins_complete or not config.ffmpeg_pin_complete:
         raise ValueError("V1b corpus and FFmpeg pins must be complete")
     codec = FFmpegCodecBackend(config.ffmpeg, config.sample_rate)
     codec.verify_pin()
+    runtime = official_runtime_record(codec, colab_runtime_version)
     manifest_dir = repo / "data" / "manifests" / "augmentation"
     noise_rows = _records(manifest_dir / "musan_inventory.csv", "selection")
     rir_rows = _records(manifest_dir / "rirs_noises_inventory.csv", "selection")
     f2 = load_f2_manifest(Path(f2_manifest_path))
     sources = f2.loc[f2["split"] == "val-A"].sort_values("path", kind="stable")
-    old = pd.read_csv(old_recipe_path, dtype=str, keep_default_na=False)
     old_by_key = old.set_index(list(KEY_COLUMNS), drop=False)
     rows: list[dict[str, Any]] = []
     options = {item["id"]: item for item in config.codec_options}
@@ -188,23 +235,32 @@ def regenerate(
             rows.append(row)
     new = pd.DataFrame(rows, columns=RECIPE_COLUMNS)
     comparison = compare_recipes(old, new, noise_rows=noise_rows, rir_rows=rir_rows)
-    old_report = json.loads(Path(old_report_path).read_text(encoding="utf-8"))
+    # Every fail-closed check above completes before the output directory or any output file exists.
+    out.mkdir(parents=True)
     old_copy = out / "selection_set_s.old.csv"
     new_path = out / "selection_set_s.csv"
     old_report_copy = out / "selection_set_s_report.old.json"
     new_report_path = out / "selection_set_s_report.json"
     comparison_path = out / "selection_recipe_refreeze_comparison.json"
     old_copy.write_bytes(Path(old_recipe_path).read_bytes())
-    old_report_copy.write_text(json.dumps(old_report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    old_report_copy.write_text(
+        json.dumps(old_report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     _write_csv(new, new_path)
-    new_report = dict(old_report)
-    new_report["manifest_file_sha256"] = sha256_file(new_path)
-    new_report["manifest_semantic_sha256"] = _semantic_sha256(new)
+    new_report = make_new_report(
+        old_report,
+        recipe_sha256=sha256_file(new_path),
+        semantic_sha256=_semantic_sha256(new),
+        commit=version["git_commit"],
+        versions=versions,
+        runtime=runtime,
+    )
     new_report_path.write_text(json.dumps(new_report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     comparison.update({
         "decision": "D64",
         "code_commit": version["git_commit"],
         "library_versions": versions,
+        "runtime": runtime,
         "old_recipe_sha256": sha256_file(old_copy),
         "new_recipe_sha256": sha256_file(new_path),
         "old_recipe_semantic_sha256": _semantic_sha256(old),
@@ -220,20 +276,18 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--for-root", required=True, type=Path)
     parser.add_argument("--f2-manifest", required=True, type=Path)
-    parser.add_argument("--old-recipe", required=True, type=Path)
-    parser.add_argument("--old-report", required=True, type=Path)
     parser.add_argument("--musan-noise-root", required=True, type=Path)
     parser.add_argument("--rirs-root", required=True, type=Path)
     parser.add_argument("--out", required=True, type=Path)
+    parser.add_argument("--colab-runtime-version", required=True)
     args = parser.parse_args(argv)
     comparison = regenerate(
         args.for_root,
         args.f2_manifest,
-        args.old_recipe,
-        args.old_report,
         args.musan_noise_root,
         args.rirs_root,
         args.out,
+        args.colab_runtime_version,
     )
     print(json.dumps({key: value for key, value in comparison.items() if key != "changed_waveform_hashes"}, indent=2))
 
