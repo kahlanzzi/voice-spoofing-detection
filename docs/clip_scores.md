@@ -48,6 +48,12 @@ The caller passes a model role; the columns that apply are fixed in code, never 
 | `baseline` (`baseline-v1`) | yes | not applicable | D29 forced binary: `authentic` / `synthetic` | D41, D29 (no calibration, no uncertain band) |
 | `cnn_bundle_seed` | yes | yes (F4 policy) | `authentic` / `synthetic` / `uncertain` | D41, Protocol §7, D45 |
 | `cnn_other_seed` (seeds 1–2) | yes | not applicable | not applicable | D45 (no risk policy) |
+| `v2_bundle_seed` (v2 model set) | yes | yes (risk-v2 policy) | `authentic` / `synthetic` / `uncertain` | D48 (7), D45; same columns as `cnn_bundle_seed` |
+| `v2_other_seed` (v2 model set) | yes | not applicable | not applicable | D48 (7), D45; same columns as `cnn_other_seed` |
+
+The two v2 roles (PR V4b) are added in `V2_APPLICABLE_COLUMNS`, defined from the two v1 CNN roles;
+`APPLICABLE_COLUMNS` (the v1 table, pinned by `test_applicability_table_is_d41_d45`) is unchanged, and the writer and reader look a
+role up in `ROLE_COLUMNS`, the union of both.
 
 A not-applicable column is the empty string in every row. The writer refuses a value there (the
 argument must be `None`) and refuses `None` for an applicable column; the reader refuses a

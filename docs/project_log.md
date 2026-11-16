@@ -7220,6 +7220,62 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
+### Entry 190 — Track V PR V4b: Stage 11 runner for the v2 model set, code only (2026-11-16)
+
+- **Owner:** Donia Mabrouk (Part C). Branch `feat/stageV4-stage11-v2-runner` from `main` `df6b289`.
+  Entry number: 190 is the next free one on `main` (189) and the open branches (183, 187).
+- **Why [doc]:** Execution Plan v3.0 §9 V4; D48 (7); Protocol §7 addendum: v2 gets its own
+  `stage11_test` claim for the v2 model set (the winner's three seeds; `p` and prediction for the
+  bundle seed only, D45), after v2 selection and before F5 (target Wed 2 Dec; F5 cut-off Fri 4 Dec
+  23:59). The v1 runner cannot do it (model IDs, v1 loader and Stage 7/8/10 evidence fixed in its
+  code; its `claim` refuses any earlier `stage11_test` record) and stays unchanged. No new decision.
+- **What changed:** new `src/evaluation/stage11_v2_run.py` (`rehearse` / `claim` / `score`, explicit
+  paths). It imports the v1 helpers (environment gate and record, `split_rows`, the feature digests,
+  `bundle_outputs`, `_create`, `_check` / `_record`, `_read_claim`, `_load_cache`, file names) and
+  keeps the two-phase claim → Drive flush → score procedure; nothing in `stage11_run.py` needed a
+  change. Evidence: `v2_risk_run.V2_SEARCH_EVIDENCE` (winner and bundle seed via
+  `bundle_checkpoint`; hashes and `best_selection_m` of seeds 0–2; `bundle_seed` =
+  `select_bundle_seed` over them; val-A cache hash = Stage 8's) and the new
+  `V2_RISK_EVIDENCE = docs/audit_evidence/v2_risk/` (architecture, bundle seed, checkpoint hash and
+  search-report hashes equal the search evidence; `risk_policy.json` hash). IDs
+  `<winner>-v2-seed<k>` from one function, roles `v2_bundle_seed` / `v2_other_seed`. Gate: two val-A
+  log-Mel builds equal to Stage 8 (`cnn-aug`, `crnn`) or in-memory val-A F3 waveforms equal to S's
+  clean ones (`aasist`); no MFCC, no D58 reference. Registry: exactly the v1 pair before the claim
+  and no record with a v2 ID; after it, exactly one started v2 record for this run_id and commit.
+  Test inputs in memory, two passes, hashes written to `features.json` before scoring; CPU scoring
+  through `v2_risk_run.model_inputs` + `score_clips`, twice, byte-identical. The test log-Mel hash
+  is compared with the v1 run's and recorded, not asserted. Rehearsal: exact M per seed with
+  `train_v2`'s functions; val-B input equal to risk-v2's and bundle raw scores and `p` equal to its
+  `val_b_scores.npz` bytes.
+- **Reviewed-code change (allowed by the brief):** `src/evaluation/clip_scores.py` gains the two v2
+  roles in a new `V2_APPLICABLE_COLUMNS` defined from `cnn_bundle_seed` / `cnn_other_seed`; lookups
+  use `ROLE_COLUMNS` (v1 + v2). `APPLICABLE_COLUMNS` stays the v1 table, because
+  `test_applicability_table_is_d41_d45` pins it by equality and `test_clip_scores.py` parametrizes
+  over it; adding the roles there would have changed existing tests.
+- **Access-rule change (for Khalil's review):** `tests/governance/test_for_test_access.py`
+  `ALLOWED` gains exactly `src/evaluation/stage11_v2_run.py` (file), with a comment citing D48 (7)
+  and PR V4b; its pin test is updated to match. The guard would report nothing for this file
+  without the entry (it uses the imported `stage11_run.SPLIT`); the entry makes the rule explicit.
+- **Not changed:** `stage11_run.py`, `stage11_report.py`, `run_registry.py`, `v2_risk_run.py`,
+  `v2_search.py`, `train_v2`, models, checkpoints, `configs/`, committed evidence. No real run; no
+  FoR audio, dataset path or DEEP-VOICE access.
+- **Interpretation [for review]:** the brief's test list says "empty registry … → accepted" while
+  its rule says the records must be exactly the v1 pair. The code follows the rule: an empty
+  registry is refused (the v2 claim follows the v1 run; the live registry holds the v1 pair). Change
+  it if the team meant otherwise.
+- **Tests [verified, CPU, synthetic]:** `tests/evaluation/test_stage11_v2_run.py` (51; search
+  evidence from the real `v2_search` writers, risk-v2 evidence from `v2_risk_run.run` on fakes) and
+  `tests/evaluation/test_clip_scores_v2_roles.py` (6); listed in `docs/stage11_run.md`.
+- **Checks:** see the PR report (full `REQUIRE_TORCH_TESTS=1 pytest -q`, `pytest -q tests/governance`).
+  CI on 3.13 not yet run (branch not pushed).
+- **Open [hypothesis]:** exact M on CPU for v2 seeds 1–2 is untested on real checkpoints (as V4a
+  for the bundle seed); a mismatch stops the rehearsal for a team decision.
+- **AI assistance:** Claude Code (Claude Opus 5.5) wrote the code, tests and docs from Donia's brief;
+  team review required before acceptance (D26).
+- **Gate:** **WAITING FOR APPROVAL.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -7251,7 +7307,9 @@ module, training-format S build/verification, training-half resource cache and o
 - [ ] Coordinate with Iheb on the full API contract and one database migration; implement only after D63 approval, then adopt the synchronized SRS v4.1 Markdown/PDF pair and update source-of-truth pointers when v4.1 becomes current.
 - [x] SDD v2.0 Markdown/PDF pair and version index merged in PR #122 (Entry 165).
 - [ ] Iheb confirms the SDD v2.0 owner review and all four reviewers explicitly accept the D51 extension-authentication design before extension implementation; PR #122 currently records Donia's approvals only.
-- [ ] Stage 13 runner (D35) and Stage 11 runner (PR #68) accept the v2 model set (D48 (3), (7)).
+- [ ] Stage 13 runner (D35) and Stage 11 runner (PR #68) accept the v2 model set (D48 (3), (7)). Stage 11 part: V4b code done (`src/evaluation/stage11_v2_run.py`, Entry 190; review pending, incl. the `ALLOWED` access-rule change for Khalil).
+- [ ] V4b follow-ups: the v2 Stage 11 run (after risk-v2, before F5; target Wed 2 Dec), its notebook (09) and the v2 extension of `stage11_report.py` (metrics) still open (Entry 190).
+- [ ] V4b review: confirm that an empty registry is refused before the v2 claim (the brief's rule vs its test list; Entry 190).
 
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
@@ -7654,7 +7712,7 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
-## Current status — updated 2026-11-15 (Entry 188)
+## Current status — updated 2026-11-16 (Entry 190)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -7670,7 +7728,9 @@ current epoch. PR V5a (Entry 186, waiting for review) adds the F5 model loader: 
 dispatches on the checkpoint's `architecture` (D61 (6)) and passes a synthetic hand-over with the
 Stage 13 runner for all three candidates. PR V4a (Entry 188, waiting for review) adds the v2
 risk-policy run (Protocol §6 unchanged, bundle seed only, exact M reproduction); the real run waits
-for the search evidence. See the open items above and [Execution Plan v3.0](reference/Execution_Plan_v3.0.md).
+for the search evidence. PR V4b (Entry 190, waiting for review) adds the Stage 11 runner for the v2
+model set (D48 (7)), code and synthetic tests only; the real v2 Stage 11 run, notebook 09 and the v2
+metrics report follow risk-v2. See the open items above and [Execution Plan v3.0](reference/Execution_Plan_v3.0.md).
 
 **Khalil / Stage 13 — preparation merged; external run not ready.** Runner preparation from Entries
 175–179 merged in PR #133. The synthetic Stage 13 suite reported 33 passed; PR #134 subsequently
