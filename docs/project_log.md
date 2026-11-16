@@ -7277,6 +7277,59 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
+### Entry 191 — D65 proposed: D55 UI direction D and new design source (2026-11-16)
+
+- **Owner:** Iheb Zemzemi (Part E). Branch `docs/stage18-d55-design-source` from `main` `1078419`.
+  D65 is the next free D-ID (D62 unused on purpose; no open branch claims D65); ADR 0017 is the next ADR.
+- **Why [doc]:** D55 (1) and card P5. The team chose on Mon 2026-11-16; P5 had the vote by Fri 13 Nov
+  (`docs/reference/Execution_Plan_v3.0.md:362`). The Execution Plan is not edited.
+- **Decision (proposed):** D65 refines D55 (1). The choice is a mix of mockups A (Ruler) and B (Case file)
+  with three changes, built as Direction D. ADR 0017 holds the mapping table, the changes with
+  prototype lines, the colour rule, Overview (S9) out of D55, the font change and the build split
+  (B1 tokens and fonts, B2 shell, B3 Analyse and Result, B5 History; the live screen is delivered inside L2).
+- **What changed (docs only):**
+  - `docs/design/prototype-d55-direction-d.html`, copied byte for byte (sha256
+    `7cb2e4ae1d23d5309c7f11bf4ea6b6e17fc61d027965b14d91bc568cdc5ef34c` before and after; `cmp` equal).
+  - `docs/design/HANDOFF-v2.md` (target design).
+  - `docs/design/HANDOFF.md`: one status sentence at the start of line 3. The line count stays 306,
+    so the ~74 citations of HANDOFF.md line numbers in `web/` stay valid.
+  - `docs/design/README.md` pointer.
+  - `docs/decisions/0017-ui-direction-d.md`, D65 row and ADR index row, CHANGELOG.
+  - Nothing in `web/`, `api/`, `src/`, `deploy/` or `tests/`.
+- **Found while writing HANDOFF-v2 [verified against the prototype and decisions]:**
+  - The prototype's Live check uses the median of scored windows and leaves the first 3 windows
+    unscored (l.365, l.466, l.471–473). D52 (5)–(7) require the mean of all kept windows, no
+    running verdict before 3 kept windows, no-speech windows and a last-5 trend line. HANDOFF-v2 §5.10
+    follows D52.
+  - The prototype labels a verdict from `p` with `p > 0.997` → synthetic (l.385). The frozen band is
+    `[t − b, t + b)`, so the build takes verdicts and window labels from the API, never from `p`.
+  - `--line` on `--surface` is 1.23 (light) and 1.32 (dark). It is used on `.quiet` button and window-cell
+    borders: open point for B1. All text pairs are ≥ 5.28 : 1.
+- **D63 dependency [verified]:** `web/src/api/types.ts:18-27` has exactly the 8 §11 fields. `p`,
+  threshold, band and per-window values come only with D63 (`docs/decisions/README.md:69`,
+  Proposed). Until then results use the "Score not available" state (HANDOFF-v2 §5.9), so B3 does
+  not wait for D63.
+- **Colour finding [doc]:** red and amber verdict colours as chart fills. Measured in the D55 design
+  session with a colour-vision palette validator (OKLab ΔE × 100, simulated colour blindness): light
+  deuteranopia 3.2, normal vision 10.9; dark deuteranopia 6.3, normal vision 10.7. Not re-measured in
+  this PR.
+- **Checks [verified, local]:** `pytest -q tests/governance`: 89 passed. `pytest -q`: 2 failed,
+  1602 passed, 27 skipped. The 2 failures (`tests/evaluation/test_external_run.py`,
+  `ModuleNotFoundError: torch`) occur identically on `main` `1078419` (local Python 3.14.6 without
+  torch; CI uses 3.13 with CPU torch). Web: typecheck and lint clean; Vitest 1394 passed (44 files);
+  build ok; npm audit --omit=dev: 0 vulnerabilities. Secrets grep: 0. docker compose up --wait: api and
+  web healthy. e2e (Chromium, nginx :8001): 76 passed, POSTs 12 (planned 12), 429: 1. Live check on
+  http://localhost:8001 (2026-11-16, analyst01): sign-in, upload, result card (mock analyzer) and
+  History newest row unchanged, as expected for a docs-only PR. Prototype sha256 and `cmp` equal. 211 "l.N" citations checked
+  against the prototype.
+- **AI assistance:** Claude Code (Claude Opus 5.5) read the repo and the prototype and drafted HANDOFF-v2, ADR 0017
+  and this entry from Iheb's brief. The Direction D prototype was built with Claude (claude.ai,
+  Claude Opus 5.5) from mockups A and B and the team's reference images; axe 4.14.0, contrast and
+  390 px checks were run in that session. Team review is required before acceptance (D26).
+- **Gate:** **WAITING FOR APPROVAL** (Donia, Malak, Khalil).
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -7675,7 +7728,11 @@ module, training-format S build/verification, training-half resource cache and o
 - [ ] Contract: `deferral_on_fit` is not nullable (Status, MonitoringMarker) while §4.7 says a figure that cannot be computed is `null`; ask Donia (Entry 130).
 - [x] Non-text contrast below 3:1 (light `--line-strong`/`--surface` 1.86, dark 1.99, light `--unc-mark` and `--warn-mark` 2.87; Entry 128): fixed for WCAG 1.4.11, no exceptions left (merged in PR #92, `c8c047e`; Entry 131).
 - [ ] `npm audit`: 12 moderate (GHSA-g3hv-75wg-m249, `minimatch` 10.2.6 under eslint and typescript-eslint, dev only; production 0). Decide: wait for upstream, or an `overrides` pin to `minimatch` ≥ 11.0.1 by approval (Entry 127).
-- [ ] MVP exception: S8 Analysis details and S9 Overview are stub pages, listed under "Not in this MVP" in the README; Overview: option A, the stub keeps its rail link and the demo video does not open it (Entry 148).
+- [ ] MVP exception: S8 Analysis details and S9 Overview are stub pages, listed under "Not in this MVP" in the README; Overview: option A, the stub keeps its rail link and the demo video does not open it (Entry 148). Under D65 S9 stays a stub: Overview is designed in the Direction D prototype but not built in D55 (Entry 191).
+- [ ] Approve D65 (Donia, Malak, Khalil) and add its approval commit (Entry 191).
+- [ ] Overview (S9): summary endpoint and charts (uncertain rate vs 10% target, version-change markers); check whether p and clip duration are stored (D65, Entry 191).
+- [ ] D55 build B3 shows real `p` and per-window values only after D63; until then the "Score not available" state (HANDOFF-v2 §5.9; Entry 191).
+- [ ] D55 build B1: decide the `--line` border on `.quiet` buttons and window cells (1.23 / 1.32 on `--surface`; HANDOFF-v2 §3; Entry 191).
 - [ ] NFR-10: Linux fresh-clone flow passed (Entry 148). Malak's Windows fresh clone reached healthy
   containers, `{"ok":true}` and account creation (Entry 149); record browser sign-in, upload, result
   and History to complete the Windows test. macOS remains untested.
@@ -7712,7 +7769,7 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
-## Current status — updated 2026-11-16 (Entry 190)
+## Current status — updated 2026-11-16 (Entry 191)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -7743,6 +7800,8 @@ No DEEP-VOICE audio was opened or scored, and no external-run claim was created 
 
 **Application status.** The React Docker MVP still displays mock analyzer results. F4-to-API
 integration is Iheb’s P1 work; the mock verdict must not be presented as a real model result.
+D65 (Entry 191, proposed) names Direction D and `docs/design/HANDOFF-v2.md` as the D55 target design;
+the shipped UI is unchanged until the D55 build PRs.
 
 **Khalil’s next project work.** Check and sign off the SRS v4.0 draft you own: PR #121 is merged, but
 the GitHub review list currently records Donia’s approval only. Continue Stage 13 preparation only

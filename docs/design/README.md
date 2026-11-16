@@ -1,5 +1,8 @@
 # Design: analyst console prototype
 
+**Target design (D55, D65):** [`prototype-d55-direction-d.html`](prototype-d55-direction-d.html) and
+[`HANDOFF-v2.md`](HANDOFF-v2.md). The v4 prototype and HANDOFF.md below describe the shipped UI until the D55 build PRs replace them.
+
 `analyst-console-prototype.html` is the clickable prototype of the analyst interface approved in
 D38 / [ADR 0008](../decisions/0008-web-frontend-react.md). It is a **design reference for Stage 18,
 not production code**: one self-contained HTML file with mock data, no backend and no model.
