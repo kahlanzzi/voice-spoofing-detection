@@ -487,9 +487,9 @@ evidence written by the real `v2_search` report writers and the risk-v2 evidence
 | `v2_bundle_seed` / `v2_other_seed`: same columns as the v1 CNN roles, v1 table unchanged, round trip, `p` / prediction refused for `v2_other_seed` | `tests/evaluation/test_clip_scores_v2_roles.py` |
 
 Governance: `src/evaluation/stage11_v2_run.py` (the file, not the folder) is in `ALLOWED` of
-`tests/governance/test_for_test_access.py` (D48 (7), PR V4b). The module names the split only
-through the imported `stage11_run.SPLIT`, which the text guard cannot see; the entry records the
-access rule explicitly.
+`tests/governance/test_for_test_access.py` (D48 (7), PR V4b). The module imports
+`stage11_run.SPLIT`, which the guard's `import` rule now reports; the `ALLOWED` entry is what
+permits it.
 
 ## Limitations
 
