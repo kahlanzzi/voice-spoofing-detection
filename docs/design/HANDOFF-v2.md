@@ -72,6 +72,11 @@ Kept from HANDOFF.md §3: no horizontal page scroll; never truncate verdicts, ri
 or dates (IDs wrap, l.96, l.171); every target ≥ 44 × 44 px (l.51, l.58, l.60, l.106). The checks at
 390 px stay green.
 
+Phones: today's top bar with a Menu drawer (inert page, focus inside, Escape back to Menu;
+`web/e2e/shell.spec.ts:69`) is replaced by tabs in Direction D. B2 replaces it, updates
+`shell.spec.ts:69` and the HANDOFF.md description in the same PR, and keeps the 44 px targets and the
+no-sideways-scroll checks at 1440 / 1024 / 768 / 640 / 390 px (`shell.spec.ts:61`).
+
 ## 3. Tokens
 
 All colours live in `web/src/styles/tokens.css` (l.13), and `tokens.test.ts` and `colours.test.ts` are
@@ -306,6 +311,9 @@ For the later S9 work. All data in the prototype is invented (l.304, l.585, l.59
 - The "Why this verdict" text names the band and the cut and how they were derived (val-B EER point,
   10 % deferral, model version) (l.398, l.406, l.414, l.536–538). It has no `p` in the Score not available state (§5.9).
 - The checklist steps (l.399, l.407, l.415) are a proposal. The final wording is checked in the D55 usability test.
+- Wording and spelling follow the shipped UI (US "Analyze", e.g. the h1 "Analyze a recording" at
+  `web/e2e/pages.spec.ts:8`, checked by the test at line 16, and the "Analyze recording" button at
+  `web/e2e/analyze.spec.ts:81`). The prototype's UK spelling ("Analyse") is not adopted.
 
 ## 8. Accessibility
 

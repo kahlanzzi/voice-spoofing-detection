@@ -7316,7 +7316,11 @@ module, training-format S build/verification, training-half resource cache and o
 - **Checks [verified, local]:** `pytest -q tests/governance`: 89 passed. `pytest -q`: 2 failed,
   1602 passed, 27 skipped. The 2 failures (`tests/evaluation/test_external_run.py`,
   `ModuleNotFoundError: torch`) occur identically on `main` `1078419` (local Python 3.14.6 without
-  torch; CI uses 3.13 with CPU torch). Prototype sha256 and `cmp` equal. 211 "l.N" citations checked
+  torch; CI uses 3.13 with CPU torch). Web: typecheck and lint clean; Vitest 1394 passed (44 files);
+  build ok; npm audit --omit=dev: 0 vulnerabilities. Secrets grep: 0. docker compose up --wait: api and
+  web healthy. e2e (Chromium, nginx :8001): 76 passed, POSTs 12 (planned 12), 429: 1. Live check on
+  http://localhost:8001 (2026-11-16, analyst01): sign-in, upload, result card (mock analyzer) and
+  History newest row unchanged, as expected for a docs-only PR. Prototype sha256 and `cmp` equal. 211 "l.N" citations checked
   against the prototype.
 - **AI assistance:** Claude Code (Claude Opus 5.5) read the repo and the prototype and drafted HANDOFF-v2, ADR 0017
   and this entry from Iheb's brief. The Direction D prototype was built with Claude (claude.ai,

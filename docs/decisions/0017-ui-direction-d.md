@@ -129,7 +129,9 @@ build PR against a fixed, hashed file.
   - **B1 tokens and fonts:** `tokens.css` for both themes from HANDOFF-v2 §3, `@fontsource/public-sans` and
     Plex Mono 400/600 (`npm audit`), `tokens.test.ts`, `colours.test.ts` and the contrast test,
     including the open `--line` border point (HANDOFF-v2 §3). Proof: the token table equals HANDOFF-v2 §3.
-  - **B2 shell and base components:** rail and phone tabs, card, chip, buttons.
+  - **B2 shell and base components:** rail and phone tabs, card, chip, buttons. It replaces today's phone
+    Menu drawer with tabs, updating `web/e2e/shell.spec.ts:69` and HANDOFF.md in the same PR, and keeps the
+    44 px targets and no-sideways-scroll checks (`shell.spec.ts:61`; HANDOFF-v2 §2).
   - **B3 Analyse and Result × 3:** tiles, checklist, Why panel, ruler, window cells and their table,
     with `p` and `windows` as optional props and the Score not available state. It updates HANDOFF.md in the
     same PR (confidence on the main result). Real values only after D63.
