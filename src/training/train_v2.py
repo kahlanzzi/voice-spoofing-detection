@@ -18,6 +18,14 @@ Order of one run:
    lower; patience; max_epochs; a tie keeps the earliest epoch; the best epoch's state_dict (CPU
    copy) is returned, not the last.
 4. History: one record per epoch with every logged field, including family and codec counts.
+5. Resume (optional, src.training.v2_resume): with resume_dir, the full state is written there after
+   every completed epoch (after scoring S, updating best/patience and logging the epoch). If
+   resume_dir already holds a state, it is verified against the caller (candidate, seed, provenance,
+   run settings, W&B run id) and restored after set_seed and the build: weights, best weights, Adam
+   state, global step (so the D61 schedule continues), history, best M, patience counter, and the
+   torch CPU / CUDA, sampler, NumPy and Python RNG states; training continues at the next epoch. A
+   state whose run already stopped returns the result without training. Epochs already logged are
+   not logged again. On CPU a resumed run equals an uninterrupted one; on GPU as observed (D42).
 """
 from __future__ import annotations
 
@@ -36,6 +44,18 @@ from src.training.normalization import apply_bin_stats
 from src.training.selection_set import CONDITIONS, SelectionSet
 from src.training.train_cnn import _cpu_copy, _positive_int, _score
 from src.training.v2_config import V2Config
+from src.training.v2_resume import (
+    flatten_optimizer,
+    has_state,
+    numpy_state_json,
+    python_state_json,
+    read_state,
+    restore_optimizer,
+    set_numpy_state,
+    set_python_state,
+    split,
+    write_state,
+)
 from src.training.v2_data import (
     EpochSampler,
     V2TrainDataset,
@@ -119,10 +139,70 @@ def selection_m(eers: dict) -> float:
     return math.fsum(eers.values()) / len(CONDITIONS)
 
 
+def _check_resume(meta: dict, run_settings: dict, wandb_run_id) -> None:
+    """The saved run settings and W&B run id must equal the current call's."""
+    if meta["settings"] != run_settings:
+        raise ValueError(f"resume state run settings differ: recorded {meta['settings']}, current "
+                         f"{run_settings}")
+    if meta["wandb_run_id"] != wandb_run_id:
+        raise ValueError(f"resume state W&B run id {meta['wandb_run_id']!r} differs from the "
+                         f"logger's {wandb_run_id!r}: re-open the same run (same logger mode)")
+    if meta["last_epoch"] > run_settings["max_epochs"] or \
+            meta["patience_counter"] > run_settings["patience"]:
+        raise ValueError(f"resume state epoch {meta['last_epoch']} / patience counter "
+                         f"{meta['patience_counter']} exceed the run's limits")
+
+
+def _restore(meta, saved, candidate, model, optimizer, sampler, device):
+    """Load weights, Adam state and RNG states from a verified state; return the best weights."""
+    best_state = None
+    try:
+        model.load_state_dict(split(saved, "model"), strict=True)
+        restore_optimizer(optimizer, {k: v for k, v in saved.items() if k.startswith("opt.")})
+        if meta["best_epoch"] is not None:
+            best_state = split(saved, "best")
+            if set(best_state) != set(model.state_dict()):
+                raise ValueError("best.* keys differ from the model's")
+    except (RuntimeError, KeyError) as exc:
+        raise ValueError(f"resume state does not fit {candidate}: {exc}") from exc
+    # RNG last: the model, optimizer and loader are built, as at the end of the saved epoch.
+    sampler.generator.set_state(saved["rng.sampler"])
+    sampler.epoch = meta["last_epoch"]
+    torch.set_rng_state(saved["rng.torch_cpu"])
+    if device.type == "cuda":
+        torch.cuda.set_rng_state(saved["rng.torch_cuda"], device)
+    set_numpy_state(meta["numpy_random_state"])
+    set_python_state(meta["python_random_state"])
+    return best_state
+
+
+def _peak(device, prior):
+    """Peak GPU memory of the run (this session and any earlier one); None on CPU."""
+    if device.type != "cuda":
+        return None
+    return max(int(torch.cuda.max_memory_allocated(device)), prior or 0)
+
+
+def _state_tensors(model, best_state, optimizer, sampler, device) -> dict:
+    tensors = {f"model.{k}": v for k, v in model.state_dict().items()}
+    if best_state is not None:
+        tensors.update({f"best.{k}": v for k, v in best_state.items()})
+    tensors.update(flatten_optimizer(optimizer))
+    tensors["rng.torch_cpu"] = torch.get_rng_state()
+    tensors["rng.sampler"] = sampler.generator.get_state()
+    if device.type == "cuda":
+        tensors["rng.torch_cuda"] = torch.cuda.get_rng_state(device)
+    return tensors
+
+
 def train_v2(candidate, *, config: V2Config, run_seed, raw_cache, selection, augmenter, profile,
              mean, std, max_epochs, patience, batch_size, num_workers, logger,
-             device="cpu") -> V2TrainResult:
-    """One run (module docstring, steps 1-4); log each epoch and the summary."""
+             device="cpu", resume_dir=None, provenance=None) -> V2TrainResult:
+    """One run (module docstring, steps 1-5); log each epoch and the summary.
+
+    resume_dir (optional): the run's resume folder. provenance (a dict) is required with resume_dir
+    and refused without it; it is stored in the state and must equal a saved state's.
+    """
     determinism = set_seed(run_seed)
     if candidate not in config.candidate_order:
         raise ValueError(f"candidate must be one of {config.candidate_order}, got {candidate!r}")
@@ -143,6 +223,9 @@ def train_v2(candidate, *, config: V2Config, run_seed, raw_cache, selection, aug
     device = torch.device(device)
     if device.type == "cuda" and not torch.cuda.is_available():
         raise ValueError(f"device {device} requested but CUDA is not available")
+    if (resume_dir is None) != (provenance is None) or (
+            provenance is not None and not isinstance(provenance, dict)):
+        raise ValueError("resume_dir and provenance (a dict) are given together or not at all")
     determinism = {**determinism, "num_workers": num_workers}
 
     tensors = selection_tensors(selection, input_kind, mean, std)
@@ -160,7 +243,24 @@ def train_v2(candidate, *, config: V2Config, run_seed, raw_cache, selection, aug
 
     best, best_epoch, best_state, bad, step = math.inf, None, None, 0, 0
     history = []
-    for epoch in range(1, max_epochs + 1):
+    first, prior_peak = 1, None
+    run_settings = {"max_epochs": max_epochs, "patience": patience, "batch_size": batch_size,
+                    "steps_per_epoch": steps_per_epoch, "n_train": n, "device_type": device.type}
+    wandb_run_id = getattr(logger, "run_id", None)
+    if resume_dir is not None and has_state(resume_dir):
+        meta, saved = read_state(resume_dir, candidate=candidate, run_seed=run_seed,
+                                 provenance=provenance)
+        _check_resume(meta, run_settings, wandb_run_id)
+        best_state = _restore(meta, saved, candidate, model, optimizer, sampler, device)
+        history = list(meta["history"])
+        first = meta["last_epoch"] + 1
+        step, bad, best_epoch = meta["global_step"], meta["patience_counter"], meta["best_epoch"]
+        best = math.inf if best_epoch is None else meta["best_selection_m"]
+        prior_peak = meta["peak_gpu_memory_bytes"]
+        if bad >= patience:  # the run had already stopped early: no epoch is trained
+            first = max_epochs + 1
+
+    for epoch in range(first, max_epochs + 1):
         start = time.perf_counter()
         model.train()
         counts, total, seen, lr = empty_counts(), 0.0, 0, None
@@ -197,10 +297,20 @@ def train_v2(candidate, *, config: V2Config, run_seed, raw_cache, selection, aug
         else:
             bad += 1
         logger.log_epoch(record)
+        if resume_dir is not None:
+            write_state(resume_dir, {
+                "candidate": candidate, "run_seed": run_seed, "last_epoch": epoch,
+                "global_step": step, "best_selection_m": None if best_epoch is None else best,
+                "best_epoch": best_epoch, "patience_counter": bad, "history": history,
+                "numpy_random_state": numpy_state_json(),
+                "python_random_state": python_state_json(), "determinism": determinism,
+                "wandb_run_id": wandb_run_id, "provenance": provenance, "settings": run_settings,
+                "peak_gpu_memory_bytes": _peak(device, prior_peak),
+            }, _state_tensors(model, best_state, optimizer, sampler, device))
         if bad >= patience:
             break
 
-    peak = int(torch.cuda.max_memory_allocated(device)) if device.type == "cuda" else None
+    peak = _peak(device, prior_peak)
     logger.log_summary({"best_epoch": best_epoch, "best_selection_m": best,
                         "epochs_run": len(history), "peak_gpu_memory_bytes": peak})
     return V2TrainResult(

@@ -7054,9 +7054,173 @@ module, training-format S build/verification, training-half resource cache and o
 - **AI assistance:** Codex drafted the proposal; team review is required before acceptance.
 - **Gate:** **PROPOSED — WAITING FOR TEAM REVIEW.** D63 and Entry 182 are provisional while this PR is open.
 
+### Entry 184 — Track V PR V2b-R: per-epoch resume within a v2 run (2026-11-15)
+
+- **Owner:** Donia Mabrouk (Part C). Branch `feat/stageV2-epoch-resume` from `main` `37b236b`.
+- **Why [doc]:** Execution Plan v3.0 §9 V3 and §13 risk "v2 training does not fit the free T4 time":
+  the D49 benchmark (Entry 173) gives ~10–17 min per epoch, so a 30-epoch run takes 5–8 h; V2b-1
+  resumed only between runs and deleted a run's `.partial` on any failure.
+- **What changed:** new `src/training/v2_resume.py` (state after every epoch in
+  `<run>.partial/resume/`: `state.safetensors` with weights, best weights, flattened Adam state,
+  torch CPU/CUDA and sampler RNG; canonical `state.json` with counters, history, NumPy/Python RNG,
+  determinism, W&B id, provenance, run settings and the tensor file's SHA-256; atomic swap through
+  `resume.tmp/` and `resume.old/`; no pickle, no `torch.save`). `train_v2` gains `resume_dir` and
+  `provenance`, verifies and restores a state, continues at the next epoch with the D61 schedule
+  from the saved global step, and returns a stopped run without training. `V2RunLogger` gains
+  `resume_id` (`resume="must"`) and `run_id`. `v2_search` keeps `.partial` on failure; at start it
+  resumes a valid state, removes a `.partial` without one and refuses (keeps) an invalid or foreign
+  one; `resume/` is deleted only after the renamed run verifies.
+- **Not changed:** D49/D61 training, early stopping, schedule, seeds, selection rule,
+  `src/augmentation/**`, `src/models/**`, `configs/**`. No new W&B key (D40). No data access.
+- **Deviation (accepted in review, 2026-11-15):** the brief allowed only `resume_dir` as a new `train_v2` argument, but
+  also asks `train_v2` to check the saved provenance against the caller's; `train_v2` does not know
+  the provenance otherwise, so it also takes `provenance` (required with `resume_dir`, refused
+  without it).
+- **Tests [verified, CPU, synthetic]:** `tests/training/test_v2_resume.py` (real training on a
+  4-clip / 2-row subset): for cnn-aug, crnn and aasist, 3 epochs straight equal 2 epochs + crash
+  right after the epoch-2 state + resume (`state_dict`, best epoch, best M, history except
+  `*_seconds`), also with `num_workers=2`; optimizer steps 0–3 then 4–5 with the step-4 learning
+  rate; stopped runs (patience, max epochs) train nothing on resume; refusals (tampered tensors,
+  provenance, candidate, seed, run settings, W&B id, missing key, missing tensor, NaN, non-canonical
+  JSON); atomic-swap recovery; RNG and Adam round trips. `tests/tuning/test_v2_search.py`: crash in
+  the second candidate, restart, only its remaining epoch trains, reports equal an uninterrupted
+  search (identical checkpoint hashes); invalid `.partial` refused and kept; leftover `resume/` in a
+  complete run cleaned after verification. Logger: resume re-opens the same id.
+- **Observation:** `set_seed` records `cublas_workspace_config_preset`, which is `false` only for
+  the first run of a process; so a run's `determinism` dict can differ between sessions while the
+  weights are identical. Pre-existing behaviour, unchanged; the search test pins the variable.
+- **Checks [verified, local Windows, Python 3.14.7, torch 2.11.0+cpu]:** `REQUIRE_TORCH_TESTS=1
+  pytest -q` → `2054 passed, 2 skipped in 219.86s`; `pytest -q tests/governance` → `89 passed`; the
+  new resume tests take ~44 s together (target ~60 s). CI on 3.13 not yet run (branch not pushed).
+- **GPU:** not run. On GPU a resumed run is reproducible only as observed (D42); the V2b-4 rehearsal
+  can measure it with a forced interruption.
+- **AI assistance:** Claude Code (Claude Opus 5.5) wrote the code, tests and docs from Donia's brief;
+  team review required before acceptance.
+- **Gate:** **WAITING FOR APPROVAL.**
+
 ---
 
-### Entry 183 — Track V V1c selection-set and resource-cache implementation (2026-11-15)
+### Entry 186 — Track V PR V5a: F5 model loader dispatching on `architecture` (2026-11-15)
+
+- **Owner:** Donia Mabrouk (Part C). Branch `feat/stageV2-bundle-loader` from `main` `b78c15d`.
+  Entry number: 185 is reserved for Malak's V1c.
+- **Why [doc]:** Execution Plan v3.0 §9 V5 and §10; D59 (7) (F5 uses the F4 layout and hash
+  rule) and D61 (6) (the F5 loader dispatches on `architecture`). Khalil's Stage 13 runner
+  (`verify_f5_artifacts`, `build_frozen_scorers`) takes the F5 verifier and loader by injection, so
+  the loader is provided and tested now, before any v2 model exists. No new decision.
+- **What changed:** `src/bundle/model_loader.py`: `load_bundle_model` reads `checkpoint.json`
+  (hashed against the manifest's per-file value before parsing); no `architecture` → v1 →
+  `cnn_checkpoint.load_checkpoint` as for F4; `architecture` in D49 → `v2_checkpoint.load_v2_checkpoint`;
+  both with `expected_sha256` = manifest anchor. After a v2 load: loaded `architecture` = dispatched,
+  CPU, eval mode, `mean`/`std` float32 (64,) for `cnn-aug`/`crnn`, `None` for `aasist`; version
+  check as before. `BundleModel` gains `architecture` (default `"cnn"`); `mean`/`std` typed optional.
+- **Not changed:** `src/bundle/bundle.py` (still torch-free), `cnn_checkpoint.py`,
+  `v2_checkpoint.py`, `f4.py`, `external_run.py`, `configs/`. F4 loading: same checks, errors and
+  values; the only new F4-path check is the dispatch read's hash, which can fire only if
+  `checkpoint.json` is replaced between `load_bundle` and the load (it was refused before too, as
+  `checkpoint_sha256 mismatch`; now as `SHA-256 mismatch for checkpoint.json`).
+- **Tests [verified, CPU, synthetic]:** `tests/bundle/test_model_loader_v2.py` (22): each
+  architecture round trip (equal output), v1 → `"cnn"` and the same values as `load_checkpoint`;
+  refusals: weights changed after build and after `load_bundle`, `architecture` edited (hash, also
+  after `load_bundle`), unknown architecture (schema, re-anchored), `profile_fingerprint` mismatch
+  (build and re-anchored load), aasist with norm tensors, log-Mel without them, the loader's own
+  architecture / eval / statistics / version checks; hand-over: `verify_f5_artifacts(...,
+  bundle_verifier=load_bundle, bundle_loader=load_bundle_model)` with a synthetic F5 record, then
+  `build_frozen_scorers` → one finite float per window for each architecture. Existing
+  `tests/bundle` pass unchanged. No dataset path, no DEEP-VOICE access.
+- **Checks [verified, local Windows, Python 3.14, torch CPU]:** `REQUIRE_TORCH_TESTS=1 pytest -q` → `2076 passed, 2 skipped in 759.60s`; `pytest -q
+  tests/governance` → `89 passed`. CI on 3.13 not yet run (branch not pushed).
+- **AI assistance:** Claude Code (Claude Opus 5.5) wrote the code, tests and docs from Donia's brief;
+  team review required before acceptance (Khalil as consumer of the loader, D26).
+- **Gate:** **WAITING FOR APPROVAL.**
+
+---
+
+### Entry 187 — Revised D63 contract proposal for team approval (2026-11-15)
+
+- **Owner:** Khalil Dridi.
+- **Review feedback:** The reviewer agrees with the direction but requires D55's threshold, uncertain band and derivation context, D52 per-window values, the unrounded policy input, and calibration tied to the same `policy_version`. D62 is unused because no all-zero clips were found; V2b-4 will record that result.
+- **Proposal:** D63 keeps its number and now defines one coordinated contract: upload `spoof_probability` is the D34 mean of kept-window calibrated probabilities; the frozen policy applies to that full-precision mean; response and stored upload details include the policy's threshold, uncertain band and provenance; upload and live timelines carry per-window values and labels. Mock and unrecoverable historical values remain unavailable. Confidence semantics and Stage 13 gates do not change.
+- **Approval and coordination:** D63 remains Proposed pending all-four approval and a merged approval/status commit. Coordinate with Iheb on the implementation base and single API/database migration before his P1 integration.
+- **Scope:** This PR changes decision documentation only. No API, database, UI, SRS, model, or Stage 13 implementation is authorized or changed here. SRS v4.0 remains current until the synchronized v4.1 pair is reviewed and adopted; update the reference index and AGENTS.md only when v4.1 becomes current.
+- **AI assistance:** Codex revised the proposal from the review feedback; human approval is required.
+- **Gate:** **PROPOSED — WAITING FOR ALL-FOUR APPROVAL.**
+
+---
+
+### Entry 188 — Track V PR V4a: v2 risk-policy run, code only (2026-11-15)
+
+- **Owner:** Donia Mabrouk (Part C). Branch `feat/stageV4-risk-run` from `main` `e7bd0e1`.
+  Entry number: 185 is reserved for Malak's V1c (her branch still says 183); 186 is V5a; 187 is
+  Khalil's D63 revision (PR #139).
+- **Why [doc]:** Execution Plan v3.0 §9 V4 (due Mon 30 Nov). Protocol §6 addendum and D49: the v2 risk
+  policy uses the §6 method unchanged on clean val-B for the bundle seed only (D45). `risk_run.py`
+  is v1-only (D42 checkpoint, val-A EER reproduction), so the v2 run is written now against the v2
+  search report format on main and reviewed before the search ends (Fri 27 Nov). No new decision.
+- **What changed:** new `src/tuning/v2_risk_run.py`. Winner (`selected`) and `bundle_seed` read from
+  the committed `docs/audit_evidence/v2_search/` (path fixed in code; folder not yet present) and
+  required to agree between `run_report.json` and `selection_report.json`. The checkpoint is loaded
+  with `load_v2_checkpoint(expected_sha256=checkpoint_sha256[run_dir_name(winner, seed)])` and must
+  name the winner and the bundle seed. Provenance `{expected, actual}`: `profile_fingerprint`,
+  `f2_manifest_sha256`, `selection_set_sha256`. M is recomputed on CPU with `train_v2`'s
+  `selection_tensors` / `evaluate_selection` / `selection_m` and must equal `selection_m` exactly (on
+  mismatch, both values and the five EERs are printed). val-B: Stage 8 log-Mel cache (through
+  `risk_run._load_split`) with the checkpoint's mean/std for `cnn-aug`/`crnn`; an injected F3
+  waveform source (`() -> waveforms, labels, paths`, exactly the F2 val-B rows) for `aasist`, refused
+  without one. Two CPU passes equal; `fit_risk_policy` unchanged with the byte-identical refit check;
+  Stage 10 files and formats; `run_report.json` adds `architecture`, `bundle_seed`,
+  `checkpoint_sha256`, the recomputed M and EERs, `val_b_input` and the search reports' hashes. Reused
+  from `risk_run` by import (`_load_split`, `_split_rows`, `diagnostics`, `environment`, constants);
+  nothing there needed generalizing. Docs: "v2 risk policy (V4)" in `docs/v2_training.md`, CHANGELOG.
+- **Not changed:** `risk_run.py`, `src/risk/`, `train_v2.py`, `v2_search.py`, checkpoints, models,
+  `configs/`. No real run; no FoR audio, dataset path or DEEP-VOICE access.
+- **Tests [verified, CPU, synthetic]:** `tests/tuning/test_v2_risk_run.py` (28): round trip and
+  byte determinism for `crnn` and `cnn-aug` (reads only S and val-B), `aasist` with a fake F3
+  waveform source and refused without one; evidence disagreement (winner, seed), missing hash,
+  unknown winner, missing evidence; checkpoint hash, wrong architecture, wrong seed; each provenance
+  mismatch (before val-B); M mismatch (both values and the EERs in the message; also one ulp off);
+  waveform source checks; existing output folder; removal on failure; no other split, split argument
+  or W&B import; CLI. The fixture checkpoints are seeded untrained models whose one-logit output is
+  negated if they rank synthetic val-B backwards (Platt refuses a <= 0); their `selection_m` is
+  computed with `train_v2`'s functions.
+- **Checks [verified, local Windows, Python 3.14, torch CPU]:** `REQUIRE_TORCH_TESTS=1 pytest -q` → `2104 passed, 2 skipped in 921.48s`;
+  `pytest -q tests/governance` → `89 passed`. CI on 3.13 not yet run (branch not pushed).
+- **Open [hypothesis]:** M is recorded on the T4 GPU and recomputed on CPU; exact equality held for
+  v1's val-A EER at Stage 10 but is untested for v2 (crnn LSTM, aasist). If it fails on the real
+  run, the run stops by design and any tolerance needs a team decision.
+- **AI assistance:** Claude Code (Claude Opus 5.5) wrote the code, tests and docs from Donia's brief;
+  team review required before acceptance (D26).
+- **Gate:** **WAITING FOR APPROVAL.**
+
+---
+
+### Entry 189 — Proposed D64: re-freeze the V1b selection-set recipe under the declared environment (2026-11-15)
+
+- **Owner:** Donia Mabrouk (Track V lead), from Malak Ben Salem's diagnosis. Docs only.
+  Entry number: 185 is Malak's V1c, 187 Khalil's D63 revision, 188 the v2 risk-run PR (V4a);
+  renumber at merge if needed.
+- **What happened [reported by Malak]:** the official V1c S build stopped, as designed, at the
+  first reverberation waveform hash. Under SciPy 1.18.1 (the `requirements.txt` pin) the waveform
+  SHA-256 is `e3625dab…9b1682`; in an isolated subprocess with SciPy 1.16.3 it is `be19d31e…5cb18`,
+  the frozen V1b value. Notebook 07 had run with Colab's preinstalled SciPy 1.16.3. Source audio,
+  RIR resource, channel, parameters and seeds passed before the gate. No partial output, no manifest
+  or guard changed; the hash gate was not weakened and the official build was not rerun.
+- **Proposed [D64]:** regenerate the whole recipe once on the training runtime (T4 2026.10,
+  Python 3.13.16, pinned requirements, pinned FFmpeg, fixed commit); only hashes may change, shown by
+  a committed old-vs-new comparison; a library-pin guard in the recipe and S builders and in the v2
+  search notebook. Option rejected: a SciPy 1.16.3 side environment (two dependency contracts;
+  training reverberation runs with 1.18.1).
+- **Why now [doc]:** S has not been used by any training, selection or result, so re-freezing
+  changes no reported number; Execution Plan v3.0 §9 V1 gate (V1c) and V3 (rehearsal, search) wait
+  on it.
+- **AI assistance:** decision text drafted with Claude (claude.ai) from Malak's report; reviewed by
+  Donia.
+- **Gate:** **APPROVED** by Malak, Iheb and Khalil in PR #140 (2026-11-15). Next: Malak
+  regenerates the whole recipe on T4 2026.10 under D64 and commits it with the comparison.
+
+---
+
+### Entry 185 — Track V V1c selection-set and resource-cache implementation (2026-11-15)
 
 **Owner:** Malak Ben Salem. Review: Donia Mabrouk (Track V consumer and protocol alignment).
 
@@ -7125,21 +7289,25 @@ V2b-4 remains blocked until those artifacts verify.
 - [x] V1b: pin and audit the noise/RIR corpora (licence, archive hash, 50/50 by-file split) and exact ffmpeg/codec tools before any v2 training (D50 (5); PR #131, Entry 180); follow-up pin-preservation and closeout fixes merged in PR #134.
 - [x] Compute benchmark per v2 candidate; batch sizes in `configs/` before training (D49). Slots exist as `null` in `configs/v2_candidates.yaml`; `require_batch_sizes()` blocks training until set (Entry 170; PR V2b). Done: 256 / 256 / 32 (Entry 173).
 - [x] V2b-2: run `python -m src.tuning.v2_benchmark` on Colab T4 (2026.10) and write the batch sizes into `configs/v2_candidates.yaml` (D49; Entry 172). (Entry 173; evidence `docs/audit_evidence/v2b2_benchmark/`; review pending)
-- [ ] Per-epoch resume within a run before V2b-4: a worst-case run (30 epochs × ~10–17 min) may not fit one Colab session; V2b-1 resumes only between runs (Entry 173).
-- [x] V1c: move the notebook recipe into a pure `src/augmentation/` module and prove byte parity for all five conditions on synthetic audio (D50/D56; Entry 183).
-- [ ] V1c: materialize S with `write_selection_set` on Colab T4 runtime 2026.10 and verify both forms with `load_selection_set`, including the Stage 8 val-A known answer (D50 (4), D58; Entries 172, 180, 183).
-- [ ] V1c: build and verify the deterministic training-half MUSAN/RIR resource cache outside the repo; refuse selection-half or all-zero resources (D50 (5); Entries 180, 183).
-- [x] V1c: make `FFmpegCodecBackend` verify its pin once per backend instance without changing encode/decode output bytes (codec 0.42 s/item dominates augmentation; Entries 172–173, 183).
+- [x] Per-epoch resume within a run before V2b-4: a worst-case run (30 epochs × ~10–17 min) may not fit one Colab session; V2b-1 resumes only between runs (Entry 173). Done in PR V2b-R (Entry 184; review pending).
+- [x] V2b-R review: `train_v2` gained `provenance` next to `resume_dir` (the brief allowed only `resume_dir`; the provenance check needs it) — accept or revise (Entry 184). Accepted in Donia's review (2026-11-15).
+- [x] V1c: move the notebook recipe into a pure `src/augmentation/` module and prove byte parity for all five conditions on synthetic audio (D50/D56; Entries 180, 185).
+- [ ] V1c: materialize S with `write_selection_set` on Colab T4 runtime 2026.10 and verify both forms with `load_selection_set`, including the Stage 8 val-A known answer (D50 (4), D58; Entries 172, 180, 185).
+- [ ] V1c: build and verify the deterministic training-half MUSAN/RIR resource cache outside the repo; refuse selection-half or all-zero resources (D50 (5); Entries 180, 185).
+- [x] V1c: make `FFmpegCodecBackend` verify its pin once per backend instance without changing encode/decode output bytes (codec 0.42 s/item dominates augmentation; Entries 172–173, 185).
+- [ ] D64 (Entry 189; approved, PR #140): regenerate the whole selection-set recipe on T4 2026.10 with pinned requirements; commit the old-vs-new comparison; add the library-pin guard (Malak). Blocks V1c.
 - [ ] V2b-4: search CLI/notebook wired to the V1c corpus loader; T4 rehearsal (`check_clean_transform`, two short runs for observed crnn/cuDNN determinism), then the search (Entry 172).
 - [ ] V2b-3: read `n_all_zero_clips` from the raw train cache (`build` / `verify` print it with the first 10 paths). If it is > 0, a decision (**D62**) is needed before any training (`run_search` refuses such a cache): `Augmenter`'s `recorded_noise` refuses a silent clip [verified], and Malak's S builder (`noise_10db`) has the same issue on val-A (Entry 172; `docs/v2_training.md`).
 - [x] Approve D61 (Iheb, Malak, Khalil) and add its approval commit before any v2 training (Entry 170). (PR #127, 2026-11-13)
 - [x] PR V2b-1: v2 training loop, selection metric M over set S, resumable search, benchmark code (Entry 172; review pending).
-- [ ] F5 model loader dispatching on `architecture` (D61 (6)), when F5 is built (Entry 170).
+- [x] F5 model loader dispatching on `architecture` (D61 (6)), when F5 is built (Entry 170). Done ahead of F5 on synthetic bundles, with the Stage 13 hand-over test (PR V5a, Entry 186; review pending).
+- [ ] V4: v2 risk policy (Protocol §6 unchanged, clean val-B, bundle seed only; D45, D49). Code done: `src/tuning/v2_risk_run.py` (PR V4a, Entry 188; review pending). Run pending: after the search, commit its reports to `docs/audit_evidence/v2_search/`, then run with `--version risk-v2`; if aasist wins, build the F3 waveform val-B source first (Execution Plan v3.0 §9 V4).
 - [x] Draft the extension authentication design and security-review text in SDD v2.0 before implementation (D51; Entry 165; human approval and merge pending).
 - [ ] Choose the hosting provider and record it (D54 (9)); load test on staging, then record K, L, `analysis_timeout_s` and `L_MAX` (D53 (3)).
 - [x] SRS v4.0 Markdown/PDF pair and version index merged in PR #121 (Entry 164).
 - [ ] Khalil confirms the SRS v4.0 owner review; GitHub currently records Donia's approval on PR #121.
-- [ ] Review proposed D63/ADR 0016: decide whether to expose calibrated `spoof_probability`; do not change the API/SRS contract or implement it until the team approves. The ID and log entry are provisional while this PR is open.
+- [ ] Obtain all-four approval for revised D63/ADR 0016 in its decision PR and merge the approval/status commit before implementation (Entry 187).
+- [ ] Coordinate with Iheb on the full API contract and one database migration; implement only after D63 approval, then adopt the synchronized SRS v4.1 Markdown/PDF pair and update source-of-truth pointers when v4.1 becomes current.
 - [x] SDD v2.0 Markdown/PDF pair and version index merged in PR #122 (Entry 165).
 - [ ] Iheb confirms the SDD v2.0 owner review and all four reviewers explicitly accept the D51 extension-authentication design before extension implementation; PR #122 currently records Donia's approvals only.
 - [ ] Stage 13 runner (D35) and Stage 11 runner (PR #68) accept the v2 model set (D48 (3), (7)).
@@ -7170,7 +7338,7 @@ V2b-4 remains blocked until those artifacts verify.
 - [x] Review proposed D33–D35 and ADR 0007; record explicit approval or requested revisions (Entry 48). (approved by all four, PR #29, 2026-10-19)
 - [x] Add and run synthetic tests for one-pass scoring, incomplete-claim finalization, D58 report/runtime verification, and H8 output (Entry 179; focused suite 33 passed; broad suite 1555 passed, 2 skipped with API/Compose tests excluded).
 - [x] Run full dependency-complete CI for the merged Stage 13 preparation: PR #134 head passed `checks`, `e2e` and `web`; the PR records `2002 passed, 2 skipped` and 88 governance tests. Local Entry 179 still records its separate `argon2` collection limitation.
-- [ ] Integrate and review the actual architecture-aware F5 loader once F5 is built; verify its real frozen record and smoke-check its model scorer on synthetic waveforms.
+- [ ] Integrate and review the actual architecture-aware F5 loader once F5 is built; verify its real frozen record and smoke-check its model scorer on synthetic waveforms. Loader available: `load_bundle_model` (Entry 186); synthetic hand-over passes; the real F5 record remains.
 - [ ] Produce the passed D58 rehearsal report on the pinned runtime, verify durable claim behavior on the approved Drive target, then complete peer review and the Stage 13 brief.
 - [x] Before Stage 13, approve and record the speaker-average undefined-value convention alongside
   the file-level view and governance allowlist decisions. No convention is approved by this update. (D33–D35 approved, PR #29, 2026-10-19)
@@ -7545,7 +7713,7 @@ V2b-4 remains blocked until those artifacts verify.
 
 ---
 
-## Current status — updated 2026-11-15 (Entry 183)
+## Current status — updated 2026-11-15 (Entry 188)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -7555,8 +7723,13 @@ the D32 teach-back (Entry 174). Replacing the API mock with F4 remains Iheb’s 
 the pin-preserving test and review follow-up in PR #134. V1c is next: build the training-format S
 folder and deterministic training-half resource cache, verify the recipe on the declared T4 runtime,
 and add the one-time FFmpeg pin check. V2 candidate/training code and the benchmark batch sizes are
-merged, but model training, search, selection, risk policy and F5 freeze remain. See the open items
-above and [Execution Plan v3.0](reference/Execution_Plan_v3.0.md).
+merged, but model training, search, selection, risk policy and F5 freeze remain. PR V2b-R (Entry
+184, waiting for review) makes a v2 run resumable per epoch, so a Colab disconnect costs at most the
+current epoch. PR V5a (Entry 186, waiting for review) adds the F5 model loader: `load_bundle_model`
+dispatches on the checkpoint's `architecture` (D61 (6)) and passes a synthetic hand-over with the
+Stage 13 runner for all three candidates. PR V4a (Entry 188, waiting for review) adds the v2
+risk-policy run (Protocol §6 unchanged, bundle seed only, exact M reproduction); the real run waits
+for the search evidence. See the open items above and [Execution Plan v3.0](reference/Execution_Plan_v3.0.md).
 
 **Khalil / Stage 13 — preparation merged; external run not ready.** Runner preparation from Entries
 175–179 merged in PR #133. The synthetic Stage 13 suite reported 33 passed; PR #134 subsequently
@@ -7570,7 +7743,7 @@ No DEEP-VOICE audio was opened or scored, and no external-run claim was created 
 **Application status.** The React Docker MVP still displays mock analyzer results. F4-to-API
 integration is Iheb’s P1 work; the mock verdict must not be presented as a real model result.
 
-**Track V V1c implementation (Entry 183):** on `feat/stageV1-selection-set-build`, the pure frozen
+**Track V V1c implementation (Entry 185):** on `feat/stageV1-selection-set-build`, the pure frozen
 recipe, hash-verifying selection-set builder, strict training-half resource-cache builder/loader,
 exact condition names, successful-once FFmpeg verification and official-runtime evidence guard are
 implemented and synthetically tested. The Torch-required full suite passes (`2045 passed, 2 skipped`).
@@ -7579,11 +7752,11 @@ materialization, real training-half cache build and small permitted evidence.
 
 **Khalil’s next project work.** Check and sign off the SRS v4.0 draft you own: PR #121 is merged, but
 the GitHub review list currently records Donia’s approval only. Continue Stage 13 preparation only
-within the gates above. A D63 proposal to expose `spoof_probability` is pending team decision; this proposal does not authorize API/SRS implementation. The D52 warm-up analysis is scheduled for W3 (23–29 November); Stages 15–16
+within the gates above. The revised D63 proposal awaits all-four approval in its decision PR. It covers unrounded calibrated `p` tied to `policy_version`, policy threshold/band provenance, and upload/live per-window values. No implementation is authorized until the approval/status commit is merged and the API/migration plan is coordinated with Iheb. The D52 warm-up analysis is scheduled for W3 (23–29 November); Stages 15–16
 follow later in the plan.
 
 **What is next:**
 1. Track V proceeds with Malak’s V1c and the remaining v2 training/selection work.
-2. Khalil confirms the SRS v4.0 owner review and keeps the Stage 13 gates closed until their evidence
-   is complete.
+2. The team reviews revised D63 and coordinates one API/migration change with Iheb. Khalil confirms
+   the SRS v4.0 owner review and keeps Stage 13 preparation within its gates.
 3. Do not open, score or claim DEEP-VOICE until the single-run prerequisites and team review pass.

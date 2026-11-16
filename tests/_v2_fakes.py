@@ -189,3 +189,35 @@ def aug_config_copy(path: Path, *, pinned: bool = True) -> Path:
 
 def profile():
     return load_profile(PROFILE_PATH)
+
+
+class SubsetRawCache:
+    """The first n clips of a raw train cache (keeps the real-training resume tests fast)."""
+
+    def __init__(self, raw, n: int):
+        self.raw, self.n = raw, n
+        self.labels = raw.labels[:n]
+        self.meta = raw.meta
+
+    def __len__(self):
+        return self.n
+
+    def clip(self, i):
+        if not 0 <= int(i) < self.n:
+            raise IndexError(i)
+        return self.raw.clip(i)
+
+
+class SubsetSelection:
+    """The first n_per_class REAL and FAKE rows of S, in their original order."""
+
+    def __init__(self, selection, n_per_class: int):
+        labels = np.asarray(selection.labels)
+        keep = np.sort(np.concatenate([np.flatnonzero(labels == c)[:n_per_class] for c in (0, 1)]))
+        self.form = selection.form
+        self.labels = labels[keep]
+        self._features = {c: selection.features(c)[keep] for c in selection.conditions}
+        self.sha256, self.manifest = selection.sha256, selection.manifest
+
+    def features(self, condition):
+        return self._features[condition]

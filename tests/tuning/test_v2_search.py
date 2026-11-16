@@ -115,7 +115,10 @@ def patched(inputs, monkeypatch):
     calls = []
 
     def fake_train_v2(candidate, *, config, run_seed, raw_cache, selection, augmenter, profile, mean,
-                      std, max_epochs, patience, batch_size, num_workers, logger, device):
+                      std, max_epochs, patience, batch_size, num_workers, logger, device,
+                      resume_dir, provenance):
+        assert resume_dir.name == "resume" and resume_dir.parent.name.endswith(".partial")
+        assert provenance["code_commit"] == COMMIT
         calls.append({"candidate": candidate, "seed": run_seed, "logmel": mean is not None,
                       "form": selection.form, "batch_size": batch_size, "max_epochs": max_epochs})
         torch.manual_seed(run_seed)
@@ -329,6 +332,101 @@ def test_resume_refuses_changed_provenance_and_reports_never_overwritten(inputs,
     run_json.write_text(json.dumps(data), encoding="utf-8")
     with pytest.raises(ValueError, match="checkpoint SHA-256"):
         _run(inputs, out)
+
+
+def test_partial_with_invalid_resume_state_is_refused_and_kept(inputs, patched, tmp_path):
+    out = tmp_path / "out"
+    resume = out / "runs" / "crnn_seed0.partial" / "resume"
+    resume.mkdir(parents=True)
+    (resume / "state.json").write_text("{}", encoding="utf-8")
+    (out / "runs" / "cnn-aug_seed0.partial").mkdir()  # no resume state: removed
+    with pytest.raises(ValueError, match="crnn_seed0.partial: holds trained epochs.*never deleted"):
+        _run(inputs, out)
+    assert (resume / "state.json").is_file() and patched == []
+    assert not (out / "runs" / "cnn-aug_seed0.partial").exists()
+
+
+class _Crash(Exception):
+    pass
+
+
+def _strip_seconds(rows):
+    return [{**row, "history": [{k: v for k, v in r.items() if not k.endswith("_seconds")}
+                                for r in row["history"]]} for row in rows]
+
+
+def test_search_crash_in_second_candidate_resumes_only_its_remaining_epochs(
+        inputs, patched, tmp_path, monkeypatch, capsys):
+    """Real train_v2 on a 4-clip / 2-row subset, 2 epochs per run; the crnn search run stops
+    right after its epoch-1 state is written, then run_search is restarted."""
+    import src.training.train_v2 as tv
+    from tests._v2_fakes import SubsetRawCache, SubsetSelection
+
+    real_train, real_write, real_eval = tv.train_v2, tv.write_state, tv.evaluate_selection
+    trained, current, crash = [], [None], {"armed": False}
+
+    def small(candidate, *, raw_cache, selection, max_epochs, batch_size, run_seed, **kw):
+        current[0] = (candidate, run_seed)
+        return real_train(candidate, raw_cache=SubsetRawCache(raw_cache, 4),
+                          selection=SubsetSelection(selection, 1), max_epochs=2, batch_size=2,
+                          run_seed=run_seed, **kw)
+
+    def counting_eval(*args):
+        trained.append(current[0])  # one S scoring per trained epoch
+        return real_eval(*args)
+
+    def write(resume_dir, meta, tensors):
+        out = real_write(resume_dir, meta, tensors)
+        if crash["armed"] and (meta["candidate"], meta["run_seed"], meta["last_epoch"]) == ("crnn", 0, 1):
+            raise _Crash("session ended")
+        return out
+
+    # set_seed records whether this variable was preset; only the first run of a process sets it.
+    monkeypatch.setenv("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
+    monkeypatch.setattr(vs, "train_v2", small)
+    monkeypatch.setattr(tv, "evaluate_selection", counting_eval)
+    monkeypatch.setattr(tv, "write_state", write)
+
+    straight = _run(inputs, tmp_path / "straight")
+    straight_trained = list(trained)
+    trained.clear()
+
+    out = tmp_path / "out"
+    crash["armed"] = True
+    with pytest.raises(_Crash):
+        _run(inputs, out)
+    crash["armed"] = False
+    assert trained == [("cnn-aug", 0)] * 2 + [("crnn", 0)]
+    assert (out / "runs" / "crnn_seed0.partial" / "resume" / "state.json").is_file()  # kept
+    trained.clear()
+    capsys.readouterr()
+    resumed = _run(inputs, out)
+    log = capsys.readouterr().out
+    assert "removed 0 incomplete" in log and "crnn_seed0 resumes after epoch 1" in log
+    assert trained[0] == ("crnn", 0) and trained.count(("crnn", 0)) == 1  # only its epoch 2
+    assert ("cnn-aug", 0) not in trained
+    assert len(trained) == len(straight_trained) - 3
+
+    assert resumed == straight  # run report: checkpoint hashes, selection, bundle seed
+    for name in ("selection_report.json",):
+        assert (out / name).read_text(encoding="utf-8") == (tmp_path / "straight" / name).read_text(
+            encoding="utf-8")
+    rows = [json.loads((d / "search_report.json").read_text(encoding="utf-8"))["rows"]
+            for d in (out, tmp_path / "straight")]
+    assert _strip_seconds(rows[0]) == _strip_seconds(rows[1])
+    for run in (out / "runs").iterdir():
+        assert sorted(p.name for p in run.iterdir()) == ["checkpoint", "run.json"]  # resume/ gone
+
+
+def test_complete_run_with_leftover_resume_state_is_verified_then_cleaned(inputs, patched, tmp_path):
+    out = tmp_path / "out"
+    first = _run(inputs, out)
+    leftover = out / "runs" / "crnn_seed1" / "resume"
+    leftover.mkdir()
+    (leftover / "state.json").write_text("{}", encoding="utf-8")
+    patched.clear()
+    assert _run(inputs, out) == first and patched == []
+    assert not leftover.exists()
 
 
 def test_module_has_no_val_b_test_or_external_path():
