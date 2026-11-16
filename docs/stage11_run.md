@@ -493,8 +493,12 @@ access rule explicitly.
 
 ## Limitations
 
-- The guard (`tests/governance/test_for_test_access.py`) now allows this one file; it is a text
-  guard, not a sandbox (ADR 0007).
+- The guard (`tests/governance/test_for_test_access.py`) allows exactly two files,
+  `src/evaluation/stage11_run.py` and `src/evaluation/stage11_v2_run.py` (D48 (7), PR V4b). Its
+  `import` rule makes reuse of the v1 split constant a test-split request everywhere else:
+  `from src.evaluation.stage11_run import SPLIT` (also with `as`) and the attribute
+  `stage11_run.SPLIT` (also `src.evaluation.stage11_run.SPLIT`). It is a text guard, not a sandbox
+  (ADR 0007): an alias such as `import src.evaluation.stage11_run as v1; v1.SPLIT` is not seen.
 - The rehearsal checks the scoring path through the EER and Stage 10's bytes; it cannot check the
   test split itself.
 - The environment record is descriptive; only Python and torch are asserted (D46 (2)). The

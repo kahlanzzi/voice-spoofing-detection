@@ -7260,10 +7260,7 @@ module, training-format S build/verification, training-half resource cache and o
 - **Not changed:** `stage11_run.py`, `stage11_report.py`, `run_registry.py`, `v2_risk_run.py`,
   `v2_search.py`, `train_v2`, models, checkpoints, `configs/`, committed evidence. No real run; no
   FoR audio, dataset path or DEEP-VOICE access.
-- **Interpretation [for review]:** the brief's test list says "empty registry … → accepted" while
-  its rule says the records must be exactly the v1 pair. The code follows the rule: an empty
-  registry is refused (the v2 claim follows the v1 run; the live registry holds the v1 pair). Change
-  it if the team meant otherwise.
+- Empty registry refused (rule 4); confirmed in Donia's review, 2026-11-16.
 - **Tests [verified, CPU, synthetic]:** `tests/evaluation/test_stage11_v2_run.py` (51; search
   evidence from the real `v2_search` writers, risk-v2 evidence from `v2_risk_run.run` on fakes) and
   `tests/evaluation/test_clip_scores_v2_roles.py` (6); listed in `docs/stage11_run.md`.
@@ -7310,7 +7307,6 @@ module, training-format S build/verification, training-half resource cache and o
 - [ ] Iheb confirms the SDD v2.0 owner review and all four reviewers explicitly accept the D51 extension-authentication design before extension implementation; PR #122 currently records Donia's approvals only.
 - [ ] Stage 13 runner (D35) and Stage 11 runner (PR #68) accept the v2 model set (D48 (3), (7)). Stage 11 part: V4b code done (`src/evaluation/stage11_v2_run.py`, Entry 190; review pending, incl. the `ALLOWED` access-rule change for Khalil).
 - [ ] V4b follow-ups: the v2 Stage 11 run (after risk-v2, before F5; target Wed 2 Dec), its notebook (09) and the v2 extension of `stage11_report.py` (metrics) still open (Entry 190).
-- [ ] V4b review: confirm that an empty registry is refused before the v2 claim (the brief's rule vs its test list; Entry 190).
 
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
