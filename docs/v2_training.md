@@ -283,6 +283,15 @@ python -m src.tuning.v2_risk_run --checkpoint <bundle ckpt> --selection-set <S> 
   --manifest <F2 manifest> --cache-dir <Stage 8 log-Mel caches> --out <new folder> --version risk-v2
 ```
 
+## v2 Stage 11 (V4b, `src/evaluation/stage11_v2_run.py`)
+
+The separate `stage11_test` claim for the v2 model set (D48 (7)): the winner's three seeds,
+`<winner>-v2-seed<k>`, `p` and prediction for the bundle seed only (D45), scored on CPU through
+`v2_risk_run.model_inputs` + `score_clips`. It reads the committed search evidence and the risk-v2
+outputs in `docs/audit_evidence/v2_risk/`; its rehearsal recomputes M per seed and the val-B bytes
+of risk-v2. Details: [stage11_run.md](stage11_run.md#v2-model-set-d48-7). Code only so far; the
+real run (notebook 09) follows risk-v2.
+
 ## Tests (synthetic, CPU)
 
 `tests/features/test_raw_train_cache.py`, `tests/training/test_selection_set.py`,

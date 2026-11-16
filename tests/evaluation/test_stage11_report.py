@@ -637,10 +637,11 @@ def test_fixture_key_lists_equal_the_runners():
 
 def test_report_module_is_not_test_split_access_for_the_guard():
     # D31: later uses read the stored files, so the module needs no allow-list entry; the guard finds
-    # no test-split request in it (it never names the split) and ALLOWED is unchanged.
+    # no test-split request in it (it never names the split) and ALLOWED holds only the two runners
+    # (the v2 runner added by PR V4b, D48 (7)), not this module.
     rel = "src/evaluation/stage11_report.py"
     assert file_hits(rel, (REPO_ROOT / rel).read_text(encoding="utf-8")) == []
-    assert ALLOWED == ("src/evaluation/stage11_run.py",)
+    assert ALLOWED == ("src/evaluation/stage11_run.py", "src/evaluation/stage11_v2_run.py")
 
 
 def test_fraction_rule_constant():

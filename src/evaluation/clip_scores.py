@@ -19,6 +19,8 @@ Applicability is fixed here by model role (D41, D45), never read from the file:
 - "cnn_bundle_seed": raw_score + p (calibrated, F4 policy) + prediction (authentic / synthetic /
   uncertain).
 - "cnn_other_seed": raw_score only; p and prediction not applicable (D45: no risk policy).
+- "v2_bundle_seed" / "v2_other_seed" (the v2 model set, D48 (7)): exactly the applicability of
+  "cnn_bundle_seed" / "cnn_other_seed" (V2_APPLICABLE_COLUMNS; the v1 table is unchanged).
 A not-applicable column is the empty string in every row. The writer refuses a value there; the
 reader refuses a non-empty cell there and an empty cell in an applicable column.
 
@@ -63,11 +65,19 @@ APPLICABLE_COLUMNS = {
     role: tuple(c for c in COLUMNS if c not in ("p", "prediction") or c in optional)
     for role, optional in _OPTIONAL.items()
 }
-MODEL_ROLES = frozenset(APPLICABLE_COLUMNS)
-# Prediction values per role: D29 forced binary for the baseline; three-way for the bundle seed.
+# The v2 model set (D48 (7), PR V4b), added without changing the v1 table above: exactly the
+# applicability of the v1 CNN roles (D45: p and prediction for the bundle seed only).
+V2_APPLICABLE_COLUMNS = {
+    "v2_bundle_seed": APPLICABLE_COLUMNS["cnn_bundle_seed"],
+    "v2_other_seed": APPLICABLE_COLUMNS["cnn_other_seed"],
+}
+ROLE_COLUMNS = {**APPLICABLE_COLUMNS, **V2_APPLICABLE_COLUMNS}  # every role the writer and reader accept
+MODEL_ROLES = frozenset(ROLE_COLUMNS)
+# Prediction values per role: D29 forced binary for the baseline; three-way for the bundle seeds.
 PREDICTIONS = {
     "baseline": frozenset({AUTHENTIC, SYNTHETIC}),
     "cnn_bundle_seed": frozenset(DECISIONS),
+    "v2_bundle_seed": frozenset(DECISIONS),
 }
 SIDECAR_KEYS = frozenset({
     "evaluation_purpose", "run_id", "model_id", "model_role", "model_artifact_sha256",
@@ -181,7 +191,7 @@ def _check_rows(role: str, rows: list[tuple[str, ...]]) -> None:
     """The row rules shared by writer and reader; cells are already text."""
     if not rows:
         raise ValueError("a score file needs at least one clip")
-    applicable = APPLICABLE_COLUMNS[role]
+    applicable = ROLE_COLUMNS[role]
     seen: set[str] = set()
     for number, row in enumerate(rows, start=1):
         cells = dict(zip(COLUMNS, row))
@@ -230,7 +240,7 @@ def write_clip_scores(
     role = _check_choice("model_role", model_role, MODEL_ROLES)
     _check_hex("model_artifact_sha256", model_artifact_sha256, _HEX64)
     _check_hex("manifest_sha256", manifest_sha256, _HEX64)
-    applicable = APPLICABLE_COLUMNS[role]
+    applicable = ROLE_COLUMNS[role]
     for name, values in (("p", p), ("prediction", prediction)):
         if name not in applicable and values is not None:
             raise ValueError(f"{name} is not applicable for model_role {role!r} (D41, D45); pass None")
@@ -315,10 +325,10 @@ def _read_sidecar(json_path: Path) -> dict:
     _check_hex("csv_sha256", meta["csv_sha256"], _HEX64)
     if isinstance(meta["n_rows"], bool) or not isinstance(meta["n_rows"], int) or meta["n_rows"] < 1:
         raise ValueError(f"n_rows must be an int >= 1, got {meta['n_rows']!r}")
-    if meta["applicable_columns"] != list(APPLICABLE_COLUMNS[role]):
+    if meta["applicable_columns"] != list(ROLE_COLUMNS[role]):
         raise ValueError(
             f"applicable_columns {meta['applicable_columns']!r} differ from the fixed columns "
-            f"{list(APPLICABLE_COLUMNS[role])} of model_role {role!r} (D41, D45)"
+            f"{list(ROLE_COLUMNS[role])} of model_role {role!r} (D41, D45)"
         )
     if _sidecar_bytes(meta) != raw:
         raise ValueError(f"{json_path}: not in the writer's exact format (sorted keys, indent 2, LF)")
@@ -363,7 +373,7 @@ def read_clip_scores(out_dir: str | PathLike[str], model_id: str) -> ClipScores:
     _check_rows(role, rows)
     floats = {}
     for name in ("raw_score", "p"):
-        if name not in APPLICABLE_COLUMNS[role]:
+        if name not in ROLE_COLUMNS[role]:
             continue
         values = []
         for number, row in enumerate(rows, start=1):
@@ -387,5 +397,5 @@ def read_clip_scores(out_dir: str | PathLike[str], model_id: str) -> ClipScores:
         group_id=columns[2],
         raw_score=floats["raw_score"],
         p=floats.get("p"),
-        prediction=columns[5] if "prediction" in APPLICABLE_COLUMNS[role] else None,
+        prediction=columns[5] if "prediction" in ROLE_COLUMNS[role] else None,
     )
