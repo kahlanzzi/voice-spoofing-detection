@@ -66,8 +66,9 @@ the three directions as drawn. All other D55 clauses are unchanged (§8).
 ## 5. Colour finding and rule
 
 As chart fills, the red and amber verdict colours fail colour-blind separation: deuteranopia ΔE 3.2
-in light; for normal vision ΔE is about 11, below 15. [Team measurement for D55; not re-measured
-in this PR.]
+in light; for normal vision ΔE is about 11, below 15. Measured in the D55 design session with a
+colour-vision palette validator (OKLab ΔE × 100, simulated colour blindness): light deuteranopia
+3.2, normal vision 10.9; dark deuteranopia 6.3, normal vision 10.7. Not re-measured in this PR.
 
 **Rule:** a verdict colour is never the only signal. Every verdict colour comes with an icon and a
 label, and no chart encodes verdicts by fill colour alone. In Direction D the ruler's uncertain zone
@@ -104,7 +105,7 @@ item, project log). HANDOFF-v2 §6 keeps the chart specs for that later work.
 - The live screen follows D51 (and D52). Where the prototype's live screen differs (median instead of
   mean, unscored warm-up windows, no "no speech" cell, consent text), D51 and D52 win
   (HANDOFF-v2 §5.10).
-- D55 (2)–(4), including the usability test (3–5 participants, SUS ≥ 68).
+- D55 (2)–(4) unchanged, including the usability test.
 - **D63 dependency:** the ruler pin, `p` in the explanation and the window cells need `p`, the threshold,
   the band and per-window values, which only D63 (`README.md` l.69, Proposed) would add.
   This decision does not change the contract.
@@ -121,6 +122,9 @@ build PR against a fixed, hashed file.
   - The "Each 2-second window" card is hidden.
   - "Why this verdict" uses band wording without `p` and no "leans …" phrase.
   - Components take `p` and `windows` as optional props, so B3 does not wait for D63.
+  - Before D63, zone edges come from a display table keyed by the response's `policy_version` (one entry:
+    `risk-v1` → threshold 0.633, band 0.270 to 0.997); an unknown `policy_version` means no ruler, and the
+    verdict always comes from `prediction` (HANDOFF-v2 §5.7).
 - **Build PRs:**
   - **B1 tokens and fonts:** `tokens.css` for both themes from HANDOFF-v2 §3, `@fontsource/public-sans` and
     Plex Mono 400/600 (`npm audit`), `tokens.test.ts`, `colours.test.ts` and the contrast test,

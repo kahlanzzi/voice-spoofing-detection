@@ -7309,12 +7309,19 @@ module, training-format S build/verification, training-half resource cache and o
   threshold, band and per-window values come only with D63 (`docs/decisions/README.md:69`,
   Proposed). Until then results use the "Score not available" state (HANDOFF-v2 §5.9), so B3 does
   not wait for D63.
-- **Colour finding [doc, team measurement]:** red and amber verdict colours as chart fills:
-  deuteranopia ΔE 3.2 (light), normal vision ΔE about 11, below 15. Not re-measured here.
-- **Checks:** see the PR report (`pytest -q`, `pytest -q tests/governance`, the hash check, and a
-  prototype line check for every "l.N" citation).
+- **Colour finding [doc]:** red and amber verdict colours as chart fills. Measured in the D55 design
+  session with a colour-vision palette validator (OKLab ΔE × 100, simulated colour blindness): light
+  deuteranopia 3.2, normal vision 10.9; dark deuteranopia 6.3, normal vision 10.7. Not re-measured in
+  this PR.
+- **Checks [verified, local]:** `pytest -q tests/governance`: 89 passed. `pytest -q`: 2 failed,
+  1602 passed, 27 skipped. The 2 failures (`tests/evaluation/test_external_run.py`,
+  `ModuleNotFoundError: torch`) occur identically on `main` `1078419` (local Python 3.14.6 without
+  torch; CI uses 3.13 with CPU torch). Prototype sha256 and `cmp` equal. 211 "l.N" citations checked
+  against the prototype.
 - **AI assistance:** Claude Code (Claude Opus 5.5) read the repo and the prototype and drafted HANDOFF-v2, ADR 0017
-  and this entry from Iheb's brief. Team review is required before acceptance (D26).
+  and this entry from Iheb's brief. The Direction D prototype was built with Claude (claude.ai,
+  Claude Opus 5.5) from mockups A and B and the team's reference images; axe 4.14.0, contrast and
+  390 px checks were run in that session. Team review is required before acceptance (D26).
 - **Gate:** **WAITING FOR APPROVAL** (Donia, Malak, Khalil).
 
 ---

@@ -28,7 +28,9 @@ Contents: 0 Source and status · 1 Screens and states · 2 Layout and breakpoint
   threshold 0.633 (`docs/results/risk_policy_fit.md:58`, 0.6333…) and band 0.270 to 0.997 (±0.3636…,
   `docs/results/stage11_for_test.md:81`).
 - **Origin:** B's frame (rail, cards, checklist) with A's instruments (ruler, window cells, verdict,
-  explanation) (l.12–13). The element-by-element mapping is in ADR 0017 §3.
+  explanation) (l.12–13). The element-by-element mapping is in ADR 0017 §3. The Direction D
+  prototype was built with Claude (claude.ai, Claude Opus 5.5) from mockups A and B and the team's
+  reference images; axe 4.14.0, contrast and 390 px checks were run in that session.
 
 ## 1. Screens and states
 
@@ -64,7 +66,7 @@ Contents: 0 Source and status · 1 Screens and states · 2 Layout and breakpoint
 | ≤ 1100 px | Rail | Overview: 2 KPIs per row, charts stack | l.245 |
 | ≤ 900 px | The rail becomes a top bar; the nav becomes a horizontal tab row (order 3, scrolls if needed); the user box is hidden | Single column; the decision card is no longer sticky; content padding 16 px | l.247–258 |
 | ≤ 760 px | — | Verdict 32 px; card padding 16 px; ruler 98 px high with minor tick labels, zone labels and the cut label hidden, and the phone legend shown; window cells become one row per window with a 5 px left border; tiles stack; the History table becomes stacked rows with labels; fact lists stack | l.263–280 |
-| ≤ 600 px | 5 equal tabs, icon above label, 12 px text, 52 px high | Overview: the ring stacks above the chart; KPIs 2 per row | l.244, l.246, l.259–262 |
+| ≤ 600 px | equal-width tabs, one per existing route, icon above label, 12 px text, 52 px high | Overview: the ring stacks above the chart; KPIs 2 per row | l.244, l.246, l.259–262 |
 
 Kept from HANDOFF.md §3: no horizontal page scroll; never truncate verdicts, risk labels, request IDs
 or dates (IDs wrap, l.96, l.171); every target ≥ 44 × 44 px (l.51, l.58, l.60, l.106). The checks at
@@ -135,11 +137,11 @@ control, or add a stronger border token, as HANDOFF.md §4 did with `--line-stro
 ## 5. Components
 
 ### 5.1 Rail and phone tabs (l.43–61, l.285–299)
-- Brand block, a "Workspace" label, then 5 items, each with an icon and a label: Overview, Analyse,
-  Result, Live check, History. The theme button and the user box are in the footer.
+- Brand block, a "Workspace" label, then the nav items, each with an icon and a label; the prototype
+  shows Overview, Analyse, Result, Live check and History. The theme button and the user box are in the footer.
 - Current item: `aria-current="page"`, `--accent-soft` background, `--accent` text (l.53).
 - Changing screen moves focus to that screen's `h1` (l.447).
-- ≤ 900 px: tabs in a row; ≤ 600 px: 5 equal tabs (§2). The build keeps today's routes. The Result
+- ≤ 900 px: tabs in a row; ≤ 600 px: equal-width tabs, one per existing route (§2). The build keeps today's routes. The Result
   tab is the prototype's way to reach a result and is not a new route.
 
 ### 5.2 Card (l.70)
@@ -190,14 +192,21 @@ confidence on the main result changes HANDOFF.md §8; B3 updates HANDOFF.md in t
   the cut and the zone of this clip (l.480–482, l.493).
 - **Numbers come from the API, never from the browser.** The prototype computes the verdict from `p`
   with `p > 0.997` → synthetic (l.385). The frozen policy treats `p ≥ 0.997…` as synthetic (band
-  `[t − b, t + b)`, `stage11_for_test.md:81`). The build draws zones from the response's threshold
-  and band (D63) and takes the verdict from `prediction`. It never derives a label from `p`.
+  `[t − b, t + b)`, `stage11_for_test.md:81`). The build takes the verdict from `prediction` and
+  never derives a label from `p`.
+- **Zone edges:** with D63, from the response's threshold and band. Before D63 (§5.9), from a
+  display table keyed by the response's `policy_version`, with one entry: `risk-v1` → threshold
+  0.633, band 0.270 to 0.997 (`docs/results/risk_policy_fit.md:58`,
+  `docs/results/stage11_for_test.md:81`). If `policy_version` is not in the table, the ruler is not
+  shown; the verdict, tiles, checklist and notice still are. The verdict always comes from `prediction`.
 
 ### 5.8 Window cells and their table (l.137–145, l.511–514, l.539–541)
 - One cell per 2 s window, in order: the time range, the verdict with its icon, and `p` in mono. A
   5 px top border in the verdict colour (a left border at ≤ 760 px). Grid of cells at least 112 px wide; one per row at ≤ 760 px.
-- States: scored (authentic / uncertain / synthetic); warming up (dashed border, warm icon, "not scored",
-  l.141, l.513); new in live (accent outline, l.144).
+- States: scored (authentic / uncertain / synthetic); no speech (neutral, dashed border, icon +
+  "No speech", no `p` shown; D52 (3)); new in live (accent outline, l.144).
+- The prototype's "warming up / not scored" cell (l.141, l.513) is not built: under D52 (6) warm-up
+  windows are scored; only the running verdict waits for 3 kept windows (§5.10).
 - The cells are `aria-hidden`. A visually hidden table carries the same rows (Window, p, Verdict)
   (l.541). In live, a visually hidden list gets one item per window (l.366, l.567).
 - Window labels come from the API (D52 (4)), not from `p` in the browser (§5.7).
@@ -205,7 +214,8 @@ confidence on the main result changes HANDOFF.md §8; B3 updates HANDOFF.md in t
 ### 5.9 Score not available (not in the prototype; specified here)
 Used when the response has no `p` or no per-window values: before D63 is approved, if D63 is rejected,
 and on the mock analyzer.
-- **Ruler:** the three zones and the tick labels as in §5.7. The zone of the verdict in `prediction`
+- **Ruler:** the three zones and the tick labels as in §5.7, with zone edges from the display table
+  keyed by `policy_version` (§5.7 "Zone edges"; an unknown `policy_version` means no ruler). The zone of the verdict in `prediction`
   is outlined (2 px `--ink` outline, not a fill change). No pin. The text "Exact score not shown" is
   in place of the pin, and the hidden caption reads "Exact score not shown. This clip is in the
   <verdict> zone.".
