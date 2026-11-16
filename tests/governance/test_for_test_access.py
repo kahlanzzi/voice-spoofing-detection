@@ -3,7 +3,8 @@
 The FoR test split is evaluated once (Stage 11, D31) and again only under the D41 purpose
 stage14_robustness, through code reviewed for that purpose. This test scans src/, notebooks/ and
 configs/ for code that asks for the test split, so a stray loader, cache build or notebook cell is
-caught in CI. ALLOWED holds exactly the Stage 11 runner, added in its own reviewed PR.
+caught in CI. ALLOWED holds exactly the Stage 11 runner and the Stage 11 runner for the v2 model set
+(D48 (7), PR V4b), each added in its own reviewed PR.
 ALLOWED_LINES exempts one rule on one line that is not data access; an entry names the file, the
 exact stripped line text, the rule and the reason. Any other rule on that line is still reported,
 and any edit to the line text ends the exemption.
@@ -62,8 +63,12 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCANNED = ("src/", "notebooks/", "configs/")
 # Prefixes (directories end with "/") and exact files allowed to request the FoR test split.
-# Exactly the Stage 11 runner, added in its own reviewed PR (D41, D46).
-ALLOWED: tuple[str, ...] = ("src/evaluation/stage11_run.py",)
+# Exactly the Stage 11 runner, added in its own reviewed PR (D41, D46), and the Stage 11 runner for
+# the v2 model set (D48 (7): the separate v2 stage11_test claim), added in PR V4b.
+ALLOWED: tuple[str, ...] = (
+    "src/evaluation/stage11_run.py",
+    "src/evaluation/stage11_v2_run.py",  # D48 (7), PR V4b; one file, not a folder
+)
 # (file, exact stripped line text, rule, reason): one rule on one line that is not data access;
 # any other rule on that line is still reported.
 ALLOWED_LINES: tuple[tuple[str, str, str, str], ...] = (
@@ -281,8 +286,9 @@ def test_no_for_test_split_access_outside_allowed_files():
 
 
 def test_allow_list_is_pinned():
-    # Changing it is a reviewed step (the Stage 11 runner PR added its one exact file), never a side effect.
-    assert ALLOWED == ("src/evaluation/stage11_run.py",)
+    # Changing it is a reviewed step (the Stage 11 runner PR and PR V4b each added one exact file),
+    # never a side effect.
+    assert ALLOWED == ("src/evaluation/stage11_run.py", "src/evaluation/stage11_v2_run.py")
 
 
 PLANTED = {
