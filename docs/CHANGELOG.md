@@ -9,6 +9,9 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+
+- D64 V1c recipe re-freeze tooling: exact requirements-version guards and a fail-closed old/new
+  comparison that preserves both recipes and reports every changed waveform hash (Entry 190).
 - Track V V1c implementation: pure frozen selection-recipe functions, a hash-verifying selection-set builder, a deterministic training-half MUSAN/RIRS resource cache, exact V1b condition names and once-per-instance successful FFmpeg pin verification; synthetic/full-suite validation is complete, while the real Colab T4 materialization and cache evidence remain pending (Entry 185).
 - Model v2 risk-policy run, code only (Track V, PR V4a, Entry 188; Protocol §6 unchanged, D45, D49): `src/tuning/v2_risk_run.py` reads the winner and bundle seed from the committed `docs/audit_evidence/v2_search/` reports, verifies the checkpoint hash, architecture, seed and provenance (profile, F2, S), reproduces M exactly on CPU with `train_v2`'s functions, scores clean val-B (Stage 8 log-Mel cache for `cnn-aug`/`crnn`; injected F3 waveform source for `aasist`, refused without one) and fits with `fit_risk_policy`; Stage 10 output files. Synthetic tests; no real run. `risk_run.py`, `src/risk/`, `train_v2.py`, `v2_search.py`, `configs/` unchanged.
 - D64 approved (Track V, Entry 189, PR #140): re-freeze the V1b selection-set recipe under the declared environment (SciPy 1.18.1 pin; the frozen recipe was generated with Colab's preinstalled 1.16.3), whole recipe regenerated once on T4 2026.10, only hashes may change, library-pin guard in the builders; docs only; the recipe itself is regenerated in a later PR.

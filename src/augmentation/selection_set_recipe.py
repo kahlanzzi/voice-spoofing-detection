@@ -24,6 +24,11 @@ CONDITIONS = (
     "opus_16",
     "narrowband_mulaw",
 )
+RECIPE_COLUMNS = (
+    "source_path", "label", "subgroup", "group", "source_file_sha256", "condition",
+    "condition_seed", "resource_path", "resource_file_sha256", "resource_channel",
+    "parameters_json", "sample_rate_hz", "samples", "waveform_float32_sha256",
+)
 
 
 def waveform_sha256(waveform: np.ndarray) -> str:

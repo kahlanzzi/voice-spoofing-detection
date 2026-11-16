@@ -17,10 +17,12 @@ from src.augmentation.codec import FFmpegCodecBackend
 from src.augmentation.config import load_augmentation_config
 from src.augmentation.selection_set_recipe import (
     CONDITIONS,
+    RECIPE_COLUMNS,
     apply_condition,
     derived_seed,
     waveform_sha256,
 )
+from src.augmentation.version_guard import require_versions
 from src.features.logmel_cache import load_logmel_cache
 from src.features.raw_train_cache import check_outside_repo
 from src.preprocessing.features import log_mel_spectrogram
@@ -42,13 +44,6 @@ STAGE8_VAL_A_NPZ_SHA256 = "4502eea2f77cfd83d7e2b1d777e392fa460a13e805a936faa2788
 COLAB_RUNTIME_VERSION = "2026.10"
 PYTHON_VERSION = "3.13.16"
 TORCH_VERSION = "2.11.0+cu130"
-RECIPE_COLUMNS = (
-    "source_path", "label", "subgroup", "group", "source_file_sha256", "condition",
-    "condition_seed", "resource_path", "resource_file_sha256", "resource_channel",
-    "parameters_json", "sample_rate_hz", "samples", "waveform_float32_sha256",
-)
-
-
 def _records(path: Path, half: str) -> list[dict[str, Any]]:
     frame = pd.read_csv(path, dtype={"resource_channel": "string"}, keep_default_na=False)
     required = {"rel_path", "sha256", "half"}
@@ -240,6 +235,7 @@ def run(
     colab_runtime_version: str,
 ) -> str:
     """Official clean-worktree V1c build; return the selection-set manifest SHA-256."""
+    require_versions()
     version = code_version()
     check_outside_repo(Path(out), "selection set")
     repo = Path(__file__).resolve().parents[2]
