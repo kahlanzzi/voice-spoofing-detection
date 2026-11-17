@@ -7609,7 +7609,7 @@ module, training-format S build/verification, training-half resource cache and o
   no implementation, database-migration, test-result or deployment claim.
 - **Verification:** `SRS_v4.1.md` SHA-256
   `963b011da983e0adc194548cbc2ad64144e2a602cdc73b54aab2fcad34d76620`; generated 18-page PDF
-  SHA-256 `8601ee2b07e113f05b60f4bf02402689918aacfb4a1fb230cdd01c1269b0f1e4`.
+  SHA-256 `98d34a1f47cb9b0410d2585f395b4541789df0cd36e39e669df822449d055ece`.
   All pages were rendered at 120 dpi and inspected; PDF text extraction found all 11 major sections
   and the D63/D65 terms. `git diff --check` passed; `pytest -q tests/governance` reported 89 passed.
   No code, configuration, data, audio, checkpoint or generated model evidence changed.
