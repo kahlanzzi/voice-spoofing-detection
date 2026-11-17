@@ -1,6 +1,6 @@
 # 0017. Analyst interface: Direction D (mix of A and B) as the D55 design
 
-- **Status:** Proposed. Team choice 2026-11-16. Awaiting PR approval.
+- **Status:** Approved 2026-11-17 (Donia and Khalil by review on PR #143, Malak by comment on PR #143; recorded in Entry 193)
 - **Date:** 2026-11-16
 - **Register:** D65 (refines D55 (1))
 - **Author:** Iheb Zemzemi
