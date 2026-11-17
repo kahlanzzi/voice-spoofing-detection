@@ -13,7 +13,8 @@ WORKDIR /app
 COPY requirements-api.txt ./
 RUN pip install -r requirements-api.txt
 
-# Non-root user. /app/var holds the SQLite file (database_path: var/api.sqlite) on a named volume;
+# Non-root user. The store is PostgreSQL (the db service, D53 (4)). /app/var holds only the old SQLite
+# file on the vsd-var volume, mounted read-only for the one-time import (python -m api.migrate_sqlite);
 # the volume takes this folder's owner when Docker first creates it.
 RUN useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin app \
     && mkdir -p /app/var && chown app:app /app/var
