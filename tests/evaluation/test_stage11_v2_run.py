@@ -29,6 +29,7 @@ import src.evaluation.stage11_v2_run as m  # noqa: E402
 import src.tuning.risk_run as stage10  # noqa: E402
 import src.tuning.v2_risk_run as vr  # noqa: E402
 import src.tuning.v2_search as vs  # noqa: E402
+import src.tuning.v2_val_b_source as vbs  # noqa: E402
 from src.evaluation.clip_scores import read_clip_scores  # noqa: E402
 from src.evaluation.metrics import roc_auc  # noqa: E402
 from src.evaluation.run_registry import COMPLETED, STARTED, RunRegistry  # noqa: E402
@@ -889,3 +890,48 @@ def test_cli_dispatches_without_a_split_argument(monkeypatch):
         with pytest.raises(SystemExit):
             m.main(argv)
     assert not hasattr(m, "run")
+
+
+# --- PR V4c: risk-v2 for aasist fitted with the F3 waveform val-B source --------------------------
+
+def test_rehearse_passes_for_aasist_fitted_with_the_val_b_source(world, env, tmp_path, monkeypatch):
+    # End to end: v2_risk_run.run for the aasist fake with val_b_waveform_source (not the test's
+    # hand-built source), then rehearse against that risk-v2 run: the val-B content-hash known answer
+    # and the score / p bytes against its own val_b_scores.npz.
+    state = env("aasist")  # patches stage11_v2_run's reads (spy), evidence and environment
+    a = world["arch"]["aasist"]
+    risk_dir = tmp_path / "v2_risk"
+    source = vbs.val_b_waveform_source(world["root"], world["manifest_path"], PROFILE_PATH)
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(vr, "code_version", lambda: {"git_commit": COMMIT, "git_dirty": False})
+        mp.setattr(vr, "load_f2_manifest", _manifest_reader)
+        mp.setattr(vbs, "load_f2_manifest", _manifest_reader)
+        mp.setattr(stage10, "F2_MANIFEST_SHA256", world["f2"])
+        mp.setattr(vr, "load_selection_set", load_s)
+        mp.setattr(vr, "V2_SEARCH_EVIDENCE", a["search"])
+        fitted = vr.run(a["runs"] / vs.run_dir_name("aasist", a["bundle_seed"]) / vs.CHECKPOINT_DIR, world["s_dir"],
+                        PROFILE_PATH, world["v2"], world["manifest_path"], risk_dir, version="risk-v2-test",
+                        val_b_waveforms=source)
+    val_b = sorted(world["manifest"].loc[world["manifest"].split == "val-B", "path"])
+    assert state["reads"] == val_b * 2  # the source: val-B only, two passes
+    scores = tmp_path / "scores" / "val_b_scores.npz"
+    scores.parent.mkdir()
+    shutil.move(str(risk_dir / "val_b_scores.npz"), str(scores))
+    # Same input and scores as the fixture's hand-built source (the fixture's risk-v2 run).
+    fixture = json.loads((a["risk"] / "run_report.json").read_text(encoding="utf-8"))
+    assert fitted["val_b_input"] == fixture["val_b_input"]
+    assert scores.read_bytes() == a["risk_scores"].read_bytes()
+
+    monkeypatch.setattr(m, "V2_RISK_EVIDENCE", risk_dir)
+    state["reads"].clear()
+    report = _rehearse(world, state, tmp_path / "out", risk_scores=scores)
+    assert (report["passed"], report["failed_check"], report["error"]) == (True, None, None)
+    known = report["known_answers"]
+    content = fitted["val_b_input"]["content_sha256"]
+    assert known["val-B.waveform.content_sha256"] == {"expected": content, "actual": content, "passed": True}
+    assert known["risk_v2.val_b_scores_sha256"]["actual"] == fitted["val_b_scores_sha256"] == sha(scores)
+    bundle_id = m.model_ids_v2("aasist")[a["bundle_seed"]]
+    for key in (f"val-B.{bundle_id}.raw_score_bytes", f"val-B.{bundle_id}.p_bytes", "val-B.risk_v2.paths",
+                "val-B.risk_v2.labels"):
+        assert known[key]["passed"] is True, key
+    assert _test_reads(state) == []
