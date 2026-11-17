@@ -424,6 +424,8 @@ on seeded untrained `crnn` and `aasist` checkpoints), then `stage11_v2_run` clai
 
 `tests/bundle/test_f5_evidence.py` (no torch): `test_f5_does_not_import_research_code` (`ast`, no
 `src.evaluation` / `src.tuning` import anywhere in `f5.py`), `test_f5_module_level_is_torch_free`,
+`test_registry_parser_agrees_with_run_registry_on_the_real_file` (`f5._registry_records` on the
+committed `run_registry.jsonl` gives the same records, as dicts, as `RunRegistry(path).records()`),
 `test_real_repository_refuses_f5_before_the_v2_evidence` (skipped once the v2 evidence exists).
 
 `tests/preprocessing/test_profile.py` adds `test_profile_fingerprint_is_pinned_and_parse_profile_agrees`

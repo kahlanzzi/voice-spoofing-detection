@@ -37,6 +37,19 @@ def test_f5_module_level_is_torch_free():
         ("src.models", "src.bundle.model_loader"))] == []
 
 
+def test_registry_parser_agrees_with_run_registry_on_the_real_file():
+    # f5 parses the registry without src.evaluation; on the real committed file it must give the
+    # same records as the reviewed RunRegistry (the test may import it; f5 may not).
+    from dataclasses import asdict
+
+    from src.evaluation.run_registry import RunRegistry
+
+    path = ROOT / f5.RUN_REGISTRY
+    parsed = f5._registry_records(path.read_bytes())
+    expected = [{**asdict(r), "model_set": list(r.model_set)} for r in RunRegistry(path).records()]
+    assert parsed == expected and len(parsed) >= 2
+
+
 @pytest.mark.skipif((ROOT / f5.SEARCH_REPORT).exists(), reason="v2 evidence committed: pin its values instead")
 def test_real_repository_refuses_f5_before_the_v2_evidence():
     with pytest.raises(ValueError, match="v2_search/run_report.json is missing"):

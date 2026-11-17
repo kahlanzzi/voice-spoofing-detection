@@ -7366,8 +7366,16 @@ module, training-format S build/verification, training-half resource cache and o
   risk-v2 from `v2_risk_run.run`), then runs `stage11_v2_run` claim → score with a `RunRegistry`;
   `crnn` and `aasist` round trips incl. `verify_f5_artifacts(..., bundle_verifier=load_bundle,
   bundle_loader=load_bundle_model)`; every refusal leaves nothing written. A manual mutation (registry
-  check disabled) made 3 tests fail. `tests/bundle/test_f5_evidence.py` (3, no torch): layering and
-  "the real repository refuses F5 before the v2 evidence" (skipped once it exists).
+  check disabled) made 3 tests fail. `tests/bundle/test_f5_evidence.py` (4, no torch): layering,
+  `f5._registry_records` equal to `RunRegistry(path).records()` (as dicts) on the real committed
+  `run_registry.jsonl` (added at Donia's review), and "the real repository refuses F5 before the v2
+  evidence" (skipped once it exists).
+- **Review (Donia, 2026-11-17):** approved with the registry-parser test above. Q1: the F5 build
+  runs on Colab (checkpoint on Drive, D15 runtime). Q2: the reuse of the Stage 11 v2 `world` fixture
+  is accepted. Q3: the freeze PR replaces the "refuses before the v2 evidence" test with pinned real
+  values; **note for that PR:** the record's `evidence_sha256` for `run_registry.jsonl` is the
+  build-time value (the registry grows with later claims, e.g. Stage 13/14), so it must not be pinned
+  against a later registry.
 - **Checks [verified, local Windows, Python 3.14 venv, torch 2.11.0+cpu]:** `REQUIRE_TORCH_TESTS=1
   pytest -q`: 2216 passed, 2 skipped (9:09); `pytest -q tests/governance`: 89 passed (after the docs
   edits). `tests/bundle/test_f4.py` and `test_f4_evidence.py` pass unchanged. CI on 3.13 not yet run
