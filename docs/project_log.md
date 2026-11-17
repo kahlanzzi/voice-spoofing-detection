@@ -7520,6 +7520,22 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
+### Entry 198 — Stage 13 scratch runtime and Drive rehearsal (2026-11-17)
+
+- **Owner:** Khalil Dridi.
+- **D58 rehearsal:** The report checksum verified. After installing the dependencies from the
+  report's recorded commit, the Colab T4 scratch runtime reported an exact environment match.
+- **D35 rehearsal:** A dummy file written to personal My Drive survived a flush and a separate
+  Colab runtime. The write and read-back SHA-256 matched
+  (70520a98873a6685ff395b6bf6458bf1f72a4accf04dce864d42a974e3d82915).
+  The shared project folder was read-only for Khalil. The approved storage target remains
+  unverified. The official registry and external audio were untouched.
+- **AI assistance:** Codex ran the scratch checks and drafted this entry. Human review is pending.
+- **Gate:** **WAITING FOR APPROVAL.** Verify the applicable D48 model set, recheck D58 in the
+  run session, and verify the approved Drive target. All four review before the claim.
+
+---
+
 ### Entry 199 — Track V PR V4c: F3 waveform val-B source for aasist (risk-v2), code only (2026-11-17)
 
 - **Owner:** Donia Mabrouk (Part C). Branch `feat/stageV4c-aasist-val-b-source` from `main`
@@ -7575,7 +7591,6 @@ module, training-format S build/verification, training-half resource cache and o
   team review required before acceptance (D26).
 - **Gate:** **WAITING FOR APPROVAL.**
 
-
 ---
 
 ## Open items
@@ -7626,7 +7641,11 @@ module, training-format S build/verification, training-half resource cache and o
   accepted, set D33–D35 to Approved (Entry 58). (PR #29, 2026-10-19)
 
 **Khalil: Stage 13 preparation**
-- [ ] Review the optional Torch guard for the two synthetic runner tests (Entry 196).
+- [x] Review and merge the optional Torch guard for the two synthetic runner tests (Entry 196; PR #147).
+- [x] Match the D58 report hash and recorded T4 environment in a scratch session (Entry 198).
+- [x] Verify a dummy-file write and fresh-session read-back in personal My Drive (Entry 198).
+- [ ] Confirm the approved registry location and repeat the check in a writable scratch
+  subfolder there. Recheck D58 in the official run session (Entry 198).
 - [x] Implement the D35 per-window frozen preprocessing integration test (Entry 55); synthetic test verifies each complete window is independently preprocessed and the remainder is dropped (Entry 175).
 - [x] Add stored-score integrity checks, D33 eight-speaker summaries, D34 CNN file means and the D36 paired EER bootstrap (Entry 176; synthetic rows only).
 - [x] Add D34 source-speaker-clustered file-level intervals and strict JSON report export (Entry 177; synthetic rows only).
@@ -8021,7 +8040,7 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
-## Current status — updated 2026-11-17 (Entry 199)
+## Current status — updated 2026-11-17 (Entries 198, 199)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -8052,11 +8071,12 @@ that run, before the Fri 4 Dec 23:59 cut-off. See the open items above and [Exec
 **Khalil / Stage 13 — preparation merged; external run not ready.** Runner preparation from Entries
 175–179 merged in PR #133. The synthetic Stage 13 suite reported 33 passed; PR #134 subsequently
 reported the full Torch-enabled suite as 2,002 passed and 2 skipped, plus 88 governance tests, with
-the required checks, e2e and web checks green. The optional Torch guard for two local synthetic
-tests awaits review (Entry 196). The runner remains preparation only. Before the
-single Stage 13 run, verify the applicable D48 model set (F5 before the cutoff, or the specified
-v1-plus-baseline fallback after it), the exact-runtime D58 rehearsal, and durable Drive claim
-persistence/read-back; complete any follow-up loader integration, review and the Stage 13 brief.
+the required checks, e2e and web checks green. The optional Torch guard merged in PR #147
+(Entry 196). The D58 scratch runtime matched the rehearsal, and a personal Drive write passed
+a fresh-runtime read-back (Entry 198). The approved Drive target still needs its own check.
+Before the single Stage 13 run, verify the applicable D48 model set (F5 verified by the cutoff,
+or v1 plus baseline after it) and recheck D58 in the run session. Complete any follow-up loader
+integration and all-four review before the run. The Stage 13 brief follows the run.
 No DEEP-VOICE audio was opened or scored, and no external-run claim was created during preparation.
 
 **Application status.** The React Docker MVP still displays mock analyzer results. F4-to-API
