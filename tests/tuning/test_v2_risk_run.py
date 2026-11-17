@@ -13,6 +13,7 @@ import hashlib
 import io
 import json
 import math
+import re
 from pathlib import Path
 
 import numpy as np
@@ -25,6 +26,7 @@ torch = require_torch()
 
 import src.tuning.risk_run as stage10  # noqa: E402
 import src.tuning.v2_risk_run as vr  # noqa: E402
+import src.tuning.v2_val_b_source as vbs  # noqa: E402
 from src.evaluation.metrics import roc_auc  # noqa: E402
 from src.features.logmel_cache import build_logmel_cache, load_logmel_cache  # noqa: E402
 from src.models.v2_checkpoint import (  # noqa: E402
@@ -278,7 +280,8 @@ def test_aasist_round_trip_with_waveform_source(patched, tmp_path):
 
 def test_aasist_without_waveform_source_is_refused(patched, tmp_path):
     checkpoint = _good_evidence(patched, "aasist")
-    with pytest.raises(ValueError, match="F3 waveform val-B source is required and none exists yet"):
+    with pytest.raises(ValueError, match=r"F3 waveform val-B source is required \(build it with "
+                                         r"src\.tuning\.v2_val_b_source\.val_b_waveform_source; CLI: --root\)"):
         _run(patched, tmp_path / "out", checkpoint)  # the CLI path: only a log-Mel cache_dir
     with pytest.raises(ValueError, match="F3 waveform val-B source is required"):
         vr.run(checkpoint, patched["s_dir"], PROFILE_PATH, patched["v2"], patched["manifest_path"],
@@ -442,6 +445,8 @@ def test_cli_parses_required_arguments(monkeypatch, tmp_path, capsys):
         return {"ok": 1}
 
     monkeypatch.setattr(vr, "run", fake_run)
+    # main reads the winner first (V4c): a log-Mel winner's evidence, so --cache-dir is required.
+    monkeypatch.setattr(vr, "V2_SEARCH_EVIDENCE", _evidence(tmp_path / "ev", "crnn", 0, {"crnn_seed0": "0" * 64}))
     vr.main(["--checkpoint", "k", "--selection-set", "s", "--profile", "p", "--config", "g",
              "--manifest", "m", "--cache-dir", "c", "--out", str(tmp_path / "o"),
              "--version", "risk-v2"])
@@ -449,3 +454,61 @@ def test_cli_parses_required_arguments(monkeypatch, tmp_path, capsys):
     assert seen["kw"]["version"] == "risk-v2" and str(seen["kw"]["cache_dir"]) == "c"
     assert set(seen["kw"]) == {"version", "cache_dir"}
     assert json.loads(capsys.readouterr().out) == {"ok": 1}
+
+
+_CLI = ["--checkpoint", "k", "--selection-set", "s", "--profile", "p", "--config", "g", "--manifest", "m",
+        "--version", "risk-v2"]
+
+
+def _cli_world(monkeypatch, tmp_path, winner):
+    """Evidence naming winner; run and the source builder replaced by recorders."""
+    seen = {}
+
+    def fake_run(*args, **kw):
+        seen["args"], seen["kw"] = args, kw
+        return {"ok": 1}
+
+    def fake_builder(root, manifest_path, profile_path):
+        seen["builder"] = (root, manifest_path, profile_path)
+        return "the-source"
+
+    monkeypatch.setattr(vr, "run", fake_run)
+    monkeypatch.setattr(vbs, "val_b_waveform_source", fake_builder)
+    monkeypatch.setattr(vr, "V2_SEARCH_EVIDENCE",
+                        _evidence(tmp_path / "ev", winner, 0, {f"{winner}_seed0": "0" * 64}))
+    return seen
+
+
+def test_cli_aasist_builds_the_val_b_source_from_root(monkeypatch, tmp_path, capsys):
+    seen = _cli_world(monkeypatch, tmp_path, "aasist")
+    vr.main([*_CLI, "--root", "r", "--out", str(tmp_path / "o")])
+    assert seen["builder"] == (Path("r"), Path("m"), Path("p"))
+    assert seen["kw"] == {"version": "risk-v2", "val_b_waveforms": "the-source"}  # no cache_dir
+    assert [str(a) for a in seen["args"]] == ["k", "s", "p", "g", "m", str(tmp_path / "o")]
+    assert json.loads(capsys.readouterr().out) == {"ok": 1}
+
+
+@pytest.mark.parametrize("winner, extra, message", [
+    ("aasist", [], r"--root \(the FoR root\) is required"),
+    ("aasist", ["--root", "r", "--cache-dir", "c"], "--cache-dir must not be given"),
+    ("aasist", ["--cache-dir", "c"], r"--root \(the FoR root\) is required"),
+    ("crnn", [], r"--cache-dir \(Stage 8 val-B log-Mel cache\) is required"),
+    ("cnn-aug", ["--root", "r"], "--cache-dir .* is required"),
+    ("crnn", ["--cache-dir", "c", "--root", "r"], "--root must not be given"),
+    ("cnn-aug", ["--cache-dir", "c", "--root", "r"], "--root must not be given"),
+])
+def test_cli_input_arguments_follow_the_winner(monkeypatch, tmp_path, capsys, winner, extra, message):
+    seen = _cli_world(monkeypatch, tmp_path, winner)
+    with pytest.raises(SystemExit) as info:
+        vr.main([*_CLI, *extra, "--out", str(tmp_path / "o")])
+    assert info.value.code == 2
+    assert re.search(message, capsys.readouterr().err)
+    assert seen == {}  # refused before run is called or the source is built
+
+
+def test_cli_reads_the_winner_before_argument_checks(monkeypatch, tmp_path):
+    seen = _cli_world(monkeypatch, tmp_path, "aasist")
+    monkeypatch.setattr(vr, "V2_SEARCH_EVIDENCE", tmp_path / "nowhere")
+    with pytest.raises(ValueError, match="v2 search evidence .* is missing"):
+        vr.main([*_CLI, "--out", str(tmp_path / "o")])
+    assert seen == {}

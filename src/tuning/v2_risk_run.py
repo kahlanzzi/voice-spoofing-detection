@@ -12,8 +12,9 @@ The v2 counterpart of src/tuning/risk_run.py (Stage 10), which stays v1-only. St
    checkpoint's selection_m exactly; there is no tolerance (that would be a team decision).
 4. val-B scored on CPU by architecture: cnn-aug / crnn from the Stage 8 val-B log-Mel cache
    standardized with the checkpoint's mean / std; aasist from an F3 waveform val-B source passed in
-   as a function (none exists yet: it is built only if aasist wins, Execution Plan v3.0 §9 V4).
-   Both through train_v2's raw-logit path; two passes must give equal scores.
+   as a function (src/tuning/v2_val_b_source.py, PR V4c: val-B through F3 exactly as
+   stage11_v2_run reads it; the CLI builds it from --root). Both through train_v2's raw-logit path;
+   two passes must give equal scores.
 5. fit_risk_policy unchanged; the refit must be byte-identical. Same files and formats as Stage 10:
    risk_policy.json, val_b_scores.npz, diagnostics_report.json, run_report.json.
 
@@ -66,7 +67,7 @@ V2_SEARCH_EVIDENCE = REPO / "docs" / "audit_evidence" / "v2_search"  # committed
 WAVEFORM_SAMPLES = INPUT_SHAPES["waveform"][0]
 
 # An F3 waveform val-B source for aasist: () -> (waveforms float32 (n, 32000), labels int8 (n,),
-# paths unicode (n,), sorted and unique). Built only if aasist wins (Execution Plan v3.0 §9 V4).
+# paths unicode (n,), sorted and unique). Built by src/tuning/v2_val_b_source.py (PR V4c).
 ValBWaveformSource = Callable[[], tuple[np.ndarray, np.ndarray, np.ndarray]]
 
 
@@ -157,8 +158,8 @@ def run(checkpoint_dir, selection_set_dir, profile_path, v2_config_path, manifes
     if input_kind == "waveform":
         if val_b_waveforms is None:
             raise ValueError(f"{winner} takes the F3 waveform: an F3 waveform val-B source is "
-                             f"required and none exists yet (it is built only if {winner} wins, "
-                             f"Execution Plan v3.0 §9 V4)")
+                             f"required (build it with src.tuning.v2_val_b_source."
+                             f"val_b_waveform_source; CLI: --root)")
         if cache_dir is not None:
             raise ValueError(f"{winner} takes the F3 waveform: cache_dir (the val-B log-Mel cache) "
                              f"must not be given")
@@ -283,13 +284,32 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--config", required=True, type=Path,
                         help="configs/v2_candidates.yaml (CPU batch size)")
     parser.add_argument("--manifest", required=True, type=Path, help="Approved F2 FoR manifest")
-    parser.add_argument("--cache-dir", required=True, type=Path,
-                        help="Folder holding the Stage 8 val-B log-Mel cache (cnn-aug, crnn)")
+    parser.add_argument("--cache-dir", type=Path, default=None,
+                        help="cnn-aug, crnn only (required): folder holding the Stage 8 val-B log-Mel cache")
+    parser.add_argument("--root", type=Path, default=None,
+                        help="aasist only (required): local extracted FoR root; val-B is read through F3")
     parser.add_argument("--out", required=True, type=Path, help="New output folder")
     parser.add_argument("--version", required=True, help="Risk policy version (expected risk-v2)")
     args = parser.parse_args(argv)
+    # The winner decides which input argument is required (run's own rule); read before any check.
+    winner = bundle_checkpoint(V2_SEARCH_EVIDENCE)[0]
+    if INPUTS[winner] == "waveform":
+        if args.root is None:
+            parser.error(f"{winner} takes the F3 waveform: --root (the FoR root) is required")
+        if args.cache_dir is not None:
+            parser.error(f"{winner} takes the F3 waveform: --cache-dir must not be given")
+        # Imported here: v2_val_b_source imports stage11_v2_run, which imports this module.
+        from src.tuning.v2_val_b_source import val_b_waveform_source
+
+        source = {"val_b_waveforms": val_b_waveform_source(args.root, args.manifest, args.profile)}
+    else:
+        if args.cache_dir is None:
+            parser.error(f"{winner} takes the log-Mel: --cache-dir (Stage 8 val-B log-Mel cache) is required")
+        if args.root is not None:
+            parser.error(f"{winner} takes the log-Mel: --root must not be given")
+        source = {"cache_dir": args.cache_dir}
     report = run(args.checkpoint, args.selection_set, args.profile, args.config, args.manifest,
-                 args.out, version=args.version, cache_dir=args.cache_dir)
+                 args.out, version=args.version, **source)
     print(_json_text(report), end="")
 
 
