@@ -7387,6 +7387,26 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
+### Entry 193 — D65 approved; approvals recorded after PR #143 (2026-11-17)
+
+- **Owner:** Iheb Zemzemi (Part E). Branch `docs/stage18-d65-approval-record` from `main` `b560dc1`.
+  Entry number: 193 is the next free one on `main` (192 is the last).
+- **What [verified from `gh pr view 143`]:** PR #143 merged on 2026-11-16 (21:46 UTC) with Donia's
+  review only (branch protection requires one approval), so D65 stayed Proposed, which was correct.
+- **Approvals [verified from `gh pr view 143`]:** Donia (review on PR #143, 2026-11-16), Khalil
+  (review on PR #143, 2026-11-16, after the merge), Malak (comment on PR #143, 2026-11-17,
+  https://github.com/kahlanzzi/voice-spoofing-detection/pull/143#issuecomment-6946655895).
+- **Process:** decision PRs merge only after every approval and the approval commit are on the
+  branch; GitHub's single required approval does not enforce that.
+- **Files:** `docs/decisions/README.md` (D65 row and ADR index row 0017),
+  `docs/decisions/0017-ui-direction-d.md` (Status line only), `docs/CHANGELOG.md` (D65 line),
+  this entry, Open items and Current status. Entry 191 is merged and not edited.
+- **AI assistance:** Claude Code (Claude Opus 5.5) collected the PR facts and wrote this record from
+  Iheb's brief; team review required before acceptance (D26).
+- **Gate:** **APPROVED.** Next: D55 build PR B1 (tokens and fonts).
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -7787,7 +7807,7 @@ module, training-format S build/verification, training-half resource cache and o
 - [x] Non-text contrast below 3:1 (light `--line-strong`/`--surface` 1.86, dark 1.99, light `--unc-mark` and `--warn-mark` 2.87; Entry 128): fixed for WCAG 1.4.11, no exceptions left (merged in PR #92, `c8c047e`; Entry 131).
 - [ ] `npm audit`: 12 moderate (GHSA-g3hv-75wg-m249, `minimatch` 10.2.6 under eslint and typescript-eslint, dev only; production 0). Decide: wait for upstream, or an `overrides` pin to `minimatch` ≥ 11.0.1 by approval (Entry 127).
 - [ ] MVP exception: S8 Analysis details and S9 Overview are stub pages, listed under "Not in this MVP" in the README; Overview: option A, the stub keeps its rail link and the demo video does not open it (Entry 148). Under D65 S9 stays a stub: Overview is designed in the Direction D prototype but not built in D55 (Entry 191).
-- [ ] Approve D65 (Donia, Malak, Khalil) and add its approval commit (Entry 191).
+- [x] Approve D65 (Donia, Malak, Khalil) and add its approval commit (Entry 191). Approved; recorded in Entry 193.
 - [ ] Overview (S9): summary endpoint and charts (uncertain rate vs 10% target, version-change markers); check whether p and clip duration are stored (D65, Entry 191).
 - [ ] D55 build B3 shows real `p` and per-window values only after D63; until then the "Score not available" state (HANDOFF-v2 §5.9; Entry 191).
 - [ ] D55 build B1: decide the `--line` border on `.quiet` buttons and window cells (1.23 / 1.32 on `--surface`; HANDOFF-v2 §3; Entry 191).
@@ -7827,7 +7847,7 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
-## Current status — updated 2026-11-17 (Entry 192)
+## Current status — updated 2026-11-17 (Entry 193)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -7861,7 +7881,7 @@ No DEEP-VOICE audio was opened or scored, and no external-run claim was created 
 
 **Application status.** The React Docker MVP still displays mock analyzer results. F4-to-API
 integration is Iheb’s P1 work; the mock verdict must not be presented as a real model result.
-D65 (Entry 191, proposed) names Direction D and `docs/design/HANDOFF-v2.md` as the D55 target design;
+D65 (Entry 191, approved in Entry 193) names Direction D and `docs/design/HANDOFF-v2.md` as the D55 target design;
 the shipped UI is unchanged until the D55 build PRs.
 
 **Khalil’s next project work.** Check and sign off the SRS v4.0 draft you own: PR #121 is merged, but
