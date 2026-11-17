@@ -292,6 +292,14 @@ outputs in `docs/audit_evidence/v2_risk/`; its rehearsal recomputes M per seed a
 of risk-v2. Details: [stage11_run.md](stage11_run.md#v2-model-set-d48-7). Code only so far; the
 real run (notebook 09) follows risk-v2.
 
+## F5 (V5b, `src/bundle/f5.py`)
+
+ModelBundle v2 from the committed search, risk-v2 and v2 Stage 11 evidence and the run registry
+(D48 (7): refused until the v2 Stage 11 run is completed), the bundle-seed checkpoint folder
+`runs/<winner>_seed<k>/checkpoint/`, F3 profile and `risk-v2`; `build` / `verify` and
+`f5_record.json`. Details: [model_bundle.md](model_bundle.md#f5-modelbundle-v2). Code only; the build,
+the freeze decision and the hand-over follow the v2 Stage 11 run (cut-off Fri 4 Dec 23:59, D48 (4)).
+
 ## Tests (synthetic, CPU)
 
 `tests/features/test_raw_train_cache.py`, `tests/training/test_selection_set.py`,
