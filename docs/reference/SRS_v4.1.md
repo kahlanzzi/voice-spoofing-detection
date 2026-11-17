@@ -130,8 +130,9 @@ Evidence labels used by the project remain:
 | Confidence | `max(p, 1 - p)` rounded to two decimals from the same unrounded aggregate mean. It is separate from directional `p`, cannot reconstruct `p`, and is not proof of correctness. |
 | Risk level | LOW, MEDIUM, or HIGH from the frozen risk policy. |
 | Decision board | Direction D UI scale showing `p`, the matching frozen threshold and uncertain band, plus a Why panel. |
+| Uncertain band | Exact server-returned bounds `[lower, upper]`, where `lower = threshold - half_width` and `upper = threshold + half_width`. The server labels `p < lower` authentic, `lower <= p < upper` uncertain, and `p >= upper` synthetic. |
 | Policy provenance | Typed values copied from the verified risk policy and bundle manifest: `threshold`, `half_width`, `target_deferral`, `deferral_on_fit`, `n_spoof_fit`, `n_bonafide_fit`, bundle `model_version`, and manifest SHA-256. Values are never hand-entered. |
-| Analysis window | Complete non-overlapping two-second interval with `index`, `start_s`, `end_s`, binary64 `p` or null, and a server label from `authentic`, `synthetic`, `uncertain`, or `no_speech`. It is ordered by zero-based index; `p` is null if and only if the label is `no_speech`. |
+| Analysis window | Complete non-overlapping two-second interval with `index`, inclusive `start_s`, exclusive `end_s`, binary64 `p` in `[0, 1]` or null, and a server label from `authentic`, `synthetic`, `uncertain`, or `no_speech`. It is ordered by zero-based index; `p` is null if and only if the label is `no_speech`. A final fragment shorter than two seconds is omitted. |
 | ModelBundle | Frozen checkpoint, F3 preprocessing profile, and risk policy with verified hashes. |
 | F3 | Approved preprocessing profile: 16 kHz target, F3 trimming/feature rules, and `soxr_hq` where resampling is required. |
 | F4 / F5 | Frozen ModelBundle v1 / v2. |
@@ -261,11 +262,13 @@ pipeline and never returns a successful or stale verdict.
 ### UC-04 Record analysis metadata
 
 The service shall store the request identifier, timestamps, verdict fields, versions, processing time,
-mock/real marker, available scalar probability/policy values, the validated ordered upload-window array
-and schema version (at most 30 entries), and the note relationship required by the approved API contract. It shall not store
-raw audio or the original file name in the record or normal logs. Upload windows are stored with the
-parent analysis as JSON text in SQLite and JSONB in PostgreSQL, never in a queryable child table unless a
-future approved requirement needs cross-analysis window queries.
+mock/real marker, nullable `spoof_probability`, `threshold`, `half_width`, `target_deferral`,
+`deferral_on_fit`, `n_spoof_fit`, `n_bonafide_fit` and `bundle_manifest_sha256`, the validated ordered
+upload-window array under `windows_schema_version: 1` (at most 30 entries), and the note relationship
+required by the approved API contract. `uncertain_band` is derived by the server from threshold and
+half-width. It shall not store raw audio or the original file name in the record or normal logs. Upload
+windows are stored with the parent analysis as JSON text in SQLite and JSONB in PostgreSQL, never in a
+queryable child table unless a future approved requirement needs cross-analysis window queries.
 
 ### UC-05 Review history and details
 
@@ -358,10 +361,10 @@ and freezes F5. No test or external result selects the model.
 | FR-03 | Must | The service shall reject unreadable, unsupported, oversize, over-duration, or malformed input before inference and return the documented error. Limits are published by `GET /api/limits`. | v3 |
 | FR-04 | Must | Training, evaluation, upload, and live inference shall use the versioned F3 preprocessing profile bound into the active bundle. A mismatched profile blocks activation. | v3, D39, D52 |
 | FR-05 | Must | Every completed analysis shall return exactly one of `authentic`, `synthetic`, or `uncertain` under the frozen decision rule. | v3 |
-| FR-06 | Must | Every real completed analysis shall return `spoof_probability` as the unrounded D34 mean of D17-kept window `p` values from the same `policy_version`, plus confidence rounded to two decimals from that same mean. The server shall apply `three_way_decisions` to the unrounded value and shall also return the matching threshold, uncertain band, typed verified policy provenance, and server-labelled windows. Mock and unrecoverable historical values shall be `null`; clients shall never reconstruct `p` from confidence. | v3, D45, D63 |
+| FR-06 | Must | Every real completed analysis shall return `spoof_probability` as the unrounded D34 mean of D17-kept window `p` values from the same `policy_version`, plus confidence rounded to two decimals from that same mean. The server shall apply `three_way_decisions` to the unrounded value and return threshold, `uncertain_band = [threshold - half_width, threshold + half_width]`, typed verified policy provenance, and server-labelled windows. The exact boundary rule is authentic for `p < lower`, uncertain for `lower <= p < upper`, and synthetic for `p >= upper`. For mock or unrecoverable historical records, `spoof_probability`, threshold, uncertain band, policy provenance, and windows shall all be `null`; clients shall never reconstruct `p` from confidence. | v3, D45, D63 |
 | FR-07 | Should | Every completed analysis shall return LOW, MEDIUM, or HIGH from the frozen, versioned risk policy. | v3 |
 | FR-08 | Must | The web result shall implement Direction D from `HANDOFF-v2.md`: verdict, probability/confidence, risk, verified policy context, decision-support notice, mock/real marker, ruler/Why panel, optional per-window timeline, icon-plus-label verdict cues, and the explicit Score not available state when D63 values are unavailable. | v3, D55, D63, D65 |
-| FR-09 | Must | Every successful analysis shall create one metadata record without raw audio or original file name. A zero-kept-window upload shall return structured `422 no_speech`, create no analysis row, and emit exactly one privacy-safe service-log event containing only the request ID and error category. One or two kept upload windows shall return a normal result using the D34 mean. | v3, D63 |
+| FR-09 | Must | Every successful analysis shall create one metadata record without raw audio or original file name. Upload scoring uses every complete D17-filtered two-second window; a trailing fragment shorter than two seconds is omitted. A zero-kept-window upload shall return structured `422 no_speech`, create no analysis row, and emit exactly one privacy-safe service-log event containing only the request ID and error category. One or two kept upload windows shall return a normal result using the D34 mean. | v3, D5, D17, D63 |
 | FR-10 | Should | The analyst shall review newest-first history and details using the approved filters/pagination and explicit empty/loading/error states. D63 window arrays appear only in the detail response, not in history-list items. | v3, API contract, D63 |
 | FR-11 | Could | An authenticated analyst shall save, replace, or remove a note beside an immutable result; the saver account is recorded. | v3, D47 |
 
@@ -417,7 +420,7 @@ and freezes F5. No test or external result selects the model.
 | NFR-13 | Must | Live capture shall start only after explicit user action, show capture state, stop reliably, publish consent/privacy guidance, and persist no audio. | D51 |
 | NFR-14 | Must | Upload/live inference shall run in a bounded process pool. Full capacity shall refuse work with retry guidance; no unbounded queue or timed-out worker accumulation is allowed. | D53 |
 | NFR-15 | Must | CPU inference shall use one torch thread per worker. K, L, timeout, message size, tmpfs, and `L_MAX` shall be established by a documented staging load test with the deployed bundle. | D53 |
-| NFR-16 | Must | Staging/production analyses, notes, and sessions shall use PostgreSQL behind the repository interface, with migration and CI service-container tests. D63 scalar probabilities/rates use binary64-compatible storage and up to 30 upload windows use schema-versioned JSONB (JSON text on SQLite), preserving round-trippable values without quantization. | D53, D63 |
+| NFR-16 | Must | Staging/production analyses, notes, and sessions shall use PostgreSQL behind the repository interface, with migration and CI service-container tests. One coordinated additive D63 migration shall add nullable parent policy fields, `windows_schema_version: 1`, and up to 30 upload windows as JSONB (JSON text on SQLite); legacy rows remain readable. Scalar probabilities/rates use binary64-compatible storage and all numeric values round-trip without quantization. | D53, D63 |
 | NFR-17 | Must | Dev, staging, and production shall use separated secrets and exact immutable image promotion; staging/production use HTTPS and health/smoke checks. | D54 |
 | NFR-18 | Must | The web UI shall pass the approved axe WCAG 2.0/2.1/2.2 A/AA checks in light/dark themes and the 390 px layout checks. The moderated usability test shall use 3-5 external participants and target SUS >= 68. | D55 |
 | NFR-19 | Must | The extension shall not be implemented until its D47 cookie/Origin authentication design, minimum permissions, message cap, and capture lifecycle receive a documented security review. | D51 |
@@ -545,4 +548,3 @@ After all four reviewers approve the synchronized Markdown/PDF pair, a separate 
 record their names and dates, change the status from Draft to Approved, regenerate the pair, and update
 `docs/reference/README.md` and `AGENTS.md` to make v4.1 current. This draft intentionally leaves those
 current-version pointers on v4.0.
-

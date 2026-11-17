@@ -7608,10 +7608,11 @@ module, training-format S build/verification, training-half resource cache and o
   contract is older than D63/D65. The prepared v4.1 wording is an owner-review draft only. It makes
   no implementation, database-migration, test-result or deployment claim.
 - **Verification:** `SRS_v4.1.md` SHA-256
-  `963b011da983e0adc194548cbc2ad64144e2a602cdc73b54aab2fcad34d76620`; generated 18-page PDF
-  SHA-256 `98d34a1f47cb9b0410d2585f395b4541789df0cd36e39e669df822449d055ece`.
+  `889075da82ad22019526752fd85ca688bfa8c7f6f349b6f5cf320209c181ef35`; generated 18-page PDF
+  SHA-256 `5c76c7a75bf8885c101cb7e64309f82e0b9c59bd5ed182cb0555749b8044ea10`.
   All pages were rendered at 120 dpi and inspected; PDF text extraction found all 11 major sections
-  and the D63/D65 terms. `git diff --check` passed; `pytest -q tests/governance` reported 89 passed.
+  and the D63/D65 terms. Full-branch `git diff --check` passed; `pytest -q tests/governance`
+  reported 89 passed.
   No code, configuration, data, audio, checkpoint or generated model evidence changed.
 - **AI assistance:** Codex compared the SRS against the approved decision and design sources,
   drafted the v4.1 amendments, generated the PDF and ran the checks. Khalil and the other three
