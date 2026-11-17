@@ -189,3 +189,154 @@ cases (single-clip groups), all written with the real writers (`write_clip_score
 | Fixture writes the runner's `claim.json` / `run_report.json` keys (read from its source with `ast`) | `test_fixture_key_lists_equal_the_runners` |
 | Guard finds nothing in this module; `ALLOWED` unchanged | `test_report_module_is_not_test_split_access_for_the_guard` |
 | Report reads the runner's own synthetic output; D41 check fires on a non-D41 baseline (real `claim` + `score` from `test_stage11_run.py`'s fixtures, imported only with torch) | `test_report_reads_the_runners_own_output` |
+
+## v2 model set
+
+`src/evaluation/stage11_v2_report.py` (Track V, PR V6a) is the metrics report for the separate v2
+`stage11_test` claim (D48 (7); Protocol §7 addendum: "the same storage and reporting rules apply"),
+computed only from the files `stage11_v2_run score` stored
+([stage11_run.md](stage11_run.md#v2-model-set-d48-7)). `stage11_report.py` is unchanged: its output
+for the real v1 run is committed and reproduced (Entry 161), and its checks are bound to the v1
+model IDs. The v2 module imports the v1 module's model-independent helpers (`CheckFailed`,
+`_record` / `_check` / `_fail`, `_sha256`, `_read_json`, `_digest`, `_check_claim`, `_f2_join`, the
+metric, CI, formatting and table helpers, `_create`) and writes v2 versions only of what is bound to
+v1 IDs, roles or evidence: the run report, registry, score-file, same-clips and re-derivation
+checks, the model and seed rows, the Markdown and `write_report` (v1's calls the v1 renderer). One
+helper has a v2 copy although it holds no model ID: `_load_manifest` names its check
+`manifest.sha256_stage10` and reads the v1 module's approved hash, so the v2 one names it
+`manifest.sha256_risk_v2` (same reading rule). No v1 helper was changed. Code and synthetic tests
+only; the real report is produced in notebook 09.
+
+**Scope (Donia, option A, 2026-11-17, before any v2 test result):** D57 applied to the v2 model set
+as written, with no hypothesis. H1 and H5 are v1 hypotheses (Protocol §1); v2 is compared with v1
+in H8 (Stage 13) and H9 (Stage 14). No new decision; the D57 text is unchanged. No baseline row and
+no v1–v2 comparison in this report.
+
+### Inputs (v2)
+
+```
+build_report(*, run_dir, registry_path, manifest_path, search_evidence_dir,
+             risk_evidence_dir) -> dict
+write_report(report, out_dir) -> (json_path, md_path)
+
+python -m src.evaluation.stage11_v2_report --run-dir <the folder the v2 score wrote> \
+  --registry <run_registry.jsonl> --manifest data/manifests/for2sec_frozen_manifest.csv \
+  --search-evidence docs/audit_evidence/v2_search --risk-evidence docs/audit_evidence/v2_risk \
+  --out <new folder>
+```
+
+| Input | Read for |
+|---|---|
+| `run_dir/run_report.json`, `run_dir/claim.json` | identity, `architecture`, v2 model set, bundle seed, counts, file hashes |
+| `run_dir/clip_scores/<model_id>.csv`, `.json` | the three seeds' per-clip outputs, through `read_clip_scores` |
+| registry | the v2 run's started and completed records (the v1 pair and later records are not this run's) |
+| F2 manifest | as in v1; bound to risk-v2's `f2_manifest_sha256` and the approved value |
+| search evidence | `run_report.json` (`selected`, `bundle_seed`, `checkpoint_sha256`) and `selection_report.json` |
+| risk-v2 evidence | `run_report.json` and `risk_policy.json` (the committed file the runner used; no separate argument) |
+
+Torch-free: it does not import `stage11_v2_run` (which imports torch); the runner's constants
+(`model_ids_v2`, `model_roles`, candidate names, seeds, file names, `run_dir_name`) are re-declared,
+and a torch test checks they equal those of `stage11_v2_run`, `v2_checkpoint`, `v2_search` and
+`risk_run`. `search_bundle` restates `v2_risk_run.bundle_checkpoint` without torch (the winner and
+bundle seed must agree between the two search reports, and the bundle seed's hash must exist); a
+torch test checks both give the same answer or the same refusal in eight cases.
+
+### Integrity checks (v2)
+
+Recorded as in v1 (`expected` / `actual` / `passed`; `CheckFailed` naming the check; nothing
+written).
+
+1. **Run report:** v1 check 1 (schema, dataset, purpose, `run_id`, `code_commit`, split string),
+   plus `architecture` one of `cnn-aug`, `crnn`, `aasist`; model set = exactly
+   `<architecture>-v2-seed0..2` (a v1 or `baseline-v1` ID is refused here); roles one
+   `v2_bundle_seed` and two `v2_other_seed`; `bundle_seed` in {0, 1, 2} on the bundle role.
+2. **Claim:** v1 check 2 (`stage11_report._check_claim`), plus `architecture`, `bundle_seed` and
+   `model_ids` equal to the run report's.
+3. **Registry:** the file loads; exactly one started and one completed record for this `run_id`,
+   with the run's dataset, split, purpose, the sorted v2 model set and commit; the completed
+   `results_ref` equals the claim's. SHA-256 and line count recorded.
+4. **Score files:** v1 check 4 for the three seeds; the `clip_scores/` folder holds exactly their
+   CSV and sidecar files (a stray `baseline-v1` file is refused).
+5. **Same clips** in all three files. 6. **F2 join** (v1's `_f2_join`, reused); the manifest
+   SHA-256 equals risk-v2's `f2_manifest_sha256` and the approved F2 value.
+7. **Evidence:** `search_bundle` on the search evidence; its winner and bundle seed equal the run
+   report's `architecture` and `bundle_seed`; each model's `artifact_sha256` equals the search
+   `checkpoint_sha256` of its seed (`<architecture>_seed<k>`); risk-v2 `architecture`, `bundle_seed`
+   and `checkpoint_sha256` equal the run's bundle model; risk-v2 `v2_search_evidence` equals the
+   SHA-256 of the two search reports; `risk_policy.json` SHA-256 equals risk-v2
+   `risk_policy_sha256`.
+8. **Re-derivation:** bundle `p` = `calibration.transform(raw_score)` byte for byte; predictions =
+   the band rule written with `np.where`; `p` and prediction absent in both `v2_other_seed` files.
+
+### D57 mapped to the v2 model set (`CONVENTIONS_V2`)
+
+| D57 | v2 Stage 11 |
+|---|---|
+| (1) | "The model" = the bundle-seed v2 model (role `v2_bundle_seed`, seed from the run report); the other two seeds at score level only |
+| (2) | EER and ROC-AUC on `raw_score` for all three seeds, never on `p` |
+| (3) | Subgroups as D57 (3) |
+| (4) | Bundle model: forced binary `binary_metrics(labels, p, risk-v2 threshold)`; three-way `three_way_metrics(labels, stored prediction)`; no baseline row |
+| (5)–(6) | Not applicable: no hypothesis is tested; the report says so (`hypotheses: null`, `hypotheses_note`) |
+| (7) | CIs as D57 (7) for the bundle model only: overall EER, ROC-AUC, forced-binary FPR, FNR |
+| (8) | Seed rows as D57 (8), over the three v2 seeds |
+| (9) | As D57 (9) |
+
+### Outputs (v2)
+
+`metrics_report.json` and `metrics_report.md` in a new `--out` folder (exclusive binary writes, clean
+worktree, byte-identical on rerun), as v1. JSON keys: v1's minus the hypothesis content, plus
+`architecture`, `hypotheses: null` and `hypotheses_note` ("No hypothesis is tested at v2 Stage 11:
+H1 and H5 are v1 hypotheses (Protocol §1); v2 is compared with v1 in H8 (Stage 13) and H9 (Stage
+14)."). `inputs` holds the SHA-256 of the run report, claim, registry (+ lines), manifest, policy,
+risk-v2 run report, both search reports and each CSV / sidecar; `conventions` holds `decision`
+"D57", `scope` and the nine mapped items. The Markdown is rendered from the JSON only, with the
+note under "Hypotheses" and the line "Reported whatever the outcome (pre-registered)".
+
+### Why (v2)
+
+- **(a) A new module, not an edit of `stage11_report.py`.** The v1 report is committed and
+  reproduced byte for byte (Entry 161); an edit would put that reproduction in question. Reuse by
+  import (as `stage11_v2_run` does with the v1 runner) keeps one definition of each metric and
+  check rule.
+- **(b) Option A (no hypothesis).** The Protocol pre-registers H1 and H5 for v1 only and the v1–v2
+  comparisons as H8 and H9; applying D57 as written needs no decision round on the critical path to
+  F5 (cut-off Fri 4 Dec). Testing H1/H5 on v2, or adding a v1–v2 comparison here, would be a new
+  analysis after the Protocol and would need a decision.
+- **(c) Evidence binding.** Every number must belong to the search winner's three checkpoints and to
+  the policy risk-v2 fitted on that bundle seed; otherwise a valid-looking report could describe
+  another candidate or another policy.
+- **(d) Torch-free**, as v1.
+
+### Limitations (v2)
+
+- **Byte-exact `p` re-derivation is platform-bound**, as for v1 (above): run the report in notebook
+  09 on the run's platform (the runtime that scored the v2 set). Elsewhere `rederive.bundle.p_bytes`
+  can stop on 1-ulp differences; no tolerance is added.
+- The search and risk-v2 evidence are passed as folders; the real report must point at the committed
+  `docs/audit_evidence/v2_search/` and `v2_risk/` (the files the runner read). The binding checks
+  refuse other evidence only where it disagrees with the run.
+- Few FAKE_other clips and near-zero EERs: as for v1 (above).
+- The guard finds no test-split request in the module (it never names the split); `ALLOWED` is
+  unchanged. Same blind spot and control as v1.
+- Tested on synthetic data only.
+
+### Tests (`tests/evaluation/test_stage11_v2_report.py`)
+
+Synthetic, CPU: a `crnn` v2 set with bundle seed 1 on the v1 hand table (14 clips, 12 groups; the
+hand CNN column is the bundle seed, the other two seeds separate perfectly), written with the real
+writers, a registry holding the v1 pair first, and search / risk-v2 evidence stubs.
+
+| Property | Test |
+|---|---|
+| Hand EER, threshold at the EER point, ROC-AUC (overall, per subgroup pair); other seeds score level only | `test_hand_case_score_level` |
+| Forced binary per subgroup, three-way confusion, coverage, deferral, `null`; no baseline row | `test_hand_case_decision_level` |
+| Bundle-only CIs with counts; seed rows; `hypotheses` null with the note | `test_hand_case_cis_seeds_and_no_hypotheses` |
+| Agreement with `eer`, `roc_auc`, `binary_metrics`, `three_way_metrics`, `bootstrap_ci`, `seed_summary` | `test_report_numbers_agree_with_direct_harness_calls` |
+| Checks, inputs, registry lines (4), conventions, JSON keys; D57 numbering kept | `test_checks_inputs_and_conventions_are_recorded`, `test_conventions_map_d57_to_v2_with_the_same_numbering` |
+| Each integrity check tampered once, raising with its own name, nothing written (61 cases); every recorded check is covered | `test_tampered_input_is_refused_with_its_check`, `test_tampered_run_folder_is_refused_with_its_check`, `test_edited_registry_is_refused`, `test_unapproved_manifest_is_refused`, `test_other_seed_with_p_or_prediction_is_refused`, `test_every_check_name_is_distinct_and_covered` |
+| v1 model set, v1 run report, `baseline-v1` entry or file refused | `test_v1_model_set_or_baseline_is_refused`, `test_tampered_input_is_refused_with_its_check[clip_scores.folder_files]` |
+| Byte-identical twice (CLI and functions); Markdown = render of the JSON, with the note; collapsed flag | `test_cli_twice_gives_byte_identical_files_rendered_from_the_json`, `test_markdown_flags_collapsed_intervals` |
+| Existing `--out`, dirty worktree refused | `test_existing_out_is_refused`, `test_dirty_worktree_is_refused` |
+| Torch-free import; v1 helpers imported, not copied; guard finds nothing, `ALLOWED` unchanged; fixture keys = the v2 runner's (`ast`); IDs and roles | `test_import_is_torch_free`, `test_v1_report_module_is_unchanged_and_reused`, `test_report_module_is_not_test_split_access_for_the_guard`, `test_fixture_key_lists_equal_the_v2_runners`, `test_model_ids_and_roles_functions` |
+| With torch: constants = the runner's; `search_bundle` = `bundle_checkpoint` (8 cases) | `test_constants_equal_the_v2_runners`, `test_search_bundle_equals_v2_risk_run_bundle_checkpoint` |
+| With torch: the report reads the v2 runner's own `claim` + `score` output for `crnn` and `aasist`; another architecture's risk-v2 folder refused | `test_report_reads_the_v2_runners_own_output` |
