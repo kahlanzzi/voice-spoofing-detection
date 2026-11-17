@@ -346,10 +346,160 @@ score JSON evidence, `rehearsal_report.json`, `metrics_report.json` and
 (`RESULTS_REF`). The per-clip CSVs and sidecars stay on Drive (`run/runner/clip_scores/`), bound by their
 SHA-256 in `run_report.json` (AGENTS.md rule 7); Stages 14 and 16 read them there.
 
+## v2 model set (D48 (7))
+
+`src/evaluation/stage11_v2_run.py` (PR V4b) is the separate `stage11_test` claim for the v2 model
+set: the three seeds of the v2 search winner, after v2 selection and before F5 (Protocol §7
+addendum). `stage11_run.py` is unchanged: it was reviewed and run (registry lines 1–2), its model
+IDs, loader and Stage 7/8/10 evidence are fixed in its code, and its `claim` refuses any earlier
+`stage11_test` record. The v2 runner imports the v1 helpers (environment gate and record,
+`split_rows`, `_ArrayDigest` / `array_sha256` / `features_sha256`, `bundle_outputs`, `_create`,
+`_check` / `_record`, `_read_claim`, `_load_cache`, the file names) and keeps the same two-phase
+procedure, marker and rerun rule; none of them needed a change. Code and synthetic tests only; the
+real run is notebook 09 (a later PR). No baseline: `baseline-v1` was scored in the v1 claim, so there
+is no MFCC, no D58 reference and no D29 prediction here.
+
+```
+python -m src.evaluation.stage11_v2_run rehearse --root <FoR root> \
+  --checkpoints <v2 search runs/ folder> --selection-set <S> --profile configs/preprocessing.yaml \
+  --config configs/v2_candidates.yaml --manifest data/manifests/for2sec_frozen_manifest.csv \
+  [--cache-a <build A> --cache-b <build B>]  --risk-scores <risk-v2 val_b_scores.npz> --out <new folder>
+python -m src.evaluation.stage11_v2_run claim <same, without --risk-scores> \
+  --registry <run_registry.jsonl> --results-ref <relative path> --out <new folder>
+# notebook: flush Drive, re-mount, check the registry file there
+python -m src.evaluation.stage11_v2_run score <same as claim, without --results-ref> \
+  --registry <run_registry.jsonl> --run-id <run_id printed by claim> --out <claim's folder>
+```
+
+`--checkpoints` is the search's `runs/` folder (`<winner>_seed<k>/checkpoint/`, the
+`v2_search` layout). `--cache-a` / `--cache-b` are required for `cnn-aug` / `crnn` and refused for
+`aasist` (`cache_a` holds `log_mel/val-A/` and, for the rehearsal, `log_mel/val-B/`). `--root` is
+taken by all three subcommands: `claim` reads no test audio, but an `aasist` gate reads val-A.
+
+### Evidence (paths fixed in code; nothing typed)
+
+| Value | Source | Cross-check (each refusal names the field, the expected and the actual value) |
+|---|---|---|
+| winner, `bundle_seed` | `docs/audit_evidence/v2_search/` (`v2_risk_run.V2_SEARCH_EVIDENCE`) | `run_report.json` and `selection_report.json` agree (`v2_risk_run.bundle_checkpoint`); `bundle_seed` = `select_bundle_seed` over the three M |
+| `checkpoint_sha256` of `<winner>_seed<k>`, k = 0, 1, 2 | search `run_report.json` | all three present |
+| `best_selection_m` per seed | search `selection_report.json` `seeds` | exactly seeds 0, 1, 2; finite numbers in [0, 1] |
+| S, v2 config, F3 profile, F2 hashes; Stage 8 val-A log-Mel `npz_sha256` | search `run_report.json` | val-A hash equals `docs/audit_evidence/stage8_cnn/` `val_a_cache_npz_sha256` |
+| `risk_policy.json`, `val_b_scores_sha256`, `val_b_input`, scoring batch size | `docs/audit_evidence/v2_risk/` (`V2_RISK_EVIDENCE`, the risk-v2 run's committed outputs) | `architecture`, `bundle_seed`, `checkpoint_sha256` equal the search's; `scoring.device` is `cpu`; profile and F2 hashes equal the search's; `v2_search_evidence` equals the SHA-256 of the committed search reports; `risk_policy.json` SHA-256 equals `risk_policy_sha256` (checked in the pre-claim checks) |
+| v1 test log-Mel hash | `docs/audit_evidence/stage11_run/run_report.json` `features.arrays.log_mel` | recorded only (below) |
+
+### IDs and roles
+
+`model_ids_v2(winner)` = `<winner>-v2-seed0`, `-seed1`, `-seed2` (one function). Roles
+([clip_scores.md](clip_scores.md)): `v2_bundle_seed` (raw score, `p`, three-way prediction from
+risk-v2) for the bundle seed, `v2_other_seed` (raw score only, D45) for the other two. The bundle
+seed comes from the evidence.
+
+### Order
+
+Phase 1, `claim` (no test audio is read): `results_ref`, output folder, clean full-SHA commit,
+environment gate (D46 (2)); the evidence above; profile fingerprint and config hash, F2 hash (equal
+to the evidence and to the approved value), `configs/v2_candidates.yaml` hash and the winner's batch
+size (equal to risk-v2's); per seed `v2_checkpoint_sha256` equal to the evidence, then
+`load_v2_checkpoint(expected_sha256=...)`, metadata `architecture`, `seed`, `selection_m`,
+`selection_set_sha256`, profile fingerprint and F2 hash equal to the evidence; the risk policy hash;
+the **reproduction gate**; the test rows under the clip_scores rules and their counts; the
+**registry rule**; then `RunRegistry.claim` for the v2 model set, re-read and verified, and the
+environment files and `claim.json` (as v1, plus `architecture` and `bundle_seed`).
+
+Phase 2, `score`: `claim.json` must name this `run_id` and commit (no write otherwise); the marker
+`scoring_started.json` (exclusive; no rerun after the claim, D46 (8)) and `environment_score.json`;
+the pre-claim checks again; the registry after the claim (below); `claim.json` against the registry
+and the environment files; test inputs (below); `features.json` written; each seed scored twice on
+CPU through `v2_risk_run.model_inputs` + `v2_risk_run.score_clips` (the path risk-v2 was fitted on),
+byte-identical; bundle-seed `p` and prediction from `RiskPolicy.decide`, checked independently by
+`stage11_run.bundle_outputs`; per-clip files; `run_report.json`; `complete`.
+
+### Gates and inputs
+
+- **Reproduction gate, before the claim.** `cnn-aug` / `crnn`: the val-A log-Mel caches of
+  `cache_a` and `cache_b` (two builds) load and verify, `builds_identical`, and `npz_sha256` equals
+  Stage 8's (`reproduction.log_mel.val-A.*`). `aasist`: S loaded in the waveform form (hash equal to
+  the evidence), then the in-memory val-A F3 waveforms (two passes, below) must equal S's clean
+  waveforms (`v2_risk_run._sha256_arrays` over waveforms, int8 labels and paths,
+  `reproduction.waveform.val-A.equals_selection_clean`).
+- **Test inputs (D46 (7)).** One `read_verified_audio` + `extract_features` call per clip. The
+  winner's input is kept in memory, never persisted: the log-Mel for `cnn-aug` / `crnn`, the F3
+  waveform `prepared.waveform` for `aasist`. Two passes; the hash records must be equal. Record:
+  the log-Mel digest (the v1 `_ArrayDigest` definition, for every winner), for `aasist` also the
+  waveform hash (`_sha256_arrays`), and `features_sha256` over both with paths and labels. The record
+  is written to `features.json` before any model sees the inputs.
+- **Recorded, not asserted:** `v1_log_mel_comparison` in `features.json` and `run_report.json`: the
+  v1 run report's SHA-256, its test log-Mel hash, the v2 one and `equal`. A mismatch after the claim
+  cannot be undone; it is reported for team review. Also descriptive: `environment_same_as_claim`.
+
+### Registry rule (D48 (7) with D46 (8))
+
+Before the claim, the `("for", "test", "stage11_test")` records must be exactly the v1 pair
+(started + completed, one `run_id`, model set `["baseline-v1", "cnn-v1-seed0", "cnn-v1-seed1",
+"cnn-v1-seed2"]`), and no record of any purpose may hold a v2 model ID (`<candidate>-v2-seed<k>` for
+any of the three candidates); otherwise the claim is refused with the records found. An empty
+registry is refused: the v2 claim follows the v1 run. Records of other purposes without v2 IDs
+(e.g. a v1 `stage14_robustness` claim) are allowed. After the claim, `score` requires the v1 pair
+and exactly one v2 record: started, this `run_id`, this commit, the v2 model set. A completed v2
+record (a second `score`) or a second v2 claim is refused. No rerun after the claim (D46 (8)).
+
+### Rehearsal
+
+val-A and val-B only (the same split check as v1), no registry, no test path; the report is always
+written with `"passed"` true or false. Known answers:
+(a) the reproduction gate (pre-claim checks); (b) S loaded in the winner's form (log-Mel winners:
+its clean log-Mel equal to the `cache_a` val-A cache), its hash equal to the evidence, and per seed
+the five S EERs (recorded) and M recomputed on CPU with `train_v2`'s `selection_tensors`,
+`evaluate_selection` and `selection_m` must equal `best_selection_m` exactly, with no tolerance (a
+mismatch stops for a team decision, as in V4a); (c) val-B: the in-memory val-B input equals the
+one risk-v2 was fitted on (log-Mel: in memory equal to `cache_a` val-B, whose `npz_sha256` equals
+risk-v2's `val_b_input`; aasist: content hash equal to `val_b_input.content_sha256`, from the same
+in-memory pass, no injected source), then the bundle seed's raw scores and `p` equal risk-v2's
+`val_b_scores.npz` byte for byte, same paths and labels, after its SHA-256 equals the risk run
+report's (`risk_v2.val_b_scores_sha256`).
+
+### Outputs
+
+As v1 ([above](#outputs-claim-score)) without the baseline, plus `features.json`;
+`run_report.json` adds `architecture`, `input`, `features_json_sha256` and
+`v1_log_mel_comparison`. No metrics here: they are computed from these files by
+`src/evaluation/stage11_v2_report.py` ([stage11_report.md, "v2 model set"](stage11_report.md#v2-model-set)).
+
+### Tests (`tests/evaluation/test_stage11_v2_run.py`, `tests/evaluation/test_clip_scores_v2_roles.py`)
+
+Synthetic, CPU: real WAVs from `tests/_v2_fakes.py` (val-A 10, val-B 12, test 8) read through F3,
+Stage 8-like log-Mel caches (two val-A builds, val-B), a 10-clip S, seeded untrained `crnn` and
+`aasist` checkpoints for seeds 0–2 (their `selection_m` from `train_v2`'s functions), the search
+evidence written by the real `v2_search` report writers and the risk-v2 evidence written by
+`v2_risk_run.run` on those fakes.
+
+| Property | Test |
+|---|---|
+| Each evidence disagreement refused before the claim, naming field / expected / actual (15 cases); risk-policy bytes; checkpoint hash and metadata M | `test_evidence_disagreement_is_refused_before_the_claim`, `test_risk_policy_bytes_must_match_the_risk_report`, `test_checkpoint_hash_and_metadata_are_checked`, `test_committed_evidence_paths_are_fixed` |
+| IDs and roles | `test_model_ids_and_roles` |
+| Registry: empty, v1 started only, extra `stage11_test` record, a v2 record → refused; v1 pair (and with a v1 `stage14_robustness` record) → accepted | `test_registry_rule_refuses_before_the_claim`, `test_registry_rule_accepts_the_v1_pair` |
+| Input kind; log-Mel gate (same folder, builds differ, not Stage 8); aasist gate (val-A waveforms vs S, val-A reads only) | `test_input_kind_mismatch_is_refused`, `test_log_mel_gate_refusals`, `test_aasist_gate_compares_val_a_waveforms_with_s` |
+| claim → score for `crnn` and `aasist`: no test read before the claim, test rows twice, `features.json` before the first score, hashes by hand, v1 comparison, roles and files, registry v1 pair + v2 started/completed; second score, score without marker, second claim refused | `test_claim_then_score_happy_path` |
+| v1 log-Mel mismatch recorded, run completes | `test_v1_log_mel_mismatch_is_recorded_not_asserted` |
+| score without a claim, with a wrong `run_id` (no marker, then the right one scores), against a registry without the v2 claim | `test_score_without_a_claim_folder_is_refused`, `test_score_with_another_run_id_is_refused_without_a_marker`, `test_score_with_a_registry_without_the_v2_claim_is_refused` |
+| Two-pass scoring and inputs | `test_scoring_pass_2_differs_raises_after_the_claim`, `test_input_pass_2_differs_raises_after_the_claim`, `test_score_models_compares_two_passes_byte_for_byte` |
+| Rehearsal pass (both archs, no registry, val-A/val-B reads only); M one ulp off; val-B bytes (hash, then score bytes); pre-claim failure report; other splits refused | `test_rehearse_passes_with_known_answers_and_no_registry`, `test_rehearse_m_mismatch_fails_with_a_report`, `test_rehearse_val_b_bytes_mismatch_fails_with_a_report`, `test_rehearse_preflight_failure_writes_failed_report`, `test_rehearse_refuses_other_splits_before_reading`, `test_no_test_path_in_rehearse` |
+| CLI | `test_cli_dispatches_without_a_split_argument` |
+| `v2_bundle_seed` / `v2_other_seed`: same columns as the v1 CNN roles, v1 table unchanged, round trip, `p` / prediction refused for `v2_other_seed` | `tests/evaluation/test_clip_scores_v2_roles.py` |
+
+Governance: `src/evaluation/stage11_v2_run.py` (the file, not the folder) is in `ALLOWED` of
+`tests/governance/test_for_test_access.py` (D48 (7), PR V4b). The module imports
+`stage11_run.SPLIT`, which the guard's `import` rule now reports; the `ALLOWED` entry is what
+permits it.
+
 ## Limitations
 
-- The guard (`tests/governance/test_for_test_access.py`) now allows this one file; it is a text
-  guard, not a sandbox (ADR 0007).
+- The guard (`tests/governance/test_for_test_access.py`) allows exactly two files,
+  `src/evaluation/stage11_run.py` and `src/evaluation/stage11_v2_run.py` (D48 (7), PR V4b). Its
+  `import` rule makes reuse of the v1 split constant a test-split request everywhere else:
+  `from src.evaluation.stage11_run import SPLIT` (also with `as`) and the attribute
+  `stage11_run.SPLIT` (also `src.evaluation.stage11_run.SPLIT`). It is a text guard, not a sandbox
+  (ADR 0007): an alias such as `import src.evaluation.stage11_run as v1; v1.SPLIT` is not seen.
 - The rehearsal checks the scoring path through the EER and Stage 10's bytes; it cannot check the
   test split itself.
 - The environment record is descriptive; only Python and torch are asserted (D46 (2)). The

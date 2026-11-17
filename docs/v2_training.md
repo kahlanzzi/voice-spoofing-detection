@@ -271,8 +271,23 @@ formats, and `fit_risk_policy` as is. Code only so far: the real run follows the
 - **val-B scoring:** log-Mel standardized with the checkpoint's `mean`/`std`, then the same raw-logit
   path as `train_v2`; two CPU passes must be equal. **aasist** needs an F3 waveform val-B source, a
   function returning `(waveforms float32 (n, 32000), labels int8, paths sorted)` that must cover
-  exactly the F2 val-B rows. None exists: it is built only if aasist wins (Execution Plan v3.0 §9 V4).
-  Without one, aasist is refused, so the CLI (`--cache-dir` only) cannot fit an aasist policy.
+  exactly the F2 val-B rows; without one, `run` refuses aasist.
+- **aasist val-B source (V4c, `src/tuning/v2_val_b_source.py`):** `val_b_waveform_source(root,
+  manifest_path, profile_path)` returns that function. Called, it reads exactly the F2 val-B rows,
+  sorted by path, through `stage11_v2_run`'s own in-memory input pass (`split_rows`,
+  `compute_inputs`, `_rows_arrays`, imported, not copied): one `read_verified_audio` +
+  `extract_features` call per clip, keeping `prepared.waveform`, two passes, refused if their hashes
+  differ. The arrays are byte-identical to what the v2 Stage 11 rehearsal recomputes for aasist, so
+  its check of `val_b_input.content_sha256` can pass. val-B only, in memory, never cached (as D46 (7)),
+  nothing fitted. A module of its own because `stage11_v2_run` imports `v2_risk_run` (cycle); it
+  imports no split constant of the test split, so the FoR test-access guard reports nothing and
+  `ALLOWED` is unchanged. **Why now:** the plan said to build it only if aasist wins, but selection
+  is Fri 27 Nov and risk-v2 is due Mon 30 Nov; building and reviewing new code over that weekend
+  would put the F5 cut-off (Fri 4 Dec 23:59, D48 (4)) at risk. Donia chose on 2026-11-17, before any
+  search result, to build it now as code only (Entry 199). If aasist does not win it stays unused.
+- **CLI input rule:** `main` reads the winner from the committed search evidence first. aasist:
+  `--root` (FoR root) required, `--cache-dir` refused; `cnn-aug` / `crnn`: `--cache-dir` required,
+  `--root` refused (argparse error, exit 2, before anything else is read).
 - **Outputs:** the Stage 10 set (`risk_policy.json` as bytes, `val_b_scores.npz`,
   `diagnostics_report.json`, `run_report.json`); `run_report.json` adds `architecture`,
   `bundle_seed`, `checkpoint_sha256`, `selection_m_recomputed`, `selection_eers_recomputed`,
@@ -283,7 +298,25 @@ formats, and `fit_risk_policy` as is. Code only so far: the real run follows the
 python -m src.tuning.v2_risk_run --checkpoint <bundle ckpt> --selection-set <S> \
   --profile configs/preprocessing.yaml --config configs/v2_candidates.yaml \
   --manifest <F2 manifest> --cache-dir <Stage 8 log-Mel caches> --out <new folder> --version risk-v2
+# aasist winner: --root <local extracted FoR root> in place of --cache-dir
 ```
+
+## v2 Stage 11 (V4b, `src/evaluation/stage11_v2_run.py`)
+
+The separate `stage11_test` claim for the v2 model set (D48 (7)): the winner's three seeds,
+`<winner>-v2-seed<k>`, `p` and prediction for the bundle seed only (D45), scored on CPU through
+`v2_risk_run.model_inputs` + `score_clips`. It reads the committed search evidence and the risk-v2
+outputs in `docs/audit_evidence/v2_risk/`; its rehearsal recomputes M per seed and the val-B bytes
+of risk-v2. Details: [stage11_run.md](stage11_run.md#v2-model-set-d48-7). Code only so far; the
+real run (notebook 09) follows risk-v2.
+
+## F5 (V5b, `src/bundle/f5.py`)
+
+ModelBundle v2 from the committed search, risk-v2 and v2 Stage 11 evidence and the run registry
+(D48 (7): refused until the v2 Stage 11 run is completed), the bundle-seed checkpoint folder
+`runs/<winner>_seed<k>/checkpoint/`, F3 profile and `risk-v2`; `build` / `verify` and
+`f5_record.json`. Details: [model_bundle.md](model_bundle.md#f5-modelbundle-v2). Code only; the build,
+the freeze decision and the hand-over follow the v2 Stage 11 run (cut-off Fri 4 Dec 23:59, D48 (4)).
 
 ## Tests (synthetic, CPU)
 
@@ -292,7 +325,9 @@ python -m src.tuning.v2_risk_run --checkpoint <bundle ckpt> --selection-set <S> 
 `tests/training/test_train_v2.py`, `tests/training/test_v2_resume.py` (per-epoch resume on a
 4-clip subset, real CPU training), `tests/tuning/test_v2_search.py`,
 `tests/tuning/test_v2_benchmark.py`, `tests/tuning/test_v2_risk_run.py` (V4a: round trips for all
-three candidates and the refusals), `tests/training/test_v2_batch_size_evidence.py` (config vs
+three candidates and the refusals; V4c: CLI input rules), `tests/tuning/test_v2_val_b_source.py` (V4c:
+rows, order, dtypes, val-B-only reads, two-pass refusal; end to end into the v2 Stage 11 rehearsal in
+`tests/evaluation/test_stage11_v2_run.py`), `tests/training/test_v2_batch_size_evidence.py` (config vs
 the V2b-2 evidence, torch-free); fakes in `tests/_v2_fakes.py` (24-clip raw cache, 10-clip S,
 deterministic fake codec, tiny noise/RIR, config copies with batch size 8 (or null, for the
 refusals) and fake pins).

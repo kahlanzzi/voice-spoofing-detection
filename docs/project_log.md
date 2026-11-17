@@ -7279,7 +7279,380 @@ V2b-4 remains blocked until those artifacts verify.
 
 ---
 
-### Entry 190 — D64 reviewed-commit preparation for the V1c recipe re-freeze (2026-11-16)
+### Entry 190 — Track V PR V4b: Stage 11 runner for the v2 model set, code only (2026-11-16)
+
+- **Owner:** Donia Mabrouk (Part C). Branch `feat/stageV4-stage11-v2-runner` from `main` `df6b289`.
+  Entry number: 190 is the next free one on `main` (189) and the open branches (183, 187).
+- **Why [doc]:** Execution Plan v3.0 §9 V4; D48 (7); Protocol §7 addendum: v2 gets its own
+  `stage11_test` claim for the v2 model set (the winner's three seeds; `p` and prediction for the
+  bundle seed only, D45), after v2 selection and before F5 (target Wed 2 Dec; F5 cut-off Fri 4 Dec
+  23:59). The v1 runner cannot do it (model IDs, v1 loader and Stage 7/8/10 evidence fixed in its
+  code; its `claim` refuses any earlier `stage11_test` record) and stays unchanged. No new decision.
+- **What changed:** new `src/evaluation/stage11_v2_run.py` (`rehearse` / `claim` / `score`, explicit
+  paths). It imports the v1 helpers (environment gate and record, `split_rows`, the feature digests,
+  `bundle_outputs`, `_create`, `_check` / `_record`, `_read_claim`, `_load_cache`, file names) and
+  keeps the two-phase claim → Drive flush → score procedure; nothing in `stage11_run.py` needed a
+  change. Evidence: `v2_risk_run.V2_SEARCH_EVIDENCE` (winner and bundle seed via
+  `bundle_checkpoint`; hashes and `best_selection_m` of seeds 0–2; `bundle_seed` =
+  `select_bundle_seed` over them; val-A cache hash = Stage 8's) and the new
+  `V2_RISK_EVIDENCE = docs/audit_evidence/v2_risk/` (architecture, bundle seed, checkpoint hash and
+  search-report hashes equal the search evidence; `risk_policy.json` hash). IDs
+  `<winner>-v2-seed<k>` from one function, roles `v2_bundle_seed` / `v2_other_seed`. Gate: two val-A
+  log-Mel builds equal to Stage 8 (`cnn-aug`, `crnn`) or in-memory val-A F3 waveforms equal to S's
+  clean ones (`aasist`); no MFCC, no D58 reference. Registry: exactly the v1 pair before the claim
+  and no record with a v2 ID; after it, exactly one started v2 record for this run_id and commit.
+  Test inputs in memory, two passes, hashes written to `features.json` before scoring; CPU scoring
+  through `v2_risk_run.model_inputs` + `score_clips`, twice, byte-identical. The test log-Mel hash
+  is compared with the v1 run's and recorded, not asserted. Rehearsal: exact M per seed with
+  `train_v2`'s functions; val-B input equal to risk-v2's and bundle raw scores and `p` equal to its
+  `val_b_scores.npz` bytes.
+- **Reviewed-code change (allowed by the brief):** `src/evaluation/clip_scores.py` gains the two v2
+  roles in a new `V2_APPLICABLE_COLUMNS` defined from `cnn_bundle_seed` / `cnn_other_seed`; lookups
+  use `ROLE_COLUMNS` (v1 + v2). `APPLICABLE_COLUMNS` stays the v1 table, because
+  `test_applicability_table_is_d41_d45` pins it by equality and `test_clip_scores.py` parametrizes
+  over it; adding the roles there would have changed existing tests.
+- **Access-rule change (for Khalil's review):** `tests/governance/test_for_test_access.py`
+  `ALLOWED` gains exactly `src/evaluation/stage11_v2_run.py` (file), with a comment citing D48 (7)
+  and PR V4b; its pin test is updated to match. The guard gains an `import` rule
+  (`from src.evaluation.stage11_run import SPLIT`, also with `as`; the attribute
+  `stage11_run.SPLIT` and the dotted path `src.evaluation.stage11_run.SPLIT`), with 3 planted and
+  1 lookalike case. Without its `ALLOWED` entry, `stage11_v2_run.py` is reported (line 83). An
+  alias (`import … as v1; v1.SPLIT`) is not seen (text guard, ADR 0007).
+- **Existing test touched:** `tests/evaluation/test_stage11_report.py` `test_report_module_is_not_test_split_access_for_the_guard` also pins `ALLOWED`; its expected tuple gains the v2 runner (found by the full run).
+- **Not changed:** `stage11_run.py`, `stage11_report.py`, `run_registry.py`, `v2_risk_run.py`,
+  `v2_search.py`, `train_v2`, models, checkpoints, `configs/`, committed evidence. No real run; no
+  FoR audio, dataset path or DEEP-VOICE access.
+- Empty registry refused (rule 4); confirmed in Donia's review, 2026-11-16.
+- **Tests [verified, CPU, synthetic]:** `tests/evaluation/test_stage11_v2_run.py` (51; search
+  evidence from the real `v2_search` writers, risk-v2 evidence from `v2_risk_run.run` on fakes) and
+  `tests/evaluation/test_clip_scores_v2_roles.py` (6); listed in `docs/stage11_run.md`.
+- **Checks:** see the PR report (full `REQUIRE_TORCH_TESTS=1 pytest -q`, `pytest -q tests/governance`).
+  CI on 3.13 not yet run (branch not pushed).
+- **Open [hypothesis]:** exact M on CPU for v2 seeds 1–2 is untested on real checkpoints (as V4a
+  for the bundle seed); a mismatch stops the rehearsal for a team decision.
+- **AI assistance:** Claude Code (Claude Opus 5.5) wrote the code, tests and docs from Donia's brief;
+  team review required before acceptance (D26).
+- **Gate:** **WAITING FOR APPROVAL.**
+
+---
+
+### Entry 191 — D65 proposed: D55 UI direction D and new design source (2026-11-16)
+
+- **Owner:** Iheb Zemzemi (Part E). Branch `docs/stage18-d55-design-source` from `main` `1078419`.
+  D65 is the next free D-ID (D62 unused on purpose; no open branch claims D65); ADR 0017 is the next ADR.
+- **Why [doc]:** D55 (1) and card P5. The team chose on Mon 2026-11-16; P5 had the vote by Fri 13 Nov
+  (`docs/reference/Execution_Plan_v3.0.md:362`). The Execution Plan is not edited.
+- **Decision (proposed):** D65 refines D55 (1). The choice is a mix of mockups A (Ruler) and B (Case file)
+  with three changes, built as Direction D. ADR 0017 holds the mapping table, the changes with
+  prototype lines, the colour rule, Overview (S9) out of D55, the font change and the build split
+  (B1 tokens and fonts, B2 shell, B3 Analyse and Result, B5 History; the live screen is delivered inside L2).
+- **What changed (docs only):**
+  - `docs/design/prototype-d55-direction-d.html`, copied byte for byte (sha256
+    `7cb2e4ae1d23d5309c7f11bf4ea6b6e17fc61d027965b14d91bc568cdc5ef34c` before and after; `cmp` equal).
+  - `docs/design/HANDOFF-v2.md` (target design).
+  - `docs/design/HANDOFF.md`: one status sentence at the start of line 3. The line count stays 306,
+    so the ~74 citations of HANDOFF.md line numbers in `web/` stay valid.
+  - `docs/design/README.md` pointer.
+  - `docs/decisions/0017-ui-direction-d.md`, D65 row and ADR index row, CHANGELOG.
+  - Nothing in `web/`, `api/`, `src/`, `deploy/` or `tests/`.
+- **Found while writing HANDOFF-v2 [verified against the prototype and decisions]:**
+  - The prototype's Live check uses the median of scored windows and leaves the first 3 windows
+    unscored (l.365, l.466, l.471–473). D52 (5)–(7) require the mean of all kept windows, no
+    running verdict before 3 kept windows, no-speech windows and a last-5 trend line. HANDOFF-v2 §5.10
+    follows D52.
+  - The prototype labels a verdict from `p` with `p > 0.997` → synthetic (l.385). The frozen band is
+    `[t − b, t + b)`, so the build takes verdicts and window labels from the API, never from `p`.
+  - `--line` on `--surface` is 1.23 (light) and 1.32 (dark). It is used on `.quiet` button and window-cell
+    borders: open point for B1. All text pairs are ≥ 5.28 : 1.
+- **D63 dependency [verified]:** `web/src/api/types.ts:18-27` has exactly the 8 §11 fields. `p`,
+  threshold, band and per-window values come only with D63 (`docs/decisions/README.md:69`,
+  Proposed). Until then results use the "Score not available" state (HANDOFF-v2 §5.9), so B3 does
+  not wait for D63.
+- **Colour finding [doc]:** red and amber verdict colours as chart fills. Measured in the D55 design
+  session with a colour-vision palette validator (OKLab ΔE × 100, simulated colour blindness): light
+  deuteranopia 3.2, normal vision 10.9; dark deuteranopia 6.3, normal vision 10.7. Not re-measured in
+  this PR.
+- **Checks [verified, local]:** `pytest -q tests/governance`: 89 passed. `pytest -q`: 2 failed,
+  1602 passed, 27 skipped. The 2 failures (`tests/evaluation/test_external_run.py`,
+  `ModuleNotFoundError: torch`) occur identically on `main` `1078419` (local Python 3.14.6 without
+  torch; CI uses 3.13 with CPU torch). Web: typecheck and lint clean; Vitest 1394 passed (44 files);
+  build ok; npm audit --omit=dev: 0 vulnerabilities. Secrets grep: 0. docker compose up --wait: api and
+  web healthy. e2e (Chromium, nginx :8001): 76 passed, POSTs 12 (planned 12), 429: 1. Live check on
+  http://localhost:8001 (2026-11-16, analyst01): sign-in, upload, result card (mock analyzer) and
+  History newest row unchanged, as expected for a docs-only PR. Prototype sha256 and `cmp` equal. 211 "l.N" citations checked
+  against the prototype.
+- **AI assistance:** Claude Code (Claude Opus 5.5) read the repo and the prototype and drafted HANDOFF-v2, ADR 0017
+  and this entry from Iheb's brief. The Direction D prototype was built with Claude (claude.ai,
+  Claude Opus 5.5) from mockups A and B and the team's reference images; axe 4.14.0, contrast and
+  390 px checks were run in that session. Team review is required before acceptance (D26).
+- **Gate:** **WAITING FOR APPROVAL** (Donia, Malak, Khalil).
+
+---
+
+### Entry 192 — Track V PR V5b: F5 build and verify tool (ModelBundle v2), code only (2026-11-17)
+
+- **Owner:** Donia Mabrouk (Part C). Branch `feat/stageV5-f5-build` from `main` `8e05e54`. Entry
+  number: 192 is the next free one on `main` and the open branches (191 on both Track V and Part E
+  branches).
+- **Why [doc]:** Execution Plan v3.0 §9 V5; D48 (4), (7); D59 (7). F5 must be verified by Fri 4 Dec
+  23:59 Tunis or v2 gets no DEEP-VOICE result; building it on 4 Dec must run a reviewed tool, not
+  write one. Hand-over to Iheb (API, D48 (5)) and Khalil (Stage 13, `verify_f5_artifacts`). No new
+  decision; the freeze decision with the real hashes is a later PR.
+- **What changed:** new `src/bundle/f5.py` (`expected_from_evidence`, `build`, `verify`, CLI
+  `python -m src.bundle.f5 {build,verify}`). It imports `f4.py`'s helpers and `build_bundle`; no
+  helper needed a change in `f4.py`. Evidence (paths fixed in code): v2 search `run_report.json` +
+  `selection_report.json`, v2_risk `run_report.json` + `risk_policy.json` (incl. the
+  `v2_search_evidence` binding), `docs/audit_evidence/stage11_v2_run/run_report.json` (new path,
+  where the v2 Stage 11 report will be committed) and `run_registry.jsonl` (JSON lines, hash chain,
+  exactly a started + completed v2 `stage11_test` record with the report's `run_id`), the profile
+  and Stage 6 (ledger, and F2 manifest hash = the search's: one check more than F4). Checkpoint
+  folder: exactly the two D59 files, combined hash = the search's, `checkpoint.json` architecture,
+  seed, version and provenance = the evidence; per-file hashes and sizes recorded as observed (no
+  v2 export manifest). After `build_bundle` (`bundle-v2`): `load_bundle_model` must give the
+  winner's architecture, the bundle seed, CPU, eval mode; every manifest value is compared.
+  `f5_record.json` = the F4 record fields without `baseline`, plus `architecture`, `bundle_seed`,
+  `selection`, `provenance` and `stage11_v2`. Docs: `docs/model_bundle.md` "F5 (ModelBundle v2)"
+  and its test tables, `docs/v2_training.md` pointer, CHANGELOG.
+- **Shared-core rule:** `f5.py` imports no `src.evaluation` / `src.tuning`; the run-folder format,
+  v2 model IDs, seeds, architectures, report names, evidence folders and registry key are restated
+  and `test_names_equal_the_research_definitions` asserts they equal `v2_search`, `v2_risk_run`,
+  `risk_run`, `stage11_v2_run`, `run_registry` and `v2_checkpoint`; an `ast` test refuses the imports.
+- **Not changed:** `f4.py`, `bundle.py`, `model_loader.py`, `external_run.py`, `stage11_v2_run.py`,
+  `v2_risk_run.py`, `v2_search.py`, models, checkpoints, `configs/`, committed evidence. No real
+  build; no dataset, FoR audio or DEEP-VOICE access.
+- **Tests [verified, CPU, synthetic]:** `tests/bundle/test_f5.py` (52) reuses the `world` fixture of
+  `tests/evaluation/test_stage11_v2_run.py` (search reports from the real `v2_search` writers,
+  risk-v2 from `v2_risk_run.run`), then runs `stage11_v2_run` claim → score with a `RunRegistry`;
+  `crnn` and `aasist` round trips incl. `verify_f5_artifacts(..., bundle_verifier=load_bundle,
+  bundle_loader=load_bundle_model)`; every refusal leaves nothing written. A manual mutation (registry
+  check disabled) made 3 tests fail. `tests/bundle/test_f5_evidence.py` (4, no torch): layering,
+  `f5._registry_records` equal to `RunRegistry(path).records()` (as dicts) on the real committed
+  `run_registry.jsonl` (added at Donia's review), and "the real repository refuses F5 before the v2
+  evidence" (skipped once it exists).
+- **Review (Donia, 2026-11-17):** approved with the registry-parser test above. Q1: the F5 build
+  runs on Colab (checkpoint on Drive, D15 runtime). Q2: the reuse of the Stage 11 v2 `world` fixture
+  is accepted. Q3: the freeze PR replaces the "refuses before the v2 evidence" test with pinned real
+  values; **note for that PR:** the record's `evidence_sha256` for `run_registry.jsonl` is the
+  build-time value (the registry grows with later claims, e.g. Stage 13/14), so it must not be pinned
+  against a later registry.
+- **Checks [verified, local Windows, Python 3.14 venv, torch 2.11.0+cpu]:** `REQUIRE_TORCH_TESTS=1
+  pytest -q`: 2216 passed, 2 skipped (9:09); `pytest -q tests/governance`: 89 passed (after the docs
+  edits). `tests/bundle/test_f4.py` and `test_f4_evidence.py` pass unchanged. CI on 3.13 not yet run
+  (branch not pushed).
+- **Open [hypothesis]:** none new; the real F5 depends on the v2 search, risk-v2 and v2 Stage 11 runs.
+- **AI assistance:** Claude Code (Claude Opus 5.5) wrote the code, tests and docs from Donia's brief;
+  team review required before acceptance (D26).
+- **Gate:** **WAITING FOR APPROVAL.**
+
+---
+
+### Entry 193 — D65 approved; approvals recorded after PR #143 (2026-11-17)
+
+- **Owner:** Iheb Zemzemi (Part E). Branch `docs/stage18-d65-approval-record` from `main` `b560dc1`.
+  Entry number: 193 is the next free one on `main` (192 is the last).
+- **What [verified from `gh pr view 143`]:** PR #143 merged on 2026-11-16 (21:46 UTC) with Donia's
+  review only (branch protection requires one approval), so D65 stayed Proposed, which was correct.
+- **Approvals [verified from `gh pr view 143`]:** Donia (review on PR #143, 2026-11-16), Khalil
+  (review on PR #143, 2026-11-16, after the merge), Malak (comment on PR #143, 2026-11-17,
+  https://github.com/kahlanzzi/voice-spoofing-detection/pull/143#issuecomment-6946655895).
+- **Process:** decision PRs merge only after every approval and the approval commit are on the
+  branch; GitHub's single required approval does not enforce that.
+- **Files:** `docs/decisions/README.md` (D65 row and ADR index row 0017),
+  `docs/decisions/0017-ui-direction-d.md` (Status line only), `docs/CHANGELOG.md` (D65 line),
+  this entry, Open items and Current status. Entry 191 is merged and not edited.
+- **AI assistance:** Claude Code (Claude Opus 5.5) collected the PR facts and wrote this record from
+  Iheb's brief; team review required before acceptance (D26).
+- **Gate:** **APPROVED.** Next: D55 build PR B1 (tokens and fonts).
+
+---
+
+### Entry 194 — D63 API-owner clarifications, proposal only (2026-11-17)
+
+- **Owner:** Khalil Dridi (D63 author); API-owner answers confirmed by Iheb Zemzemi.
+- **Base:** `4b8f8f5` (`origin/main` at branch point); branch `docs/stage17-d63-api-owner-clarifications`.
+- **Change:** Expanded the D63 proposal across the API design, ADR 0016 and Protocol §11. Zero kept windows return a structured `422 no_speech`, create no analysis row and emit one privacy-safe operational event with only the request ID and error code. Upload window details use a versioned JSON array (JSON in SQLite, JSONB in PostgreSQL), capped at 30 entries and stored as binary64 values; `p` is null exactly for `no_speech`. D17-dropped windows remain in the timeline and are excluded from the mean. The proposal recommends D34's mean for uploads with one or two kept windows; this rule is still pending all-four approval, while D52's three-window warm-up remains live-only. Provenance types now match `RiskPolicy`: `deferral_on_fit` is the achieved numeric rate in `[0, 1]`, not a boolean.
+- **Approval gate:** D63 remains Proposed. The prior decision PR does not constitute all-four approval; no implementation, database migration or SRS v4.1 adoption is authorized until all four explicitly approve and the approval/status commit is merged. SRS v4.0 remains current.
+- **Files:** `docs/api_design.md`, `docs/decisions/0016-calibrated-spoof-probability.md`, `docs/decisions/README.md`, `docs/experimental_protocol.md`, `docs/CHANGELOG.md`, this entry, Open items and Current status. Documentation only; no API or application code changed.
+- **Verification [user-run]:** Full suite in a Linux Docker container with Python 3.13, CPU Torch 2.11.0 and `REQUIRE_TORCH_TESTS=1`: **2,218 passed, 1 skipped, 6 warnings** in 330.82 seconds. The run covered the D63 branch before this final documentation update. After this update, `git diff --check origin/main` passed.
+- **AI assistance:** Codex helped draft and review the proposal and documentation; team approval remains required (D26).
+- **Gate:** **PROPOSED — WAITING FOR ALL-FOUR APPROVAL.**
+
+---
+
+### Entry 195 — D63 approved by all four team members (2026-11-17)
+
+- **Owner:** Khalil Dridi (author sign-off).
+- **Approvals [verified]:** [Donia Mabrouk](https://github.com/kahlanzzi/voice-spoofing-detection/pull/146#pullrequestreview-5938699193),
+  [Malak Ben Salem](https://github.com/kahlanzzi/voice-spoofing-detection/pull/146#pullrequestreview-5939071078)
+  and [Iheb Zemzemi](https://github.com/kahlanzzi/voice-spoofing-detection/pull/146#pullrequestreview-5939112941)
+  approved revision `5f03150` on [PR #146](https://github.com/kahlanzzi/voice-spoofing-detection/pull/146).
+  Khalil provided author sign-off. The approvals cover the revision recorded in Entry 194.
+- **Decision:** Uploads with one or two D17-kept windows return a normal result using their
+  unrounded D34 mean. The D52 three-window warm-up applies to live sessions only. The zero-window
+  error, versioned window storage and policy provenance are part of the same approved target.
+- **Delivery:** D63 amends the C-to-E response in D26 and the API clause in D55. After this approval
+  record merges, coordinate the implementation base and a single API/database migration with Iheb.
+  The base contract still describes the deployed API. SRS v4.0 remains the current requirements
+  version until v4.1 is adopted.
+- **AI assistance:** Codex verified the GitHub reviews and updated the decision and status records
+  at Khalil's request.
+- **Gate:** **APPROVED — IMPLEMENTATION PENDING.**
+
+---
+
+### Entry 196 — Optional Torch guard for two Stage 13 tests (2026-11-17)
+
+- **Owner:** Khalil Dridi. Iheb reported that two synthetic Stage 13 tests failed when their shared
+  helper imported the Stage 11 runner on a machine without Torch.
+- **Change:** `tests/evaluation/test_external_run.py` calls the existing `require_torch()` helper
+  before importing the Stage 11 runner. A local run without Torch skips those two tests. CI still
+  requires Torch via `REQUIRE_TORCH_TESTS=1`. The runtime runner and access gates are unaffected.
+- **Checks [verified]:** The focused suite without Torch returned **27 passed, 2 skipped**.
+  With Torch and `REQUIRE_TORCH_TESTS=1`, it returned **29 passed**.
+  Evaluation and governance together without Torch returned **486 passed, 6 skipped**.
+  The standalone governance suite returned **89 passed**. Ruff passed for the changed test file.
+- **AI assistance:** Codex drafted and checked the test change. Human review is pending.
+- **Gate:** **WAITING FOR REVIEW.** No external dataset access or official run claim.
+
+---
+
+### Entry 197 — Track V PR V6a: v2 Stage 11 metrics report, code only (2026-11-17)
+
+- **Owner:** Donia Mabrouk (Part C). Branch `feat/stageV6a-stage11-v2-report` from `main` `9b51885`.
+  Entry number: 197 is the next free one on `main` and the open branches (196 last used on
+  2026-11-17; 185 stays reserved for Malak).
+- **Why [doc]:** Protocol §7 addendum ("the same storage and reporting rules apply"); D48 (7); D57;
+  D31. `stage11_v2_run score` stores clip scores and `run_report.json` but no metrics; notebook 09
+  must compute them from the stored files only, with code fixed before anyone sees a number, as
+  notebook 06 did for v1. Remaining item 8 (the v2 extension of the Stage 11 report, Entry 190).
+- **Scope decision (Donia, 2026-11-17, option A, before any v2 test result):** D57 is applied to the
+  v2 model set as written, with no hypothesis. Reasons: (1) the Protocol as written: H1 and H5 are
+  v1 hypotheses (§1); (2) the v1–v2 comparisons are pre-registered as H8 (Stage 13) and H9 (Stage
+  14), so a v1–v2 comparison here would be a new analysis; (3) no decision round on the critical
+  path to F5 (cut-off Fri 4 Dec). No new decision; the D57 text is unchanged. The mapping of D57 to
+  v2 is written in `CONVENTIONS_V2` and in `docs/stage11_report.md` "v2 model set": (1) the model =
+  the bundle-seed v2 model; (2) EER and ROC-AUC on `raw_score` for all three seeds; (3) subgroups as
+  D57; (4) forced binary at the risk-v2 threshold and three-way from the stored prediction, no
+  baseline row; (5)–(6) not applicable, stated in the report; (7) CIs for the bundle model only;
+  (8)–(9) as D57.
+- **What changed:** new `src/evaluation/stage11_v2_report.py` (`build_report`, `write_report`, CLI
+  `python -m src.evaluation.stage11_v2_report --run-dir --registry --manifest --search-evidence
+  --risk-evidence --out`; the policy is `<risk-evidence>/risk_policy.json`). Integrity checks before
+  any metric: run report (architecture, exactly `<architecture>-v2-seed0..2`, roles, bundle seed),
+  claim (v1's `_check_claim` plus architecture, bundle seed, model IDs), registry (one started + one
+  completed record for this `run_id` with the v2 set), score files (and the folder holds only their
+  files), same clips, F2 join, evidence (search winner and bundle seed via `search_bundle`, per-seed
+  checkpoint hashes, risk-v2 architecture / bundle seed / checkpoint / `v2_search_evidence`, policy
+  hash, risk-v2 `version` = the parsed policy's version (`risk_v2.policy_version`, as f5.py's "policy
+  version", added at Donia's review), F2 hash = risk-v2's and the approved value), re-derivation (bundle `p` byte for byte, band
+  rule, no `p` / prediction for the other seeds). JSON: v1 keys minus the hypothesis content, plus
+  `architecture`, `hypotheses: null`, `hypotheses_note`. Docs: `docs/stage11_report.md` "v2 model
+  set", one pointer line in `docs/stage11_run.md` (v2 Outputs), CHANGELOG.
+- **Reuse:** the model-independent helpers of `stage11_report.py` are imported (a test checks they
+  are the same objects). v2 versions were written only for code bound to v1 IDs, roles or evidence
+  (run report, registry, score files, same clips, re-derivation, model and seed rows, Markdown,
+  `write_report`). One v1 helper that holds no model ID was still not reusable as is:
+  `_load_manifest` names its check `manifest.sha256_stage10` and reads the v1 module's approved
+  hash, so the v2 module has its own (`manifest.sha256_risk_v2`, same reading rule); the v1 helper
+  is unchanged. Torch-free: the v2 runner's constants are re-declared (tested equal);
+  `search_bundle` restates `v2_risk_run.bundle_checkpoint` (tested equal on 8 cases, incl. refusals).
+- **Not changed:** `stage11_report.py`, `stage11_run.py`, `stage11_v2_run.py`, `clip_scores.py`,
+  `metrics.py`, `bootstrap.py`, evidence, configs, notebooks; `ALLOWED` of the FoR test guard. No
+  real run; no dataset, FoR audio or DEEP-VOICE access.
+- **Tests [verified, CPU, synthetic]:** `tests/evaluation/test_stage11_v2_report.py` (90): a `crnn`
+  set with bundle seed 1 on the v1 hand table (EER 1/4, AUC 39/48, forced binary (6, 1, 5, 2),
+  three-way bonafide (4, 1, 1) / spoof (2, 5, 1), seed EERs 0, 1/4, 0); agreement with the harness;
+  62 single-check tamper cases (each raises with its own name, nothing written) and a test that every
+  recorded check is tampered; v1 model set, v1 run report, baseline entry or file refused;
+  byte-identical twice (CLI and functions); `--out` and dirty worktree refused; torch-free import;
+  guard and `ALLOWED`; with torch, the report on the v2 runner's own `claim` + `score` output for
+  `crnn` and `aasist`. `tests/evaluation/test_stage11_report.py` passes unchanged.
+- **Checks [verified, local Windows, Python 3.14.7 venv, torch 2.11.0+cpu]:** `REQUIRE_TORCH_TESTS=1
+  pytest -q`: 2306 passed, 2 skipped (9:15); `pytest -q tests/governance`: 89 passed (after the docs
+  edits). CI on 3.13 not yet run (branch not pushed).
+- **Open [hypothesis]:** none new. The real report runs in notebook 09 on the platform of the v2
+  Stage 11 run (byte-exact `p` check, as Entry 161), pointing at the committed `v2_search/` and
+  `v2_risk/` evidence.
+- **AI assistance:** Claude Code (Claude Opus 5.5) wrote the code, tests and docs from Donia's brief;
+  team review required before acceptance (D26).
+- **Gate:** **WAITING FOR APPROVAL.**
+
+---
+
+### Entry 198 — Stage 13 scratch runtime and Drive rehearsal (2026-11-17)
+
+- **Owner:** Khalil Dridi.
+- **D58 rehearsal:** The report checksum verified. After installing the dependencies from the
+  report's recorded commit, the Colab T4 scratch runtime reported an exact environment match.
+- **D35 rehearsal:** A dummy file written to personal My Drive survived a flush and a separate
+  Colab runtime. The write and read-back SHA-256 matched
+  (70520a98873a6685ff395b6bf6458bf1f72a4accf04dce864d42a974e3d82915).
+  The shared project folder was read-only for Khalil. The approved storage target remains
+  unverified. The official registry and external audio were untouched.
+- **AI assistance:** Codex ran the scratch checks and drafted this entry. Human review is pending.
+- **Gate:** **WAITING FOR APPROVAL.** Verify the applicable D48 model set, recheck D58 in the
+  run session, and verify the approved Drive target. All four review before the claim.
+
+---
+
+### Entry 199 — Track V PR V4c: F3 waveform val-B source for aasist (risk-v2), code only (2026-11-17)
+
+- **Owner:** Donia Mabrouk (Part C). Branch `feat/stageV4c-aasist-val-b-source` from `main`
+  `ae00003`. Entry number: 199 is the next free one on `main` and the open branches (197 on `main`,
+  198 on `docs/stage13-drive-rehearsal`; 185 stays reserved for Malak).
+- **Why [doc]:** Execution Plan v3.0 §9 V4; Remaining item 6. `v2_risk_run.run` takes, for an
+  `aasist` winner, an F3 waveform val-B source, but none existed and the CLI could not pass one, so an
+  `aasist` win could not be fitted.
+- **Schedule change (Donia, 2026-11-17, before any search result):** build the source now, as code
+  only, instead of "only if aasist wins". Reason: selection is Fri 27 Nov and risk-v2 is due Mon 30
+  Nov; building, reviewing and running new code over one weekend would put the F5 cut-off (Fri 4 Dec
+  23:59, D48 (4)) at risk. No rule, metric, threshold, split or decision changes; no new decision. If
+  aasist does not win, the code stays unused and tested.
+- **What changed:** new `src/tuning/v2_val_b_source.py`: `val_b_waveform_source(root, manifest_path,
+  profile_path) -> ValBWaveformSource`. Called, it loads the F2 manifest and profile and reads exactly
+  the F2 val-B rows, sorted by path, through `stage11_v2_run`'s own `split_rows`, `compute_inputs`
+  (one `read_verified_audio` + `extract_features` call per clip, `prepared.waveform` kept, two
+  passes, refused if the hashes differ) and `_rows_arrays`, imported, not copied, so the arrays are
+  the ones the v2 Stage 11 rehearsal recomputes (part (c)). Nothing is read until the function is
+  called; nothing is cached or written (as D46 (7)). Own module, not in `v2_risk_run.py`:
+  `stage11_v2_run` imports `v2_risk_run`, so a module-level import there would be a cycle;
+  `v2_risk_run.main` imports the new module when the winner is aasist. FoR test-access guard: the
+  module imports no test-split constant (the import rule covers `stage11_run.SPLIT` only) and holds
+  no "test" string; the guard reports nothing and `ALLOWED` is unchanged. `v2_risk_run.main`:
+  `--root` added; the winner is read from the evidence (`bundle_checkpoint`) before the argument
+  checks; aasist: `--root` required, `--cache-dir` refused; `cnn-aug` / `crnn`: `--cache-dir`
+  required, `--root` refused (argparse error, exit 2). Module docstring and the `ValBWaveformSource`
+  comment updated. Docs: `docs/v2_training.md` risk-v2 section, CHANGELOG.
+- **Not changed:** `run`'s logic and outputs (its aasist refusal message was reworded at review, see
+  Open), `_waveform_val_b`, `fit_risk_policy`,
+  `stage11_v2_run.py`, `train_v2`, models, checkpoints, configs, evidence. No real run; no dataset,
+  FoR audio or DEEP-VOICE access.
+- **Tests [verified, CPU, synthetic]:** `tests/tuning/test_v2_val_b_source.py` (4): exactly the
+  val-B rows, sorted, unique, float32 (n, 32000) / int8 / unicode, equal to a hand-built F3 pass and
+  to `stage11_v2_run`'s in-memory input (content hash), nothing written; read spy: each val-B clip
+  read twice, no train, val-A or test path; a differing second pass refused; no split argument or
+  other split string. `tests/tuning/test_v2_risk_run.py` (+8): CLI rules for both kinds, the source
+  built from `--root`, the winner read before the checks. `tests/evaluation/test_stage11_v2_run.py`
+  (+1): risk-v2 fitted for the aasist fake with the new source (same `val_b_input` and
+  `val_b_scores.npz` bytes as the fixture's hand-built source), then `rehearse` passes against it,
+  including `val-B.waveform.content_sha256` and the raw-score and `p` bytes. One existing test
+  changed: `test_cli_parses_required_arguments` gains a log-Mel evidence folder, because `main` now
+  reads the winner before the argument checks (the prompt asked for both "winner first" and "existing
+  tests unchanged"; the committed `v2_search/` evidence does not exist yet). All other existing
+  `v2_risk_run` and `stage11_v2_run` tests unchanged.
+- **Checks [verified, local Windows, Python 3.14.7 venv, torch 2.11.0+cpu]:** `REQUIRE_TORCH_TESTS=1
+  pytest -q`: 2321 passed, 2 skipped (13:08); `pytest -q tests/governance`: 89 passed (after the docs
+  edits). CI on 3.13 not yet run (branch not pushed).
+- **Open:** none. Closed at review: `run`'s aasist refusal message no longer says "none exists
+  yet"; it now names `src.tuning.v2_val_b_source.val_b_waveform_source` and the CLI `--root` (one
+  string, no logic change; the regex in `test_aasist_without_waveform_source_is_refused` updated).
+- **AI assistance:** Claude Code (Claude Opus 5.5) wrote the code, tests and docs from Donia's brief;
+  team review required before acceptance (D26).
+- **Gate:** **WAITING FOR APPROVAL.**
+
+---
+
+### Entry 200 — D64 reviewed-commit preparation for the V1c recipe re-freeze (2026-11-16)
 
 **Owner:** Malak Ben Salem. Review: Donia Mabrouk before the real T4 run.
 
@@ -7302,7 +7675,7 @@ comparison and continue the V1c selection-set and training-resource builds. V2b-
 
 ---
 
-### Entry 191 — D64 pre-run review corrections (2026-11-16)
+### Entry 201 — D64 pre-run review corrections (2026-11-16)
 
 **Owner:** Malak Ben Salem. Reviewer: Donia Mabrouk.
 
@@ -7341,22 +7714,26 @@ Donia approves the exact follow-up commit; it must then run from that clean comm
 - [ ] V1c: materialize S with `write_selection_set` on Colab T4 runtime 2026.10 and verify both forms with `load_selection_set`, including the Stage 8 val-A known answer (D50 (4), D58; Entries 172, 180, 185).
 - [ ] V1c: build and verify the deterministic training-half MUSAN/RIR resource cache outside the repo; refuse selection-half or all-zero resources (D50 (5); Entries 180, 185).
 - [x] V1c: make `FFmpegCodecBackend` verify its pin once per backend instance without changing encode/decode output bytes (codec 0.42 s/item dominates augmentation; Entries 172–173, 185).
-- [ ] D64 (Entries 189–191; approved, PR #140): guard/comparison code and the pre-run review corrections are locally tested; Donia reviews the fixed follow-up commit, then Malak regenerates the whole recipe once on T4 2026.10 and commits the old-vs-new evidence. Blocks V1c.
+- [ ] D64 (Entries 189, 200–201; approved, PR #140): guard/comparison code and the pre-run review corrections are locally tested; Donia reviews the fixed follow-up commit, then Malak regenerates the whole recipe once on T4 2026.10 and commits the old-vs-new evidence. Blocks V1c.
 - [ ] V2b-4: search CLI/notebook wired to the V1c corpus loader; T4 rehearsal (`check_clean_transform`, two short runs for observed crnn/cuDNN determinism), then the search (Entry 172).
 - [ ] V2b-3: read `n_all_zero_clips` from the raw train cache (`build` / `verify` print it with the first 10 paths). If it is > 0, a decision (**D62**) is needed before any training (`run_search` refuses such a cache): `Augmenter`'s `recorded_noise` refuses a silent clip [verified], and Malak's S builder (`noise_10db`) has the same issue on val-A (Entry 172; `docs/v2_training.md`).
 - [x] Approve D61 (Iheb, Malak, Khalil) and add its approval commit before any v2 training (Entry 170). (PR #127, 2026-11-13)
 - [x] PR V2b-1: v2 training loop, selection metric M over set S, resumable search, benchmark code (Entry 172; review pending).
 - [x] F5 model loader dispatching on `architecture` (D61 (6)), when F5 is built (Entry 170). Done ahead of F5 on synthetic bundles, with the Stage 13 hand-over test (PR V5a, Entry 186; review pending).
-- [ ] V4: v2 risk policy (Protocol §6 unchanged, clean val-B, bundle seed only; D45, D49). Code done: `src/tuning/v2_risk_run.py` (PR V4a, Entry 188; review pending). Run pending: after the search, commit its reports to `docs/audit_evidence/v2_search/`, then run with `--version risk-v2`; if aasist wins, build the F3 waveform val-B source first (Execution Plan v3.0 §9 V4).
+- [ ] V4: v2 risk policy (Protocol §6 unchanged, clean val-B, bundle seed only; D45, D49). Code done: `src/tuning/v2_risk_run.py` (PR V4a, Entry 188; review pending) and the aasist F3 waveform val-B source with CLI `--root` (PR V4c, Entry 199; built ahead of selection, review pending). Run pending: after the search, commit its reports to `docs/audit_evidence/v2_search/`, then run with `--version risk-v2` (`--cache-dir` for cnn-aug / crnn, `--root` for aasist).
+- [x] V4c review: reword `run`'s aasist refusal message ("none exists yet") now that the source exists, or keep it (Entry 199). Reworded at review.
 - [x] Draft the extension authentication design and security-review text in SDD v2.0 before implementation (D51; Entry 165; human approval and merge pending).
 - [ ] Choose the hosting provider and record it (D54 (9)); load test on staging, then record K, L, `analysis_timeout_s` and `L_MAX` (D53 (3)).
 - [x] SRS v4.0 Markdown/PDF pair and version index merged in PR #121 (Entry 164).
 - [ ] Khalil confirms the SRS v4.0 owner review; GitHub currently records Donia's approval on PR #121.
-- [ ] Obtain all-four approval for revised D63/ADR 0016 in its decision PR and merge the approval/status commit before implementation (Entry 187).
-- [ ] Coordinate with Iheb on the full API contract and one database migration; implement only after D63 approval, then adopt the synchronized SRS v4.1 Markdown/PDF pair and update source-of-truth pointers when v4.1 becomes current.
+- [x] Obtain all-four approval for revised D63/ADR 0016, including the D34 mean for uploads with one or two kept windows (PR #146, Entry 195).
+- [ ] After the D63 approval record merges, coordinate the full API contract and one database migration with Iheb. Prepare the synchronized SRS v4.1 Markdown/PDF pair and update source-of-truth pointers when v4.1 becomes current (Entry 195).
 - [x] SDD v2.0 Markdown/PDF pair and version index merged in PR #122 (Entry 165).
 - [ ] Iheb confirms the SDD v2.0 owner review and all four reviewers explicitly accept the D51 extension-authentication design before extension implementation; PR #122 currently records Donia's approvals only.
-- [ ] Stage 13 runner (D35) and Stage 11 runner (PR #68) accept the v2 model set (D48 (3), (7)).
+- [ ] Stage 13 runner (D35) and Stage 11 runner (PR #68) accept the v2 model set (D48 (3), (7)). Stage 11 part: V4b code done (`src/evaluation/stage11_v2_run.py`, Entry 190; review pending, incl. the `ALLOWED` access-rule change for Khalil).
+- [x] V4b follow-up (item 8): v2 Stage 11 metrics report code, `src/evaluation/stage11_v2_report.py`; D57 applied to the v2 set with no hypothesis (Donia, option A) (PR V6a, Entry 197; review pending).
+- [ ] V4b follow-ups: the v2 Stage 11 run (after risk-v2, before F5; target Wed 2 Dec) and its notebook (09), which also produces the real v2 metrics report on the run's platform (Entries 190, 197).
+- [ ] V5: V5b code done (`src/bundle/f5.py`, Entry 192; review pending); F5 build on Colab after the v2 Stage 11 run, the freeze decision (next free D) and the hand-over still open (cut-off Fri 4 Dec 23:59 Tunis, D48 (4)).
 
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
@@ -7369,6 +7746,11 @@ Donia approves the exact follow-up commit; it must then run from that clean comm
   accepted, set D33–D35 to Approved (Entry 58). (PR #29, 2026-10-19)
 
 **Khalil: Stage 13 preparation**
+- [x] Review and merge the optional Torch guard for the two synthetic runner tests (Entry 196; PR #147).
+- [x] Match the D58 report hash and recorded T4 environment in a scratch session (Entry 198).
+- [x] Verify a dummy-file write and fresh-session read-back in personal My Drive (Entry 198).
+- [ ] Confirm the approved registry location and repeat the check in a writable scratch
+  subfolder there. Recheck D58 in the official run session (Entry 198).
 - [x] Implement the D35 per-window frozen preprocessing integration test (Entry 55); synthetic test verifies each complete window is independently preprocessed and the remainder is dropped (Entry 175).
 - [x] Add stored-score integrity checks, D33 eight-speaker summaries, D34 CNN file means and the D36 paired EER bootstrap (Entry 176; synthetic rows only).
 - [x] Add D34 source-speaker-clustered file-level intervals and strict JSON report export (Entry 177; synthetic rows only).
@@ -7722,7 +8104,11 @@ Donia approves the exact follow-up commit; it must then run from that clean comm
 - [ ] Contract: `deferral_on_fit` is not nullable (Status, MonitoringMarker) while §4.7 says a figure that cannot be computed is `null`; ask Donia (Entry 130).
 - [x] Non-text contrast below 3:1 (light `--line-strong`/`--surface` 1.86, dark 1.99, light `--unc-mark` and `--warn-mark` 2.87; Entry 128): fixed for WCAG 1.4.11, no exceptions left (merged in PR #92, `c8c047e`; Entry 131).
 - [ ] `npm audit`: 12 moderate (GHSA-g3hv-75wg-m249, `minimatch` 10.2.6 under eslint and typescript-eslint, dev only; production 0). Decide: wait for upstream, or an `overrides` pin to `minimatch` ≥ 11.0.1 by approval (Entry 127).
-- [ ] MVP exception: S8 Analysis details and S9 Overview are stub pages, listed under "Not in this MVP" in the README; Overview: option A, the stub keeps its rail link and the demo video does not open it (Entry 148).
+- [ ] MVP exception: S8 Analysis details and S9 Overview are stub pages, listed under "Not in this MVP" in the README; Overview: option A, the stub keeps its rail link and the demo video does not open it (Entry 148). Under D65 S9 stays a stub: Overview is designed in the Direction D prototype but not built in D55 (Entry 191).
+- [x] Approve D65 (Donia, Malak, Khalil) and add its approval commit (Entry 191). Approved; recorded in Entry 193.
+- [ ] Overview (S9): summary endpoint and charts (uncertain rate vs 10% target, version-change markers); check whether p and clip duration are stored (D65, Entry 191).
+- [ ] D55 build B3 shows real `p` and per-window values once the D63 fields ship. Until then, show "Score not available" (HANDOFF-v2 §5.9; Entries 191, 195).
+- [ ] D55 build B1: decide the `--line` border on `.quiet` buttons and window cells (1.23 / 1.32 on `--surface`; HANDOFF-v2 §3; Entry 191).
 - [ ] NFR-10: Linux fresh-clone flow passed (Entry 148). Malak's Windows fresh clone reached healthy
   containers, `{"ok":true}` and account creation (Entry 149); record browser sign-in, upload, result
   and History to complete the Windows test. macOS remains untested.
@@ -7759,7 +8145,7 @@ Donia approves the exact follow-up commit; it must then run from that clean comm
 
 ---
 
-## Current status — updated 2026-11-16 (Entry 191)
+## Current status — updated 2026-11-17 (Entries 198, 199)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -7775,19 +8161,33 @@ current epoch. PR V5a (Entry 186, waiting for review) adds the F5 model loader: 
 dispatches on the checkpoint's `architecture` (D61 (6)) and passes a synthetic hand-over with the
 Stage 13 runner for all three candidates. PR V4a (Entry 188, waiting for review) adds the v2
 risk-policy run (Protocol §6 unchanged, bundle seed only, exact M reproduction); the real run waits
-for the search evidence. See the open items above and [Execution Plan v3.0](reference/Execution_Plan_v3.0.md).
+for the search evidence. PR V4c (Entry 199, waiting for approval) adds the aasist F3 waveform val-B
+source and the CLI `--root`, built before selection by Donia's schedule choice so an aasist win can be
+fitted on Mon 30 Nov without new code; code and synthetic tests only. PR V4b (Entry 190, waiting for review) adds the Stage 11 runner for the v2
+model set (D48 (7)), code and synthetic tests only; the real v2 Stage 11 run and notebook 09 follow
+risk-v2. PR V6a (Entry 197, waiting for approval) adds the v2 metrics report
+(`src/evaluation/stage11_v2_report.py`), code and synthetic tests only: D57 applied to the v2 set as
+written, with no hypothesis (Donia, option A; v2–v1 comparisons stay H8 and H9); notebook 09 runs it
+on the stored v2 files on the run's platform. PR V5b (Entry 192, waiting for review) adds the F5 build and verify
+tool (`src/bundle/f5.py`), code and synthetic tests only: it refuses F5 until the v2 Stage 11 run is
+completed in the registry (D48 (7)); the real build, the freeze decision and the hand-over follow
+that run, before the Fri 4 Dec 23:59 cut-off. See the open items above and [Execution Plan v3.0](reference/Execution_Plan_v3.0.md).
 
 **Khalil / Stage 13 — preparation merged; external run not ready.** Runner preparation from Entries
 175–179 merged in PR #133. The synthetic Stage 13 suite reported 33 passed; PR #134 subsequently
 reported the full Torch-enabled suite as 2,002 passed and 2 skipped, plus 88 governance tests, with
-the required checks, e2e and web checks green. The runner remains preparation only. Before the
-single Stage 13 run, verify the applicable D48 model set (F5 before the cutoff, or the specified
-v1-plus-baseline fallback after it), the exact-runtime D58 rehearsal, and durable Drive claim
-persistence/read-back; complete any follow-up loader integration, review and the Stage 13 brief.
+the required checks, e2e and web checks green. The optional Torch guard merged in PR #147
+(Entry 196). The D58 scratch runtime matched the rehearsal, and a personal Drive write passed
+a fresh-runtime read-back (Entry 198). The approved Drive target still needs its own check.
+Before the single Stage 13 run, verify the applicable D48 model set (F5 verified by the cutoff,
+or v1 plus baseline after it) and recheck D58 in the run session. Complete any follow-up loader
+integration and all-four review before the run. The Stage 13 brief follows the run.
 No DEEP-VOICE audio was opened or scored, and no external-run claim was created during preparation.
 
 **Application status.** The React Docker MVP still displays mock analyzer results. F4-to-API
 integration is Iheb’s P1 work; the mock verdict must not be presented as a real model result.
+D65 (Entry 191, approved in Entry 193) names Direction D and `docs/design/HANDOFF-v2.md` as the D55 target design;
+the shipped UI is unchanged until the D55 build PRs.
 
 **Track V V1c implementation (Entry 185):** on `feat/stageV1-selection-set-build`, the pure frozen
 recipe, hash-verifying selection-set builder, strict training-half resource-cache builder/loader,
@@ -7796,22 +8196,24 @@ implemented and synthetically tested. The Torch-required full suite passes (`204
 No real corpus audio was accessed or committed. V1c remains open for the real Colab T4 S
 materialization, real training-half cache build and small permitted evidence.
 
-**D64 preparation (Entry 190):** the exact requirements-version guard and fail-closed old-vs-new
+**D64 preparation (Entry 200):** the exact requirements-version guard and fail-closed old-vs-new
 recipe comparison are implemented and focused tests pass. No regeneration has been run. Donia must
 review the fixed commit before Malak runs the complete recipe once on T4 2026.10 from that commit.
 
-**D64 review follow-up (Entry 191):** the old side is cryptographically bound to the committed V1b
+**D64 review follow-up (Entry 201):** the old side is cryptographically bound to the committed V1b
 files, the new report records D64 commit/library/runtime provenance, and the official T4 runtime gate
 runs before output creation. The complete governance folder passes. The T4 regeneration remains
 blocked pending Donia's review of the follow-up commit.
 
 **Khalil’s next project work.** Check and sign off the SRS v4.0 draft you own: PR #121 is merged, but
 the GitHub review list currently records Donia’s approval only. Continue Stage 13 preparation only
-within the gates above. The revised D63 proposal awaits all-four approval in its decision PR. It covers unrounded calibrated `p` tied to `policy_version`, policy threshold/band provenance, and upload/live per-window values. No implementation is authorized until the approval/status commit is merged and the API/migration plan is coordinated with Iheb. The D52 warm-up analysis is scheduled for W3 (23–29 November); Stages 15–16
-follow later in the plan.
+within the gates above. D63 has all four approvals (Entry 195). One or two kept upload windows use
+D34’s mean, and zero kept upload windows return `422 no_speech` without a stored analysis. After
+the approval record merges, coordinate the implementation and migration with Iheb.
+The D52 warm-up analysis is scheduled for W3 (23–29 November); Stages 15–16 follow later in the plan.
 
 **What is next:**
 1. Track V proceeds with Malak’s V1c and the remaining v2 training/selection work.
-2. The team reviews revised D63 and coordinates one API/migration change with Iheb. Khalil confirms
-   the SRS v4.0 owner review and keeps Stage 13 preparation within its gates.
+2. Merge the D63 approval record after CI passes and coordinate implementation with Iheb. Khalil
+   confirms the SRS v4.0 owner review and keeps Stage 13 preparation within its gates.
 3. Do not open, score or claim DEEP-VOICE until the single-run prerequisites and team review pass.

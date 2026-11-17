@@ -1,6 +1,6 @@
 # Analyst console: design handoff (prototype v4)
 
-Design reference for the Stage 18 React build (D38 / [ADR 0008](../decisions/0008-web-frontend-react.md)).
+**Describes the shipped UI until the D55 build PRs replace it; target design: [HANDOFF-v2.md](HANDOFF-v2.md).** Design reference for the Stage 18 React build (D38 / [ADR 0008](../decisions/0008-web-frontend-react.md)).
 The prototype is [`analyst-console-prototype.html`](analyst-console-prototype.html); open it in a
 browser, click **Enter demo without credentials**, and use **Prototype controls** for the other
 states. The **Design system** button in the yellow banner opens the component reference page.

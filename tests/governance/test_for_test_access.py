@@ -3,7 +3,8 @@
 The FoR test split is evaluated once (Stage 11, D31) and again only under the D41 purpose
 stage14_robustness, through code reviewed for that purpose. This test scans src/, notebooks/ and
 configs/ for code that asks for the test split, so a stray loader, cache build or notebook cell is
-caught in CI. ALLOWED holds exactly the Stage 11 runner, added in its own reviewed PR.
+caught in CI. ALLOWED holds exactly the Stage 11 runner and the Stage 11 runner for the v2 model set
+(D48 (7), PR V4b), each added in its own reviewed PR.
 ALLOWED_LINES exempts one rule on one line that is not data access; an entry names the file, the
 exact stripped line text, the rule and the reason. Any other rule on that line is still reported,
 and any edit to the line text ends the exemption.
@@ -25,6 +26,9 @@ under configs/ with json.loads; a file that does not parse is reported, never sk
 - cli:        --split test / --split=test in any line (incl. notebook ! lines), or "--split",
               "test" next to each other in a list or tuple literal
 - yaml, json: a YAML or configs/ JSON value (not a key) equal to "test"   split: test
+- import:     the v1 runner's split constant, which holds "test": `from src.evaluation.stage11_run
+              import SPLIT` (also with `as`), or the attribute stage11_run.SPLIT (also
+              src.evaluation.stage11_run.SPLIT)            rows = split_rows(m, stage11_run.SPLIT)
 The string match ignores case and surrounding spaces.
 
 What does not count, so existing refusal code passes:
@@ -62,8 +66,12 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCANNED = ("src/", "notebooks/", "configs/")
 # Prefixes (directories end with "/") and exact files allowed to request the FoR test split.
-# Exactly the Stage 11 runner, added in its own reviewed PR (D41, D46).
-ALLOWED: tuple[str, ...] = ("src/evaluation/stage11_run.py",)
+# Exactly the Stage 11 runner, added in its own reviewed PR (D41, D46), and the Stage 11 runner for
+# the v2 model set (D48 (7): the separate v2 stage11_test claim), added in PR V4b.
+ALLOWED: tuple[str, ...] = (
+    "src/evaluation/stage11_run.py",
+    "src/evaluation/stage11_v2_run.py",  # D48 (7), PR V4b; one file, not a folder
+)
 # (file, exact stripped line text, rule, reason): one rule on one line that is not data access;
 # any other rule on that line is still reported.
 ALLOWED_LINES: tuple[tuple[str, str, str, str], ...] = (
@@ -79,6 +87,7 @@ _CLI = re.compile(r"--split(?:\s+|\s*=\s*)[\"']?test\b(?![-\w])", re.IGNORECASE)
 _QUERY = re.compile(r"\bsplit\s*==\s*[\"']test[\"']", re.IGNORECASE)
 _TEST_FILE = re.compile(r"test\.[A-Za-z0-9]+", re.IGNORECASE)  # test.npz, test.csv, ...
 _SEPARATORS = re.compile(r"[/\\]")
+_STAGE11_RUN = "src.evaluation.stage11_run"  # its SPLIT constant is the test split (import rule)
 
 
 def _is_test(node) -> bool:
@@ -178,6 +187,18 @@ class _Finder(ast.NodeVisitor):
             if (isinstance(key, ast.Constant) and isinstance(key.value, str)
                     and "split" in key.value.lower() and _is_test(value)):
                 self._hit(key, "dict")
+        self.generic_visit(node)
+
+    def visit_ImportFrom(self, node):
+        if node.module == _STAGE11_RUN and any(alias.name == "SPLIT" for alias in node.names):
+            self._hit(node, "import")
+        self.generic_visit(node)
+
+    def visit_Attribute(self, node):
+        value = node.value
+        owner = value.id if isinstance(value, ast.Name) else getattr(value, "attr", None)
+        if node.attr == "SPLIT" and owner == _STAGE11_RUN.rsplit(".", 1)[1]:
+            self._hit(node, "import")
         self.generic_visit(node)
 
     def _sequence(self, node):
@@ -281,8 +302,9 @@ def test_no_for_test_split_access_outside_allowed_files():
 
 
 def test_allow_list_is_pinned():
-    # Changing it is a reviewed step (the Stage 11 runner PR added its one exact file), never a side effect.
-    assert ALLOWED == ("src/evaluation/stage11_run.py",)
+    # Changing it is a reviewed step (the Stage 11 runner PR and PR V4b each added one exact file),
+    # never a side effect.
+    assert ALLOWED == ("src/evaluation/stage11_run.py", "src/evaluation/stage11_v2_run.py")
 
 
 PLANTED = {
@@ -308,6 +330,9 @@ PLANTED = {
     "src/t_dict.py": 'run(**{"split": "test"})\n',
     "src/u_dict_key.py": 'CONFIG = {"eval_split": "test", "seed": 0}\n',
     "src/w_dict_case.py": 'CONFIG = {"Eval_Split": " Test "}\n',
+    "src/x_import_split.py": "from src.evaluation.stage11_run import DATASET, SPLIT as S\n",
+    "src/y_attribute_split.py": "from src.evaluation import stage11_run\nrows = split_rows(m, stage11_run.SPLIT)\n",
+    "src/z_dotted_split.py": "import src.evaluation.stage11_run\nrows = load(src.evaluation.stage11_run.SPLIT)\n",
     "configs/stage11.json": '{"evaluation": {"split": "test"}}\n',
     "configs/broken.json": '{"split": \n',
     "notebooks/x.ipynb": json.dumps({"cells": [
@@ -338,6 +363,11 @@ LOOKALIKES = {
         '    ok = ratios.get(name) == 0.15\n'
         '    print("tests", "pytest", "testsuite", "testing", "test split")\n'
         "    return ok\n"
+    ),
+    "src/u_import_other.py": (  # other names of the v1 runner, and SPLIT of other modules
+        "from src.evaluation.stage11_run import environment_record, DATASET\n"
+        "from src.evaluation.stage11_report import SPLIT\n"
+        "x = other_module.SPLIT\n"
     ),
     "src/s_cli_like.py": 'parser.add_argument("--split", required=True, choices=sorted(CACHE_SPLITS))\n'
                          'HELP = "--split testing is not a split"\n',
@@ -373,7 +403,7 @@ def test_guard_catches_planted_access(tmp_path):
     assert sorted({v.split(":", 1)[0] for v in violations}) == sorted(PLANTED)
     rules = "\n".join(violations)
     for rule in ("keyword", "argument", "compare", "assign", "path", "query", "cli", "yaml",
-                 "subscript", "dict", "json", "cannot parse"):
+                 "subscript", "dict", "json", "import", "cannot parse"):
         assert f": {rule}" in rules, rule
     notebook = [v for v in violations if v.startswith("notebooks/")]
     assert len(notebook) == 2  # the ! line (cli) and the cell under %time (keyword); not markdown
