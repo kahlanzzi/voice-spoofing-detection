@@ -7484,7 +7484,8 @@ module, training-format S build/verification, training-half resource cache and o
   completed record for this `run_id` with the v2 set), score files (and the folder holds only their
   files), same clips, F2 join, evidence (search winner and bundle seed via `search_bundle`, per-seed
   checkpoint hashes, risk-v2 architecture / bundle seed / checkpoint / `v2_search_evidence`, policy
-  hash, F2 hash = risk-v2's and the approved value), re-derivation (bundle `p` byte for byte, band
+  hash, risk-v2 `version` = the parsed policy's version (`risk_v2.policy_version`, as f5.py's "policy
+  version", added at Donia's review), F2 hash = risk-v2's and the approved value), re-derivation (bundle `p` byte for byte, band
   rule, no `p` / prediction for the other seeds). JSON: v1 keys minus the hypothesis content, plus
   `architecture`, `hypotheses: null`, `hypotheses_note`. Docs: `docs/stage11_report.md` "v2 model
   set", one pointer line in `docs/stage11_run.md` (v2 Outputs), CHANGELOG.
@@ -7499,10 +7500,10 @@ module, training-format S build/verification, training-half resource cache and o
 - **Not changed:** `stage11_report.py`, `stage11_run.py`, `stage11_v2_run.py`, `clip_scores.py`,
   `metrics.py`, `bootstrap.py`, evidence, configs, notebooks; `ALLOWED` of the FoR test guard. No
   real run; no dataset, FoR audio or DEEP-VOICE access.
-- **Tests [verified, CPU, synthetic]:** `tests/evaluation/test_stage11_v2_report.py` (89): a `crnn`
+- **Tests [verified, CPU, synthetic]:** `tests/evaluation/test_stage11_v2_report.py` (90): a `crnn`
   set with bundle seed 1 on the v1 hand table (EER 1/4, AUC 39/48, forced binary (6, 1, 5, 2),
   three-way bonafide (4, 1, 1) / spoof (2, 5, 1), seed EERs 0, 1/4, 0); agreement with the harness;
-  61 single-check tamper cases (each raises with its own name, nothing written) and a test that every
+  62 single-check tamper cases (each raises with its own name, nothing written) and a test that every
   recorded check is tampered; v1 model set, v1 run report, baseline entry or file refused;
   byte-identical twice (CLI and functions); `--out` and dirty worktree refused; torch-free import;
   guard and `ALLOWED`; with torch, the report on the v2 runner's own `claim` + `score` output for

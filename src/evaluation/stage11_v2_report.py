@@ -319,7 +319,9 @@ def _check_evidence(checks: dict, report: dict, model_ids, search_dir: Path, sea
     _check(checks, "risk_v2.v2_search_evidence", risk.get("v2_search_evidence"),
            {name: _sha256(data) for name, data in search_bytes.items()})
     _check(checks, "risk_policy.sha256", risk.get("risk_policy_sha256"), _sha256(policy_bytes))
-    return RiskPolicy.from_json(policy_bytes.decode("utf-8"))
+    policy = RiskPolicy.from_json(policy_bytes.decode("utf-8"))
+    _check(checks, "risk_v2.policy_version", risk.get("version"), policy.version)  # as f5.py "policy version"
+    return policy
 
 
 def _rederive(checks: dict, policy: RiskPolicy, scores: dict, bundle_id: str, model_ids) -> None:

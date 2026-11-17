@@ -124,7 +124,7 @@ class Run:
         self.risk = root / "v2_risk"
         _write(self.risk / "risk_policy.json", POLICY.to_json().encode("utf-8"))
         self.risk_report = {
-            "architecture": ARCH, "bundle_seed": BUNDLE_SEED, "checkpoint_sha256": SEED_HASHES[BUNDLE_SEED],
+            "version": POLICY.version, "architecture": ARCH, "bundle_seed": BUNDLE_SEED, "checkpoint_sha256": SEED_HASHES[BUNDLE_SEED],
             "f2_manifest_sha256": manifest_sha, "risk_policy_sha256": _sha((self.risk / "risk_policy.json").read_bytes()),
             "v2_search_evidence": self.search_hashes()}
         _write(self.risk / "run_report.json", _json_text(self.risk_report).encode("utf-8"))
@@ -406,6 +406,15 @@ def _risk(edit):
     return lambda r: r.edit_json(r.risk / "run_report.json", edit)
 
 
+def _resigned_policy(edit):
+    """Edit risk_policy.json and re-sign risk_policy_sha256 in the risk run report, so only the edit disagrees."""
+    def tamper(r):
+        r.edit_json(r.risk / "risk_policy.json", edit)
+        r.edit_json(r.risk / "run_report.json",
+                    _set(["risk_policy_sha256"], _sha((r.risk / "risk_policy.json").read_bytes())))
+    return tamper
+
+
 def _search_only_selection(edit):
     return lambda r: (r.edit_json(r.search / "selection_report.json", edit),
                       r.edit_json(r.risk / "run_report.json", _set(["v2_search_evidence"], r.search_hashes())))
@@ -460,6 +469,7 @@ TAMPER = {
     "risk_v2.v2_search_evidence": _risk(_set(["v2_search_evidence", "run_report.json"], "9" * 64)),
     "risk_policy.sha256": lambda r: (r.risk / "risk_policy.json").write_bytes(
         (r.risk / "risk_policy.json").read_bytes() + b"\n"),
+    "risk_v2.policy_version": _resigned_policy(_set(["version"], "risk-other")),
     # the manifest
     "manifest.sha256_risk_v2": _risk(_set(["f2_manifest_sha256"], "9" * 64)),
 }

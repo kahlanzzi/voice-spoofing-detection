@@ -264,7 +264,8 @@ written).
    `checkpoint_sha256` of its seed (`<architecture>_seed<k>`); risk-v2 `architecture`, `bundle_seed`
    and `checkpoint_sha256` equal the run's bundle model; risk-v2 `v2_search_evidence` equals the
    SHA-256 of the two search reports; `risk_policy.json` SHA-256 equals risk-v2
-   `risk_policy_sha256`.
+   `risk_policy_sha256`; risk-v2 `version` equals the parsed policy's version (`risk_v2.policy_version`,
+   the "policy version" binding of `src/bundle/f5.py`).
 8. **Re-derivation:** bundle `p` = `calibration.transform(raw_score)` byte for byte; predictions =
    the band rule written with `np.where`; `p` and prediction absent in both `v2_other_seed` files.
 
@@ -333,7 +334,7 @@ writers, a registry holding the v1 pair first, and search / risk-v2 evidence stu
 | Bundle-only CIs with counts; seed rows; `hypotheses` null with the note | `test_hand_case_cis_seeds_and_no_hypotheses` |
 | Agreement with `eer`, `roc_auc`, `binary_metrics`, `three_way_metrics`, `bootstrap_ci`, `seed_summary` | `test_report_numbers_agree_with_direct_harness_calls` |
 | Checks, inputs, registry lines (4), conventions, JSON keys; D57 numbering kept | `test_checks_inputs_and_conventions_are_recorded`, `test_conventions_map_d57_to_v2_with_the_same_numbering` |
-| Each integrity check tampered once, raising with its own name, nothing written (61 cases); every recorded check is covered | `test_tampered_input_is_refused_with_its_check`, `test_tampered_run_folder_is_refused_with_its_check`, `test_edited_registry_is_refused`, `test_unapproved_manifest_is_refused`, `test_other_seed_with_p_or_prediction_is_refused`, `test_every_check_name_is_distinct_and_covered` |
+| Each integrity check tampered once, raising with its own name, nothing written (62 cases); every recorded check is covered | `test_tampered_input_is_refused_with_its_check`, `test_tampered_run_folder_is_refused_with_its_check`, `test_edited_registry_is_refused`, `test_unapproved_manifest_is_refused`, `test_other_seed_with_p_or_prediction_is_refused`, `test_every_check_name_is_distinct_and_covered` |
 | v1 model set, v1 run report, `baseline-v1` entry or file refused | `test_v1_model_set_or_baseline_is_refused`, `test_tampered_input_is_refused_with_its_check[clip_scores.folder_files]` |
 | Byte-identical twice (CLI and functions); Markdown = render of the JSON, with the note; collapsed flag | `test_cli_twice_gives_byte_identical_files_rendered_from_the_json`, `test_markdown_flags_collapsed_intervals` |
 | Existing `--out`, dirty worktree refused | `test_existing_out_is_refused`, `test_dirty_worktree_is_refused` |
