@@ -7330,6 +7330,55 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
+### Entry 192 — Track V PR V5b: F5 build and verify tool (ModelBundle v2), code only (2026-11-17)
+
+- **Owner:** Donia Mabrouk (Part C). Branch `feat/stageV5-f5-build` from `main` `8e05e54`. Entry
+  number: 192 is the next free one on `main` and the open branches (191 on both Track V and Part E
+  branches).
+- **Why [doc]:** Execution Plan v3.0 §9 V5; D48 (4), (7); D59 (7). F5 must be verified by Fri 4 Dec
+  23:59 Tunis or v2 gets no DEEP-VOICE result; building it on 4 Dec must run a reviewed tool, not
+  write one. Hand-over to Iheb (API, D48 (5)) and Khalil (Stage 13, `verify_f5_artifacts`). No new
+  decision; the freeze decision with the real hashes is a later PR.
+- **What changed:** new `src/bundle/f5.py` (`expected_from_evidence`, `build`, `verify`, CLI
+  `python -m src.bundle.f5 {build,verify}`). It imports `f4.py`'s helpers and `build_bundle`; no
+  helper needed a change in `f4.py`. Evidence (paths fixed in code): v2 search `run_report.json` +
+  `selection_report.json`, v2_risk `run_report.json` + `risk_policy.json` (incl. the
+  `v2_search_evidence` binding), `docs/audit_evidence/stage11_v2_run/run_report.json` (new path,
+  where the v2 Stage 11 report will be committed) and `run_registry.jsonl` (JSON lines, hash chain,
+  exactly a started + completed v2 `stage11_test` record with the report's `run_id`), the profile
+  and Stage 6 (ledger, and F2 manifest hash = the search's: one check more than F4). Checkpoint
+  folder: exactly the two D59 files, combined hash = the search's, `checkpoint.json` architecture,
+  seed, version and provenance = the evidence; per-file hashes and sizes recorded as observed (no
+  v2 export manifest). After `build_bundle` (`bundle-v2`): `load_bundle_model` must give the
+  winner's architecture, the bundle seed, CPU, eval mode; every manifest value is compared.
+  `f5_record.json` = the F4 record fields without `baseline`, plus `architecture`, `bundle_seed`,
+  `selection`, `provenance` and `stage11_v2`. Docs: `docs/model_bundle.md` "F5 (ModelBundle v2)"
+  and its test tables, `docs/v2_training.md` pointer, CHANGELOG.
+- **Shared-core rule:** `f5.py` imports no `src.evaluation` / `src.tuning`; the run-folder format,
+  v2 model IDs, seeds, architectures, report names, evidence folders and registry key are restated
+  and `test_names_equal_the_research_definitions` asserts they equal `v2_search`, `v2_risk_run`,
+  `risk_run`, `stage11_v2_run`, `run_registry` and `v2_checkpoint`; an `ast` test refuses the imports.
+- **Not changed:** `f4.py`, `bundle.py`, `model_loader.py`, `external_run.py`, `stage11_v2_run.py`,
+  `v2_risk_run.py`, `v2_search.py`, models, checkpoints, `configs/`, committed evidence. No real
+  build; no dataset, FoR audio or DEEP-VOICE access.
+- **Tests [verified, CPU, synthetic]:** `tests/bundle/test_f5.py` (52) reuses the `world` fixture of
+  `tests/evaluation/test_stage11_v2_run.py` (search reports from the real `v2_search` writers,
+  risk-v2 from `v2_risk_run.run`), then runs `stage11_v2_run` claim → score with a `RunRegistry`;
+  `crnn` and `aasist` round trips incl. `verify_f5_artifacts(..., bundle_verifier=load_bundle,
+  bundle_loader=load_bundle_model)`; every refusal leaves nothing written. A manual mutation (registry
+  check disabled) made 3 tests fail. `tests/bundle/test_f5_evidence.py` (3, no torch): layering and
+  "the real repository refuses F5 before the v2 evidence" (skipped once it exists).
+- **Checks [verified, local Windows, Python 3.14 venv, torch 2.11.0+cpu]:** `REQUIRE_TORCH_TESTS=1
+  pytest -q`: 2216 passed, 2 skipped (9:09); `pytest -q tests/governance`: 89 passed (after the docs
+  edits). `tests/bundle/test_f4.py` and `test_f4_evidence.py` pass unchanged. CI on 3.13 not yet run
+  (branch not pushed).
+- **Open [hypothesis]:** none new; the real F5 depends on the v2 search, risk-v2 and v2 Stage 11 runs.
+- **AI assistance:** Claude Code (Claude Opus 5.5) wrote the code, tests and docs from Donia's brief;
+  team review required before acceptance (D26).
+- **Gate:** **WAITING FOR APPROVAL.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -7363,6 +7412,7 @@ module, training-format S build/verification, training-half resource cache and o
 - [ ] Iheb confirms the SDD v2.0 owner review and all four reviewers explicitly accept the D51 extension-authentication design before extension implementation; PR #122 currently records Donia's approvals only.
 - [ ] Stage 13 runner (D35) and Stage 11 runner (PR #68) accept the v2 model set (D48 (3), (7)). Stage 11 part: V4b code done (`src/evaluation/stage11_v2_run.py`, Entry 190; review pending, incl. the `ALLOWED` access-rule change for Khalil).
 - [ ] V4b follow-ups: the v2 Stage 11 run (after risk-v2, before F5; target Wed 2 Dec), its notebook (09) and the v2 extension of `stage11_report.py` (metrics) still open (Entry 190).
+- [ ] V5: V5b code done (`src/bundle/f5.py`, Entry 192; review pending); F5 build on Colab after the v2 Stage 11 run, the freeze decision (next free D) and the hand-over still open (cut-off Fri 4 Dec 23:59 Tunis, D48 (4)).
 
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
@@ -7769,7 +7819,7 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
-## Current status — updated 2026-11-16 (Entry 191)
+## Current status — updated 2026-11-17 (Entry 192)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -7787,7 +7837,10 @@ Stage 13 runner for all three candidates. PR V4a (Entry 188, waiting for review)
 risk-policy run (Protocol §6 unchanged, bundle seed only, exact M reproduction); the real run waits
 for the search evidence. PR V4b (Entry 190, waiting for review) adds the Stage 11 runner for the v2
 model set (D48 (7)), code and synthetic tests only; the real v2 Stage 11 run, notebook 09 and the v2
-metrics report follow risk-v2. See the open items above and [Execution Plan v3.0](reference/Execution_Plan_v3.0.md).
+metrics report follow risk-v2. PR V5b (Entry 192, waiting for review) adds the F5 build and verify
+tool (`src/bundle/f5.py`), code and synthetic tests only: it refuses F5 until the v2 Stage 11 run is
+completed in the registry (D48 (7)); the real build, the freeze decision and the hand-over follow
+that run, before the Fri 4 Dec 23:59 cut-off. See the open items above and [Execution Plan v3.0](reference/Execution_Plan_v3.0.md).
 
 **Khalil / Stage 13 — preparation merged; external run not ready.** Runner preparation from Entries
 175–179 merged in PR #133. The synthetic Stage 13 suite reported 33 passed; PR #134 subsequently
