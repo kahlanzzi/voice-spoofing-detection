@@ -261,6 +261,84 @@ checkpoint metadata; v2 has `architecture`), `mean`/`std` (`None` only for `aasi
 builder then feeds the log-Mel (normalized with `mean`/`std`) to `cnn-aug`/`crnn` and the
 frozen-profile waveform to `aasist`. The API must branch on `architecture` the same way.
 
+## F5 (ModelBundle v2)
+**Tool ready, not built** (PR V5b, Entry 192). F5 = the v2 search winner's bundle-seed checkpoint,
+the F3 profile and `risk-v2`, in the D59 layout, `bundle_version` `bundle-v2`, verified by
+`load_bundle_model` (D48 (4), (7); D59 (7)). It must be verified by **Fri 4 Dec 23:59 Tunis**
+(D48 (4)), or v2 gets no DEEP-VOICE result. The tool is `src/bundle/f5.py`, the v2 counterpart of
+`f4.py`: it imports F4's helpers (`git_state`, `_provenance`, `_Checks`, `_Evidence`, `_field`,
+`_hex64`, `_nonempty`, `_clean`, `_json_bytes`, `_environment`, `_now_utc`, `_CREATED_AT`) and
+`build_bundle`; `f4.py`, `bundle.py` and `model_loader.py` are unchanged. It is shared core (no
+`src.evaluation` / `src.tuning` import), so the names those packages define for the same files
+(`<candidate>_seed<k>`, `<winner>-v2-seed<k>`, report names, seeds 0–2) are restated in `f5.py`;
+`tests/bundle/test_f5.py` asserts they are equal.
+
+**Inputs.** The committed evidence below (paths fixed in code, nothing typed) and the bundle-seed
+checkpoint folder `runs/<winner>_seed<bundle seed>/checkpoint/` of the v2 search output, downloaded
+outside the repository.
+
+| Value | Committed source | Field and check |
+|---|---|---|
+| winner, bundle seed | `docs/audit_evidence/v2_search/run_report.json`, `selection_report.json` | `selected`, `bundle_seed` equal in both; `selected` one of `cnn-aug`, `crnn`, `aasist`; seed 0, 1 or 2 |
+| combined checkpoint hash | v2_search `run_report.json` | `checkpoint_sha256[<winner>_seed<k>]` for k = 0, 1, 2 (64 hex); the bundle seed's is F5's |
+| model version | v2_search `run_report.json` | `version` |
+| selection | v2_search `selection_report.json` | `seeds.{0,1,2}.best_selection_m` in [0, 1] (recorded) |
+| provenance | v2_search `run_report.json` | `profile_config_sha256`, `profile_fingerprint`, `f2_manifest_sha256`, `selection_set_sha256` |
+| risk-v2 binding | `docs/audit_evidence/v2_risk/run_report.json` | `architecture`, `bundle_seed`, `checkpoint_sha256`, `profile_fingerprint`, `profile_config_sha256`, `f2_manifest_sha256` = the search's; `v2_search_evidence` = SHA-256 of the two search reports |
+| policy file | `docs/audit_evidence/v2_risk/risk_policy.json` | SHA-256 = v2_risk `risk_policy_sha256`; its `version` = v2_risk `version` |
+| v2 Stage 11 run (D48 (7)) | `docs/audit_evidence/stage11_v2_run/run_report.json` | `run_id` 32 hex; `dataset` `for`, `split` `test`, `evaluation_purpose` `stage11_test`; `architecture`, `bundle_seed` = the search's; `model_set` keys = the three `<winner>-v2-seed<k>`; each `artifact_sha256` = the search's hash of that seed (bundle seed named separately) |
+| registry (D48 (7)) | `docs/audit_evidence/run_registry.jsonl` | parsed line by line with `json`, hash chain checked (`prev_sha256`); the records with key (`for`, `test`, `stage11_test`, the sorted v2 model set) are exactly `started` then `completed`, both with the report's `run_id` |
+| profile file | `configs/preprocessing.yaml` | SHA-256 = search `profile_config_sha256`; fingerprint = search `profile_fingerprint`; protocol `1.0` |
+| F2 | `docs/audit_evidence/stage6_preprocessing/profile_report.json` | `f2.ledger_sha256` = the profile's; `f2.manifest_sha256` = search `f2_manifest_sha256` |
+
+**Order (D48 (7)).** Search → risk-v2 → v2 Stage 11 claim and score (completed in the registry) →
+F5. Without the completed v2 Stage 11 record, `expected_from_evidence` refuses, so F5 cannot be
+built first.
+
+`build(checkpoint_dir, out_dir, *, root, created_at=None)`: as F4 (steps 1–6 above), with these
+differences:
+- The checkpoint folder holds exactly `checkpoint.json` + `weights.safetensors` (D59 (1)). There is
+  no per-file export manifest for v2: both per-file hashes and sizes are recorded as observed, and
+  `checkpoint_dir_sha256` over them must equal the search's `checkpoint_sha256`. `checkpoint.json`
+  (parsed from the bytes it hashed) must name the winner's `architecture`, the bundle `seed`, the
+  search `version`, `profile_fingerprint`, `f2_manifest_sha256` and `selection_set_sha256`.
+- `build_bundle(..., bundle_version="bundle-v2", model_version=<search version>,
+  policy=<v2_risk risk_policy.json>, ...)`.
+- `load_bundle_model` must dispatch to the v2 loader: `architecture` = the winner, metadata seed =
+  the bundle seed, model on CPU in eval mode (checked by `f5` itself, not only by the loader); then
+  every manifest value against the evidence.
+
+`verify(bundle_dir, record)`: `load_bundle_model`, then `manifest_sha256`, `bundle_version`,
+`architecture`, bundle seed and every component hash and version equal the record's. A record that
+is not `bundle-v2` schema 1 (e.g. `f4_record.json`) is refused.
+
+```
+python -m src.bundle.f5 build --checkpoint-dir DIR --out DIR [--created-at TS]
+    -> record path, architecture and bundle seed, manifest_sha256, "F5 build OK"
+python -m src.bundle.f5 verify --bundle DIR --record FILE
+    -> architecture, manifest_sha256, "F5 verify OK"
+```
+
+**F5 record** (`f5_record.json`, strict JSON, sorted keys, 2-space indent, trailing newline; beside
+the bundle, never inside, never overwritten): the F4 record fields without `baseline` (no baseline in
+the v2 set, D48 (3)), plus `architecture`, `bundle_seed`, `selection` (`winner`, the three
+`best_selection_m`), `provenance` (`f2_manifest_sha256`, `selection_set_sha256`) and `stage11_v2`
+(`run_id`, `model_set`, source). `components.checkpoint.source` is relative to the v2 search output
+(`runs/<winner>_seed<k>/checkpoint`). Every item of `checks` has `ok: true`. No local path is
+recorded. On any failure nothing is left behind.
+
+**Hand-over.** Iheb (API, D48 (5): once F5 is verified, v2 is the deployed model) and Khalil
+(Stage 13) run `verify` on their copy. Stage 13 then calls
+`external_run.verify_f5_artifacts(bundle_dir, f5_record, bundle_verifier=load_bundle,
+bundle_loader=load_bundle_model)`; `test_build_then_verify_and_hand_over` runs exactly that on a
+built synthetic F5 for `crnn` and `aasist`.
+
+**Still open.** The real build (after the v2 Stage 11 run is committed), the freeze decision with
+the real hashes (next free D-ID, as D60 for F4) and the hand-over. Until the v2 evidence is
+committed, `expected_from_evidence` on the real repository refuses
+(`test_real_repository_refuses_f5_before_the_v2_evidence`); the freeze PR replaces that test with
+one pinning the real values.
+
 ## Tests
 `tests/bundle/test_bundle.py` (no torch; dummy `checkpoint.json` with `version` and
 `profile_fingerprint`, dummy weight bytes, a tmp copy of `configs/preprocessing.yaml`, a tmp policy
@@ -327,6 +405,28 @@ Every refusal leaves nothing in `out_dir` and writes no record.
 pins every value read from the real committed evidence (seed 0, `c33eb820…`, per-file `dc0f8b0e…`
 1,350 B and `6722f858…` 396,084 B, `a74f1f51…`, `5b4f5849…`, `c9fc2e23…`, `42cc4d53…`);
 `test_f4_does_not_import_research_code` and `test_f4_module_level_is_torch_free` (layering).
+
+`tests/bundle/test_f5.py` (torch; synthetic evidence written by the real writers: the Stage 11 v2
+test world of `tests/evaluation/test_stage11_v2_run.py` (v2_search report writers, `v2_risk_run.run`
+on seeded untrained `crnn` and `aasist` checkpoints), then `stage11_v2_run` claim → score with a
+`RunRegistry` holding the v1 pair; git injected):
+
+| Point | Test |
+|---|---|
+| Shared names | `test_names_equal_the_research_definitions` (run folder, model IDs, seeds, architectures, report and policy names, evidence folders, registry key and statuses) |
+| Round trip, hand-over | `test_build_then_verify_and_hand_over` (`crnn`, `aasist`: record = evidence, per-file hashes as observed, no `baseline`, all checks ok, no local path, `verify` and `verify_f5_artifacts` pass), `test_build_is_deterministic` |
+| Evidence | `test_build_refuses_evidence_disagreement` (22 cases: search vs selection, unknown winner, missing seed hash, seeds keys, risk-v2 vs search, search-report binding, policy hash and version, v2 Stage 11 architecture, seed, model set, bundle and other artifact hashes, run_id, purpose, Stage 6 ledger and manifest), `test_build_refuses_policy_file_changed`, `test_build_refuses_profile_file_changed` |
+| D48 (7) order | `test_build_refuses_without_a_completed_v2_stage11_run` (started-only, v1 pair only, broken hash chain, missing report, missing registry) |
+| Checkpoint folder | `test_build_refuses_extra_or_missing_checkpoint_file`, `test_build_refuses_wrong_combined_hash`, `test_build_refuses_another_seed_checkpoint`, `test_build_refuses_checkpoint_metadata_disagreement` (architecture, seed, version; evidence re-pointed so only the metadata check can catch it) |
+| Output, provenance | `test_build_refuses_out_dir_inside_repository`, `test_build_refuses_checkpoint_dir_inside_repository`, `test_build_refuses_bad_provenance`, `test_build_never_overwrites_a_record_or_a_bundle` |
+| Failure | `test_failure_after_build_removes_the_bundle`, `test_loaded_model_must_be_the_v2_winner_in_eval_mode` (loader result altered: architecture, train mode) |
+| Verify, CLI | `test_verify_passes_on_a_copy_and_fails_on_a_changed_file`, `test_verify_refuses_record_differences`, `test_f4_record_is_not_an_f5_record`, `test_cli_build_and_verify` |
+
+`tests/bundle/test_f5_evidence.py` (no torch): `test_f5_does_not_import_research_code` (`ast`, no
+`src.evaluation` / `src.tuning` import anywhere in `f5.py`), `test_f5_module_level_is_torch_free`,
+`test_registry_parser_agrees_with_run_registry_on_the_real_file` (`f5._registry_records` on the
+committed `run_registry.jsonl` gives the same records, as dicts, as `RunRegistry(path).records()`),
+`test_real_repository_refuses_f5_before_the_v2_evidence` (skipped once the v2 evidence exists).
 
 `tests/preprocessing/test_profile.py` adds `test_profile_fingerprint_is_pinned_and_parse_profile_agrees`
 (fingerprint `5b4f5849…` from the file and from its text) and
