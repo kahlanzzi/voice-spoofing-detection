@@ -7,7 +7,9 @@ set-password and disable end all of the account's sessions. unlock resets the fa
 typed username, known or not, and needs VSD_SIGNIN_HMAC_KEY in the environment.
 
 The database and the password limits come from the API config ($VSD_API_CONFIG or
-configs/api.yaml). Exit codes: 0 done, 1 refused (one line on stderr), 2 usage error.
+configs/api.yaml); the database password from VSD_DB_APP_PASSWORD (the API's own role, never the
+superuser). In Compose: docker compose exec api python -m api.admin <subcommand> <username>.
+Exit codes: 0 done, 1 refused (one line on stderr), 2 usage error.
 """
 from __future__ import annotations
 
@@ -16,7 +18,8 @@ import getpass
 import sys
 
 from api.auth import normalize_username, password_hasher, password_problem, signin_key_from_env, username_hmac
-from api.config import ApiConfig, load_api_config, resolve_path
+from api.config import ApiConfig, load_api_config
+from api.db import STORE_ERRORS, Database, app_password_from_env
 from api.repository import AccountRepository, AnalysisRepository, DuplicateAccount
 from api.routers.status import utc_now_iso
 
@@ -44,6 +47,22 @@ def read_new_password(username: str, config: ApiConfig) -> str:
     return password
 
 
+def open_database(config: ApiConfig) -> Database:
+    """The API's database, opened as the API's role, with the schema applied; Refused if it cannot be."""
+    try:
+        password = app_password_from_env()
+    except ValueError as exc:
+        raise Refused(str(exc)) from None
+    database = Database.from_config(config)
+    try:
+        database.open(password)
+        AnalysisRepository(database).create_schema()
+    except STORE_ERRORS as exc:
+        database.close()
+        raise Refused(f"The database is not reachable ({exc}). Nothing was changed.") from None
+    return database
+
+
 def run(command: str, username: str, config: ApiConfig) -> str:
     """Do one admin action and return the line to print; raise Refused if it cannot be done."""
     if command == "unlock":
@@ -52,17 +71,25 @@ def run(command: str, username: str, config: ApiConfig) -> str:
             key = signin_key_from_env()
         except ValueError as exc:
             raise Refused(str(exc)) from None
-        AnalysisRepository(resolve_path(config.database_path)).create_schema()
-        held = AccountRepository(resolve_path(config.database_path)).clear_failures(username_hmac(key, username))
+        database = open_database(config)
+        try:
+            held = AccountRepository(database).clear_failures(username_hmac(key, username))
+        finally:
+            database.close()
         return f"Username {username} unlocked." if held else f"Username {username} had no failed sign-ins."
     try:
         username = normalize_username(username)
     except ValueError as exc:
         raise Refused(str(exc)) from None
-    database = resolve_path(config.database_path)
-    AnalysisRepository(database).create_schema()
-    accounts = AccountRepository(database)
+    database = open_database(config)
+    try:
+        return _run_on_account(command, username, config, AccountRepository(database))
+    finally:
+        database.close()
 
+
+def _run_on_account(command: str, username: str, config: ApiConfig, accounts: AccountRepository) -> str:
+    """The account subcommands, on an open database; username is already normalized."""
     if command == "create-account":
         if accounts.get_account(username) is not None:
             raise Refused(f"Account {username} already exists.")

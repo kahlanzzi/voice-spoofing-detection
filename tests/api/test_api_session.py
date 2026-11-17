@@ -1,16 +1,15 @@
 import logging
 import secrets
-import sqlite3
-from contextlib import closing
 
 import pytest
 from argon2 import PasswordHasher
 from fastapi.testclient import TestClient
 
-from api.config import resolve_path
+from api.db import StoreError
 from api.main import create_app
 from api.repository import AccountRepository
 from api.session_guard import COOKIE, session_hash
+from tests.api._pg import config_query
 from tests.api.conftest import fast_hasher
 
 PASSWORD = "correct horse battery staple"
@@ -44,8 +43,7 @@ def sign_in(client, origin, username=USERNAME, password=PASSWORD):
 
 
 def rows(config, sql, params=()):
-    with closing(sqlite3.connect(resolve_path(config.database_path))) as conn, conn:
-        return conn.execute(sql, params).fetchall()
+    return config_query(config, sql, params)
 
 
 def failures(config):
@@ -135,7 +133,7 @@ def test_a_password_typed_as_username_is_never_stored_logged_or_returned(https, 
     assert response.status_code == 401
     assert canary not in response.text
     assert canary not in caplog.text
-    tables = [name for (name,) in rows(config, "SELECT name FROM sqlite_master WHERE type = 'table'")]
+    tables = [name for (name,) in rows(config, "SELECT tablename FROM pg_tables WHERE schemaname = 'public'")]
     for table in tables:
         assert canary not in repr(rows(config, f"SELECT * FROM {table}"))
     assert len(failures(config)) == 1
@@ -172,7 +170,7 @@ def test_the_count_restarts_when_the_lock_ends_or_the_last_failure_is_old(https,
     rows(config, "UPDATE sign_in_failure SET locked_until = '2000-01-01T00:00:00Z'")
     assert sign_in(https, origin, password="wrong password here").status_code == 401
     assert failures(config) == [(1, None)]
-    rows(config, "UPDATE sign_in_failure SET failures = ?, last_failure_at = '2000-01-01T00:00:00Z'",
+    rows(config, "UPDATE sign_in_failure SET failures = %s, last_failure_at = '2000-01-01T00:00:00Z'",
          (config.lockout_threshold - 1,))
     sign_in(https, origin, password="wrong password here")
     assert failures(config) == [(1, None)]
@@ -230,7 +228,8 @@ def test_the_real_hasher_gives_the_dummy_hash_and_rehash_the_section_4_8_paramet
         assert app.state.dummy_hash.startswith("$argon2id$v=19$m=65536,t=3,p=4$")
         app.state.accounts.create_account(USERNAME, fast_hasher().hash(PASSWORD), "2026-11-01T08:00:00Z")
         assert sign_in(client, origin).status_code == 200
-    assert app.state.accounts.get_account(USERNAME).password_hash.startswith("$argon2id$v=19$m=65536,t=3,p=4$")
+        # Read before the lifespan ends: shutdown closes the database pool.
+        assert app.state.accounts.get_account(USERNAME).password_hash.startswith("$argon2id$v=19$m=65536,t=3,p=4$")
 
 
 @pytest.mark.parametrize("body", [
@@ -262,7 +261,7 @@ def test_a_body_over_4_kib_is_400_by_length_or_while_streaming(https, account, o
 
 def test_a_store_error_is_503_sign_in_unavailable(https, account, origin, monkeypatch):
     def broken(*args):
-        raise sqlite3.OperationalError("database is locked")
+        raise StoreError("OperationalError")
     monkeypatch.setattr(AccountRepository, "is_locked", broken)
     response = sign_in(https, origin)
     assert response.status_code == 503
@@ -273,6 +272,6 @@ def test_a_store_error_is_503_sign_in_unavailable(https, account, origin, monkey
 def test_a_store_error_at_sign_out_is_503(https, account, origin, monkeypatch):
     sign_in(https, origin)
     def broken(*args):
-        raise sqlite3.OperationalError("disk I/O error")
+        raise StoreError("OperationalError")
     monkeypatch.setattr(AccountRepository, "end_session", broken)
     assert https.delete("/api/session", headers=origin).status_code == 503

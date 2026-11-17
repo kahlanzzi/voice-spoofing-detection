@@ -18,7 +18,12 @@ SECTION_9 = {
                    "It does not prove fraud and does not verify identity.",
     "mock_deferral_on_fit": 0.0993,
     "temp_dir": None,
-    "database_path": "var/api.sqlite",
+    "database_host": "db",
+    "database_port": 5432,
+    "database_name": "vsd",
+    "database_user": "vsd_app",
+    "database_pool_max": 4,
+    "database_timeout_s": 5,
     "session_idle_minutes": 30,
     "session_absolute_hours": 12,
     "lockout_threshold": 5,
@@ -71,8 +76,17 @@ def test_default_path_without_env_var(monkeypatch):
     {"formats": ["WAV"]},                 # not lower case
     {"notice_text": "  "},                # empty notice
     {"temp_dir": 5},                      # neither str nor null
-    {"database_path": None},              # required string
-    {"database_path": " "},               # empty path
+    {"database_path": "var/api.sqlite"},  # the SQLite key is gone (D53 (4)): unknown key
+    {"database_host": None},              # required string
+    {"database_host": " "},               # empty host
+    {"database_port": 0},                 # must be positive
+    {"database_port": 70000},             # above 65535
+    {"database_port": "5432"},            # not an int
+    {"database_name": "Vsd"},             # not a lower-case PostgreSQL name
+    {"database_user": "vsd_app; DROP"},   # not a plain name
+    {"database_user": "postgres" * 10},   # longer than 63
+    {"database_pool_max": 0},             # must be positive
+    {"database_timeout_s": 2.5},          # float is not an int
     {"session_idle_minutes": ...},        # sign-in keys are required (§9)
     {"lockout_threshold": 0},             # must be positive
     {"session_absolute_hours": 12.0},     # float is not an int
@@ -100,5 +114,11 @@ def test_unreadable_or_non_mapping_config_raises(tmp_path):
 
 
 def test_resolve_path_is_relative_to_the_repo_root(tmp_path):
-    assert resolve_path("var/api.sqlite") == REPO_ROOT / "var" / "api.sqlite"
-    assert resolve_path(str(tmp_path / "x.sqlite")) == tmp_path / "x.sqlite"
+    assert resolve_path("var/uploads") == REPO_ROOT / "var" / "uploads"
+    assert resolve_path(str(tmp_path / "uploads")) == tmp_path / "uploads"
+
+
+def test_the_config_holds_no_database_password():
+    text = DEFAULT_PATH.read_text(encoding="utf-8")
+    assert "password:" not in text.replace("password_min_chars:", "").replace("password_max_chars:", "")
+    assert "VSD_DB_APP_PASSWORD" in text  # it says where the password comes from instead

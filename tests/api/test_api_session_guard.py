@@ -1,7 +1,6 @@
 import asyncio
 import json
 import re
-import sqlite3
 from datetime import timedelta
 
 import httpx
@@ -9,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 from starlette.datastructures import Headers
 
+from api.db import StoreError
 from api.main import create_app
 from api.repository import AccountRepository
 from api.session_guard import (COOKIE, iso, needs_origin, needs_session, new_session_id, session_hash, session_id_of,
@@ -138,7 +138,7 @@ def test_no_cookie_or_an_unknown_one_is_401_and_clears_the_cookie(https, origin)
 def test_a_valid_session_updates_last_seen_at(https, origin, config):
     sign_in(https, origin)
     a_minute_ago = iso(utc_now() - timedelta(minutes=1))
-    rows(config, "UPDATE session SET last_seen_at = ?", (a_minute_ago,))
+    rows(config, "UPDATE session SET last_seen_at = %s", (a_minute_ago,))
     assert https.get("/api/session").status_code == 200
     assert rows(config, "SELECT last_seen_at FROM session")[0][0] > a_minute_ago
 
@@ -154,7 +154,7 @@ def test_an_ended_session_is_401_and_its_row_is_deleted(https, origin, config, c
 def test_a_store_error_in_the_session_check_is_503(https, origin, monkeypatch):
     sign_in(https, origin)
     def broken(*args):
-        raise sqlite3.OperationalError("database is locked")
+        raise StoreError("OperationalError")
     monkeypatch.setattr(AccountRepository, "touch_session", broken)
     response = https.get("/api/session")
     assert response.status_code == 503
@@ -165,7 +165,7 @@ def test_a_store_error_in_the_session_check_is_503(https, origin, monkeypatch):
                                           ("PUT", NOTE)])
 def test_a_store_error_in_the_session_check_is_500_on_other_routes(client, monkeypatch, method, path):
     def broken(*args):
-        raise sqlite3.OperationalError("database is locked")
+        raise StoreError("OperationalError")
     monkeypatch.setattr(AccountRepository, "touch_session", broken)
     response = client.request(method, path)
     assert response.status_code == 500

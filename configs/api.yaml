@@ -14,7 +14,14 @@ notice_text: >-
   It does not prove fraud and does not verify identity.
 mock_deferral_on_fit: 0.0993                   # MockAnalyzer only; replaced by the bundle's value
 temp_dir: null                                 # deployment setting; null = the system temp folder
-database_path: var/api.sqlite                  # deployment setting; SQLite file (§7); relative = to the repo root
+# PostgreSQL store (§7, D53 (4)); deployment settings. The password is never here: the API reads it
+# from VSD_DB_APP_PASSWORD. db = the Compose service; run outside Compose with VSD_API_CONFIG (docs/setup.md).
+database_host: db
+database_port: 5432
+database_name: vsd
+database_user: vsd_app                         # non-superuser role (deploy/postgres-init/10-app-role.sh)
+database_pool_max: 4                           # connections per API process
+database_timeout_s: 5                          # wait for a connection; the status probe uses its own 1 s
 # Sign-in (§4.8, D47); values confirmed by the team in review of PR #82.
 session_idle_minutes: 30                       # a session unused for longer is ended
 session_absolute_hours: 12                     # from sign-in; never extended

@@ -2,8 +2,9 @@
 
 Every route is under /api (docs/api_design.md §2); every error uses the §6 shape; every response
 carries an X-Request-ID header. The database tables and the temp folder are created at startup
-(lifespan), not at import. The lifespan also reads VSD_SIGNIN_HMAC_KEY: without a valid key the API
-refuses to start (§4.8). Locally: uvicorn api.main:app --port 8001 --env-file .env
+(lifespan), not at import. The lifespan also reads VSD_SIGNIN_HMAC_KEY and VSD_DB_APP_PASSWORD:
+without a valid key or a reachable PostgreSQL database the API refuses to start (§4.8, D53 (4)).
+Locally: docs/setup.md ("Running the API outside Compose").
 """
 from __future__ import annotations
 
@@ -17,6 +18,7 @@ from starlette.middleware.body_limit import RequestBodyLimitMiddleware
 from api.analyzer import Analyzer, MockAnalyzer
 from api.auth import password_hasher, signin_key_from_env
 from api.config import ApiConfig, load_api_config, resolve_path
+from api.db import Database, app_password_from_env
 from api.errors import install_error_handlers
 from api.intake import ContentLengthGuard, body_limit, note_body_limit
 from api.middleware import RequestIdMiddleware
@@ -34,10 +36,15 @@ async def lifespan(app: FastAPI):
     # The unknown-username path verifies against this (§4.8): made at start, so it always has the
     # hasher's current parameters and costs the same as a real verify.
     app.state.dummy_hash = app.state.hasher.hash(secrets.token_urlsafe(32))
-    app.state.repository.create_schema()
-    if config.temp_dir:
-        resolve_path(config.temp_dir).mkdir(parents=True, exist_ok=True)
-    yield
+    database: Database = app.state.database
+    database.open(app_password_from_env())  # ValueError or StoreError: refuse to start
+    try:
+        app.state.repository.create_schema()
+        if config.temp_dir:
+            resolve_path(config.temp_dir).mkdir(parents=True, exist_ok=True)
+        yield
+    finally:
+        database.close()
 
 
 def create_app(config: ApiConfig | None = None, analyzer: Analyzer | None = None,
@@ -52,8 +59,9 @@ def create_app(config: ApiConfig | None = None, analyzer: Analyzer | None = None
     app = FastAPI(title="Voice-spoofing detection API", lifespan=lifespan)
     app.state.config = config
     app.state.analyzer = analyzer if analyzer is not None else MockAnalyzer(config.mock_deferral_on_fit)
-    app.state.repository = AnalysisRepository(resolve_path(config.database_path))
-    app.state.accounts = AccountRepository(resolve_path(config.database_path))
+    app.state.database = Database.from_config(config)  # opened by the lifespan; building never connects
+    app.state.repository = AnalysisRepository(app.state.database)
+    app.state.accounts = AccountRepository(app.state.database)
     app.state.hasher = hasher if hasher is not None else password_hasher()
     # Added inner first: RequestId -> SessionGuard -> ContentLengthGuard -> RequestBodyLimit -> routes
     # (intake.py, session_guard.py).

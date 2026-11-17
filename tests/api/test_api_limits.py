@@ -16,11 +16,12 @@ def test_limits_equal_the_repo_config(client, monkeypatch):
                                "max_duration_s": repo.max_duration_s, "audio_deletion": repo.audio_deletion}
 
 
-def test_limits_follow_the_config_named_by_the_env_var(tmp_path, monkeypatch):
+def test_limits_follow_the_config_named_by_the_env_var(config, tmp_path, monkeypatch):
     cfg = yaml.safe_load(DEFAULT_PATH.read_text(encoding="utf-8"))
     cfg.update(formats=["wav"], max_size_bytes=1_048_576, max_duration_s=10,
-               audio_deletion="Deleted at once", database_path=str(tmp_path / "api.sqlite"),
-               temp_dir=str(tmp_path / "uploads"))
+               audio_deletion="Deleted at once", temp_dir=str(tmp_path / "uploads"),
+               **{key: getattr(config, key) for key in ("database_host", "database_port", "database_name",
+                                                        "database_user")})
     path = tmp_path / "api.yaml"
     path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
     monkeypatch.setenv(ENV_VAR, str(path))

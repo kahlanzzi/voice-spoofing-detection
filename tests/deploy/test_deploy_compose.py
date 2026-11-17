@@ -52,7 +52,6 @@ def test_api_publishes_no_port():
 def test_store_is_on_a_named_volume_at_the_database_folder():
     assert "vsd-var:/app/var" in API["volumes"]
     assert "vsd-var" in COMPOSE["volumes"]
-    assert load_api_config().database_path.startswith("var/")  # resolves to /app/var/... in the image
 
 
 def test_tmpfs_holds_the_declared_concurrent_uploads_at_the_config_limit():

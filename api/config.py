@@ -30,7 +30,12 @@ TYPES = {
     "notice_text": str,
     "mock_deferral_on_fit": float,
     "temp_dir": (str, type(None)),
-    "database_path": str,
+    "database_host": str,
+    "database_port": int,
+    "database_name": str,
+    "database_user": str,
+    "database_pool_max": int,
+    "database_timeout_s": int,
     "session_idle_minutes": int,
     "session_absolute_hours": int,
     "lockout_threshold": int,
@@ -41,7 +46,10 @@ TYPES = {
 }
 POSITIVE = ("max_size_bytes", "max_duration_s", "analysis_timeout_s", "page_size_max", "note_max_chars",
             "session_idle_minutes", "session_absolute_hours", "lockout_threshold", "lockout_minutes",
-            "password_min_chars", "password_max_chars")
+            "password_min_chars", "password_max_chars", "database_port", "database_pool_max",
+            "database_timeout_s")
+# PostgreSQL identifiers in the config (database and role names): plain lower-case names only.
+DB_IDENTIFIER = re.compile(r"[a-z_][a-z0-9_]{0,62}")
 # An Origin header value: scheme://host[:port], no path, no trailing slash (§4.8 CSRF).
 ORIGIN = re.compile(r"https?://[A-Za-z0-9.-]+(:[0-9]{1,5})?")
 
@@ -59,7 +67,12 @@ class ApiConfig:
     notice_text: str
     mock_deferral_on_fit: float
     temp_dir: str | None
-    database_path: str
+    database_host: str
+    database_port: int
+    database_name: str
+    database_user: str
+    database_pool_max: int
+    database_timeout_s: int
     session_idle_minutes: int
     session_absolute_hours: int
     lockout_threshold: int
@@ -107,8 +120,13 @@ def load_api_config(path=None) -> ApiConfig:
         raise ValueError(f"{path}: mock_deferral_on_fit must be in [0, 1], got {cfg['mock_deferral_on_fit']!r}")
     if not cfg["notice_text"].strip():
         raise ValueError(f"{path}: notice_text must not be empty")
-    if not cfg["database_path"].strip():
-        raise ValueError(f"{path}: database_path must not be empty")
+    if not cfg["database_host"].strip():
+        raise ValueError(f"{path}: database_host must not be empty")
+    if cfg["database_port"] > 65535:
+        raise ValueError(f"{path}: database_port must be at most 65535, got {cfg['database_port']!r}")
+    for key in ("database_name", "database_user"):
+        if not DB_IDENTIFIER.fullmatch(cfg[key]):
+            raise ValueError(f"{path}: {key} must be a lower-case PostgreSQL name, got {cfg[key]!r}")
     if cfg["password_min_chars"] > cfg["password_max_chars"]:
         raise ValueError(f"{path}: password_min_chars must not exceed password_max_chars")
     origins = cfg["allowed_origins"]
