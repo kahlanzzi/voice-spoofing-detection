@@ -280,7 +280,8 @@ def test_aasist_round_trip_with_waveform_source(patched, tmp_path):
 
 def test_aasist_without_waveform_source_is_refused(patched, tmp_path):
     checkpoint = _good_evidence(patched, "aasist")
-    with pytest.raises(ValueError, match="F3 waveform val-B source is required and none exists yet"):
+    with pytest.raises(ValueError, match=r"F3 waveform val-B source is required \(build it with "
+                                         r"src\.tuning\.v2_val_b_source\.val_b_waveform_source; CLI: --root\)"):
         _run(patched, tmp_path / "out", checkpoint)  # the CLI path: only a log-Mel cache_dir
     with pytest.raises(ValueError, match="F3 waveform val-B source is required"):
         vr.run(checkpoint, patched["s_dir"], PROFILE_PATH, patched["v2"], patched["manifest_path"],

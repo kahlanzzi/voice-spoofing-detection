@@ -7564,8 +7564,8 @@ module, training-format S build/verification, training-half resource cache and o
   checks; aasist: `--root` required, `--cache-dir` refused; `cnn-aug` / `crnn`: `--cache-dir`
   required, `--root` refused (argparse error, exit 2). Module docstring and the `ValBWaveformSource`
   comment updated. Docs: `docs/v2_training.md` risk-v2 section, CHANGELOG.
-- **Not changed:** `run`'s logic and outputs (also its "none exists yet" error message, kept so the
-  existing test matches; it is now out of date, see Open), `_waveform_val_b`, `fit_risk_policy`,
+- **Not changed:** `run`'s logic and outputs (its aasist refusal message was reworded at review, see
+  Open), `_waveform_val_b`, `fit_risk_policy`,
   `stage11_v2_run.py`, `train_v2`, models, checkpoints, configs, evidence. No real run; no dataset,
   FoR audio or DEEP-VOICE access.
 - **Tests [verified, CPU, synthetic]:** `tests/tuning/test_v2_val_b_source.py` (4): exactly the
@@ -7584,9 +7584,9 @@ module, training-format S build/verification, training-half resource cache and o
 - **Checks [verified, local Windows, Python 3.14.7 venv, torch 2.11.0+cpu]:** `REQUIRE_TORCH_TESTS=1
   pytest -q`: 2321 passed, 2 skipped (13:08); `pytest -q tests/governance`: 89 passed (after the docs
   edits). CI on 3.13 not yet run (branch not pushed).
-- **Open [hypothesis]:** `run`'s aasist refusal message still says "none exists yet"; rewording it
-  is a one-line text change to `run` and its test, left for review (the brief forbids changes to
-  `run`).
+- **Open:** none. Closed at review: `run`'s aasist refusal message no longer says "none exists
+  yet"; it now names `src.tuning.v2_val_b_source.val_b_waveform_source` and the CLI `--root` (one
+  string, no logic change; the regex in `test_aasist_without_waveform_source_is_refused` updated).
 - **AI assistance:** Claude Code (Claude Opus 5.5) wrote the code, tests and docs from Donia's brief;
   team review required before acceptance (D26).
 - **Gate:** **WAITING FOR APPROVAL.**
@@ -7616,7 +7616,7 @@ module, training-format S build/verification, training-half resource cache and o
 - [x] PR V2b-1: v2 training loop, selection metric M over set S, resumable search, benchmark code (Entry 172; review pending).
 - [x] F5 model loader dispatching on `architecture` (D61 (6)), when F5 is built (Entry 170). Done ahead of F5 on synthetic bundles, with the Stage 13 hand-over test (PR V5a, Entry 186; review pending).
 - [ ] V4: v2 risk policy (Protocol §6 unchanged, clean val-B, bundle seed only; D45, D49). Code done: `src/tuning/v2_risk_run.py` (PR V4a, Entry 188; review pending) and the aasist F3 waveform val-B source with CLI `--root` (PR V4c, Entry 199; built ahead of selection, review pending). Run pending: after the search, commit its reports to `docs/audit_evidence/v2_search/`, then run with `--version risk-v2` (`--cache-dir` for cnn-aug / crnn, `--root` for aasist).
-- [ ] V4c review: reword `run`'s aasist refusal message ("none exists yet") now that the source exists, or keep it (Entry 199).
+- [x] V4c review: reword `run`'s aasist refusal message ("none exists yet") now that the source exists, or keep it (Entry 199). Reworded at review.
 - [x] Draft the extension authentication design and security-review text in SDD v2.0 before implementation (D51; Entry 165; human approval and merge pending).
 - [ ] Choose the hosting provider and record it (D54 (9)); load test on staging, then record K, L, `analysis_timeout_s` and `L_MAX` (D53 (3)).
 - [x] SRS v4.0 Markdown/PDF pair and version index merged in PR #121 (Entry 164).

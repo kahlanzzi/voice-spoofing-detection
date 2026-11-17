@@ -158,8 +158,8 @@ def run(checkpoint_dir, selection_set_dir, profile_path, v2_config_path, manifes
     if input_kind == "waveform":
         if val_b_waveforms is None:
             raise ValueError(f"{winner} takes the F3 waveform: an F3 waveform val-B source is "
-                             f"required and none exists yet (it is built only if {winner} wins, "
-                             f"Execution Plan v3.0 §9 V4)")
+                             f"required (build it with src.tuning.v2_val_b_source."
+                             f"val_b_waveform_source; CLI: --root)")
         if cache_dir is not None:
             raise ValueError(f"{winner} takes the F3 waveform: cache_dir (the val-B log-Mel cache) "
                              f"must not be given")
