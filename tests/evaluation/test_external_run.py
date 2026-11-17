@@ -17,6 +17,7 @@ import pytest
 
 from src.evaluation import external_run
 from src.preprocessing import load_profile, preprocess_waveform
+from tests._torch import require_torch
 
 
 @pytest.fixture(scope="module")
@@ -54,6 +55,7 @@ def _fake_artifacts(profile=None, *, v2_model=None, v2_sha=None):
 
 
 def _stub_prepare_gates(monkeypatch, calls):
+    require_torch()
     from src.evaluation import stage11_run
 
     monkeypatch.setattr(
