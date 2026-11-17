@@ -7457,6 +7457,68 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
+### Entry 197 — Track V PR V6a: v2 Stage 11 metrics report, code only (2026-11-17)
+
+- **Owner:** Donia Mabrouk (Part C). Branch `feat/stageV6a-stage11-v2-report` from `main` `9b51885`.
+  Entry number: 197 is the next free one on `main` and the open branches (196 last used on
+  2026-11-17; 185 stays reserved for Malak).
+- **Why [doc]:** Protocol §7 addendum ("the same storage and reporting rules apply"); D48 (7); D57;
+  D31. `stage11_v2_run score` stores clip scores and `run_report.json` but no metrics; notebook 09
+  must compute them from the stored files only, with code fixed before anyone sees a number, as
+  notebook 06 did for v1. Remaining item 8 (the v2 extension of the Stage 11 report, Entry 190).
+- **Scope decision (Donia, 2026-11-17, option A, before any v2 test result):** D57 is applied to the
+  v2 model set as written, with no hypothesis. Reasons: (1) the Protocol as written: H1 and H5 are
+  v1 hypotheses (§1); (2) the v1–v2 comparisons are pre-registered as H8 (Stage 13) and H9 (Stage
+  14), so a v1–v2 comparison here would be a new analysis; (3) no decision round on the critical
+  path to F5 (cut-off Fri 4 Dec). No new decision; the D57 text is unchanged. The mapping of D57 to
+  v2 is written in `CONVENTIONS_V2` and in `docs/stage11_report.md` "v2 model set": (1) the model =
+  the bundle-seed v2 model; (2) EER and ROC-AUC on `raw_score` for all three seeds; (3) subgroups as
+  D57; (4) forced binary at the risk-v2 threshold and three-way from the stored prediction, no
+  baseline row; (5)–(6) not applicable, stated in the report; (7) CIs for the bundle model only;
+  (8)–(9) as D57.
+- **What changed:** new `src/evaluation/stage11_v2_report.py` (`build_report`, `write_report`, CLI
+  `python -m src.evaluation.stage11_v2_report --run-dir --registry --manifest --search-evidence
+  --risk-evidence --out`; the policy is `<risk-evidence>/risk_policy.json`). Integrity checks before
+  any metric: run report (architecture, exactly `<architecture>-v2-seed0..2`, roles, bundle seed),
+  claim (v1's `_check_claim` plus architecture, bundle seed, model IDs), registry (one started + one
+  completed record for this `run_id` with the v2 set), score files (and the folder holds only their
+  files), same clips, F2 join, evidence (search winner and bundle seed via `search_bundle`, per-seed
+  checkpoint hashes, risk-v2 architecture / bundle seed / checkpoint / `v2_search_evidence`, policy
+  hash, F2 hash = risk-v2's and the approved value), re-derivation (bundle `p` byte for byte, band
+  rule, no `p` / prediction for the other seeds). JSON: v1 keys minus the hypothesis content, plus
+  `architecture`, `hypotheses: null`, `hypotheses_note`. Docs: `docs/stage11_report.md` "v2 model
+  set", one pointer line in `docs/stage11_run.md` (v2 Outputs), CHANGELOG.
+- **Reuse:** the model-independent helpers of `stage11_report.py` are imported (a test checks they
+  are the same objects). v2 versions were written only for code bound to v1 IDs, roles or evidence
+  (run report, registry, score files, same clips, re-derivation, model and seed rows, Markdown,
+  `write_report`). One v1 helper that holds no model ID was still not reusable as is:
+  `_load_manifest` names its check `manifest.sha256_stage10` and reads the v1 module's approved
+  hash, so the v2 module has its own (`manifest.sha256_risk_v2`, same reading rule); the v1 helper
+  is unchanged. Torch-free: the v2 runner's constants are re-declared (tested equal);
+  `search_bundle` restates `v2_risk_run.bundle_checkpoint` (tested equal on 8 cases, incl. refusals).
+- **Not changed:** `stage11_report.py`, `stage11_run.py`, `stage11_v2_run.py`, `clip_scores.py`,
+  `metrics.py`, `bootstrap.py`, evidence, configs, notebooks; `ALLOWED` of the FoR test guard. No
+  real run; no dataset, FoR audio or DEEP-VOICE access.
+- **Tests [verified, CPU, synthetic]:** `tests/evaluation/test_stage11_v2_report.py` (89): a `crnn`
+  set with bundle seed 1 on the v1 hand table (EER 1/4, AUC 39/48, forced binary (6, 1, 5, 2),
+  three-way bonafide (4, 1, 1) / spoof (2, 5, 1), seed EERs 0, 1/4, 0); agreement with the harness;
+  61 single-check tamper cases (each raises with its own name, nothing written) and a test that every
+  recorded check is tampered; v1 model set, v1 run report, baseline entry or file refused;
+  byte-identical twice (CLI and functions); `--out` and dirty worktree refused; torch-free import;
+  guard and `ALLOWED`; with torch, the report on the v2 runner's own `claim` + `score` output for
+  `crnn` and `aasist`. `tests/evaluation/test_stage11_report.py` passes unchanged.
+- **Checks [verified, local Windows, Python 3.14.7 venv, torch 2.11.0+cpu]:** `REQUIRE_TORCH_TESTS=1
+  pytest -q`: 2306 passed, 2 skipped (9:15); `pytest -q tests/governance`: 89 passed (after the docs
+  edits). CI on 3.13 not yet run (branch not pushed).
+- **Open [hypothesis]:** none new. The real report runs in notebook 09 on the platform of the v2
+  Stage 11 run (byte-exact `p` check, as Entry 161), pointing at the committed `v2_search/` and
+  `v2_risk/` evidence.
+- **AI assistance:** Claude Code (Claude Opus 5.5) wrote the code, tests and docs from Donia's brief;
+  team review required before acceptance (D26).
+- **Gate:** **WAITING FOR APPROVAL.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -7489,7 +7551,8 @@ module, training-format S build/verification, training-half resource cache and o
 - [x] SDD v2.0 Markdown/PDF pair and version index merged in PR #122 (Entry 165).
 - [ ] Iheb confirms the SDD v2.0 owner review and all four reviewers explicitly accept the D51 extension-authentication design before extension implementation; PR #122 currently records Donia's approvals only.
 - [ ] Stage 13 runner (D35) and Stage 11 runner (PR #68) accept the v2 model set (D48 (3), (7)). Stage 11 part: V4b code done (`src/evaluation/stage11_v2_run.py`, Entry 190; review pending, incl. the `ALLOWED` access-rule change for Khalil).
-- [ ] V4b follow-ups: the v2 Stage 11 run (after risk-v2, before F5; target Wed 2 Dec), its notebook (09) and the v2 extension of `stage11_report.py` (metrics) still open (Entry 190).
+- [x] V4b follow-up (item 8): v2 Stage 11 metrics report code, `src/evaluation/stage11_v2_report.py`; D57 applied to the v2 set with no hypothesis (Donia, option A) (PR V6a, Entry 197; review pending).
+- [ ] V4b follow-ups: the v2 Stage 11 run (after risk-v2, before F5; target Wed 2 Dec) and its notebook (09), which also produces the real v2 metrics report on the run's platform (Entries 190, 197).
 - [ ] V5: V5b code done (`src/bundle/f5.py`, Entry 192; review pending); F5 build on Colab after the v2 Stage 11 run, the freeze decision (next free D) and the hand-over still open (cut-off Fri 4 Dec 23:59 Tunis, D48 (4)).
 
 
@@ -7898,7 +7961,7 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
-## Current status — updated 2026-11-17 (Entry 196)
+## Current status — updated 2026-11-17 (Entry 197)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -7915,8 +7978,11 @@ dispatches on the checkpoint's `architecture` (D61 (6)) and passes a synthetic h
 Stage 13 runner for all three candidates. PR V4a (Entry 188, waiting for review) adds the v2
 risk-policy run (Protocol §6 unchanged, bundle seed only, exact M reproduction); the real run waits
 for the search evidence. PR V4b (Entry 190, waiting for review) adds the Stage 11 runner for the v2
-model set (D48 (7)), code and synthetic tests only; the real v2 Stage 11 run, notebook 09 and the v2
-metrics report follow risk-v2. PR V5b (Entry 192, waiting for review) adds the F5 build and verify
+model set (D48 (7)), code and synthetic tests only; the real v2 Stage 11 run and notebook 09 follow
+risk-v2. PR V6a (Entry 197, waiting for approval) adds the v2 metrics report
+(`src/evaluation/stage11_v2_report.py`), code and synthetic tests only: D57 applied to the v2 set as
+written, with no hypothesis (Donia, option A; v2–v1 comparisons stay H8 and H9); notebook 09 runs it
+on the stored v2 files on the run's platform. PR V5b (Entry 192, waiting for review) adds the F5 build and verify
 tool (`src/bundle/f5.py`), code and synthetic tests only: it refuses F5 until the v2 Stage 11 run is
 completed in the registry (D48 (7)); the real build, the freeze decision and the hand-over follow
 that run, before the Fri 4 Dec 23:59 cut-off. See the open items above and [Execution Plan v3.0](reference/Execution_Plan_v3.0.md).
