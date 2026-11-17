@@ -107,8 +107,9 @@ item, project log). HANDOFF-v2 §6 keeps the chart specs for that later work.
   (HANDOFF-v2 §5.10).
 - D55 (2)–(4) unchanged, including the usability test.
 - **D63 dependency:** the ruler pin, `p` in the explanation and the window cells need `p`, the threshold,
-  the band and per-window values, which only D63 (`README.md` l.69, Proposed) would add.
-  This decision does not change the contract.
+  the band and per-window values, which the [D63 implementation](0016-calibrated-spoof-probability.md)
+  will add.
+  D65 specifies how the UI uses those fields.
 
 ## 9. Consequences
 
@@ -117,12 +118,12 @@ build PR against a fixed, hashed file.
 
 **Harder or committed:**
 - **Score not available state.** Specified in HANDOFF-v2 §5.9; it is not in the prototype. It is used when
-  the response has no `p` or per-window values: before D63, if D63 is rejected, and on the mock.
+  the response has no `p` or per-window values, including before the D63 fields ship and on the mock.
   - The ruler shows its three zones, with the verdict's zone outlined, no pin, and the text "Exact score not shown".
   - The "Each 2-second window" card is hidden.
   - "Why this verdict" uses band wording without `p` and no "leans …" phrase.
   - Components take `p` and `windows` as optional props, so B3 does not wait for D63.
-  - Before D63, zone edges come from a display table keyed by the response's `policy_version` (one entry:
+  - Before the D63 fields ship, zone edges come from a display table keyed by the response's `policy_version` (one entry:
     `risk-v1` → threshold 0.633, band 0.270 to 0.997); an unknown `policy_version` means no ruler, and the
     verdict always comes from `prediction` (HANDOFF-v2 §5.7).
 - **Build PRs:**
@@ -134,7 +135,7 @@ build PR against a fixed, hashed file.
     44 px targets and no-sideways-scroll checks (`shell.spec.ts:61`; HANDOFF-v2 §2).
   - **B3 Analyse and Result × 3:** tiles, checklist, Why panel, ruler, window cells and their table,
     with `p` and `windows` as optional props and the Score not available state. It updates HANDOFF.md in the
-    same PR (confidence on the main result). Real values only after D63.
+    same PR (confidence on the main result). Real values appear once the D63 fields ship.
   - **B4 Live check in Direction D, delivered inside L2** (`Execution_Plan_v3.0.md:315-319`,
     D51/D52). It is not a separate D55 build PR.
   - **B5 History and the empty state.**
@@ -147,9 +148,8 @@ build PR against a fixed, hashed file.
   - no raw colour outside `tokens.css`.
   B3 also shows the Score not available state.
 
-**Risks:** the build may drift from the prototype, which the screenshot comparison catches. If D63 is
-rejected, the ruler stays without a pin, and D55 (2)'s "calibrated p on a 0–1 scale" is then met only partly.
-That would need a team decision.
+**Risks:** the build may drift from the prototype, which the screenshot comparison catches. Until the
+D63 fields ship, the ruler stays without a pin and D55 (2)'s calibrated probability display is partial.
 
 ## 10. References
 

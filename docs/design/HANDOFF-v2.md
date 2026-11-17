@@ -217,8 +217,8 @@ confidence on the main result changes HANDOFF.md §8; B3 updates HANDOFF.md in t
 - Window labels come from the API (D52 (4)), not from `p` in the browser (§5.7).
 
 ### 5.9 Score not available (not in the prototype; specified here)
-Used when the response has no `p` or no per-window values: before D63 is approved, if D63 is rejected,
-and on the mock analyzer.
+Used when the response has no `p` or no per-window values, including before the D63 fields ship and
+on the mock analyzer.
 - **Ruler:** the three zones and the tick labels as in §5.7, with zone edges from the display table
   keyed by `policy_version` (§5.7 "Zone edges"; an unknown `policy_version` means no ruler). The zone of the verdict in `prediction`
   is outlined (2 px `--ink` outline, not a fill change). No pin. The text "Exact score not shown" is
@@ -337,8 +337,8 @@ For the later S9 work. All data in the prototype is invented (l.304, l.585, l.59
 - Whichever of B3, B5 and the L2 live screen merges last retires HANDOFF.md as the description
   of the shipped UI.
 - **D63 dependency.** Today's response (`web/src/api/types.ts:18-27`) has exactly the 8 §11 fields
-  and no `p`, threshold, band or per-window values. D63 (`docs/decisions/README.md:69`, Proposed)
-  would add them. Until it is approved and implemented, results use §5.9.
+  and no `p`, threshold, band or per-window values. The [D63 implementation](../decisions/0016-calibrated-spoof-probability.md)
+  will add them. Until those fields ship, results use §5.9.
 
 ## 10. Build acceptance checklist
 
