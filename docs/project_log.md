@@ -7593,6 +7593,35 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
+### Entry 200 — SRS v4.1 owner-review draft for D63 and D65 (2026-11-17)
+
+- **Owner:** Khalil Dridi. Branch `docs/stage19-srs-v40-owner-review` from `main` `78bcee7`.
+- **Why:** The merged SRS v4.0 draft predates approved D63 and D65. ADR 0016 requires a new
+  synchronized v4.1 pair rather than changing v4.0 history. The GitHub review state cited in the
+  prior current-status text did not constitute Khalil's explicit owner sign-off.
+- **What changed:** Added `docs/reference/SRS_v4.1.md` and its generated PDF. The draft carries
+  v4.0 forward and adds the coordinated D63 response, policy provenance, window/no-speech, storage,
+  zero/one/two-kept-window and server-label requirements, plus D65 Direction D and the Overview
+  stub boundary. Traceability and validation sections identify these amendments. v4.0, the version
+  index and `AGENTS.md` remain unchanged; v4.1 is not current or approved yet.
+- **Review finding:** v4.0 cannot be signed off unchanged as the next current SRS because its
+  contract is older than D63/D65. The prepared v4.1 wording is an owner-review draft only. It makes
+  no implementation, database-migration, test-result or deployment claim.
+- **Verification:** `SRS_v4.1.md` SHA-256
+  `889075da82ad22019526752fd85ca688bfa8c7f6f349b6f5cf320209c181ef35`; generated 18-page PDF
+  SHA-256 `5c76c7a75bf8885c101cb7e64309f82e0b9c59bd5ed182cb0555749b8044ea10`.
+  All pages were rendered at 120 dpi and inspected; PDF text extraction found all 11 major sections
+  and the D63/D65 terms. Full-branch `git diff --check` passed; `pytest -q tests/governance`
+  reported 89 passed.
+  No code, configuration, data, audio, checkpoint or generated model evidence changed.
+- **AI assistance:** Codex compared the SRS against the approved decision and design sources,
+  drafted the v4.1 amendments, generated the PDF and ran the checks. Khalil and the other three
+  team members must review the actual pair.
+- **Gate:** **WAITING FOR ALL-FOUR HUMAN REVIEW.** After approval, a separate approval commit records
+  names/dates, changes the status, regenerates the pair and updates the current-version pointers.
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -7620,9 +7649,14 @@ module, training-format S build/verification, training-half resource cache and o
 - [x] Draft the extension authentication design and security-review text in SDD v2.0 before implementation (D51; Entry 165; human approval and merge pending).
 - [ ] Choose the hosting provider and record it (D54 (9)); load test on staging, then record K, L, `analysis_timeout_s` and `L_MAX` (D53 (3)).
 - [x] SRS v4.0 Markdown/PDF pair and version index merged in PR #121 (Entry 164).
-- [ ] Khalil confirms the SRS v4.0 owner review; GitHub currently records Donia's approval on PR #121.
+- [x] Khalil reviews SRS v4.0 against the current approved decisions and prepares the synchronized
+  v4.1 owner-review draft without changing v4.0 history (Entry 200).
+- [ ] All four team members review and approve the SRS v4.1 Markdown/PDF pair; then an approval
+  commit records names/dates, regenerates the pair and updates the version pointers (Entry 200).
 - [x] Obtain all-four approval for revised D63/ADR 0016, including the D34 mean for uploads with one or two kept windows (PR #146, Entry 195).
-- [ ] After the D63 approval record merges, coordinate the full API contract and one database migration with Iheb. Prepare the synchronized SRS v4.1 Markdown/PDF pair and update source-of-truth pointers when v4.1 becomes current (Entry 195).
+- [ ] Coordinate the approved D63 full API contract and one database migration with Iheb. The
+  synchronized SRS v4.1 draft is prepared; update source-of-truth pointers only after all-four SRS
+  approval (Entries 195, 200).
 - [x] SDD v2.0 Markdown/PDF pair and version index merged in PR #122 (Entry 165).
 - [ ] Iheb confirms the SDD v2.0 owner review and all four reviewers explicitly accept the D51 extension-authentication design before extension implementation; PR #122 currently records Donia's approvals only.
 - [ ] Stage 13 runner (D35) and Stage 11 runner (PR #68) accept the v2 model set (D48 (3), (7)). Stage 11 part: V4b code done (`src/evaluation/stage11_v2_run.py`, Entry 190; review pending, incl. the `ALLOWED` access-rule change for Khalil).
@@ -8040,7 +8074,7 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
-## Current status — updated 2026-11-17 (Entries 198, 199)
+## Current status — updated 2026-11-17 (Entries 198-200)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -8084,15 +8118,18 @@ integration is Iheb’s P1 work; the mock verdict must not be presented as a rea
 D65 (Entry 191, approved in Entry 193) names Direction D and `docs/design/HANDOFF-v2.md` as the D55 target design;
 the shipped UI is unchanged until the D55 build PRs.
 
-**Khalil’s next project work.** Check and sign off the SRS v4.0 draft you own: PR #121 is merged, but
-the GitHub review list currently records Donia’s approval only. Continue Stage 13 preparation only
-within the gates above. D63 has all four approvals (Entry 195). One or two kept upload windows use
-D34’s mean, and zero kept upload windows return `422 no_speech` without a stored analysis. After
-the approval record merges, coordinate the implementation and migration with Iheb.
+**Khalil’s next project work.** The v4.0 owner review found that approved D63/D65 require the new
+synchronized SRS v4.1 pair prepared in Entry 200; v4.0 remains unchanged and current. Khalil and the
+other three team members must review the actual v4.1 pair. Only the later approval commit may mark it
+Approved and update the version pointers. Continue Stage 13 preparation only within the gates above.
+D63 has all four decision approvals (Entry 195). One or two kept upload windows use D34’s mean, and
+zero kept upload windows return `422 no_speech` without a stored analysis. Coordinate its
+implementation and single migration with Iheb.
 The D52 warm-up analysis is scheduled for W3 (23–29 November); Stages 15–16 follow later in the plan.
 
 **What is next:**
 1. Track V proceeds with Malak’s V1c and the remaining v2 training/selection work.
-2. Merge the D63 approval record after CI passes and coordinate implementation with Iheb. Khalil
-   confirms the SRS v4.0 owner review and keeps Stage 13 preparation within its gates.
+2. Review and approve the SRS v4.1 pair (all four), then add the approval/status commit and update
+   the current-version pointers. Coordinate D63 implementation with Iheb and keep Stage 13 within
+   its gates.
 3. Do not open, score or claim DEEP-VOICE until the single-run prerequisites and team review pass.
