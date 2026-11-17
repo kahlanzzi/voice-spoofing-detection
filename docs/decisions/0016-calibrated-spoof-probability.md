@@ -50,11 +50,11 @@ section is a proposal only until all four members approve D63 and the approval/s
   client does not derive them. The server applies `three_way_decisions`: authentic when
   `p < lower`, uncertain when `lower <= p < upper`, and synthetic when `p >= upper`.
   `policy_provenance` has typed fields: `threshold: number`, `half_width: number`,
-  `target_deferral: number`, `deferral_on_fit: boolean`, `n_spoof_fit: integer`,
+  `target_deferral: number`, `deferral_on_fit: number`, `n_spoof_fit: integer`,
   `n_bonafide_fit: integer`, `model_version: string`, and
   `bundle_manifest_sha256: 64-character lowercase hex string`. Copy them from the verified
   `RiskPolicy` and bundle manifest; never hand-type or infer them. `RiskPolicy` has no EER-point
-  field; do not claim one in provenance.
+  field; do not claim one in provenance. `deferral_on_fit` is a numeric achieved rate in `[0, 1]`.
 - **Upload view and window shape:** Use D17's filtered view for scoring and the file-level mean; the
   unfiltered sensitivity view remains research-only. Include every complete non-overlapping two-second
   window in chronological order, including windows dropped by D17. `index` is zero-based;

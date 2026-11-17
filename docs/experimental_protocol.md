@@ -305,10 +305,10 @@ authentic is `p < lower`, uncertain is `lower <= p < upper`, and synthetic is `p
 never recomputes a label or verdict.
 
 `PolicyProvenance = {threshold: number, half_width: number, target_deferral: number,
-deferral_on_fit: boolean, n_spoof_fit: integer, n_bonafide_fit: integer, model_version: string,
+deferral_on_fit: number, n_spoof_fit: integer, n_bonafide_fit: integer, model_version: string,
 bundle_manifest_sha256: 64-character lowercase hexadecimal string}`. Copy the fields from the
 verified `RiskPolicy` and bundle manifest; do not hand-type them. `RiskPolicy` has no EER-point
-field. Mock and unrecoverable historical results return `null` for added scalar values and windows.
+field. `deferral_on_fit` is the achieved numeric rate in `[0, 1]`. Mock and unrecoverable historical results return `null` for added scalar values and windows.
 `uncertain_band` remains null if its source threshold/half-width is unavailable.
 
 The proposed D52 WebSocket `LiveWindowUpdate` is:

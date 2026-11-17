@@ -527,9 +527,10 @@ session) and `403 access_denied` (signed in, not allowed; reserved earlier and k
   contribute to the file mean, verdict and confidence. A trailing fragment shorter than two seconds
   is omitted (D5); a maximum 60-second upload has at most 30 entries.
 - `PolicyProvenance` = `{threshold: number, half_width: number, target_deferral: number,
-  deferral_on_fit: boolean, n_spoof_fit: integer, n_bonafide_fit: integer, model_version: string,
+  deferral_on_fit: number, n_spoof_fit: integer, n_bonafide_fit: integer, model_version: string,
   bundle_manifest_sha256: string}`. These values come from the verified `RiskPolicy` and bundle
-  manifest; the top-level `policy_version` names that exact calibration/policy. The hash is 64
+  manifest; the top-level `policy_version` names that exact calibration/policy. `deferral_on_fit`
+  is the achieved numeric rate in `[0, 1]`. The hash is 64
   lowercase hexadecimal characters. Values are never hand-entered.
 - `uncertain_band` is returned by the server as
   `[threshold - half_width, threshold + half_width]`. The server alone applies
@@ -620,10 +621,10 @@ Five tables (SQLite on a volume first; architecture §7, open):
 
 **D63 additive storage proposal (API owner confirmed; base schema below remains current until
 all-four approval):** add nullable `spoof_probability REAL`, `threshold REAL`, `half_width REAL`,
-`target_deferral REAL`, `deferral_on_fit INTEGER` (boolean), `n_spoof_fit INTEGER`,
+`target_deferral REAL`, `deferral_on_fit REAL`, `n_spoof_fit INTEGER`,
 `n_bonafide_fit INTEGER`, `bundle_manifest_sha256 TEXT`, `windows_json TEXT`, and
 `windows_schema_version INTEGER` columns on SQLite `analysis_record`. The PostgreSQL mapping uses
-`DOUBLE PRECISION` for scalar probability/time values, `BOOLEAN` for `deferral_on_fit`, `JSONB` for
+`DOUBLE PRECISION` for scalar probability and deferral-rate values, `JSONB` for
 `windows_json`, and `SMALLINT` for the schema version. `uncertain_band` is computed by the server
 from stored threshold and half-width. Store the window array with the parent result; do not add a
 child table unless querying windows across analyses becomes a requirement.
