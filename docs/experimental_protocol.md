@@ -282,6 +282,68 @@ on FoR only; nothing here touches DEEP-VOICE before Stage 13 (AGENTS.md hard rul
     preprocessing profile (D26; §9).
 - **Status:** Decided
 
+### D63 proposed C-to-E amendment (not effective until approval)
+
+D63 is a proposal, not an amendment to the approved v1.0 interface yet. After all-four approval and
+the approval/status commit, successful upload detail adds `spoof_probability`, `threshold`,
+`uncertain_band`, `policy_provenance`, and `windows`; History list summaries omit `windows`.
+`AnalysisWindow = {index: integer, start_s: number, end_s: number, p: number | null,
+label: synthetic | uncertain | authentic | no_speech}`; `p` is required and never omitted. Windows
+are complete non-overlapping
+two-second intervals in chronological order; index is zero-based, start inclusive and end exclusive,
+in seconds from input start. The trailing fragment shorter than two seconds is omitted under D5.
+`p` is an unrounded binary64 calibrated probability or `null`; D17-dropped windows have
+`p: null`, `label: no_speech`, and `p` is null if and only if the label is `no_speech`. Kept-window
+labels are computed by the server with
+`three_way_decisions`; upload scoring and the file verdict use D17-kept windows only.
+
+For a file, `spoof_probability` is the unrounded mean of kept-window `p`; the server applies
+`three_way_decisions` to that mean and calculates confidence from the same mean. Never call
+`RiskPolicy.decide()` on an already calibrated `p`. The calibration and threshold come from the same
+`policy_version`. The server returns `uncertain_band = [threshold - half_width, threshold + half_width]`;
+authentic is `p < lower`, uncertain is `lower <= p < upper`, and synthetic is `p >= upper`. The client
+never recomputes a label or verdict.
+
+`PolicyProvenance = {threshold: number, half_width: number, target_deferral: number,
+deferral_on_fit: boolean, n_spoof_fit: integer, n_bonafide_fit: integer, model_version: string,
+bundle_manifest_sha256: 64-character lowercase hexadecimal string}`. Copy the fields from the
+verified `RiskPolicy` and bundle manifest; do not hand-type them. `RiskPolicy` has no EER-point
+field. Mock and unrecoverable historical results return `null` for added scalar values and windows.
+`uncertain_band` remains null if its source threshold/half-width is unavailable.
+
+The proposed D52 WebSocket `LiveWindowUpdate` is:
+`{type: "window_update", model_version, profile_version, policy_version, bundle_manifest_sha256,
+threshold, uncertain_band, policy_provenance, window, running_result}`. Its `window` uses the same
+`AnalysisWindow` fields and server-side labels; `p` is null if and only if the label is `no_speech`.
+No-speech windows remain in the timeline but do not contribute to D52's running mean. It includes the
+per-window value or no-speech marker before warm-up. `running_result` is null until three kept windows,
+then contains the unrounded running mean probability, server verdict, confidence from that same mean,
+and risk level. Errors carry no probability, verdict or window. ADR 0014 still controls capture
+lifecycle, retention and live scope;
+D63 adds response/event fields but does not change those rules. Live audio and window values are not
+stored.
+
+For a zero-kept-window upload, the API owner confirms a structured `422 no_speech` error and no
+stored analysis row. Emit exactly one structured `service_log` event with `request_id` and
+`error: no_speech`; include no audio, request body or original file name. After D63 approval this is
+the new (11th) S5 error kind. This application rule does not change Protocol §8's Stage 13 reporting
+of zero-window files.
+
+**Pending all-four approval — uploads with one or two kept windows:** this draft recommends using
+D34's mean over however many windows survive D17, including one or two, and returning the normal
+result. D34 defines the upload/file rule without a three-window minimum; the D52 three-window warm-up
+remains live-only.
+
+**Storage (API owner confirms JSON; all-four approval pending):** store the ordered window array with
+its analysis as JSON text in SQLite and JSONB in PostgreSQL. Validate on write against version 1, with
+at most 30 entries, the four-value label enum, and `p` numeric in `[0, 1]` or null; `p` is null if and
+only if `label` is `no_speech`. Keep a `windows_schema_version` column beside it. JSON numeric
+serialization must round-trip binary64 without quantization. Do not use a child table unless
+cross-analysis window queries become a requirement. The single migration adds this storage and the
+response fields together.
+This application contract does not change Protocol §8's Stage 13 zero-window reporting, the frozen
+risk policy, research metrics, or Stage 13 access gates.
+
 ## 12. Freeze points F1–F4
 
 - **Owner:** Donia Mabrouk
@@ -323,3 +385,5 @@ on FoR only; nothing here touches DEEP-VOICE before Stage 13 (AGENTS.md hard rul
 | 1.0 | 2026-10-28 | D45: §7 stores calibrated p and prediction for the bundle-seed CNN only (seeds 1–2 not applicable); clarification, no rule changed | #57 |
 | 1.0 | 2026-10-31 | D46: Stage 11 run procedure (runtime, environment record, reproduction gate, test features in memory, durable claim, rerun rule); no existing rule changed; approved 2026-11-10 | #67 |
 | 1.0 | 2026-11-10 | D48–D52 addendum before any test access: model v2 (§4, §6), v2 Stage 11 claim (§7), joint external run and cut-off (§8), v2 in Stage 14 (§9), F5 (§12), H8–H9 (§1); v1 rules unchanged | #111 |
+| Proposed (not effective) | 2026-11-16 | D63 C-to-E probability, policy provenance and per-window contract proposal added under §11; pending Iheb's no-speech and storage choices and all-four approval | — |
+| Proposed (not effective) | 2026-11-17 | D63 updated from API-owner response: 422/no-row and JSON/JSONB window storage confirmed by Iheb; added structured rejection logging; one/two-window upload rule remains pending team approval | — |
