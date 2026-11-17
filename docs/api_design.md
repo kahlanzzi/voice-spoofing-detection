@@ -8,10 +8,9 @@
   ([experimental_protocol.md](experimental_protocol.md)); [architecture.md](architecture.md) §4–5;
   [ADR 0008](decisions/0008-web-frontend-react.md).
 
-The approved base API below remains the current contract. D63 proposes the coordinated response,
-storage and timeline extension summarized in §5; it is not effective until all four approvals and
-the merged approval/status commit. The ModelBundle and frozen risk policy are unchanged. Items marked
-**Open decision** are not decided here.
+The base API below describes the current contract. [D63](decisions/0016-calibrated-spoof-probability.md)
+defines the approved target for the response, storage and timeline extension in §5. The D63 sections
+describe behavior for the future implementation.
 
 ## 1. Principles
 
@@ -131,7 +130,7 @@ Status codes: `200`; `401`; `500 internal_error`.
 Request: `multipart/form-data` with one part, `file`. The server reads only the extension from the
 part's file name, then discards the name. The part's content type is ignored.
 
-Current approved response `201`, header `Location: /api/analyses/{request_id}`, body = exactly the eight §11 fields below. D63 proposes a coordinated detail response after approval:
+Current response `201`, header `Location: /api/analyses/{request_id}`, body = exactly the eight §11 fields below:
 
 ```json
 {
@@ -146,9 +145,9 @@ Current approved response `201`, header `Location: /api/analyses/{request_id}`, 
 }
 ```
 
-**D63 proposal (not effective yet):** after approval, a successful `201` returns the proposed
+**D63 target:** a successful `201` returns
 `AnalysisDetail` in §5, including the full ordered window timeline and version-matched policy values.
-The approved eight-field body above remains current until D63 is approved.
+The eight-field body above remains current until D63 is implemented.
 
 **Processing order.** The `Origin` and session checks (section 4.8) run first, before the body is
 read; their errors carry `request_id: null` in the body. The upload is given its request ID next, so
@@ -180,18 +179,16 @@ every upload error below carries it.
 - **Open decision 3:** how recordings longer than 2 s are handled (the model works on 2 s clips).
   That rule lives inside the analyzer, not in this endpoint.
 
-**D63 proposal (not effective yet):** a recording with zero kept windows under D17 returns the
-section 6 `Error` shape with code `no_speech` and the assigned request ID, then stores no row. This
-is confirmed by the API owner and awaits all-four approval. Emit exactly one structured operational
-`service_log` event for the rejection with `request_id` and `error: no_speech`; include no audio,
-request body or original file name. The UI adds this as the 11th S5 error kind after D63 approval.
+**D63 target:** a recording with zero kept windows under D17 returns the
+section 6 `Error` shape with code `no_speech` and the assigned request ID, then stores no row.
+Emit exactly one structured operational `service_log` event for the rejection with `request_id`
+and `error: no_speech`; include no audio,
+request body or original file name. The UI adds this as the 11th S5 error kind.
 For successful uploads, see §5: the file mean uses D17-kept windows only; dropped windows remain in
 the timeline with `p: null`, `label: no_speech`.
 
-**D63 minimum-window proposal (pending all-four approval):** if one or two windows survive D17,
-return the normal result using D34's mean over those kept windows. D34 defines the upload/file rule
-without a three-window minimum; D52's three-kept-window warm-up remains live-only. This proposal
-does not create a new short-recording error.
+**D63 minimum-window rule:** if one or two windows survive D17, return the normal result using
+D34's mean over those kept windows. D52's three-kept-window warm-up applies to live analysis only.
 
 Status codes: `201`; `400 invalid_request` (no `file` part); `413`; `415`; `422`; `401`/`403`
 (section 4.8); `503`; `504`; `500`.
@@ -236,7 +233,7 @@ Response `200`:
   `to` → `400 invalid_request`.
 - Items include `confidence` because they carry the whole §11 object. The History table does not
   show it (HANDOFF §10).
-- **D63 proposal:** after approval, list items will omit the `windows` array; it is returned only by
+- **D63 target:** list items omit the `windows` array. It is returned by `POST /analyses` and
   `GET /analyses/{request_id}`. The list keeps scalar verdict, probability, policy and provenance
   fields so it can show the same analysis summary.
 
@@ -246,7 +243,7 @@ Status codes: `200`; `400`; `401`/`403`; `500`.
 
 Response `200`: one stored result (section 5). Used by S8, and by S6 if the page is reloaded.
 
-- **D63 proposal:** after approval, this detail response includes the ordered `windows` array and
+- **D63 target:** this detail response includes the ordered `windows` array and
   version-matched policy values. The History list does not include that array.
 - An ID that does not have the request-ID form (section 2) also answers `404 not_found`.
 
@@ -511,7 +508,7 @@ session) and `403 access_denied` (signed in, not allowed; reserved earlier and k
 | `StoredAnalysis` | `analysis` (an `AnalysisResponse`), `created_at`, `note` (`{text, updated_at, updated_by}` or `null`) | Current approved base shape. |
 | `Error` | `error.code`, `error.message`, `error.request_id` | Section 6. |
 
-**D63 proposed shapes (pending approval):**
+**D63 target shapes:**
 
 - `AnalysisSummary` = the eight current §11 fields plus `spoof_probability: number | null`,
   `threshold: number | null`, `uncertain_band: [number, number] | null`, and
@@ -541,7 +538,7 @@ session) and `403 access_denied` (signed in, not allowed; reserved earlier and k
 - Mock and unrecoverable historical records return `null` for added scalar policy fields and
   `windows`; clients do not infer values from confidence. `GET /analyses` uses
   `AnalysisSummary` and omits windows; detail responses include windows.
-- **Proposed D63 live event (D52 WebSocket; not effective yet):**
+- **D63 live event (D52 WebSocket target):**
   `LiveWindowUpdate = {type: "window_update", model_version: string, profile_version: string,
   policy_version: string, bundle_manifest_sha256: string, threshold: number, uncertain_band:
   [number, number], policy_provenance: PolicyProvenance, window: AnalysisWindow,
@@ -554,16 +551,16 @@ session) and `403 access_denied` (signed in, not allowed; reserved earlier and k
   and confidence is computed from that same mean. Error events contain no probability, verdict or
   window. The client never derives a label or verdict. This changes only D63's data fields; ADR 0014
   still controls capture lifecycle and retention.
-- **Confirmed by API owner; pending all-four approval:** zero kept windows return structured
-  `422 no_speech` and create no analysis row. Add the 11th S5 error kind and emit exactly one
+- **Zero kept windows:** return structured `422 no_speech` and create no analysis row.
+  Add the 11th S5 error kind and emit exactly one
   structured `service_log` event with `request_id` and `error: no_speech`, without audio or filename.
-- **Window storage confirmed by API owner; pending all-four approval:** store the array beside its
-  analysis as JSON text in SQLite and JSONB in PostgreSQL; validate schema version 1 on write,
+- **Window storage:** store the array beside its analysis as JSON text in SQLite and JSONB in PostgreSQL.
+  Validate schema version 1 on write,
   max 30 entries, label enum, and `p` in `[0, 1]` or null, null if and only if `no_speech`. Keep
   numeric values binary64-round-trippable. A child table is only needed if cross-analysis window
   queries become a requirement.
-- **Pending all-four approval:** for uploads with one or two kept windows, this draft recommends
-  applying D34's mean rule and returning the normal result; D52's three-window warm-up is live-only.
+- **One or two kept upload windows:** apply D34's mean rule and return the normal result. The D52
+  three-window warm-up applies to live analysis only.
 
 `processing_ms` and the mock flag are stored but not returned per item; they feed `GET /stats`
 and `GET /status`.
@@ -583,7 +580,7 @@ Every error uses one shape:
 | `recording_too_long` | 422 | Duration passes `max_duration_s` | S3 check, repeated by the API |
 | `empty_file` | 422 | 0 bytes, or decodes to 0 frames | S3 check, repeated by the API |
 | `corrupt_audio` | 422 | `soundfile` cannot decode it | S5 Corrupt audio (input) |
-| **D63 proposal:** `no_speech` | 422 | No complete window survives D17 | New S5 no-speech error kind (11th; after approval) |
+| **D63 target:** `no_speech` | 422 | No complete window survives D17 | New S5 no-speech error kind (11th) |
 | `analysis_unavailable` | 503 | Analyzer not loaded or refusing work | S5 Analysis service unavailable |
 | `analysis_timeout` | 504 | Analyzer did not finish in `analysis_timeout_s` | S5 Request timeout |
 | `session_expired` | 401 | No cookie, unknown, idle or expired session (section 4.8) | S5 / S1 Expired session |
@@ -619,8 +616,7 @@ Rules:
 
 Five tables (SQLite on a volume first; architecture §7, open):
 
-**D63 additive storage proposal (API owner confirmed; base schema below remains current until
-all-four approval):** add nullable `spoof_probability REAL`, `threshold REAL`, `half_width REAL`,
+**D63 storage migration target:** add nullable `spoof_probability REAL`, `threshold REAL`, `half_width REAL`,
 `target_deferral REAL`, `deferral_on_fit REAL`, `n_spoof_fit INTEGER`,
 `n_bonafide_fit INTEGER`, `bundle_manifest_sha256 TEXT`, `windows_json TEXT`, and
 `windows_schema_version INTEGER` columns on SQLite `analysis_record`. The PostgreSQL mapping uses
@@ -651,7 +647,7 @@ original file name.
 - **Never stored:** audio, the original file name, the client IP address, passwords in clear,
   session IDs in clear, the typed username of a failed sign-in. The file name is not logged either.
 - Existing database files gain `analysis_note.updated_by_account_id` through a migration in Step 7b.
-- **D63 proposal (not effective yet):** for zero-kept-window rejection, emit exactly one structured
+- **D63 target:** for zero-kept-window rejection, emit exactly one structured
   `service_log` event with `request_id` and `error: no_speech`; do not include audio, request body,
   original file name or IP. The existing FR-20 service-log rules otherwise remain unchanged.
 

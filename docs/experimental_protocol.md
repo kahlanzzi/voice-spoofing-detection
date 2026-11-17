@@ -282,10 +282,10 @@ on FoR only; nothing here touches DEEP-VOICE before Stage 13 (AGENTS.md hard rul
     preprocessing profile (D26; §9).
 - **Status:** Decided
 
-### D63 proposed C-to-E amendment (not effective until approval)
+### D63 C-to-E amendment (approved target)
 
-D63 is a proposal, not an amendment to the approved v1.0 interface yet. After all-four approval and
-the approval/status commit, successful upload detail adds `spoof_probability`, `threshold`,
+D63 defines the target application interface in [ADR 0016](decisions/0016-calibrated-spoof-probability.md).
+Once implemented, successful upload detail adds `spoof_probability`, `threshold`,
 `uncertain_band`, `policy_provenance`, and `windows`; History list summaries omit `windows`.
 `AnalysisWindow = {index: integer, start_s: number, end_s: number, p: number | null,
 label: synthetic | uncertain | authentic | no_speech}`; `p` is required and never omitted. Windows
@@ -311,7 +311,7 @@ verified `RiskPolicy` and bundle manifest; do not hand-type them. `RiskPolicy` h
 field. `deferral_on_fit` is the achieved numeric rate in `[0, 1]`. Mock and unrecoverable historical results return `null` for added scalar values and windows.
 `uncertain_band` remains null if its source threshold/half-width is unavailable.
 
-The proposed D52 WebSocket `LiveWindowUpdate` is:
+The D52 WebSocket `LiveWindowUpdate` is:
 `{type: "window_update", model_version, profile_version, policy_version, bundle_manifest_sha256,
 threshold, uncertain_band, policy_provenance, window, running_result}`. Its `window` uses the same
 `AnalysisWindow` fields and server-side labels; `p` is null if and only if the label is `no_speech`.
@@ -325,16 +325,14 @@ stored.
 
 For a zero-kept-window upload, the API owner confirms a structured `422 no_speech` error and no
 stored analysis row. Emit exactly one structured `service_log` event with `request_id` and
-`error: no_speech`; include no audio, request body or original file name. After D63 approval this is
+`error: no_speech`; include no audio, request body or original file name. In the D63 implementation this is
 the new (11th) S5 error kind. This application rule does not change Protocol §8's Stage 13 reporting
 of zero-window files.
 
-**Pending all-four approval — uploads with one or two kept windows:** this draft recommends using
-D34's mean over however many windows survive D17, including one or two, and returning the normal
-result. D34 defines the upload/file rule without a three-window minimum; the D52 three-window warm-up
-remains live-only.
+**Uploads with one or two kept windows:** use D34's mean over the windows that survive D17 and
+return the normal result. The D52 three-window warm-up applies to live analysis only.
 
-**Storage (API owner confirms JSON; all-four approval pending):** store the ordered window array with
+**Storage:** store the ordered window array with
 its analysis as JSON text in SQLite and JSONB in PostgreSQL. Validate on write against version 1, with
 at most 30 entries, the four-value label enum, and `p` numeric in `[0, 1]` or null; `p` is null if and
 only if `label` is `no_speech`. Keep a `windows_schema_version` column beside it. JSON numeric
@@ -387,3 +385,4 @@ risk policy, research metrics, or Stage 13 access gates.
 | 1.0 | 2026-11-10 | D48–D52 addendum before any test access: model v2 (§4, §6), v2 Stage 11 claim (§7), joint external run and cut-off (§8), v2 in Stage 14 (§9), F5 (§12), H8–H9 (§1); v1 rules unchanged | #111 |
 | Proposed (not effective) | 2026-11-16 | D63 C-to-E probability, policy provenance and per-window contract proposal added under §11; pending Iheb's no-speech and storage choices and all-four approval | — |
 | Proposed (not effective) | 2026-11-17 | D63 updated from API-owner response: 422/no-row and JSON/JSONB window storage confirmed by Iheb; added structured rejection logging; one/two-window upload rule remains pending team approval | — |
+| Approved target | 2026-11-17 | D63 approval recorded. One- and two-window uploads use the D34 mean. The C-to-E application contract awaits implementation. | #146 |

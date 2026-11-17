@@ -7420,6 +7420,27 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
+### Entry 195 — D63 approved by all four team members (2026-11-17)
+
+- **Owner:** Khalil Dridi (author sign-off).
+- **Approvals [verified]:** [Donia Mabrouk](https://github.com/kahlanzzi/voice-spoofing-detection/pull/146#pullrequestreview-5938699193),
+  [Malak Ben Salem](https://github.com/kahlanzzi/voice-spoofing-detection/pull/146#pullrequestreview-5939071078)
+  and [Iheb Zemzemi](https://github.com/kahlanzzi/voice-spoofing-detection/pull/146#pullrequestreview-5939112941)
+  approved revision `5f03150` on [PR #146](https://github.com/kahlanzzi/voice-spoofing-detection/pull/146).
+  Khalil provided author sign-off. The approvals cover the revision recorded in Entry 194.
+- **Decision:** Uploads with one or two D17-kept windows return a normal result using their
+  unrounded D34 mean. The D52 three-window warm-up applies to live sessions only. The zero-window
+  error, versioned window storage and policy provenance are part of the same approved target.
+- **Delivery:** D63 amends the C-to-E response in D26 and the API clause in D55. After this approval
+  record merges, coordinate the implementation base and a single API/database migration with Iheb.
+  The base contract still describes the deployed API. SRS v4.0 remains the current requirements
+  version until v4.1 is adopted.
+- **AI assistance:** Codex verified the GitHub reviews and updated the decision and status records
+  at Khalil's request.
+- **Gate:** **APPROVED — IMPLEMENTATION PENDING.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -7447,8 +7468,8 @@ module, training-format S build/verification, training-half resource cache and o
 - [ ] Choose the hosting provider and record it (D54 (9)); load test on staging, then record K, L, `analysis_timeout_s` and `L_MAX` (D53 (3)).
 - [x] SRS v4.0 Markdown/PDF pair and version index merged in PR #121 (Entry 164).
 - [ ] Khalil confirms the SRS v4.0 owner review; GitHub currently records Donia's approval on PR #121.
-- [ ] Obtain explicit all-four approval for revised D63/ADR 0016 and merge the approval/status commit before implementation (Entries 187, 194). The recommended rule for uploads with one or two kept windows still needs a team decision; D34 mean is the proposal.
-- [ ] After D63 approval, coordinate the full API contract and one database migration with Iheb; then prepare the synchronized SRS v4.1 Markdown/PDF pair and update source-of-truth pointers only when v4.1 becomes current (Entry 194).
+- [x] Obtain all-four approval for revised D63/ADR 0016, including the D34 mean for uploads with one or two kept windows (PR #146, Entry 195).
+- [ ] After the D63 approval record merges, coordinate the full API contract and one database migration with Iheb. Prepare the synchronized SRS v4.1 Markdown/PDF pair and update source-of-truth pointers when v4.1 becomes current (Entry 195).
 - [x] SDD v2.0 Markdown/PDF pair and version index merged in PR #122 (Entry 165).
 - [ ] Iheb confirms the SDD v2.0 owner review and all four reviewers explicitly accept the D51 extension-authentication design before extension implementation; PR #122 currently records Donia's approvals only.
 - [ ] Stage 13 runner (D35) and Stage 11 runner (PR #68) accept the v2 model set (D48 (3), (7)). Stage 11 part: V4b code done (`src/evaluation/stage11_v2_run.py`, Entry 190; review pending, incl. the `ALLOWED` access-rule change for Khalil).
@@ -7822,7 +7843,7 @@ module, training-format S build/verification, training-half resource cache and o
 - [ ] MVP exception: S8 Analysis details and S9 Overview are stub pages, listed under "Not in this MVP" in the README; Overview: option A, the stub keeps its rail link and the demo video does not open it (Entry 148). Under D65 S9 stays a stub: Overview is designed in the Direction D prototype but not built in D55 (Entry 191).
 - [x] Approve D65 (Donia, Malak, Khalil) and add its approval commit (Entry 191). Approved; recorded in Entry 193.
 - [ ] Overview (S9): summary endpoint and charts (uncertain rate vs 10% target, version-change markers); check whether p and clip duration are stored (D65, Entry 191).
-- [ ] D55 build B3 shows real `p` and per-window values only after D63; until then the "Score not available" state (HANDOFF-v2 §5.9; Entry 191).
+- [ ] D55 build B3 shows real `p` and per-window values once the D63 fields ship. Until then, show "Score not available" (HANDOFF-v2 §5.9; Entries 191, 195).
 - [ ] D55 build B1: decide the `--line` border on `.quiet` buttons and window cells (1.23 / 1.32 on `--surface`; HANDOFF-v2 §3; Entry 191).
 - [ ] NFR-10: Linux fresh-clone flow passed (Entry 148). Malak's Windows fresh clone reached healthy
   containers, `{"ok":true}` and account creation (Entry 149); record browser sign-in, upload, result
@@ -7860,7 +7881,7 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
-## Current status — updated 2026-11-17 (Entry 194)
+## Current status — updated 2026-11-17 (Entry 195)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -7899,15 +7920,13 @@ the shipped UI is unchanged until the D55 build PRs.
 
 **Khalil’s next project work.** Check and sign off the SRS v4.0 draft you own: PR #121 is merged, but
 the GitHub review list currently records Donia’s approval only. Continue Stage 13 preparation only
-within the gates above. Entry 194 records Iheb’s D63 API-owner clarifications: zero kept windows use
-`422 no_speech` without a stored analysis; the ordered window array uses versioned JSON storage and
-binary64 values; one- or two-window uploads are proposed to use D34’s mean, but that rule still needs
-all-four approval. D63 remains Proposed, and no implementation or migration is authorized until all
-four approve and the approval/status commit is merged. Coordinate the approved migration with Iheb.
+within the gates above. D63 has all four approvals (Entry 195). One or two kept upload windows use
+D34’s mean, and zero kept upload windows return `422 no_speech` without a stored analysis. After
+the approval record merges, coordinate the implementation and migration with Iheb.
 The D52 warm-up analysis is scheduled for W3 (23–29 November); Stages 15–16 follow later in the plan.
 
 **What is next:**
 1. Track V proceeds with Malak’s V1c and the remaining v2 training/selection work.
-2. The team resolves the one- or two-window upload rule and approves D63 unanimously before Iheb's
-   API/migration work. Khalil confirms the SRS v4.0 owner review and keeps Stage 13 preparation within its gates.
+2. Merge the D63 approval record after CI passes and coordinate implementation with Iheb. Khalil
+   confirms the SRS v4.0 owner review and keeps Stage 13 preparation within its gates.
 3. Do not open, score or claim DEEP-VOICE until the single-run prerequisites and team review pass.

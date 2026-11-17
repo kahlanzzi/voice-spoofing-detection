@@ -1,15 +1,11 @@
 # 0016. Expose calibrated spoof probability and policy context
 
-- **Status:** Proposed — awaiting all-four team approval
+- **Status:** Approved 2026-11-17 ([PR #146](https://github.com/kahlanzzi/voice-spoofing-detection/pull/146), Entry 195)
 - **Date:** 2026-11-15
 - **Register:** D63
 - **Author:** Khalil Dridi
-- **Deciders:** Pending; no implementation approval is recorded yet.
-- **API-owner confirmed; all-four approval pending:** zero kept windows return `422 no_speech`
-  with no stored analysis; windows use a versioned JSON array (JSONB on PostgreSQL).
-- **Pending team decision:** how uploads with only one or two kept windows are handled. This draft
-  recommends applying D34's mean rule whenever at least one window is kept; D52's three-window
-  warm-up remains live-only.
+- **Deciders:** Donia Mabrouk, Malak Ben Salem and Iheb Zemzemi (GitHub reviews on PR #146),
+  and Khalil Dridi (author sign-off).
 
 ## Context
 
@@ -26,13 +22,12 @@ cannot be used to recover the directional, full-precision `p`.
 
 Changing only `spoof_probability` would leave D55's decision board and D52's timelines without the
 values they require, and could force a second API/database migration during Iheb's integration.
-This proposal therefore specifies one coordinated contract change. It does not take effect until
-all four team members approve D63 and the approval/status commit is merged.
+This decision specifies one coordinated contract change. Implementation starts after the
+approval record is merged.
 
-## Proposed decision
+## Decision
 
-Amend D26's C-to-E response and D55's unchanged-API clause as one coordinated contract update. This
-section is a proposal only until all four members approve D63 and the approval/status commit is merged.
+Amend D26's C-to-E response and D55's unchanged-API clause as one coordinated contract update.
 
 - **Probability and policy identity:** Each scored window's `p` is the unrounded calibrated probability
   that the window is synthetic, from the calibration component of the immutable policy identified by
@@ -69,13 +64,12 @@ section is a proposal only until all four members approve D63 and the approval/s
   This is an application-upload rule; it does not change D34's Stage 13 reporting of zero-window
   files. For each such rejection, emit exactly one structured `service_log` event containing
   `request_id` and `error: no_speech`; never include audio bytes, request body or original file name.
-  The UI maps this to a new S5 `no_speech` error kind (the 11th S5 kind after D63 approval).
-- **One or two kept upload windows (pending all-four approval):** Recommended rule is to return a
-  normal upload result using D34's mean over the D17-kept windows, even when that mean has one or two
-  terms. D34 defines the upload/file rule and has no three-window minimum; D52's three-kept-window
-  warm-up applies only to live updates. This explicit minimum-window rule needs team approval.
+  The UI maps this to a new S5 `no_speech` error kind (the 11th S5 kind).
+- **One or two kept upload windows:** Return a normal upload result using D34's mean over the
+  D17-kept windows, including when that mean has one or two terms. D52's three-kept-window warm-up
+  applies to live updates only.
 - **Live update envelope:** The D52 WebSocket sends one JSON object for each complete two-second
-  window. Its exact proposed fields are `type: "window_update"`, `model_version: string`,
+  window. Its fields are `type: "window_update"`, `model_version: string`,
   `profile_version: string`, `policy_version: string`, `bundle_manifest_sha256: string`,
   `threshold: number`, `uncertain_band: [number, number]`, `policy_provenance: PolicyProvenance`,
   `window: AnalysisWindow`, and `running_result: RunningResult | null`. The window uses the upload
@@ -88,7 +82,7 @@ section is a proposal only until all four members approve D63 and the approval/s
   Errors contain no probability, verdict or window. The browser never computes labels or verdicts
   from `p`. The capture lifecycle and audio-retention rule in ADR 0014 are unchanged; live audio
   and per-window values remain in memory, not stored.
-- **Persistence (API owner confirms JSON; all-four approval pending):** Store the ordered window array
+- **Persistence:** Store the ordered window array
   with its analysis: JSON text in SQLite and JSONB in PostgreSQL, never as a separate queryable
   child table. Validate on write against schema version 1, with at most 30 entries, the four-label
   enum, and `p` either null or a number in `[0, 1]`; `p` is null if and only if `label` is
@@ -104,7 +98,7 @@ section is a proposal only until all four members approve D63 and the approval/s
   values cannot be recovered return `null` for `spoof_probability`, `threshold`,
   `uncertain_band`, `policy_provenance`, and `windows`. Do not invent values from confidence.
 - **Errors and migration:** An upload with zero kept windows returns the structured section 6
-  `422 no_speech` error and creates no analysis row (confirmed by Iheb; pending all-four approval).
+  `422 no_speech` error and creates no analysis row.
   Error responses
   carry no verdict, probability, policy values or window result. A live update before warm-up may
   include its individual window `p` and label, but has `running_result: null`. Add one coordinated
@@ -113,7 +107,7 @@ section is a proposal only until all four members approve D63 and the approval/s
   readable and unavailable values stay `null`. Coordinate the base with Iheb before implementation.
 - **Scope and versioning:** Do not change calibration, thresholds, risk policy, labels, metrics, or
   Stage 13 gates. Keep D63 as the decision number; D62 is unused because V2b-4 found no all-zero
-  clips and will log that result. Keep SRS v4.0 as current. After D63 approval, update SRS v4.1 as a
+  clips and will log that result. Keep SRS v4.0 as current. Prepare SRS v4.1 as a
   synchronized Markdown/PDF pair and update its index/AGENTS pointer only when v4.1 becomes current.
 
 ## Consequences
@@ -125,8 +119,8 @@ section is a proposal only until all four members approve D63 and the approval/s
 - Mock and legacy values remain unavailable. No value is reconstructed from rounded confidence.
 - This work is separate from V1c and the Stage 13 external run. Stage 13 access and scoring gates
   remain unchanged.
-- D63 is **not approved** by this draft. Implementation must wait for all-four approval and the
-  merged approval/status commit. SRS v4.0 remains current until v4.1 is reviewed and adopted.
+- Implementation follows the merge of the approval record. SRS v4.0 remains current until
+  v4.1 is reviewed and adopted.
 
 ## Alternatives considered
 
@@ -139,18 +133,17 @@ section is a proposal only until all four members approve D63 and the approval/s
 - **Expose only the raw model score:** rejected because D55 and SRS FR-06 require calibrated
   probability.
 
-## Approval sequence
+## Delivery sequence
 
-1. Revise and review this ADR in the D63 decision PR.
-2. Obtain explicit approval from all four team members and merge the approval/status commit.
-3. Coordinate the implementation base and API migration with Iheb; implement the full approved
+1. Merge the approval record in PR #146 after the required checks pass.
+2. Coordinate the implementation base and API migration with Iheb; implement the full approved
    contract in a separate PR.
-4. Update and adopt the synchronized SRS v4.1 pair and make it current only after approval.
+3. Update and adopt the synchronized SRS v4.1 pair and make it current only after approval.
 
 ## Links
 
-- [Decision register](README.md) (D63; proposed)
-- [SRS v4.0](../reference/SRS_v4.0.md) (current pending D63 and v4.1 approval)
+- [Decision register](README.md) (D63)
+- [SRS v4.0](../reference/SRS_v4.0.md) (current until v4.1 adoption)
 - [API design](../api_design.md), `AnalysisResponse` and `analysis_record`
 - [Risk-policy fit](../results/risk_policy_fit.md)
 - [ADR 0014](0014-live-analysis.md) (D52)
