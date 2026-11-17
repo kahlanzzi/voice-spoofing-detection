@@ -7520,6 +7520,64 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
+### Entry 199 — Track V PR V4c: F3 waveform val-B source for aasist (risk-v2), code only (2026-11-17)
+
+- **Owner:** Donia Mabrouk (Part C). Branch `feat/stageV4c-aasist-val-b-source` from `main`
+  `ae00003`. Entry number: 199 is the next free one on `main` and the open branches (197 on `main`,
+  198 on `docs/stage13-drive-rehearsal`; 185 stays reserved for Malak).
+- **Why [doc]:** Execution Plan v3.0 §9 V4; Remaining item 6. `v2_risk_run.run` takes, for an
+  `aasist` winner, an F3 waveform val-B source, but none existed and the CLI could not pass one, so an
+  `aasist` win could not be fitted.
+- **Schedule change (Donia, 2026-11-17, before any search result):** build the source now, as code
+  only, instead of "only if aasist wins". Reason: selection is Fri 27 Nov and risk-v2 is due Mon 30
+  Nov; building, reviewing and running new code over one weekend would put the F5 cut-off (Fri 4 Dec
+  23:59, D48 (4)) at risk. No rule, metric, threshold, split or decision changes; no new decision. If
+  aasist does not win, the code stays unused and tested.
+- **What changed:** new `src/tuning/v2_val_b_source.py`: `val_b_waveform_source(root, manifest_path,
+  profile_path) -> ValBWaveformSource`. Called, it loads the F2 manifest and profile and reads exactly
+  the F2 val-B rows, sorted by path, through `stage11_v2_run`'s own `split_rows`, `compute_inputs`
+  (one `read_verified_audio` + `extract_features` call per clip, `prepared.waveform` kept, two
+  passes, refused if the hashes differ) and `_rows_arrays`, imported, not copied, so the arrays are
+  the ones the v2 Stage 11 rehearsal recomputes (part (c)). Nothing is read until the function is
+  called; nothing is cached or written (as D46 (7)). Own module, not in `v2_risk_run.py`:
+  `stage11_v2_run` imports `v2_risk_run`, so a module-level import there would be a cycle;
+  `v2_risk_run.main` imports the new module when the winner is aasist. FoR test-access guard: the
+  module imports no test-split constant (the import rule covers `stage11_run.SPLIT` only) and holds
+  no "test" string; the guard reports nothing and `ALLOWED` is unchanged. `v2_risk_run.main`:
+  `--root` added; the winner is read from the evidence (`bundle_checkpoint`) before the argument
+  checks; aasist: `--root` required, `--cache-dir` refused; `cnn-aug` / `crnn`: `--cache-dir`
+  required, `--root` refused (argparse error, exit 2). Module docstring and the `ValBWaveformSource`
+  comment updated. Docs: `docs/v2_training.md` risk-v2 section, CHANGELOG.
+- **Not changed:** `run`'s logic and outputs (also its "none exists yet" error message, kept so the
+  existing test matches; it is now out of date, see Open), `_waveform_val_b`, `fit_risk_policy`,
+  `stage11_v2_run.py`, `train_v2`, models, checkpoints, configs, evidence. No real run; no dataset,
+  FoR audio or DEEP-VOICE access.
+- **Tests [verified, CPU, synthetic]:** `tests/tuning/test_v2_val_b_source.py` (4): exactly the
+  val-B rows, sorted, unique, float32 (n, 32000) / int8 / unicode, equal to a hand-built F3 pass and
+  to `stage11_v2_run`'s in-memory input (content hash), nothing written; read spy: each val-B clip
+  read twice, no train, val-A or test path; a differing second pass refused; no split argument or
+  other split string. `tests/tuning/test_v2_risk_run.py` (+8): CLI rules for both kinds, the source
+  built from `--root`, the winner read before the checks. `tests/evaluation/test_stage11_v2_run.py`
+  (+1): risk-v2 fitted for the aasist fake with the new source (same `val_b_input` and
+  `val_b_scores.npz` bytes as the fixture's hand-built source), then `rehearse` passes against it,
+  including `val-B.waveform.content_sha256` and the raw-score and `p` bytes. One existing test
+  changed: `test_cli_parses_required_arguments` gains a log-Mel evidence folder, because `main` now
+  reads the winner before the argument checks (the prompt asked for both "winner first" and "existing
+  tests unchanged"; the committed `v2_search/` evidence does not exist yet). All other existing
+  `v2_risk_run` and `stage11_v2_run` tests unchanged.
+- **Checks [verified, local Windows, Python 3.14.7 venv, torch 2.11.0+cpu]:** `REQUIRE_TORCH_TESTS=1
+  pytest -q`: 2321 passed, 2 skipped (13:08); `pytest -q tests/governance`: 89 passed (after the docs
+  edits). CI on 3.13 not yet run (branch not pushed).
+- **Open [hypothesis]:** `run`'s aasist refusal message still says "none exists yet"; rewording it
+  is a one-line text change to `run` and its test, left for review (the brief forbids changes to
+  `run`).
+- **AI assistance:** Claude Code (Claude Opus 5.5) wrote the code, tests and docs from Donia's brief;
+  team review required before acceptance (D26).
+- **Gate:** **WAITING FOR APPROVAL.**
+
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -7542,7 +7600,8 @@ module, training-format S build/verification, training-half resource cache and o
 - [x] Approve D61 (Iheb, Malak, Khalil) and add its approval commit before any v2 training (Entry 170). (PR #127, 2026-11-13)
 - [x] PR V2b-1: v2 training loop, selection metric M over set S, resumable search, benchmark code (Entry 172; review pending).
 - [x] F5 model loader dispatching on `architecture` (D61 (6)), when F5 is built (Entry 170). Done ahead of F5 on synthetic bundles, with the Stage 13 hand-over test (PR V5a, Entry 186; review pending).
-- [ ] V4: v2 risk policy (Protocol §6 unchanged, clean val-B, bundle seed only; D45, D49). Code done: `src/tuning/v2_risk_run.py` (PR V4a, Entry 188; review pending). Run pending: after the search, commit its reports to `docs/audit_evidence/v2_search/`, then run with `--version risk-v2`; if aasist wins, build the F3 waveform val-B source first (Execution Plan v3.0 §9 V4).
+- [ ] V4: v2 risk policy (Protocol §6 unchanged, clean val-B, bundle seed only; D45, D49). Code done: `src/tuning/v2_risk_run.py` (PR V4a, Entry 188; review pending) and the aasist F3 waveform val-B source with CLI `--root` (PR V4c, Entry 199; built ahead of selection, review pending). Run pending: after the search, commit its reports to `docs/audit_evidence/v2_search/`, then run with `--version risk-v2` (`--cache-dir` for cnn-aug / crnn, `--root` for aasist).
+- [ ] V4c review: reword `run`'s aasist refusal message ("none exists yet") now that the source exists, or keep it (Entry 199).
 - [x] Draft the extension authentication design and security-review text in SDD v2.0 before implementation (D51; Entry 165; human approval and merge pending).
 - [ ] Choose the hosting provider and record it (D54 (9)); load test on staging, then record K, L, `analysis_timeout_s` and `L_MAX` (D53 (3)).
 - [x] SRS v4.0 Markdown/PDF pair and version index merged in PR #121 (Entry 164).
@@ -7962,7 +8021,7 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
-## Current status — updated 2026-11-17 (Entry 197)
+## Current status — updated 2026-11-17 (Entry 199)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -7978,7 +8037,9 @@ current epoch. PR V5a (Entry 186, waiting for review) adds the F5 model loader: 
 dispatches on the checkpoint's `architecture` (D61 (6)) and passes a synthetic hand-over with the
 Stage 13 runner for all three candidates. PR V4a (Entry 188, waiting for review) adds the v2
 risk-policy run (Protocol §6 unchanged, bundle seed only, exact M reproduction); the real run waits
-for the search evidence. PR V4b (Entry 190, waiting for review) adds the Stage 11 runner for the v2
+for the search evidence. PR V4c (Entry 199, waiting for approval) adds the aasist F3 waveform val-B
+source and the CLI `--root`, built before selection by Donia's schedule choice so an aasist win can be
+fitted on Mon 30 Nov without new code; code and synthetic tests only. PR V4b (Entry 190, waiting for review) adds the Stage 11 runner for the v2
 model set (D48 (7)), code and synthetic tests only; the real v2 Stage 11 run and notebook 09 follow
 risk-v2. PR V6a (Entry 197, waiting for approval) adds the v2 metrics report
 (`src/evaluation/stage11_v2_report.py`), code and synthetic tests only: D57 applied to the v2 set as
