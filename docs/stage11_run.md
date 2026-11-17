@@ -462,7 +462,8 @@ report's (`risk_v2.val_b_scores_sha256`).
 
 As v1 ([above](#outputs-claim-score)) without the baseline, plus `features.json`;
 `run_report.json` adds `architecture`, `input`, `features_json_sha256` and
-`v1_log_mel_comparison`. No metrics: the v2 extension of `stage11_report.py` is a later PR.
+`v1_log_mel_comparison`. No metrics here: they are computed from these files by
+`src/evaluation/stage11_v2_report.py` ([stage11_report.md, "v2 model set"](stage11_report.md#v2-model-set)).
 
 ### Tests (`tests/evaluation/test_stage11_v2_run.py`, `tests/evaluation/test_clip_scores_v2_roles.py`)
 
