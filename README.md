@@ -73,26 +73,38 @@ cd voice-spoofing-detection
 > If you already have a clone, give the new one a different folder name:
 > `git clone https://github.com/kahlanzzi/voice-spoofing-detection.git vsd-second`
 
-### 2. Create the sign-in key
+### 2. Create the secrets
 
-The API refuses to start without `VSD_SIGNIN_HMAC_KEY`, a random hex key of at least 32 bytes. It is
-the only value you must set. It lives in `.env`, which git ignores; never commit it or paste it
-anywhere.
+The stack refuses to start without three random hex values of at least 32 bytes each:
+
+| Variable | Used by | What it is |
+|---|---|---|
+| `VSD_SIGNIN_HMAC_KEY` | api | the key for failed sign-in counts |
+| `VSD_DB_PASSWORD` | db only, at its first start | the PostgreSQL superuser; the api never gets it |
+| `VSD_DB_APP_PASSWORD` | db (first start) and api | the API's own database role, `vsd_app`, not a superuser |
+
+They live in `.env`, which git ignores; never commit them or paste them anywhere. The commands fill
+only empty values, so running them again never changes a password the database already uses.
 
 ```bash
 cp .env.example .env     # skip this line if you already have a .env: it would overwrite it
-sed -i.bak "s/^VSD_SIGNIN_HMAC_KEY=.*/VSD_SIGNIN_HMAC_KEY=$(openssl rand -hex 32)/" .env && rm .env.bak   # works with GNU sed (Linux, Git Bash) and BSD sed (macOS)
-grep -c '^VSD_SIGNIN_HMAC_KEY=.' .env    # prints 1, without showing the key
+grep -q '^VSD_DB_PASSWORD=' .env || printf 'VSD_DB_PASSWORD=\nVSD_DB_APP_PASSWORD=\n' >> .env   # a .env from before PostgreSQL
+for name in VSD_SIGNIN_HMAC_KEY VSD_DB_PASSWORD VSD_DB_APP_PASSWORD; do
+  sed -i.bak "s/^$name=$/$name=$(openssl rand -hex 32)/" .env && rm .env.bak   # GNU sed (Linux, Git Bash) and BSD sed (macOS)
+done
+grep -cE '^(VSD_SIGNIN_HMAC_KEY|VSD_DB_PASSWORD|VSD_DB_APP_PASSWORD)=.' .env    # prints 3, without showing them
 ```
 
 Every `docker compose` command needs this `.env`, `down` included. `docker compose config` prints
-the key, so do not share its output.
+the values, so do not share its output. The two database passwords are read once, when the database
+volume is created; to change them later, see
+[Database](docs/setup.md#database-postgresql-d53).
 
 ### 3. Start
 
 ```bash
 docker compose up -d --build --wait      # the first build takes a few minutes
-docker compose ps                        # api: Up (healthy); web: Up
+docker compose ps                        # db and api: Up (healthy); web: Up
 curl -s http://localhost:8001/api/health # {"ok":true}
 ```
 
@@ -162,16 +174,22 @@ its integration; FR-04 inference preprocessing comes with it.
 
 ### Clean database for a demo
 
-The `vsd-var` volume holds one SQLite file with all accounts, sessions, sign-in lockout counts,
-analyses and notes. History is shared by all analysts, so rows from tests appear for everyone. To
-start from an empty History:
+The `vsd-pg` volume holds the PostgreSQL database with all accounts, sessions, sign-in lockout
+counts, analyses and notes. History is shared by all analysts, so rows from tests appear for
+everyone. To start from an empty History:
 
-> **Warning: this deletes everything in `vsd-var`: every account, session, analysis and note. It
-> cannot be undone.** Your `.env` and the Docker images are kept. Check the folder warning in
-> [step 1](#1-get-the-code) first. Run any e2e tests before this, never between this and the demo.
+> **Warning: this deletes everything in `vsd-pg`: every account, session, analysis and note. It
+> cannot be undone.** It keeps `vsd-var` (the SQLite store of the API before PostgreSQL), your `.env`
+> and the Docker images. Check the folder warning in [step 1](#1-get-the-code) first. Run any e2e
+> tests before this, never between this and the demo.
+
+Remove only the PostgreSQL volume, as in
+[Empty the database (keep `vsd-var`)](docs/setup.md#empty-the-database-keep-vsd-var):
 
 ```bash
-docker compose down -v
+docker compose down                                # stop the stack; both volumes are kept
+docker compose config | grep -m1 '_vsd-pg$'        # the volume's real name: <project>_vsd-pg
+docker volume rm voice-spoofing-detection_vsd-pg   # the name printed above
 docker compose up -d --build --wait
 docker compose exec api python -m api.admin create-account analyst01
 ```
@@ -181,16 +199,23 @@ again, and History then shows "No analyses yet".
 
 ### Stop and reset
 
+> **Warning: `down -v` is a full reset. It deletes `vsd-pg` (every account, session, analysis and
+> note) and also `vsd-var`, the SQLite store of the API before PostgreSQL; import it first if you
+> still need it ([Database](docs/setup.md#database-postgresql-d53)). It cannot be undone.** First check
+> that you are in the right folder and project (the folder warning in [step 1](#1-get-the-code)).
+
 ```bash
-docker compose down      # stops and removes the containers; keeps vsd-var, so accounts and results stay
-docker compose down -v   # also deletes vsd-var: see the warning above
+docker compose down      # stops and removes the containers; keeps vsd-pg, so accounts and results stay
+pwd && docker compose ls # the folder and the Compose project that down -v would empty
+docker compose down -v   # full reset: deletes vsd-pg and vsd-var
 ```
 
 ### Tests
 
 Tests are not needed to run the MVP.
 
-- **Python:** steps 4 to 6 of [Getting started](#getting-started).
+- **Python:** steps 4 to 7 of [Getting started](#getting-started). The API tests need the test
+  database (step 6); without it they are skipped and the run ends with a `WARNING` line.
 - **Web, from `web/`:**
 
   ```bash
@@ -215,8 +240,12 @@ Tests are not needed to run the MVP.
 
 ### Troubleshooting
 
-- **Compose stops with `set VSD_SIGNIN_HMAC_KEY in .env`:** run [step 2](#2-create-the-sign-in-key)
-  in this folder.
+- **Compose stops with `set VSD_SIGNIN_HMAC_KEY in .env`, `set VSD_DB_PASSWORD in .env` or
+  `set VSD_DB_APP_PASSWORD in .env`:** run [step 2](#2-create-the-secrets) in this folder.
+- **`api` never becomes healthy after an update, and its log says the database is not reachable:**
+  your `vsd-pg` volume may be older than the `vsd_app` role, or `.env` holds different database
+  passwords than when the volume was made. See
+  [Database troubleshooting](docs/setup.md#database-troubleshooting).
 - **Port 8001 is in use:** find what holds it with `docker ps --filter publish=8001`. Often it is
   another clone's stack: run `docker compose down` there, without `-v`.
 - **"Sign-in is temporarily unavailable" after several attempts:** nginx allows 10 sign-ins per
@@ -248,8 +277,12 @@ cd voice-spoofing-detection
 # 2. One-time setup (installs git hooks; Windows: run in Git Bash)
 ./scripts/setup.sh
 
-# 3. Copy environment placeholders (never commit .env; tokens are not needed for tests)
+# 3. Copy environment placeholders and fill the three secrets, as in step 2 of "MVP: install and run"
+#    (never commit .env; the dataset tokens are not needed for tests)
 cp .env.example .env
+for name in VSD_SIGNIN_HMAC_KEY VSD_DB_PASSWORD VSD_DB_APP_PASSWORD; do
+  sed -i.bak "s/^$name=$/$name=$(openssl rand -hex 32)/" .env && rm .env.bak
+done
 
 # 4. Install dependencies
 python -m venv .venv
@@ -260,8 +293,11 @@ pip install -r requirements.txt
 python -m pip install torch==2.11.0 --index-url https://download.pytorch.org/whl/cpu
 python -m pip install -r requirements-cnn.txt
 
-# 6. Run the full suite; do not silently skip missing torch tests
-REQUIRE_TORCH_TESTS=1 python -m pytest -q
+# 6. Start the test database (PostgreSQL in memory, on 127.0.0.1:55432; needs the .env of step 2 above)
+docker compose --profile test up -d db-test
+
+# 7. Run the full suite; do not silently skip missing torch or database tests
+REQUIRE_TORCH_TESTS=1 REQUIRE_POSTGRES_TESTS=1 VSD_TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:55432/postgres python -m pytest -q
 ```
 
 Datasets are not stored in this repo. They live on the team's shared Google Drive, pinned by D21;
