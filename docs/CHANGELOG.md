@@ -176,6 +176,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - D26 completed with the v2.1 §5 hand-overs; per-folder `CODEOWNERS` (owner + consumer reviewer); project log header updated.
 
 ### Fixed
+- Two synthetic Stage 13 tests now use the existing optional Torch guard. They skip when Torch is absent locally and still require it in CI.
 - The colour scan in `web/src/styles/colours.test.ts` no longer depends on Vitest's module cache: a type argument on its glob call froze the file list, so new source files could go unscanned; a new test compares the list with the disk.
 - Stage 18: 4 non-text tokens raised to WCAG 1.4.11 3:1 on every background they sit on (light `--line-strong` `#7C8FA6`, dark `#52729F`, light `--unc-mark`/`--warn-mark` `#BF7E0B`; hue kept); `tokens.css`, HANDOFF §4 and the contrast test, which now has no exceptions and checks 31 non-text pairs per theme.
 - Part 6 report/PDF and index: replace stale publication/CI-pending wording with the verified PR #73/#72 merge and review record; measurements unchanged.

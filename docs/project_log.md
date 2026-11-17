@@ -7441,6 +7441,22 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
+### Entry 196 — Optional Torch guard for two Stage 13 tests (2026-11-17)
+
+- **Owner:** Khalil Dridi. Iheb reported that two synthetic Stage 13 tests failed when their shared
+  helper imported the Stage 11 runner on a machine without Torch.
+- **Change:** `tests/evaluation/test_external_run.py` calls the existing `require_torch()` helper
+  before importing the Stage 11 runner. A local run without Torch skips those two tests. CI still
+  requires Torch via `REQUIRE_TORCH_TESTS=1`. The runtime runner and access gates are unaffected.
+- **Checks [verified]:** The focused suite without Torch returned **27 passed, 2 skipped**.
+  With Torch and `REQUIRE_TORCH_TESTS=1`, it returned **29 passed**.
+  Evaluation and governance together without Torch returned **486 passed, 6 skipped**.
+  The standalone governance suite returned **89 passed**. Ruff passed for the changed test file.
+- **AI assistance:** Codex drafted and checked the test change. Human review is pending.
+- **Gate:** **WAITING FOR REVIEW.** No external dataset access or official run claim.
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -7487,6 +7503,7 @@ module, training-format S build/verification, training-half resource cache and o
   accepted, set D33–D35 to Approved (Entry 58). (PR #29, 2026-10-19)
 
 **Khalil: Stage 13 preparation**
+- [ ] Review the optional Torch guard for the two synthetic runner tests (Entry 196).
 - [x] Implement the D35 per-window frozen preprocessing integration test (Entry 55); synthetic test verifies each complete window is independently preprocessed and the remainder is dropped (Entry 175).
 - [x] Add stored-score integrity checks, D33 eight-speaker summaries, D34 CNN file means and the D36 paired EER bootstrap (Entry 176; synthetic rows only).
 - [x] Add D34 source-speaker-clustered file-level intervals and strict JSON report export (Entry 177; synthetic rows only).
@@ -7881,7 +7898,7 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
-## Current status — updated 2026-11-17 (Entry 195)
+## Current status — updated 2026-11-17 (Entry 196)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -7907,7 +7924,8 @@ that run, before the Fri 4 Dec 23:59 cut-off. See the open items above and [Exec
 **Khalil / Stage 13 — preparation merged; external run not ready.** Runner preparation from Entries
 175–179 merged in PR #133. The synthetic Stage 13 suite reported 33 passed; PR #134 subsequently
 reported the full Torch-enabled suite as 2,002 passed and 2 skipped, plus 88 governance tests, with
-the required checks, e2e and web checks green. The runner remains preparation only. Before the
+the required checks, e2e and web checks green. The optional Torch guard for two local synthetic
+tests awaits review (Entry 196). The runner remains preparation only. Before the
 single Stage 13 run, verify the applicable D48 model set (F5 before the cutoff, or the specified
 v1-plus-baseline fallback after it), the exact-runtime D58 rehearsal, and durable Drive claim
 persistence/read-back; complete any follow-up loader integration, review and the Stage 13 brief.
