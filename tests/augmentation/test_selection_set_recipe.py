@@ -1,4 +1,4 @@
-"""Synthetic byte-level checks for notebook 07's extracted selection recipe."""
+"""Synthetic checks for notebook 07's extracted selection recipe."""
 from __future__ import annotations
 
 import hashlib
@@ -47,23 +47,44 @@ def recipe_inputs(tmp_path):
 def test_recipe_matches_frozen_synthetic_known_answers(recipe_inputs):
     source, noise, rirs, noise_root, rir_root, options = recipe_inputs
     expected = {
-        # Filled from notebook-07 arithmetic and intentionally frozen as byte-level oracles.
+        # Filled from notebook-07 arithmetic and frozen as byte-level oracles. FFT
+        # convolution is checked separately because its low bits vary by platform.
         "clean": "91060378e8b9faae4ee30652e7f07e00ea176639183808ed7c355e7cd8649bb5",
         "recorded_noise_10db": "e16931386f347f548a98c672aaa1274eefa6f2b0aab34dbceed65b495c64de32",
-        "reverberation": "24a709688cd5f987a63085f128c7b6fbd93f187eac3ca8b0e8e6f90dd72947f5",
         "opus_16": "8a6ff8f9598e3c070c5338d0dde7f170584802f75d5595e28d19d2be2a30bc9f",
         "narrowband_mulaw": "01b06d782c286ab28a7893de486f428203241cae561bf9584b1154fc95b51002",
     }
     actual = {}
+    reverberation = None
     for condition in CONDITIONS:
         result = apply_condition(
             source, "FAKE/synthetic.wav", condition,
             noise_inventory=noise, rir_inventory=rirs, noise_root=noise_root, rirs_root=rir_root,
             codec_backend=FakeCodec(), codec_options=options,
         )
-        actual[condition] = waveform_sha256(result["output"])
+        if condition == "reverberation":
+            reverberation = result
+        else:
+            actual[condition] = waveform_sha256(result["output"])
         assert result["condition_seed"] == derived_seed("FAKE/synthetic.wav", condition)
     assert actual == expected
+
+    assert reverberation is not None
+    repeated = apply_condition(
+        source, "FAKE/synthetic.wav", "reverberation",
+        noise_inventory=noise, rir_inventory=rirs, noise_root=noise_root, rirs_root=rir_root,
+        codec_backend=FakeCodec(), codec_options=options,
+    )
+    assert waveform_sha256(repeated["output"]) == waveform_sha256(reverberation["output"])
+
+    rir, _ = sf.read(
+        rir_root / reverberation["resource_path"], dtype="float32", always_2d=True,
+    )
+    impulse = rir[:, int(reverberation["resource_channel"])]
+    direct = np.convolve(
+        source.astype(np.float64), impulse.astype(np.float64), mode="full",
+    )[:source.size].astype(np.float32)
+    np.testing.assert_allclose(reverberation["output"], direct, rtol=1e-6, atol=1e-7)
 
 
 def test_fit_noise_and_refusals(recipe_inputs):

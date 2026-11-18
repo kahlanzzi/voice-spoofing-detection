@@ -7725,6 +7725,19 @@ accessed and no T4 regeneration was run.
 **Gate:** **WAITING FOR REVIEW OF THE FOLLOW-UP COMMIT.** The official T4 run remains blocked until
 Donia approves the exact follow-up commit; it must then run from that clean commit only.
 
+### Entry 203 — V1c cross-platform synthetic reverberation oracle (2026-11-18)
+
+**Owner:** Malak Ben Salem.
+
+**What changed [test]:** CI on Ubuntu reproduced all four non-FFT synthetic selection-recipe byte
+hashes but produced a different low-order-byte hash for SciPy FFT reverberation than Windows. The
+reverberation oracle now requires exact repeatability on the same runtime and numerical agreement
+with float64 direct convolution; clean, recorded-noise and both codec conditions retain their frozen
+byte hashes. Production augmentation code and the reviewed D64/T4 evidence are unchanged.
+
+**Checks [verified, local]:** focused selection-recipe tests: `2 passed`; complete local suite:
+`1711 passed, 43 skipped in 160.21s`.
+
 ---
 
 ## Open items
@@ -8179,7 +8192,7 @@ Donia approves the exact follow-up commit; it must then run from that clean comm
 
 ---
 
-## Current status — updated 2026-11-17 (Entries 198-200)
+## Current status — updated 2026-11-18 (Entry 203)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -8189,7 +8202,9 @@ the D32 teach-back (Entry 174). Replacing the API mock with F4 remains Iheb’s 
 the pin-preserving test and review follow-up in PR #134. V1c is next: build the training-format S
 folder and deterministic training-half resource cache, verify the recipe on the declared T4 runtime,
 and add the one-time FFmpeg pin check. V2 candidate/training code and the benchmark batch sizes are
-merged, but model training, search, selection, risk policy and F5 freeze remain. PR V2b-R (Entry
+merged. Entry 203 makes the synthetic FFT-reverberation oracle portable across Windows and Ubuntu
+without changing production augmentation or the reviewed D64/T4 evidence. Model training, search,
+selection, risk policy and F5 freeze remain. PR V2b-R (Entry
 184, waiting for review) makes a v2 run resumable per epoch, so a Colab disconnect costs at most the
 current epoch. PR V5a (Entry 186, waiting for review) adds the F5 model loader: `load_bundle_model`
 dispatches on the checkpoint's `architecture` (D61 (6)) and passes a synthetic hand-over with the
