@@ -8,6 +8,11 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 
 ## [Unreleased]
 
+### Changed
+- D64 re-freezes the complete 6,650-row selection recipe on the reviewed Colab 2026.10 Tesla T4
+  runtime: exactly the 1,330 reverberation waveform hashes changed, all other row fields are
+  identical, and the old/new recipes, reports and row-level comparison are retained (Entry 205).
+
 ### Added
 - D64 V1c recipe re-freeze tooling: exact requirements-version guards and a fail-closed old/new
   comparison that preserves both recipes and reports every changed waveform hash (Entry 201).

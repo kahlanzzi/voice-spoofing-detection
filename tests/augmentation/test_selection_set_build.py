@@ -131,6 +131,18 @@ def test_condition_fields_pin_recipe_and_policies():
     assert fields[4]["parameters"]["codec_option"] == "narrowband_mulaw"
 
 
+def test_committed_recipe_matches_d64_report_and_frozen_builder_hash():
+    repo = Path(__file__).resolve().parents[2]
+    manifest_dir = repo / "data" / "manifests" / "augmentation"
+    recipe_path = manifest_dir / "selection_set_s.csv"
+    report = json.loads((manifest_dir / "selection_set_s_report.json").read_text(encoding="utf-8"))
+
+    assert _sha(recipe_path) == build_module.RECIPE_SHA256
+    assert report["manifest_file_sha256"] == build_module.RECIPE_SHA256
+    assert report["d64_refreeze_commit"] == "41ad8bc8b95ef8d9d178e8b6986fcf9a192e48aa"
+    assert report["decisions"] == ["D49", "D50", "D56", "D64"]
+
+
 def test_official_runtime_record_requires_d58_environment(monkeypatch):
     cuda = SimpleNamespace(is_available=lambda: True, get_device_name=lambda _index: "Tesla T4")
     monkeypatch.setitem(sys.modules, "torch", SimpleNamespace(__version__="2.11.0+cu130", cuda=cuda))

@@ -1,5 +1,6 @@
 import hashlib
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pandas as pd
@@ -199,3 +200,25 @@ def test_regenerate_checks_runtime_and_all_invariants_before_creating_out(tmp_pa
         )
     assert calls == ["2026.10"]
     assert not out.exists()
+
+
+def test_committed_d64_evidence_changes_only_reverberation_hashes():
+    repo = Path(__file__).resolve().parents[2]
+    evidence = repo / "docs" / "audit_evidence" / "trackV_v1c_d64"
+    comparison = json.loads(
+        (evidence / "selection_recipe_refreeze_comparison.json").read_text(encoding="utf-8")
+    )
+
+    assert comparison["result"] == "passed"
+    assert comparison["code_commit"] == "41ad8bc8b95ef8d9d178e8b6986fcf9a192e48aa"
+    assert comparison["row_count"] == 6650
+    assert comparison["source_count"] == 1330
+    assert comparison["changed_waveform_hash_count"] == 1330
+    assert comparison["unchanged_waveform_hash_count"] == 5320
+    assert comparison["changed_waveform_hashes_by_condition"] == {"reverberation": 1330}
+    assert all(comparison[name] for name in (
+        "rows_identical", "sources_identical", "conditions_identical", "parameters_identical",
+        "seeds_identical", "resources_identical", "resource_halves_identical",
+    ))
+    assert comparison["runtime"]["colab_runtime_version"] == "2026.10"
+    assert comparison["runtime"]["gpu"] == "Tesla T4"
