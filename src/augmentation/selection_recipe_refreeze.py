@@ -46,7 +46,7 @@ def _write_csv(frame: pd.DataFrame, path: Path) -> None:
     temporary.replace(path)
 
 
-def load_committed_old(repo: Path) -> tuple[Path, pd.DataFrame, dict[str, Any]]:
+def load_committed_old(repo: Path) -> tuple[Path, Path, pd.DataFrame, dict[str, Any]]:
     """Load and cryptographically bind the old side to the committed V1b recipe and report."""
     manifest_dir = Path(repo) / "data" / "manifests" / "augmentation"
     recipe_path = manifest_dir / "selection_set_s.csv"
@@ -65,7 +65,23 @@ def load_committed_old(repo: Path) -> tuple[Path, pd.DataFrame, dict[str, Any]]:
         raise ValueError(
             f"committed old semantic SHA-256 {actual_semantic} differs from report {expected_semantic}"
         )
-    return recipe_path, recipe, report
+    return recipe_path, report_path, recipe, report
+
+
+def _validate_inventory_hashes(manifest_dir: Path, report: dict[str, Any]) -> None:
+    """Bind the inventory hashes carried by the new report to committed CSV bytes."""
+    inventory_files = {
+        "musan_inventory_sha256": "musan_inventory.csv",
+        "rirs_inventory_sha256": "rirs_noises_inventory.csv",
+    }
+    for report_key, filename in inventory_files.items():
+        path = Path(manifest_dir) / filename
+        actual = sha256_file(path)
+        expected = str(report.get(report_key, ""))
+        if actual != expected:
+            raise ValueError(
+                f"committed {filename} SHA-256 {actual} differs from report {expected}"
+            )
 
 
 def make_new_report(
@@ -180,7 +196,7 @@ def regenerate(
     if out.exists():
         raise ValueError(f"D64 output already exists: {out}")
     repo = Path(__file__).resolve().parents[2]
-    old_recipe_path, old, old_report = load_committed_old(repo)
+    old_recipe_path, old_report_path, old, old_report = load_committed_old(repo)
     config = load_augmentation_config(repo / "configs" / "augmentation.yaml")
     if not config.corpus_pins_complete or not config.ffmpeg_pin_complete:
         raise ValueError("V1b corpus and FFmpeg pins must be complete")
@@ -188,6 +204,7 @@ def regenerate(
     codec.verify_pin()
     runtime = official_runtime_record(codec, colab_runtime_version)
     manifest_dir = repo / "data" / "manifests" / "augmentation"
+    _validate_inventory_hashes(manifest_dir, old_report)
     noise_rows = _records(manifest_dir / "musan_inventory.csv", "selection")
     rir_rows = _records(manifest_dir / "rirs_noises_inventory.csv", "selection")
     f2 = load_f2_manifest(Path(f2_manifest_path))
@@ -243,9 +260,7 @@ def regenerate(
     new_report_path = out / "selection_set_s_report.json"
     comparison_path = out / "selection_recipe_refreeze_comparison.json"
     old_copy.write_bytes(Path(old_recipe_path).read_bytes())
-    old_report_copy.write_text(
-        json.dumps(old_report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
+    old_report_copy.write_bytes(old_report_path.read_bytes())
     _write_csv(new, new_path)
     new_report = make_new_report(
         old_report,

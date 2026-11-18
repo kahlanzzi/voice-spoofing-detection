@@ -7738,6 +7738,19 @@ byte hashes. Production augmentation code and the reviewed D64/T4 evidence are u
 **Checks [verified, local]:** focused selection-recipe tests: `2 passed`; complete local suite:
 `1711 passed, 43 skipped in 160.21s`.
 
+### Entry 204 — D64 old-report and inventory binding corrections (2026-11-18)
+
+**Owner:** Malak Ben Salem. Reviewer: Donia Mabrouk.
+
+**What changed [code/test]:** the refreeze output copies the committed old report bytes directly
+instead of parsing and re-serialising them. Before reading the selection inventories or creating the
+output directory, regeneration now verifies that the MUSAN and RIRS inventory SHA-256 values carried
+forward into the new report equal the committed inventory CSV byte hashes. Focused tests cover exact
+old-report byte preservation and fail-closed inventory tampering.
+
+**Checks [verified, local]:** focused D64 refreeze tests: `11 passed`; complete local suite:
+`1712 passed, 43 skipped in 101.37s`.
+
 ---
 
 ## Open items
@@ -8192,7 +8205,7 @@ byte hashes. Production augmentation code and the reviewed D64/T4 evidence are u
 
 ---
 
-## Current status — updated 2026-11-18 (Entry 203)
+## Current status — updated 2026-11-18 (Entries 203-204)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -8204,7 +8217,8 @@ folder and deterministic training-half resource cache, verify the recipe on the 
 and add the one-time FFmpeg pin check. V2 candidate/training code and the benchmark batch sizes are
 merged. Entry 203 makes the synthetic FFT-reverberation oracle portable across Windows and Ubuntu
 without changing production augmentation or the reviewed D64/T4 evidence. Model training, search,
-selection, risk policy and F5 freeze remain. PR V2b-R (Entry
+selection, risk policy and F5 freeze remain. Entry 204 preserves the committed old D64 report bytes
+and binds the carried inventory hashes to the committed CSVs. PR V2b-R (Entry
 184, waiting for review) makes a v2 run resumable per epoch, so a Colab disconnect costs at most the
 current epoch. PR V5a (Entry 186, waiting for review) adds the F5 model loader: `load_bundle_model`
 dispatches on the checkpoint's `architecture` (D61 (6)) and passes a synthetic hand-over with the

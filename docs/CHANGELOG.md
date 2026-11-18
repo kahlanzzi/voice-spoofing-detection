@@ -182,6 +182,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - D26 completed with the v2.1 §5 hand-overs; per-folder `CODEOWNERS` (owner + consumer reviewer); project log header updated.
 
 ### Fixed
+- D64 recipe refreeze now preserves the committed old report byte-for-byte and refuses regeneration when either inventory hash carried into the new report differs from its committed CSV.
 - V1c's synthetic reverberation test now checks same-runtime byte repeatability and numerical agreement with direct convolution instead of requiring one cross-platform FFT byte hash; the four non-FFT conditions retain exact frozen hashes, and production augmentation is unchanged.
 - Two synthetic Stage 13 tests now use the existing optional Torch guard. They skip when Torch is absent locally and still require it in CI.
 - The colour scan in `web/src/styles/colours.test.ts` no longer depends on Vitest's module cache: a type argument on its glob call froze the file list, so new source files could go unscanned; a new test compares the list with the disk.

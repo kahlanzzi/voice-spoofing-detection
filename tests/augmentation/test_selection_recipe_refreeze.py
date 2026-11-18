@@ -94,15 +94,36 @@ def test_committed_old_is_bound_to_report_file_and_semantic_hashes(tmp_path):
         "manifest_file_sha256": hashlib.sha256(recipe_path.read_bytes()).hexdigest(),
         "manifest_semantic_sha256": refreeze._semantic_sha256(old),
     }
-    report_path.write_text(json.dumps(report), encoding="utf-8")
-    loaded_path, loaded, loaded_report = load_committed_old(tmp_path)
+    report_bytes = (json.dumps(report, indent=1) + "\n\n").encode("utf-8")
+    report_path.write_bytes(report_bytes)
+    loaded_path, loaded_report_path, loaded, loaded_report = load_committed_old(tmp_path)
     assert loaded_path == recipe_path
+    assert loaded_report_path == report_path
+    assert loaded_report_path.read_bytes() == report_bytes
     assert loaded.equals(old)
     assert loaded_report == report
     report["manifest_file_sha256"] = "0" * 64
     report_path.write_text(json.dumps(report), encoding="utf-8")
     with pytest.raises(ValueError, match="differs from report"):
         load_committed_old(tmp_path)
+
+
+def test_inventory_hashes_are_bound_to_committed_csv_bytes(tmp_path):
+    manifest_dir = tmp_path / "data" / "manifests" / "augmentation"
+    manifest_dir.mkdir(parents=True)
+    musan = manifest_dir / "musan_inventory.csv"
+    rirs = manifest_dir / "rirs_noises_inventory.csv"
+    musan.write_bytes(b"rel_path,half\nnoise.wav,selection\n")
+    rirs.write_bytes(b"rel_path,half\nrir.wav,selection\n")
+    report = {
+        "musan_inventory_sha256": hashlib.sha256(musan.read_bytes()).hexdigest(),
+        "rirs_inventory_sha256": hashlib.sha256(rirs.read_bytes()).hexdigest(),
+    }
+    refreeze._validate_inventory_hashes(manifest_dir, report)
+
+    musan.write_bytes(musan.read_bytes() + b"tampered.wav,selection\n")
+    with pytest.raises(ValueError, match="musan_inventory.csv.*differs from report"):
+        refreeze._validate_inventory_hashes(manifest_dir, report)
 
 
 def test_new_report_replaces_old_provenance_with_d64_context():
@@ -130,7 +151,7 @@ def test_regenerate_checks_runtime_and_all_invariants_before_creating_out(tmp_pa
     monkeypatch.setattr(
         refreeze,
         "load_committed_old",
-        lambda _repo: (old_path, pd.DataFrame(columns=RECIPE_COLUMNS), {}),
+        lambda _repo: (old_path, tmp_path / "old-report.json", pd.DataFrame(columns=RECIPE_COLUMNS), {}),
     )
     monkeypatch.setattr(
         refreeze,
@@ -154,6 +175,7 @@ def test_regenerate_checks_runtime_and_all_invariants_before_creating_out(tmp_pa
         "official_runtime_record",
         lambda _codec, runtime: calls.append(runtime) or {"colab_runtime_version": runtime},
     )
+    monkeypatch.setattr(refreeze, "_validate_inventory_hashes", lambda *_args: None)
     monkeypatch.setattr(refreeze, "_records", lambda *_args: [])
     monkeypatch.setattr(
         refreeze,
