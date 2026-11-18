@@ -7652,7 +7652,36 @@ V2b-4 remains blocked until those artifacts verify.
 
 ---
 
-### Entry 200 — D64 reviewed-commit preparation for the V1c recipe re-freeze (2026-11-16)
+### Entry 200 — SRS v4.1 owner-review draft for D63 and D65 (2026-11-17)
+
+- **Owner:** Khalil Dridi. Branch `docs/stage19-srs-v40-owner-review` from `main` `78bcee7`.
+- **Why:** The merged SRS v4.0 draft predates approved D63 and D65. ADR 0016 requires a new
+  synchronized v4.1 pair rather than changing v4.0 history. The GitHub review state cited in the
+  prior current-status text did not constitute Khalil's explicit owner sign-off.
+- **What changed:** Added `docs/reference/SRS_v4.1.md` and its generated PDF. The draft carries
+  v4.0 forward and adds the coordinated D63 response, policy provenance, window/no-speech, storage,
+  zero/one/two-kept-window and server-label requirements, plus D65 Direction D and the Overview
+  stub boundary. Traceability and validation sections identify these amendments. v4.0, the version
+  index and `AGENTS.md` remain unchanged; v4.1 is not current or approved yet.
+- **Review finding:** v4.0 cannot be signed off unchanged as the next current SRS because its
+  contract is older than D63/D65. The prepared v4.1 wording is an owner-review draft only. It makes
+  no implementation, database-migration, test-result or deployment claim.
+- **Verification:** `SRS_v4.1.md` SHA-256
+  `889075da82ad22019526752fd85ca688bfa8c7f6f349b6f5cf320209c181ef35`; generated 18-page PDF
+  SHA-256 `5c76c7a75bf8885c101cb7e64309f82e0b9c59bd5ed182cb0555749b8044ea10`.
+  All pages were rendered at 120 dpi and inspected; PDF text extraction found all 11 major sections
+  and the D63/D65 terms. Full-branch `git diff --check` passed; `pytest -q tests/governance`
+  reported 89 passed.
+  No code, configuration, data, audio, checkpoint or generated model evidence changed.
+- **AI assistance:** Codex compared the SRS against the approved decision and design sources,
+  drafted the v4.1 amendments, generated the PDF and ran the checks. Khalil and the other three
+  team members must review the actual pair.
+- **Gate:** **WAITING FOR ALL-FOUR HUMAN REVIEW.** After approval, a separate approval commit records
+  names/dates, changes the status, regenerates the pair and updates the current-version pointers.
+
+---
+
+### Entry 201 — D64 reviewed-commit preparation for the V1c recipe re-freeze (2026-11-16)
 
 **Owner:** Malak Ben Salem. Review: Donia Mabrouk before the real T4 run.
 
@@ -7675,7 +7704,7 @@ comparison and continue the V1c selection-set and training-resource builds. V2b-
 
 ---
 
-### Entry 201 — D64 pre-run review corrections (2026-11-16)
+### Entry 202 — D64 pre-run review corrections (2026-11-16)
 
 **Owner:** Malak Ben Salem. Reviewer: Donia Mabrouk.
 
@@ -7714,7 +7743,7 @@ Donia approves the exact follow-up commit; it must then run from that clean comm
 - [ ] V1c: materialize S with `write_selection_set` on Colab T4 runtime 2026.10 and verify both forms with `load_selection_set`, including the Stage 8 val-A known answer (D50 (4), D58; Entries 172, 180, 185).
 - [ ] V1c: build and verify the deterministic training-half MUSAN/RIR resource cache outside the repo; refuse selection-half or all-zero resources (D50 (5); Entries 180, 185).
 - [x] V1c: make `FFmpegCodecBackend` verify its pin once per backend instance without changing encode/decode output bytes (codec 0.42 s/item dominates augmentation; Entries 172–173, 185).
-- [ ] D64 (Entries 189, 200–201; approved, PR #140): guard/comparison code and the pre-run review corrections are locally tested; Donia reviews the fixed follow-up commit, then Malak regenerates the whole recipe once on T4 2026.10 and commits the old-vs-new evidence. Blocks V1c.
+- [ ] D64 (Entries 189, 201–202; approved, PR #140): guard/comparison code and the pre-run review corrections are locally tested; Donia reviews the fixed follow-up commit, then Malak regenerates the whole recipe once on T4 2026.10 and commits the old-vs-new evidence. Blocks V1c.
 - [ ] V2b-4: search CLI/notebook wired to the V1c corpus loader; T4 rehearsal (`check_clean_transform`, two short runs for observed crnn/cuDNN determinism), then the search (Entry 172).
 - [ ] V2b-3: read `n_all_zero_clips` from the raw train cache (`build` / `verify` print it with the first 10 paths). If it is > 0, a decision (**D62**) is needed before any training (`run_search` refuses such a cache): `Augmenter`'s `recorded_noise` refuses a silent clip [verified], and Malak's S builder (`noise_10db`) has the same issue on val-A (Entry 172; `docs/v2_training.md`).
 - [x] Approve D61 (Iheb, Malak, Khalil) and add its approval commit before any v2 training (Entry 170). (PR #127, 2026-11-13)
@@ -7725,9 +7754,14 @@ Donia approves the exact follow-up commit; it must then run from that clean comm
 - [x] Draft the extension authentication design and security-review text in SDD v2.0 before implementation (D51; Entry 165; human approval and merge pending).
 - [ ] Choose the hosting provider and record it (D54 (9)); load test on staging, then record K, L, `analysis_timeout_s` and `L_MAX` (D53 (3)).
 - [x] SRS v4.0 Markdown/PDF pair and version index merged in PR #121 (Entry 164).
-- [ ] Khalil confirms the SRS v4.0 owner review; GitHub currently records Donia's approval on PR #121.
+- [x] Khalil reviews SRS v4.0 against the current approved decisions and prepares the synchronized
+  v4.1 owner-review draft without changing v4.0 history (Entry 200).
+- [ ] All four team members review and approve the SRS v4.1 Markdown/PDF pair; then an approval
+  commit records names/dates, regenerates the pair and updates the version pointers (Entry 200).
 - [x] Obtain all-four approval for revised D63/ADR 0016, including the D34 mean for uploads with one or two kept windows (PR #146, Entry 195).
-- [ ] After the D63 approval record merges, coordinate the full API contract and one database migration with Iheb. Prepare the synchronized SRS v4.1 Markdown/PDF pair and update source-of-truth pointers when v4.1 becomes current (Entry 195).
+- [ ] Coordinate the approved D63 full API contract and one database migration with Iheb. The
+  synchronized SRS v4.1 draft is prepared; update source-of-truth pointers only after all-four SRS
+  approval (Entries 195, 200).
 - [x] SDD v2.0 Markdown/PDF pair and version index merged in PR #122 (Entry 165).
 - [ ] Iheb confirms the SDD v2.0 owner review and all four reviewers explicitly accept the D51 extension-authentication design before extension implementation; PR #122 currently records Donia's approvals only.
 - [ ] Stage 13 runner (D35) and Stage 11 runner (PR #68) accept the v2 model set (D48 (3), (7)). Stage 11 part: V4b code done (`src/evaluation/stage11_v2_run.py`, Entry 190; review pending, incl. the `ALLOWED` access-rule change for Khalil).
@@ -8145,7 +8179,7 @@ Donia approves the exact follow-up commit; it must then run from that clean comm
 
 ---
 
-## Current status — updated 2026-11-17 (Entries 198, 199)
+## Current status — updated 2026-11-17 (Entries 198-200)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -8196,24 +8230,27 @@ implemented and synthetically tested. The Torch-required full suite passes (`204
 No real corpus audio was accessed or committed. V1c remains open for the real Colab T4 S
 materialization, real training-half cache build and small permitted evidence.
 
-**D64 preparation (Entry 200):** the exact requirements-version guard and fail-closed old-vs-new
+**D64 preparation (Entry 201):** the exact requirements-version guard and fail-closed old-vs-new
 recipe comparison are implemented and focused tests pass. No regeneration has been run. Donia must
 review the fixed commit before Malak runs the complete recipe once on T4 2026.10 from that commit.
 
-**D64 review follow-up (Entry 201):** the old side is cryptographically bound to the committed V1b
+**D64 review follow-up (Entry 202):** the old side is cryptographically bound to the committed V1b
 files, the new report records D64 commit/library/runtime provenance, and the official T4 runtime gate
 runs before output creation. The complete governance folder passes. The T4 regeneration remains
 blocked pending Donia's review of the follow-up commit.
 
-**Khalil’s next project work.** Check and sign off the SRS v4.0 draft you own: PR #121 is merged, but
-the GitHub review list currently records Donia’s approval only. Continue Stage 13 preparation only
-within the gates above. D63 has all four approvals (Entry 195). One or two kept upload windows use
-D34’s mean, and zero kept upload windows return `422 no_speech` without a stored analysis. After
-the approval record merges, coordinate the implementation and migration with Iheb.
+**Khalil’s next project work.** The v4.0 owner review found that approved D63/D65 require the new
+synchronized SRS v4.1 pair prepared in Entry 200; v4.0 remains unchanged and current. Khalil and the
+other three team members must review the actual v4.1 pair. Only the later approval commit may mark it
+Approved and update the version pointers. Continue Stage 13 preparation only within the gates above.
+D63 has all four decision approvals (Entry 195). One or two kept upload windows use D34’s mean, and
+zero kept upload windows return `422 no_speech` without a stored analysis. Coordinate its
+implementation and single migration with Iheb.
 The D52 warm-up analysis is scheduled for W3 (23–29 November); Stages 15–16 follow later in the plan.
 
 **What is next:**
 1. Track V proceeds with Malak’s V1c and the remaining v2 training/selection work.
-2. Merge the D63 approval record after CI passes and coordinate implementation with Iheb. Khalil
-   confirms the SRS v4.0 owner review and keeps Stage 13 preparation within its gates.
+2. Review and approve the SRS v4.1 pair (all four), then add the approval/status commit and update
+   the current-version pointers. Coordinate D63 implementation with Iheb and keep Stage 13 within
+   its gates.
 3. Do not open, score or claim DEEP-VOICE until the single-run prerequisites and team review pass.
