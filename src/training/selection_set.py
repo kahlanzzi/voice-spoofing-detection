@@ -42,7 +42,13 @@ from src.preprocessing.validation import sha256_file
 SCHEMA_VERSION = 1
 SOURCE_SPLIT = "val-A"  # D9, D50 (4): S is built from val-A only
 SEED = 2026  # D50 (4)
-CONDITIONS = ("clean", "noise_10db", "reverberation", "opus_16", "narrowband")  # D50 (4), in order
+CONDITIONS = (
+    "clean",
+    "recorded_noise_10db",
+    "reverberation",
+    "opus_16",
+    "narrowband_mulaw",
+)  # D50 (4), V1b recipe names and order
 MANIFEST_NAME = "selection_set_manifest.json"
 WAVEFORM_SAMPLES = 32000  # F3 waveform (D39)
 NPZ_KEYS = frozenset({"waveforms", "log_mel", "labels", "paths", "groups"})

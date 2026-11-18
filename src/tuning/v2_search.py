@@ -40,6 +40,7 @@ import torch
 
 from src.augmentation import AugmentationResources, Augmenter, load_augmentation_config
 from src.augmentation.codec import FFmpegCodecBackend
+from src.augmentation.version_guard import require_versions
 from src.evaluation.seeds import select_bundle_seed
 from src.features.logmel_cache import load_logmel_cache
 from src.features.raw_train_cache import check_outside_repo, load_raw_train_cache
@@ -266,6 +267,7 @@ def run_search(*, raw_cache_dir, stage8_train_logmel_dir, stage8_val_a_logmel_di
                resources: AugmentationResources, out_dir, version: str, logger_mode: str,
                device: str, num_workers: int) -> dict[str, Any]:
     """Search, select, train the winner's seeds and write the reports; return run_report."""
+    require_versions()
     commit = code_version()["git_commit"]  # before reading inputs or creating outputs
     if logger_mode not in MODES:
         raise ValueError(f"logger_mode must be one of {MODES}, got {logger_mode!r}")

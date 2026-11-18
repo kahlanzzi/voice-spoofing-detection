@@ -9,6 +9,9 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- D64 V1c recipe re-freeze tooling: exact requirements-version guards and a fail-closed old/new
+  comparison that preserves both recipes and reports every changed waveform hash (Entry 201).
+- Track V V1c implementation: pure frozen selection-recipe functions, a hash-verifying selection-set builder, a deterministic training-half MUSAN/RIRS resource cache, exact V1b condition names and once-per-instance successful FFmpeg pin verification; synthetic/full-suite validation is complete, while the real Colab T4 materialization and cache evidence remain pending (Entry 185).
 - SRS v4.1 owner-review draft as a synchronized Markdown/PDF pair: carries v4.0 forward, incorporates approved D63 probability/policy/window and no-speech requirements plus D65 Direction D, and leaves v4.0 current until all-four approval.
 - F3 waveform val-B source for an `aasist` risk-v2 fit, code only (Track V, PR V4c, Entry 199; Execution Plan v3.0 §9 V4, built ahead of selection by Donia's schedule choice): `src/tuning/v2_val_b_source.py` reads exactly the F2 val-B rows through `stage11_v2_run`'s own in-memory input pass (two passes, equal hashes, never cached); `v2_risk_run` CLI gains `--root` (required for `aasist`, refused for `cnn-aug`/`crnn`) and `--cache-dir` becomes log-Mel only, the winner read from the evidence first. Synthetic tests incl. risk-v2 for an `aasist` fake through to a passing v2 Stage 11 rehearsal. `run`, `stage11_v2_run.py`, `fit_risk_policy`, `ALLOWED` unchanged.
 - v2 Stage 11 metrics report, code only (Track V, PR V6a, Entry 197; Protocol §7 addendum, D48 (7), D57): `src/evaluation/stage11_v2_report.py` (`python -m src.evaluation.stage11_v2_report`) computes the v2 model set's metrics from the stored `stage11_v2_run score` files only; D57 applied to the v2 set as written with no hypothesis (Donia, option A: `hypotheses` null with a note pointing to H8/H9); integrity checks bind the run to the v2 search and risk-v2 evidence before any metric; reuses `stage11_report.py`'s model-independent helpers by import; torch-free. Synthetic tests incl. the v2 runner's own `crnn` / `aasist` output. `stage11_report.py`, `stage11_v2_run.py`, `clip_scores.py`, `metrics.py`, `bootstrap.py` unchanged; the real report is notebook 09.
@@ -179,6 +182,8 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - D26 completed with the v2.1 §5 hand-overs; per-folder `CODEOWNERS` (owner + consumer reviewer); project log header updated.
 
 ### Fixed
+- D64 recipe refreeze now preserves the committed old report byte-for-byte and refuses regeneration when either inventory hash carried into the new report differs from its committed CSV.
+- V1c's synthetic reverberation test now checks same-runtime byte repeatability and numerical agreement with direct convolution instead of requiring one cross-platform FFT byte hash; the four non-FFT conditions retain exact frozen hashes, and production augmentation is unchanged.
 - Two synthetic Stage 13 tests now use the existing optional Torch guard. They skip when Torch is absent locally and still require it in CI.
 - The colour scan in `web/src/styles/colours.test.ts` no longer depends on Vitest's module cache: a type argument on its glob call froze the file list, so new source files could go unscanned; a new test compares the list with the disk.
 - Stage 18: 4 non-text tokens raised to WCAG 1.4.11 3:1 on every background they sit on (light `--line-strong` `#7C8FA6`, dark `#52729F`, light `--unc-mark`/`--warn-mark` `#BF7E0B`; hue kept); `tokens.css`, HANDOFF §4 and the contrast test, which now has no exceptions and checks 31 non-text pairs per theme.

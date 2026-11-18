@@ -7220,6 +7220,65 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
+### Entry 185 — Track V V1c selection-set and resource-cache implementation (2026-11-15)
+
+**Owner:** Malak Ben Salem. Review: Donia Mabrouk (Track V consumer and protocol alignment).
+
+**Scope [code/test/doc]:** implement the reusable V1c code required to turn V1b's frozen recipe into
+the model-v2 selection-set format and to build the verified training-half augmentation-resource cache.
+This entry covers implementation and synthetic validation only. It does not claim the real Colab T4
+materialization, the real training-half cache build or their evidence.
+
+**Frozen selection recipe [verified on synthetic fixtures]:**
+`src/augmentation/selection_set_recipe.py` extracts notebook 07's deterministic seed, noise fitting,
+condition application and canonical little-endian float32 waveform hash without Colab paths. The five
+condition names are exactly `clean`, `recorded_noise_10db`, `reverberation`, `opus_16` and
+`narrowband_mulaw`; synthetic known-answer tests freeze all five output hashes.
+
+**Selection-set builder [implemented/tested]:** `python -m src.augmentation.selection_set_build`
+requires V1b's frozen recipe SHA-256 `71a340f0…72533`, val-A-only F2 rows, complete corpus/FFmpeg
+pins and every recorded source, resource and generated-waveform hash. It applies the unchanged F3
+waveform/log-Mel transforms, writes S through `write_selection_set`, verifies both waveform and
+log-Mel forms with `load_selection_set`, checks the Stage 8 val-A clean reference and prints the final
+selection-set hash. The official run refuses any environment other than Colab runtime 2026.10,
+Python 3.13.16, torch 2.11.0+cu130 and a T4 GPU, and records the required runtime fields.
+
+**Training resources and codec boundary [implemented/tested]:**
+`src/augmentation/resource_cache.py` admits only the audited training halves (MUSAN 465;
+RIRS_NOISES 30,162), verifies each file before decode, requires 16 kHz, chooses multichannel RIRs by
+the deterministic seed-2026 rule, refuses empty/non-finite/all-zero resources, writes outside the
+repository and reloads read-only views under a strict hash/metadata contract. `FFmpegCodecBackend`
+caches only a successful pin check once per instance; a failed or missing pin is checked and refused
+again rather than cached.
+
+**Compatibility [verified]:** model-v2 S consumers, fixtures, W&B allow-list tests and
+`docs/v2_training.md` use the exact V1b condition names. No stored output bytes or augmentation codec
+arithmetic were changed.
+
+**Checks [verified]:** final focused runtime/resource tests: `35 passed in 10.64s`; final
+Torch-required full suite: `REQUIRE_TORCH_TESTS=1 python -m pytest -q` → `2045 passed, 2 skipped
+in 220.09s (0:03:40)`; governance: `89 passed in 3.94s`; `git diff --check` and the secret-pattern
+scan passed.
+
+**Safety:** all new audio fixtures are synthetic. No DEEP-VOICE path was accessed; no real corpus
+audio, generated waveform, archive, NPZ resource cache, model checkpoint or secret is committed.
+
+**AI assistance:** Codex implemented the modules and tests from Donia's V1c specification and drafted
+the records. Malak approved the implementation commit and runtime-contract follow-up on 2026-11-15;
+AI does not approve, push or merge.
+
+**Status:** implementation and synthetic validation are complete locally. Real Colab T4 selection-set
+materialization, training-half cache build/verification and small evidence export remain open.
+
+**Gate:** **IMPLEMENTATION COMMITS APPROVED BY MALAK; WAITING FOR HUMAN REVIEW AND REAL COLAB
+EVIDENCE.** V1c cannot close until both real builders verify and the permitted evidence is reviewed.
+
+**What's next:** push the implementation branch, run both real V1c builders on the declared Colab
+runtime outside the repository, commit only the small permitted evidence and record the V1c closeout.
+V2b-4 remains blocked until those artifacts verify.
+
+---
+
 ### Entry 190 — Track V PR V4b: Stage 11 runner for the v2 model set, code only (2026-11-16)
 
 - **Owner:** Donia Mabrouk (Part C). Branch `feat/stageV4-stage11-v2-runner` from `main` `df6b289`.
@@ -7622,6 +7681,78 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
+### Entry 201 — D64 reviewed-commit preparation for the V1c recipe re-freeze (2026-11-16)
+
+**Owner:** Malak Ben Salem. Review: Donia Mabrouk before the real T4 run.
+
+**What changed [code/test]:** the recipe re-freeze, selection-set builder and v2 search entry point
+now fail closed unless installed NumPy, SciPy and SoundFile versions exactly equal their pins in
+`requirements.txt`. `selection_recipe_refreeze` regenerates every recipe row from the verified F2
+source, audited selection-half resource and deterministic condition implementation. Its comparison
+refuses any change to the source/condition row set, labels, groups, source hashes, parameters, seeds,
+resource paths/hashes/channels, corpus halves, sample rate or sample count. It records every changed
+waveform hash with its old and new value and retains old/new recipe and report files.
+
+**Checks [verified, local]:** 41 focused guard, comparison, selection-builder and v2-search tests
+passed; the Torch-required full suite passed (`2128 passed, 2 skipped in 346.09s`); Python
+compilation and `git diff --check` passed. The real recipe was not
+regenerated and no corpus was read in this preparation commit.
+
+**Gate:** **WAITING FOR DONIA REVIEW OF THE FIXED COMMIT.** After review, run the complete recipe
+once on Colab T4 runtime 2026.10 from exactly that clean commit, then commit the generated old/new
+comparison and continue the V1c selection-set and training-resource builds. V2b-4 remains blocked.
+
+---
+
+### Entry 202 — D64 pre-run review corrections (2026-11-16)
+
+**Owner:** Malak Ben Salem. Reviewer: Donia Mabrouk.
+
+**What changed [code/test]:** the old recipe side is now loaded only from the committed
+`data/manifests/augmentation/` CSV/report pair and is checked against both the report's byte SHA-256
+and semantic SHA-256. The regenerated report replaces the V1b commit and decision provenance with
+the fixed D64 commit, explicit D49/D50/D56/D64 decisions, exact library versions and the complete
+official runtime record. The refreeze CLI requires `--colab-runtime-version` and calls the same
+Python/torch/T4/FFmpeg runtime gate as the selection-set builder. It checks that output is outside the
+repository and creates the output folder only after the version, Git, committed-old, corpus, FFmpeg,
+runtime and invariant-comparison checks pass.
+
+**Checks [verified, local]:** focused D64/selection/v2-search tests: `44 passed in 70.76s`;
+the complete governance folder: `89 passed in 6.48s`; the Torch-required full suite:
+`2131 passed, 2 skipped in 649.37s`; Python compilation and `git diff --check` passed. No corpus was
+accessed and no T4 regeneration was run.
+
+**Gate:** **WAITING FOR REVIEW OF THE FOLLOW-UP COMMIT.** The official T4 run remains blocked until
+Donia approves the exact follow-up commit; it must then run from that clean commit only.
+
+### Entry 203 — V1c cross-platform synthetic reverberation oracle (2026-11-18)
+
+**Owner:** Malak Ben Salem.
+
+**What changed [test]:** CI on Ubuntu reproduced all four non-FFT synthetic selection-recipe byte
+hashes but produced a different low-order-byte hash for SciPy FFT reverberation than Windows. The
+reverberation oracle now requires exact repeatability on the same runtime and numerical agreement
+with float64 direct convolution; clean, recorded-noise and both codec conditions retain their frozen
+byte hashes. Production augmentation code and the reviewed D64/T4 evidence are unchanged.
+
+**Checks [verified, local]:** focused selection-recipe tests: `2 passed`; complete local suite:
+`1711 passed, 43 skipped in 160.21s`.
+
+### Entry 204 — D64 old-report and inventory binding corrections (2026-11-18)
+
+**Owner:** Malak Ben Salem. Reviewer: Donia Mabrouk.
+
+**What changed [code/test]:** the refreeze output copies the committed old report bytes directly
+instead of parsing and re-serialising them. Before reading the selection inventories or creating the
+output directory, regeneration now verifies that the MUSAN and RIRS inventory SHA-256 values carried
+forward into the new report equal the committed inventory CSV byte hashes. Focused tests cover exact
+old-report byte preservation and fail-closed inventory tampering.
+
+**Checks [verified, local]:** focused D64 refreeze tests: `11 passed`; complete local suite:
+`1712 passed, 43 skipped in 101.37s`.
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -7634,11 +7765,11 @@ module, training-format S build/verification, training-half resource cache and o
 - [x] V2b-2: run `python -m src.tuning.v2_benchmark` on Colab T4 (2026.10) and write the batch sizes into `configs/v2_candidates.yaml` (D49; Entry 172). (Entry 173; evidence `docs/audit_evidence/v2b2_benchmark/`; review pending)
 - [x] Per-epoch resume within a run before V2b-4: a worst-case run (30 epochs × ~10–17 min) may not fit one Colab session; V2b-1 resumes only between runs (Entry 173). Done in PR V2b-R (Entry 184; review pending).
 - [x] V2b-R review: `train_v2` gained `provenance` next to `resume_dir` (the brief allowed only `resume_dir`; the provenance check needs it) — accept or revise (Entry 184). Accepted in Donia's review (2026-11-15).
-- [ ] V1c: move the notebook recipe into a pure `src/augmentation/` module and prove byte parity for all five conditions on synthetic audio (D50/D56; Entry 180).
-- [ ] V1c: materialize S with `write_selection_set` on Colab T4 runtime 2026.10 and verify both forms with `load_selection_set`, including the Stage 8 val-A known answer (D50 (4), D58; Entries 172, 180).
-- [ ] V1c: build and verify the deterministic training-half MUSAN/RIR resource cache outside the repo; refuse selection-half or all-zero resources (D50 (5); Entry 180).
-- [ ] V1c: make `FFmpegCodecBackend` verify its pin once per backend instance without changing encode/decode output bytes (codec 0.42 s/item dominates augmentation; Entries 172–173, 180).
-- [ ] D64 (Entry 189; approved, PR #140): regenerate the whole selection-set recipe on T4 2026.10 with pinned requirements; commit the old-vs-new comparison; add the library-pin guard (Malak). Blocks V1c.
+- [x] V1c: move the notebook recipe into a pure `src/augmentation/` module and prove byte parity for all five conditions on synthetic audio (D50/D56; Entries 180, 185).
+- [ ] V1c: materialize S with `write_selection_set` on Colab T4 runtime 2026.10 and verify both forms with `load_selection_set`, including the Stage 8 val-A known answer (D50 (4), D58; Entries 172, 180, 185).
+- [ ] V1c: build and verify the deterministic training-half MUSAN/RIR resource cache outside the repo; refuse selection-half or all-zero resources (D50 (5); Entries 180, 185).
+- [x] V1c: make `FFmpegCodecBackend` verify its pin once per backend instance without changing encode/decode output bytes (codec 0.42 s/item dominates augmentation; Entries 172–173, 185).
+- [ ] D64 (Entries 189, 201–202; approved, PR #140): guard/comparison code and the pre-run review corrections are locally tested; Donia reviews the fixed follow-up commit, then Malak regenerates the whole recipe once on T4 2026.10 and commits the old-vs-new evidence. Blocks V1c.
 - [ ] V2b-4: search CLI/notebook wired to the V1c corpus loader; T4 rehearsal (`check_clean_transform`, two short runs for observed crnn/cuDNN determinism), then the search (Entry 172).
 - [ ] V2b-3: read `n_all_zero_clips` from the raw train cache (`build` / `verify` print it with the first 10 paths). If it is > 0, a decision (**D62**) is needed before any training (`run_search` refuses such a cache): `Augmenter`'s `recorded_noise` refuses a silent clip [verified], and Malak's S builder (`noise_10db`) has the same issue on val-A (Entry 172; `docs/v2_training.md`).
 - [x] Approve D61 (Iheb, Malak, Khalil) and add its approval commit before any v2 training (Entry 170). (PR #127, 2026-11-13)
@@ -8074,7 +8205,7 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
-## Current status — updated 2026-11-17 (Entries 198-200)
+## Current status — updated 2026-11-18 (Entries 203-204)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -8084,7 +8215,10 @@ the D32 teach-back (Entry 174). Replacing the API mock with F4 remains Iheb’s 
 the pin-preserving test and review follow-up in PR #134. V1c is next: build the training-format S
 folder and deterministic training-half resource cache, verify the recipe on the declared T4 runtime,
 and add the one-time FFmpeg pin check. V2 candidate/training code and the benchmark batch sizes are
-merged, but model training, search, selection, risk policy and F5 freeze remain. PR V2b-R (Entry
+merged. Entry 203 makes the synthetic FFT-reverberation oracle portable across Windows and Ubuntu
+without changing production augmentation or the reviewed D64/T4 evidence. Model training, search,
+selection, risk policy and F5 freeze remain. Entry 204 preserves the committed old D64 report bytes
+and binds the carried inventory hashes to the committed CSVs. PR V2b-R (Entry
 184, waiting for review) makes a v2 run resumable per epoch, so a Colab disconnect costs at most the
 current epoch. PR V5a (Entry 186, waiting for review) adds the F5 model loader: `load_bundle_model`
 dispatches on the checkpoint's `architecture` (D61 (6)) and passes a synthetic hand-over with the
@@ -8117,6 +8251,22 @@ No DEEP-VOICE audio was opened or scored, and no external-run claim was created 
 integration is Iheb’s P1 work; the mock verdict must not be presented as a real model result.
 D65 (Entry 191, approved in Entry 193) names Direction D and `docs/design/HANDOFF-v2.md` as the D55 target design;
 the shipped UI is unchanged until the D55 build PRs.
+
+**Track V V1c implementation (Entry 185):** on `feat/stageV1-selection-set-build`, the pure frozen
+recipe, hash-verifying selection-set builder, strict training-half resource-cache builder/loader,
+exact condition names, successful-once FFmpeg verification and official-runtime evidence guard are
+implemented and synthetically tested. The Torch-required full suite passes (`2045 passed, 2 skipped`).
+No real corpus audio was accessed or committed. V1c remains open for the real Colab T4 S
+materialization, real training-half cache build and small permitted evidence.
+
+**D64 preparation (Entry 201):** the exact requirements-version guard and fail-closed old-vs-new
+recipe comparison are implemented and focused tests pass. No regeneration has been run. Donia must
+review the fixed commit before Malak runs the complete recipe once on T4 2026.10 from that commit.
+
+**D64 review follow-up (Entry 202):** the old side is cryptographically bound to the committed V1b
+files, the new report records D64 commit/library/runtime provenance, and the official T4 runtime gate
+runs before output creation. The complete governance folder passes. The T4 regeneration remains
+blocked pending Donia's review of the follow-up commit.
 
 **Khalil’s next project work.** The v4.0 owner review found that approved D63/D65 require the new
 synchronized SRS v4.1 pair prepared in Entry 200; v4.0 remains unchanged and current. Khalil and the

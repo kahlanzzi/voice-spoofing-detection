@@ -110,10 +110,10 @@ def selection_arrays(root, manifest, profile) -> dict:
     noise = [(0.02 * rng.standard_normal(x.size)).astype(np.float32) for x in decoded]
     degrade = {
         "clean": lambda x, i: x,
-        "noise_10db": lambda x, i: x + noise[i],
+        "recorded_noise_10db": lambda x, i: x + noise[i],
         "reverberation": lambda x, i: np.convolve(x, [1.0, 0.0, 0.3], mode="same").astype(np.float32),
         "opus_16": lambda x, i: (0.7 * x).astype(np.float32),
-        "narrowband": lambda x, i: np.convolve(x, [0.5, 0.5], mode="same").astype(np.float32),
+        "narrowband_mulaw": lambda x, i: np.convolve(x, [0.5, 0.5], mode="same").astype(np.float32),
     }
     labels = rows["label"].map({"FAKE": 1, "REAL": 0}).to_numpy(dtype=np.int8)
     paths = np.array(rows["path"].tolist())

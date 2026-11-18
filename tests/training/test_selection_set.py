@@ -118,10 +118,10 @@ def test_refuses_missing_unlisted_and_tampered_files(setup, tmp_path):
     with pytest.raises(ValueError, match="differ from files present"):
         _load(setup, folder)
     shutil.copy(setup["folder"] / condition_file("opus_16"), folder / condition_file("opus_16"))
-    blob = bytearray((folder / condition_file("narrowband")).read_bytes())
+    blob = bytearray((folder / condition_file("narrowband_mulaw")).read_bytes())
     blob[-50] ^= 0x01
-    (folder / condition_file("narrowband")).write_bytes(bytes(blob))
-    with pytest.raises(ValueError, match="narrowband.npz: SHA-256"):
+    (folder / condition_file("narrowband_mulaw")).write_bytes(bytes(blob))
+    with pytest.raises(ValueError, match="narrowband_mulaw.npz: SHA-256"):
         _load(setup, folder)
 
 
@@ -164,13 +164,14 @@ def _write_variant(setup, tmp_path, name, mutate, **kw):
 
 
 @pytest.mark.parametrize("mutate, match", [
-    (lambda a: a["noise_10db"].update(paths=a["noise_10db"]["paths"][[1, 0, *range(2, 10)]]),
+    (lambda a: a["recorded_noise_10db"].update(
+        paths=a["recorded_noise_10db"]["paths"][[1, 0, *range(2, 10)]]),
      "sorted|differ"),
     (lambda a: a["opus_16"].update(labels=(1 - a["opus_16"]["labels"]).astype(np.int8)), "labels differ"),
     (lambda a: a["reverberation"].update(groups=np.array([f"x{i}" for i in range(10)])), "groups differ"),
     (lambda a: a["clean"].update(log_mel=a["clean"]["log_mel"][:, :, :32]), "log_mel must be float32"),
     (lambda a: a["clean"].update(waveforms=a["clean"]["waveforms"].astype(np.float64)), "waveforms must be float32"),
-    (lambda a: a["narrowband"]["log_mel"].__setitem__((3, 0, 0, 0), np.nan), "NaN"),
+    (lambda a: a["narrowband_mulaw"]["log_mel"].__setitem__((3, 0, 0, 0), np.nan), "NaN"),
     (lambda a: a["opus_16"]["log_mel"].__setitem__((0, 0, 5, 5), 1.0), "recomputed"),
 ])
 def test_writer_and_loader_refuse_bad_arrays(setup, tmp_path, mutate, match):
