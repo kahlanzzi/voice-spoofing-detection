@@ -154,6 +154,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 - `docs/experimental_protocol.md` v1.0 frozen (F1): all sections decided from the team-accepted defaults.
 
 ### Changed
+- SRS v4.1 adopted as the current requirements pair after all-four approval in PR #151; v4.0 remains unchanged as history (Entry 206).
 - D63 approved (PR #146, Entries 194–195). The target API adds calibrated spoof probability, versioned window details and `422 no_speech` for zero kept windows. Uploads with one or two kept windows use the D34 mean. Implementation is pending.
 - Refreshed the midterm backlog from merged Stage 17–18 evidence, separating completed mock-MVP
   flows from real-model and final-release work that remains partial.

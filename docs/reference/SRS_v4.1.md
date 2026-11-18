@@ -3,16 +3,16 @@
 ## Synthetic Speech and Voice-Spoofing Detection System
 
 **Version:** 4.1
-**Date:** 2026-11-17
-**Status:** Draft for team review
+**Date:** 2026-11-18
+**Status:** Approved
 **Project:** Semester AI project, MUST University
 **Team:** Donia Mabrouk, Iheb Zemzemi, Malak Ben Salem, Khalil Dridi
 **Primary owner:** Khalil Dridi
-**Draft preparation:** Khalil Dridi with Codex assistance, based on the v4.0 draft prepared by Malak Ben Salem; requires human review by the owner and team
+**Preparation:** Khalil Dridi with Codex assistance, based on the v4.0 draft prepared by Malak Ben Salem
 
 > This Markdown file is the controlling source for `SRS_v4.1.pdf`. The two files must be regenerated
-> together. SRS v4.0 and v3.0 remain unchanged as project history. SRS v4.0 remains current until
-> this v4.1 pair is reviewed, approved, recorded, and merged.
+> together. SRS v4.0 and v3.0 remain unchanged as project history. SRS v4.1 is the current SRS in
+> the repository version that contains this approval record.
 
 ---
 
@@ -21,15 +21,15 @@
 | Version | Date | Status | Description |
 |---|---|---|---|
 | 3.0 | 2026-09 | Superseded | Merged Lab 3 requirements baseline, stored as `SRS_Voice_Spoofing_Detection.pdf`. |
-| 4.0 | 2026-11-10 | Current until v4.1 adoption | Preserves the v3 requirement identifiers, incorporates approved D47-D57, and aligns the requirements with the React/FastAPI platform and Execution Plan v3.0. The file remains unchanged as history. |
-| 4.1 | 2026-11-17 | Draft | Carries v4.0 forward and incorporates approved D63's coordinated probability/policy/window contract and D65's Direction D interface target. |
+| 4.0 | 2026-11-10 | Superseded | Preserves the v3 requirement identifiers, incorporates approved D47-D57, and aligns the requirements with the React/FastAPI platform and Execution Plan v3.0. The file remains unchanged as history. |
+| 4.1 | 2026-11-18 | Current / Approved | Carries v4.0 forward and incorporates approved D63's coordinated probability/policy/window contract and D65's Direction D interface target. |
 
 ### Approval
 
-This draft becomes the current SRS only after all four team members review and approve the requirement
-wording and traceability, the approval commit records those reviews and updates the version pointers,
-the Markdown/PDF pair is regenerated together, the required checks pass, and the pull request is merged.
-Until then, SRS v4.0 remains current and approved decisions override both SRS versions.
+All four team members reviewed and approved the requirement wording and traceability in PR #151:
+Donia Mabrouk and Iheb Zemzemi on 2026-11-17, and Malak Ben Salem and Khalil Dridi on 2026-11-18.
+This approval update records those reviews, regenerates the Markdown/PDF pair together, and updates
+the current-version pointers. Approved decisions remain higher-priority sources when they conflict.
 
 <!-- pagebreak -->
 
@@ -515,7 +515,7 @@ and freezes F5. No test or external result selects the model.
 | PASS | Requirements distinguish approved scope from implementation status. | Executive summary and Section 2.1. |
 | PASS | D63 probability, policy provenance, window schema, storage, mock/history nulls and zero/one/two-kept-window rules are represented together. | Definitions, UC-01/02/04/12/13, FR-06/08/09/23/24 and NFR-06/07/08/16. |
 | PASS | D65 Direction D is the UI target without claiming the current mock MVP already implements it. | Executive summary, UC-01/02/13, FR-08/30 and Section 2.1. |
-| OPEN | Team and owner review of wording and priorities. | Required before merge. |
+| PASS | Team and owner review of wording and priorities. | All four approvals recorded in PR #151. |
 | OPEN | Measured K/L/timeout/L_MAX values. | D53 load-test decision. |
 | OPEN | Extension authentication/origin design. | SDD v2.0 security section, required before implementation. |
 | OPEN | Final implementation/evidence for live, v2, staging, production, and usability. | Execution Plan v3.0 tracks V/L/P. |
@@ -530,21 +530,20 @@ and freezes F5. No test or external result selects the model.
 | Hosting provider | To be recorded by amendment. | Verify free tier/student credit and D54 deployment requirements. |
 | F5 eligibility for Stage 13 | Deadline fixed; outcome unknown. | Loader-verified by 2026-12-04 23:59 Tunis or excluded from Stage 13. |
 | SUS result | Not yet measured. | D55 moderated test with 3-5 external participants; report target and findings honestly. |
-| D63 implementation and database migration | Approved requirement; implementation is not claimed by this SRS draft. | Coordinate the API/database/web change with Iheb, preserve old/mock null handling, and pass contract, migration, storage and UI tests before claiming implementation. |
+| D63 implementation and database migration | Approved requirement; implementation is not claimed by this SRS. | Coordinate the API/database/web change with Iheb, preserve old/mock null handling, and pass contract, migration, storage and UI tests before claiming implementation. |
 
 # 10. Review and sign-off
 
 | Reviewer | Review responsibility | Status |
 |---|---|---|
-| Khalil Dridi | SRS owner: completeness, wording, research/report requirements | Owner-review draft prepared; explicit human approval pending |
-| Donia Mabrouk | Model v1/v2, protocol, registry, bundle and research constraints | Pending |
-| Iheb Zemzemi | API, live analysis, PostgreSQL/process pool, environments and extension security | Pending |
-| Malak Ben Salem | Augmentation, Stage 14, traceability, document pair and version index | Pending |
+| Khalil Dridi | SRS owner: completeness, wording, research/report requirements | Approved 2026-11-18; PR #151 comment |
+| Donia Mabrouk | Model v1/v2, protocol, registry, bundle and research constraints | Approved 2026-11-17; PR #151 review |
+| Iheb Zemzemi | API, live analysis, PostgreSQL/process pool, environments and extension security | Approved 2026-11-17; PR #151 review |
+| Malak Ben Salem | Augmentation, Stage 14, traceability, document pair and version index | Approved 2026-11-18; PR #151 comment |
 
 Approval means the reviewer confirms that the SRS describes approved requirements without inventing
 implementation, measurements, evidence, or new scope.
 
-After all four reviewers approve the synchronized Markdown/PDF pair, a separate approval commit shall
-record their names and dates, change the status from Draft to Approved, regenerate the pair, and update
-`docs/reference/README.md` and `AGENTS.md` to make v4.1 current. This draft intentionally leaves those
-current-version pointers on v4.0.
+All four reviewers approved the synchronized Markdown/PDF pair in PR #151. This approval update records
+their names and dates, marks v4.1 Approved, regenerates the pair, and updates `docs/reference/README.md`
+and `AGENTS.md` to make v4.1 current. SRS v4.0 remains unchanged as project history.
