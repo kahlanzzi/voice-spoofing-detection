@@ -1,0 +1,59 @@
+{
+  "audio_outputs_committed": false,
+  "condition_counts": {
+    "clean": 1330,
+    "narrowband_mulaw": 1330,
+    "opus_16": 1330,
+    "recorded_noise_10db": 1330,
+    "reverberation": 1330
+  },
+  "conditions": [
+    "clean",
+    "recorded_noise_10db",
+    "reverberation",
+    "opus_16",
+    "narrowband_mulaw"
+  ],
+  "d64_refreeze_commit": "41ad8bc8b95ef8d9d178e8b6986fcf9a192e48aa",
+  "decisions": [
+    "D49",
+    "D50",
+    "D56",
+    "D64"
+  ],
+  "ffmpeg_version": "6.1.1-3ubuntu5",
+  "for_archive_sha256": "9bddb83503ab442e9c7f54a1b7b9c02bc0ce32ed93f7863f28de5f59b6540b46",
+  "for_revision": "ff8c82c79e7bbefef811941bac9775c9328e9055",
+  "library_versions": {
+    "numpy": "2.5.3",
+    "scipy": "1.18.1",
+    "soundfile": "0.14.0"
+  },
+  "manifest_file": "selection_set_s.csv",
+  "manifest_file_sha256": "70a2105425838c64b9bf674fbdbf3f3e121fc97ae2d6d3bf647c9aceff12d0a1",
+  "manifest_semantic_sha256": "95dfe79e0b2fb86c1e055beb793aeccbd6664505b71ec8c52c7689c918835783",
+  "musan_inventory_sha256": "2ce6c6e6be1bc8d5054ddbd4b90612727e682f662947dfce3910c7a4e8b5b4d8",
+  "name": "D50 selection condition set S",
+  "records": 6650,
+  "repo_base_commit": "41ad8bc8b95ef8d9d178e8b6986fcf9a192e48aa",
+  "resource_choice_policy": "SHA-256-derived per-source/per-condition RandomState seed from global seed 2026",
+  "rir_channel_policy": "one seeded channel from the selected RIR file; channel index recorded",
+  "rirs_inventory_sha256": "2a5d9152f15cd5666e6b78efd49d2202ad69a67fac09d7a95174c740aafd0117",
+  "runtime": {
+    "colab_runtime_version": "2026.10",
+    "ffmpeg_version_line": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+    "gpu": "Tesla T4",
+    "implementation": "CPython",
+    "librosa": "1.0.0",
+    "numpy": "2.5.3",
+    "platform": "Linux-6.6.159+-x86_64-with-glibc2.39",
+    "python": "3.13.16",
+    "torch": "2.11.0+cu130"
+  },
+  "schema_version": 1,
+  "selection_seed": 2026,
+  "source_files": 1330,
+  "source_manifest_sha256": "badfe948fb7b833357783dd18be00f6bb36253cf8699dc4c4beb4df2b07706f8",
+  "source_split": "val-A",
+  "waveform_hash_encoding": "little-endian float32 sample bytes"
+}

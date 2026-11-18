@@ -36,7 +36,7 @@ from src.preprocessing.validation import (
 from src.preprocessing.waveform import preprocess_waveform
 from src.training.selection_set import load_selection_set, write_selection_set
 
-RECIPE_SHA256 = "71a340f009b5b0a20e295f4031c15fe2471b1174444b4b0fa2d3014f34c72533"
+RECIPE_SHA256 = "70a2105425838c64b9bf674fbdbf3f3e121fc97ae2d6d3bf647c9aceff12d0a1"
 EXPECTED_SOURCES = 1330
 EXPECTED_RECORDS = EXPECTED_SOURCES * len(CONDITIONS)
 EXPECTED_COUNTS = {"REAL": 660, "FAKE": 670}
