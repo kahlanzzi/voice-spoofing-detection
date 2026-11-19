@@ -12,14 +12,14 @@ authenticator. The research core: train on **FoR-2sec** (TTS speech), then evalu
 **once** on **DEEP-VOICE** (RVC voice conversion) to measure cross-dataset generalization.
 
 ## Source-of-truth documents
-Priority order when they conflict: approved decisions in `docs/decisions/README.md` > SRS v4.0 >
+Priority order when they conflict: approved decisions in `docs/decisions/README.md` > SRS v4.1 >
 SDD v2.0 > Execution Plan > Proposal. **Never resolve a conflict silently**: state it, name the
 documents, propose a fix, and wait for approval.
 
 - `docs/decisions/README.md` — **approved decision register (D-IDs) and pre-registered hypotheses;
   overrides the documents below.** Major decisions also have an ADR in `docs/decisions/`.
-- `docs/reference/SRS_v4.0.md` (and `.pdf`) — current requirements (FR-xx, NFR-xx, PC-xx);
-  `SRS_Voice_Spoofing_Detection.pdf` is the unchanged v3.0 history.
+- `docs/reference/SRS_v4.1.md` (and `.pdf`) — current requirements (FR-xx, NFR-xx, PC-xx);
+  `SRS_v4.0.md` (and `.pdf`) and `SRS_Voice_Spoofing_Detection.pdf` (v3.0) are unchanged history.
 - `docs/reference/SDD_v2.0.md` (and `.pdf`) — current architecture, classes, interfaces and
   deployment design; `SDD_Voice_Spoofing_Detection_Lab5.pdf` is the unchanged v1.0 history.
 - `docs/reference/Execution_Plan_v3.0.md` (and `.pdf`) — tracks, owners, dates, critical path and

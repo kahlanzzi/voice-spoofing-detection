@@ -7774,6 +7774,29 @@ and new pairs plus the complete row-level comparison are retained in
 **Scope boundary:** this closes D64 only. The real V1c selection-set materialization/verification
 and deterministic training-half MUSAN/RIRS resource-cache build remain open and stay outside Git.
 
+### Entry 206 — SRS v4.1 approval and adoption update (2026-11-18)
+
+**Owner:** Khalil Dridi. Reviewers: Donia Mabrouk, Iheb Zemzemi, Malak Ben Salem.
+
+**What changed [doc]:** PR #151 records approval of the synchronized SRS v4.1 pair from Donia and
+Iheb on 2026-11-17 and from Malak and Khalil on 2026-11-18. This update marks v4.1 Approved, records
+the four reviewers and dates, regenerates the Markdown/PDF pair, makes v4.1 the current SRS in
+`AGENTS.md` and `docs/reference/README.md`, and keeps v4.0 and v3.0 unchanged as history. Requirement
+wording and identifiers are unchanged from the reviewed v4.1 pair. Markdown SHA-256:
+`852612b85b9d41ad49238ed4cf8feafd6da64bda30021433a871b9c9c7b261f4`; PDF SHA-256:
+`9373fd331c18412741ea40ad2a51c7e1e1aee36d2a6de9efe811d1edcfdc1dad`.
+
+**Checks [verified, local]:** the 18-page PDF was rendered to PNG and every page was visually
+reviewed; PDF metadata says Approved, text extraction found all four reviewers, and the Markdown/PDF
+hashes above were recorded. Governance: `89 passed in 1.63s`. `git diff --check` passed. The complete
+suite could not collect because Windows Application Control blocked scikit-learn's `_check_build`
+DLL; `scripts/check-docs.sh` also could not start because the same policy blocked Git Bash. These are
+local execution-policy limitations, not passing checks. AI assistance: Codex prepared the approval
+record, regenerated the PDF and performed the checks; human PR review remains required.
+
+**Gate:** **WAITING FOR HUMAN REVIEW.** Merge only after the approval record, current-version
+pointers and synchronized PDF are reviewed.
+
 ---
 
 ## Open items
@@ -7808,12 +7831,13 @@ and deterministic training-half MUSAN/RIRS resource-cache build remain open and 
 - [x] SRS v4.0 Markdown/PDF pair and version index merged in PR #121 (Entry 164).
 - [x] Khalil reviews SRS v4.0 against the current approved decisions and prepares the synchronized
   v4.1 owner-review draft without changing v4.0 history (Entry 200).
-- [ ] All four team members review and approve the SRS v4.1 Markdown/PDF pair; then an approval
-  commit records names/dates, regenerates the pair and updates the version pointers (Entry 200).
+- [x] All four team members reviewed and approved the SRS v4.1 Markdown/PDF pair in PR #151:
+  Donia and Iheb on 2026-11-17; Malak and Khalil on 2026-11-18. Entry 206 records the approval
+  update, synchronized regeneration and current-version pointers.
 - [x] Obtain all-four approval for revised D63/ADR 0016, including the D34 mean for uploads with one or two kept windows (PR #146, Entry 195).
 - [ ] Coordinate the approved D63 full API contract and one database migration with Iheb. The
-  synchronized SRS v4.1 draft is prepared; update source-of-truth pointers only after all-four SRS
-  approval (Entries 195, 200).
+  synchronized SRS v4.1 pair is approved and current; implementation remains separate (Entries 195,
+  200, 206).
 - [x] SDD v2.0 Markdown/PDF pair and version index merged in PR #122 (Entry 165).
 - [ ] Iheb confirms the SDD v2.0 owner review and all four reviewers explicitly accept the D51 extension-authentication design before extension implementation; PR #122 currently records Donia's approvals only.
 - [ ] Stage 13 runner (D35) and Stage 11 runner (PR #68) accept the v2 model set (D48 (3), (7)). Stage 11 part: V4b code done (`src/evaluation/stage11_v2_run.py`, Entry 190; review pending, incl. the `ALLOWED` access-rule change for Khalil).
@@ -8231,7 +8255,7 @@ and deterministic training-half MUSAN/RIRS resource-cache build remain open and 
 
 ---
 
-## Current status — updated 2026-11-18 (Entries 203-205)
+## Current status — updated 2026-11-18 (Entries 203-206)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -8299,10 +8323,9 @@ reverberation hashes changed; 5,320 hashes and every non-hash invariant stayed i
 new recipe/report pairs and full comparison are retained. D64 is closed; the two real V1c builders
 remain open.
 
-**Khalil’s next project work.** The v4.0 owner review found that approved D63/D65 require the new
-synchronized SRS v4.1 pair prepared in Entry 200; v4.0 remains unchanged and current. Khalil and the
-other three team members must review the actual v4.1 pair. Only the later approval commit may mark it
-Approved and update the version pointers. Continue Stage 13 preparation only within the gates above.
+**Khalil’s next project work.** The synchronized SRS v4.1 pair prepared in Entry 200 received all-four
+approval in PR #151 and is adopted as the current SRS in Entry 206; v4.0 remains unchanged as history.
+Continue Stage 13 preparation only within the gates above.
 D63 has all four decision approvals (Entry 195). One or two kept upload windows use D34’s mean, and
 zero kept upload windows return `422 no_speech` without a stored analysis. Coordinate its
 implementation and single migration with Iheb.
@@ -8310,7 +8333,6 @@ The D52 warm-up analysis is scheduled for W3 (23–29 November); Stages 15–16 
 
 **What is next:**
 1. Track V proceeds with Malak’s V1c and the remaining v2 training/selection work.
-2. Review and approve the SRS v4.1 pair (all four), then add the approval/status commit and update
-   the current-version pointers. Coordinate D63 implementation with Iheb and keep Stage 13 within
-   its gates.
+2. Review and merge the SRS v4.1 adoption update, then coordinate D63 implementation with Iheb and
+   keep Stage 13 within its gates.
 3. Do not open, score or claim DEEP-VOICE until the single-run prerequisites and team review pass.
