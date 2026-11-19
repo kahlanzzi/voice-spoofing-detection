@@ -1,12 +1,13 @@
 import dataclasses
-import sqlite3
+import threading
 
 import pytest
 
 import api.repository
-from api.db import connect
-from api.repository import (ACCOUNT_SCHEMA, COLUMNS, SCHEMA, SESSION_SCHEMA, SIGN_IN_FAILURE_SCHEMA, AccountRepository,
-                            AnalysisRecord, AnalysisRepository, DuplicateAccount, HistoryQuery, StoredNote)
+from api.db import Database, IntegrityViolation, StoreError
+from api.repository import (COLUMNS, TABLES, AccountRepository, AnalysisRecord, AnalysisRepository, DuplicateAccount,
+                            HistoryQuery, SchemaError, StoredNote, schema_files)
+from tests.api._pg import columns, foreign_keys, query, tables
 
 SECTION_7 = ["request_id", "created_at", "prediction", "confidence", "risk_level", "model_version",
              "profile_version", "policy_version", "notice", "processing_ms", "is_mock"]
@@ -18,8 +19,8 @@ RECORD = AnalysisRecord(
 
 
 @pytest.fixture
-def repo(tmp_path):
-    repository = AnalysisRepository(tmp_path / "api.sqlite")
+def repo(db):
+    repository = AnalysisRepository(db)
     repository.create_schema()
     return repository
 
@@ -27,39 +28,38 @@ def repo(tmp_path):
 @pytest.fixture
 def author(repo):
     """Two accounts that can write notes: {username: account_id}."""
-    accounts = AccountRepository(repo.path)
+    accounts = AccountRepository(repo.db)
     return {name: accounts.create_account(name, HASH, NOW) for name in ("analyst01", "analyst02")}
 
 
-def test_table_has_exactly_the_section_7_columns(repo):
-    conn = connect(repo.path)
-    try:
-        columns = [row[1] for row in conn.execute("PRAGMA table_info(analysis_record)")]
-    finally:
-        conn.close()
-    assert columns == SECTION_7 == list(COLUMNS)
+def test_table_has_exactly_the_section_7_columns_plus_the_internal_order(repo):
+    # seq replaces SQLite's rowid as the same-second tie-break; it is never returned (COLUMNS).
+    assert columns(repo.db, "analysis_record") == SECTION_7 + ["seq"]
+    assert list(COLUMNS) == SECTION_7
 
 
 def test_note_table_has_exactly_the_section_7_columns(repo):
-    conn = connect(repo.path)
-    try:
-        columns = [row[1] for row in conn.execute("PRAGMA table_info(analysis_note)")]
-        foreign_keys = [(row[2], row[3], row[4]) for row in conn.execute("PRAGMA foreign_key_list(analysis_note)")]
-    finally:
-        conn.close()
-    assert columns == ["request_id", "text", "updated_at", "updated_by_account_id"]
-    assert sorted(foreign_keys) == [("account", "updated_by_account_id", "account_id"),
-                                    ("analysis_record", "request_id", "request_id")]
+    assert columns(repo.db, "analysis_note") == ["request_id", "text", "updated_at", "updated_by_account_id"]
+    assert foreign_keys(repo.db, "analysis_note") == [("account", "updated_by_account_id", "account_id"),
+                                                      ("analysis_record", "request_id", "request_id")]
+
+
+def test_confidence_keeps_full_double_precision(repo):
+    # PostgreSQL REAL is 4 bytes; the column is DOUBLE PRECISION so a stored value reads back unchanged.
+    record = dataclasses.replace(RECORD, confidence=0.1234567890123456)
+    repo.add(record)
+    assert repo.get(record.request_id).confidence == 0.1234567890123456
+
+
+def test_database_uses_the_c_collation(repo):
+    # Stored UTC times are compared as text: byte order must equal time order.
+    assert query(repo.db, "SELECT datcollate, datctype FROM pg_database WHERE datname = current_database()") == \
+        [("C", "C")]
 
 
 def insert_note(repo, request_id, text="Called back.", updated_at="2026-10-30T09:20:11Z"):
-    conn = connect(repo.path)
-    try:
-        with conn:
-            conn.execute("INSERT INTO analysis_note (request_id, text, updated_at) VALUES (?, ?, ?)",
-                         (request_id, text, updated_at))
-    finally:
-        conn.close()
+    query(repo.db, "INSERT INTO analysis_note (request_id, text, updated_at) VALUES (%s, %s, %s)",
+          (request_id, text, updated_at))
 
 
 def test_create_schema_is_idempotent_and_keeps_rows(repo):
@@ -68,10 +68,11 @@ def test_create_schema_is_idempotent_and_keeps_rows(repo):
     repo.create_schema()
     assert repo.count() == 1
     assert repo.get_stored(RECORD.request_id)[1] is not None
+    assert repo.schema_versions() == [1]
 
 
 def test_note_for_an_unknown_record_is_rejected(repo):
-    with pytest.raises(sqlite3.IntegrityError, match="FOREIGN KEY"):
+    with pytest.raises(IntegrityViolation, match="ForeignKeyViolation"):
         insert_note(repo, "req_" + "b" * 32)
 
 
@@ -81,7 +82,7 @@ def test_note_for_an_unknown_record_is_rejected(repo):
 ])
 def test_invalid_note_values_are_rejected(repo, text, updated_at):
     repo.add(RECORD)
-    with pytest.raises(sqlite3.IntegrityError):
+    with pytest.raises(IntegrityViolation):
         insert_note(repo, RECORD.request_id, text, updated_at)
 
 
@@ -95,12 +96,8 @@ def test_get_stored_returns_the_record_with_its_note(repo):
 
 
 def record_row(repo, request_id):
-    """The raw analysis_record row with its rowid, so a delete-and-insert would show."""
-    conn = connect(repo.path)
-    try:
-        return conn.execute("SELECT rowid, * FROM analysis_record WHERE request_id = ?", (request_id,)).fetchone()
-    finally:
-        conn.close()
+    """The raw analysis_record row with its seq and ctid, so a delete-and-insert or an update would show."""
+    return query(repo.db, "SELECT ctid, * FROM analysis_record WHERE request_id = %s", (request_id,))
 
 
 def test_save_note_stores_then_replaces_without_changing_the_record(repo, author):
@@ -118,7 +115,7 @@ def test_save_note_stores_then_replaces_without_changing_the_record(repo, author
 
 def test_save_note_needs_a_known_account(repo):
     repo.add(RECORD)
-    with pytest.raises(sqlite3.IntegrityError, match="FOREIGN KEY"):
+    with pytest.raises(IntegrityViolation, match="ForeignKeyViolation"):
         repo.save_note(RECORD.request_id, "x", "2026-10-30T09:20:11Z", 999)
     assert repo.get_stored(RECORD.request_id)[1] is None
 
@@ -133,95 +130,67 @@ def test_delete_note_reports_whether_a_note_was_removed(repo, author):
     assert record_row(repo, RECORD.request_id) == before
 
 
-# --- Migration: the note author on an older database file (§7, Step 7b-2) ------------------------
+# --- Schema files and the migration runner (D53 (4)) ------------------------------------------------
 
-# analysis_note as created by the code merged in #83 and #84, before the author column.
-OLD_NOTE_SCHEMA = """
-CREATE TABLE IF NOT EXISTS analysis_note (
-    request_id TEXT NOT NULL PRIMARY KEY REFERENCES analysis_record (request_id),
-    text       TEXT NOT NULL CHECK (length(trim(text)) > 0),
-    updated_at TEXT NOT NULL
-               CHECK (updated_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]Z')
-)
-"""
-OLD_NOTES = [("req_" + "a" * 32, "Called back.\nCaller confirmed – ok ✓", "2026-10-30T09:20:11Z"),
-             ("req_" + "c" * 32, "Second note.", "2026-10-30T10:00:00Z")]
-
-
-def old_database(path, *ddl):
-    """A database file built with the given older DDL, holding two records with notes."""
-    conn = connect(path)
-    try:
-        with conn:
-            for statement in ddl:
-                conn.execute(statement)
-            for request_id, text, updated_at in OLD_NOTES:
-                placeholders = ", ".join("?" * len(COLUMNS))
-                conn.execute(f"INSERT INTO analysis_record ({', '.join(COLUMNS)}) VALUES ({placeholders})",
-                             dataclasses.astuple(dataclasses.replace(RECORD, request_id=request_id)))
-                conn.execute("INSERT INTO analysis_note (request_id, text, updated_at) VALUES (?, ?, ?)",
-                             (request_id, text, updated_at))
-    finally:
-        conn.close()
+def test_schema_files_are_numbered_from_one(tmp_path):
+    assert [version for version, _, _ in schema_files()] == [1]
+    (tmp_path / "0001_a.sql").write_text("SELECT 1;")
+    (tmp_path / "0003_c.sql").write_text("SELECT 1;")
+    with pytest.raises(SchemaError, match="no gap"):
+        schema_files(tmp_path)
+    (tmp_path / "0003_c.sql").unlink()
+    (tmp_path / "2_bad name.sql").write_text("SELECT 1;")
+    with pytest.raises(SchemaError, match="NNNN_name.sql"):
+        schema_files(tmp_path)
 
 
-def table_dump(path, sql):
-    conn = connect(path)
-    try:
-        return conn.execute(sql).fetchall()
-    finally:
-        conn.close()
+def test_create_schema_builds_every_table_on_an_empty_database(empty_db):
+    assert tables(empty_db) == []
+    AnalysisRepository(empty_db).create_schema()
+    assert tables(empty_db) == sorted([*TABLES, "schema_migration"])
+    assert query(empty_db, "SELECT version, name FROM schema_migration") == [(1, "0001_initial.sql")]
 
 
-def test_create_schema_adds_the_note_author_to_a_7b_1_database_without_data_loss(tmp_path):
-    path = tmp_path / "old.sqlite"
-    old_database(path, SCHEMA, OLD_NOTE_SCHEMA, ACCOUNT_SCHEMA, SESSION_SCHEMA, SIGN_IN_FAILURE_SCHEMA)
-    records_before = table_dump(path, "SELECT rowid, * FROM analysis_record ORDER BY rowid")
-    repository = AnalysisRepository(path)
-    repository.create_schema()
-    repository.create_schema()  # safe to run twice
-    columns = [row[1] for row in table_dump(path, "PRAGMA table_info(analysis_note)")]
-    assert columns == ["request_id", "text", "updated_at", "updated_by_account_id"]
-    assert table_dump(path, "SELECT request_id, text, updated_at, updated_by_account_id FROM analysis_note "
-                            "ORDER BY request_id") == [(*note, None) for note in OLD_NOTES]
-    assert table_dump(path, "SELECT rowid, * FROM analysis_record ORDER BY rowid") == records_before
-    assert table_dump(path, "PRAGMA foreign_key_check") == []
-    for request_id, text, updated_at in OLD_NOTES:
-        assert repository.get_stored(request_id)[1] == StoredNote(text, updated_at, None)
-    # An old note can then be saved again with an author.
-    account_id = AccountRepository(path).create_account("analyst01", HASH, NOW)
-    saved = repository.save_note(OLD_NOTES[0][0], "Replaced.", "2026-11-01T09:00:00Z", account_id)
-    assert saved == StoredNote("Replaced.", "2026-11-01T09:00:00Z", "analyst01")
+def test_a_failed_schema_file_leaves_the_database_as_it_was(empty_db, tmp_path, monkeypatch):
+    (tmp_path / "0001_initial.sql").write_text((api.repository.SCHEMA_DIR / "0001_initial.sql").read_text())
+    (tmp_path / "0002_broken.sql").write_text("ALTER TABLE no_such_table ADD COLUMN x INTEGER;")
+    monkeypatch.setattr(api.repository, "SCHEMA_DIR", tmp_path)
+    with pytest.raises(StoreError, match="UndefinedTable"):
+        AnalysisRepository(empty_db).create_schema()
+    # One transaction: the tables of file 1 and the version table are rolled back with file 2.
+    assert tables(empty_db) == []
 
 
-class FailOnAlter(sqlite3.Connection):
-    def execute(self, sql, *args):
-        if sql.lstrip().startswith("ALTER TABLE"):
-            raise sqlite3.OperationalError("disk I/O error")
-        return super().execute(sql, *args)
+def test_create_schema_refuses_a_database_newer_than_the_code(repo):
+    query(repo.db, "INSERT INTO schema_migration (version, name) VALUES (2, '0002_future.sql')")
+    with pytest.raises(SchemaError, match=r"\[2\]"):
+        repo.create_schema()
 
 
-def test_a_failed_migration_leaves_the_file_as_it_was(tmp_path, monkeypatch):
-    path = tmp_path / "older.sqlite"
-    old_database(path, SCHEMA, OLD_NOTE_SCHEMA)  # before the sign-in tables too
-    schema_before = table_dump(path, "SELECT type, name, sql FROM sqlite_master ORDER BY name")
-    monkeypatch.setattr(api.repository, "connect", lambda p: sqlite3.connect(p, factory=FailOnAlter))
-    with pytest.raises(sqlite3.OperationalError):
-        AnalysisRepository(path).create_schema()
-    # One transaction: the sign-in tables created before the ALTER are rolled back with it.
-    assert table_dump(path, "SELECT type, name, sql FROM sqlite_master ORDER BY name") == schema_before
-    assert table_dump(path, "SELECT request_id, text, updated_at FROM analysis_note ORDER BY request_id") == OLD_NOTES
+def test_two_starts_at_once_apply_the_schema_once(empty_db):
+    # The API start and an admin command can race; the advisory lock makes the second one a no-op.
+    errors = []
+
+    def start():
+        try:
+            AnalysisRepository(empty_db).create_schema()
+        except Exception as exc:  # collected and checked below
+            errors.append(exc)
+
+    threads = [threading.Thread(target=start) for _ in range(4)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert errors == []
+    assert AnalysisRepository(empty_db).schema_versions() == [1]
 
 
 def test_note_writes_for_an_unknown_record_return_none_and_store_nothing(repo, author):
     unknown = "req_" + "b" * 32
     assert repo.save_note(unknown, "x", "2026-10-30T09:20:11Z", author["analyst01"]) is None
     assert repo.delete_note(unknown) is None
-    conn = connect(repo.path)
-    try:
-        assert conn.execute("SELECT COUNT(*) FROM analysis_note").fetchone()[0] == 0
-    finally:
-        conn.close()
+    assert query(repo.db, "SELECT COUNT(*) FROM analysis_note") == [(0,)]
     assert repo.count() == 0
 
 
@@ -262,7 +231,7 @@ def test_add_then_get_round_trip(repo):
 
 def test_duplicate_request_id_is_rejected(repo):
     repo.add(RECORD)
-    with pytest.raises(sqlite3.IntegrityError):
+    with pytest.raises(IntegrityViolation, match="UniqueViolation"):
         repo.add(RECORD)
     assert repo.count() == 1
 
@@ -274,7 +243,7 @@ def test_duplicate_request_id_is_rejected(repo):
     {"processing_ms": -1},
 ], ids=lambda c: next(iter(c)))
 def test_invalid_values_are_rejected(repo, change):
-    with pytest.raises(sqlite3.IntegrityError):
+    with pytest.raises(IntegrityViolation):
         repo.add(dataclasses.replace(RECORD, **change))
     assert repo.count() == 0
 
@@ -285,29 +254,35 @@ def test_probe_passes_on_a_built_schema(repo):
     assert repo.count() == 1  # read only: nothing added or removed
 
 
-def test_probe_raises_on_a_missing_file_and_creates_nothing(tmp_path):
-    path = tmp_path / "missing" / "api.sqlite"
-    with pytest.raises(sqlite3.Error):
-        AnalysisRepository(path).probe(timeout_s=0.1)
-    assert not path.parent.exists()
+def test_probe_raises_when_the_database_is_not_open_or_not_reachable(pg_database):
+    from tests.api.conftest import TEST_APP_PASSWORD, app_database
+    closed = app_database(pg_database)  # built, never opened
+    with pytest.raises(StoreError, match="DatabaseNotOpen"):
+        AnalysisRepository(closed).probe(timeout_s=0.1)
+    missing = app_database("no_such_database", timeout_s=1)
+    with pytest.raises(StoreError):
+        missing.open(TEST_APP_PASSWORD)
+    assert not missing.is_open
 
 
-def test_probe_raises_when_the_table_is_missing(tmp_path):
-    path = tmp_path / "api.sqlite"
-    connect(path).close()  # empty database, no analysis_record table
-    with pytest.raises(sqlite3.OperationalError, match="no such table"):
-        AnalysisRepository(path).probe(timeout_s=0.1)
+def test_probe_raises_when_the_table_is_missing(repo):
+    query(repo.db, "DROP TABLE analysis_record CASCADE")
+    with pytest.raises(StoreError, match="UndefinedTable"):
+        repo.probe(timeout_s=0.5)
 
 
-def test_probe_raises_when_the_database_stays_locked(repo):
-    locker = connect(repo.path)
-    try:
-        locker.execute("BEGIN EXCLUSIVE")
-        with pytest.raises(sqlite3.OperationalError, match="locked"):
+def test_probe_raises_when_the_table_stays_locked(repo):
+    with repo.db.transaction() as locker:
+        locker.execute("LOCK TABLE analysis_record IN ACCESS EXCLUSIVE MODE")
+        with pytest.raises(StoreError, match="QueryCanceled"):
             repo.probe(timeout_s=0.05)
-    finally:
-        locker.rollback()
-        locker.close()
+
+
+def test_probe_never_writes(repo):
+    with pytest.raises(StoreError, match="ReadOnlySqlTransaction"):
+        with repo.db.transaction(read_only=True) as conn:
+            conn.execute("DELETE FROM analysis_record")
+    repo.probe()
 
 
 def stats_record(n: int, created_at: str, prediction: str = "authentic", processing_ms: int = 10) -> AnalysisRecord:
@@ -375,45 +350,27 @@ SIGN_IN_TABLES = {
 
 @pytest.fixture
 def accounts(repo):
-    return AccountRepository(repo.path)
+    return AccountRepository(repo.db)
 
 
 def add_session(repo, account_id, n):
-    conn = connect(repo.path)
-    try:
-        with conn:
-            conn.execute("INSERT INTO session VALUES (?, ?, ?, ?, ?)",
-                         (f"{n:064x}", account_id, NOW, NOW, "2026-11-01T21:00:00Z"))
-    finally:
-        conn.close()
+    query(repo.db, "INSERT INTO session VALUES (%s, %s, %s, %s, %s)",
+          (f"{n:064x}", account_id, NOW, NOW, "2026-11-01T21:00:00Z"))
 
 
 def sessions_of(repo, account_id):
-    conn = connect(repo.path)
-    try:
-        return conn.execute("SELECT COUNT(*) FROM session WHERE account_id = ?", (account_id,)).fetchone()[0]
-    finally:
-        conn.close()
+    return query(repo.db, "SELECT COUNT(*) FROM session WHERE account_id = %s", (account_id,))[0][0]
 
 
 @pytest.mark.parametrize("table", SIGN_IN_TABLES)
 def test_sign_in_tables_have_exactly_the_section_7_columns(repo, table):
-    conn = connect(repo.path)
-    try:
-        columns = [row[1] for row in conn.execute(f"PRAGMA table_info({table})")]
-    finally:
-        conn.close()
-    assert columns == SIGN_IN_TABLES[table]
+    assert columns(repo.db, table) == SIGN_IN_TABLES[table]
 
 
-def test_no_sign_in_table_has_an_ip_user_agent_or_clear_secret_column(repo):
-    conn = connect(repo.path)
-    try:
-        for table in SIGN_IN_TABLES:
-            columns = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
-            assert not columns & {"ip", "client_ip", "ip_address", "user_agent", "password", "session_id"}
-    finally:
-        conn.close()
+def test_no_table_has_an_ip_user_agent_or_clear_secret_column(repo):
+    for table in TABLES:
+        assert not set(columns(repo.db, table)) & {"ip", "client_ip", "ip_address", "user_agent", "password",
+                                                  "session_id", "file_name", "audio"}
 
 
 def test_create_schema_twice_keeps_accounts(repo, accounts):
@@ -446,7 +403,7 @@ def test_duplicate_username_is_refused(accounts):
     ("analyst01", HASH, "2026-11-01 09:00:00"),     # not UTC ISO with Z
 ])
 def test_invalid_account_values_are_refused(accounts, username, password_hash, now):
-    with pytest.raises(sqlite3.IntegrityError):
+    with pytest.raises(IntegrityViolation, match="CheckViolation"):
         accounts.create_account(username, password_hash, now)
 
 
@@ -480,25 +437,16 @@ def test_disable_ends_all_sessions_and_enable_keeps_none(repo, accounts):
 
 
 def test_session_needs_a_known_account_and_a_hex_hash(repo, accounts):
-    with pytest.raises(sqlite3.IntegrityError):
-        add_session(repo, 999, 1)  # foreign key
+    with pytest.raises(IntegrityViolation, match="ForeignKeyViolation"):
+        add_session(repo, 999, 1)
     account_id = accounts.create_account("analyst01", HASH, NOW)
-    conn = connect(repo.path)
-    try:
-        with pytest.raises(sqlite3.IntegrityError), conn:
-            conn.execute("INSERT INTO session VALUES (?, ?, ?, ?, ?)", ("Z" * 64, account_id, NOW, NOW, NOW))
-    finally:
-        conn.close()
+    with pytest.raises(IntegrityViolation, match="CheckViolation"):
+        query(repo.db, "INSERT INTO session VALUES (%s, %s, %s, %s, %s)", ("Z" * 64, account_id, NOW, NOW, NOW))
 
 
 def test_clear_failures(repo, accounts):
     digest = "ab" * 32
-    conn = connect(repo.path)
-    try:
-        with conn:
-            conn.execute("INSERT INTO sign_in_failure VALUES (?, 5, ?, ?)", (digest, NOW, "2026-11-01T09:15:00Z"))
-    finally:
-        conn.close()
+    query(repo.db, "INSERT INTO sign_in_failure VALUES (%s, 5, %s, %s)", (digest, NOW, "2026-11-01T09:15:00Z"))
     assert accounts.clear_failures(digest) is True
     assert accounts.clear_failures(digest) is False
 
@@ -508,11 +456,7 @@ LATER = "2026-11-01T09:01:00Z"
 
 
 def failure_row(repo):
-    conn = connect(repo.path)
-    try:
-        return conn.execute("SELECT failures, last_failure_at, locked_until FROM sign_in_failure").fetchall()
-    finally:
-        conn.close()
+    return query(repo.db, "SELECT failures, last_failure_at, locked_until FROM sign_in_failure")
 
 
 def test_record_failure_counts_then_locks_at_the_threshold(repo, accounts):
@@ -541,6 +485,19 @@ def test_record_failure_restarts_after_a_lock_ends_or_an_old_failure(repo, accou
     assert failure_row(repo) == [(1, "2026-11-01T09:20:00Z", None)]
     assert accounts.record_failure(DIGEST, "2026-11-01T10:00:00Z", "2026-11-01T09:45:00Z", 3,
                                    "2026-11-01T10:15:00Z") == 1
+
+
+def test_concurrent_failures_of_one_username_are_all_counted(repo, accounts):
+    # The advisory lock per username makes read and write one step: 8 failures at once count as 8.
+    def fail():
+        accounts.record_failure(DIGEST, NOW, "2026-11-01T08:45:00Z", 100, "2026-11-01T09:15:00Z")
+
+    threads = [threading.Thread(target=fail) for _ in range(8)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert failure_row(repo) == [(8, NOW, None)]
 
 
 def test_rehash_password_replaces_only_the_expected_hash_and_keeps_sessions(repo, accounts):

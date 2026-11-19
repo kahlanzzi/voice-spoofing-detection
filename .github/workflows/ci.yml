@@ -14,6 +14,21 @@ on:
 jobs:
   checks:
     runs-on: ubuntu-latest
+    # The API tests run on PostgreSQL (D53 (4)): a throwaway test server on the runner, the same image as
+    # docker-compose.yml (tests/deploy/test_deploy_ci.py checks the pin). No password: trust, test data only.
+    services:
+      postgres:
+        image: postgres:18.7-trixie@sha256:2ea8630df176ad090ec92136dee850397c5af8781e4bcf2e4162593691c61bbc
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_INITDB_ARGS: --locale=C --encoding=UTF8
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -37,6 +52,8 @@ jobs:
       - name: Run tests
         env:
           REQUIRE_TORCH_TESTS: "1"   # torch tests fail instead of skipping if torch is missing
+          REQUIRE_POSTGRES_TESTS: "1"   # database tests fail instead of skipping if PostgreSQL is unreachable
+          VSD_TEST_DATABASE_URL: postgresql://postgres@127.0.0.1:55432/postgres
         run: pytest -q
 
       # --- Docs reminder (always runs, never fails the build) -----------------
@@ -76,8 +93,8 @@ jobs:
         run: npm run build
 
   # End-to-end tests on the real stack (Stage 18 PR 5a; docs/setup.md "End-to-end tests"): docker compose with nginx
-  # on 8001, Chromium only (Firefox is a local run). The HMAC key is made for this run and masked; it is no repo
-  # secret and is never committed. e2e/run.ts seeds the e2e accounts, runs Playwright and scans the outputs for the
+  # on 8001, Chromium only (Firefox is a local run). The HMAC key and both database passwords are made for this run
+  # and masked; they are no repo secrets and are never committed. e2e/run.ts seeds the e2e accounts, runs Playwright and scans the outputs for the
   # password and the session cookie; the JSON report is uploaded only on failure and only if that scan is clean.
   e2e:
     runs-on: ubuntu-latest
@@ -97,11 +114,13 @@ jobs:
         working-directory: web
         run: npm ci
 
-      - name: Make a per-run sign-in key
+      - name: Make a per-run sign-in key and database passwords
         run: |
-          k=$(openssl rand -hex 32)
-          echo "::add-mask::$k"
-          echo "VSD_SIGNIN_HMAC_KEY=$k" >> "$GITHUB_ENV"
+          for name in VSD_SIGNIN_HMAC_KEY VSD_DB_PASSWORD VSD_DB_APP_PASSWORD; do
+            k=$(openssl rand -hex 32)
+            echo "::add-mask::$k"
+            echo "$name=$k" >> "$GITHUB_ENV"
+          done
 
       - name: Start the stack
         run: docker compose up -d --build --wait --wait-timeout 240
@@ -124,9 +143,9 @@ jobs:
           path: web/playwright-report/results.json
           retention-days: 7
 
-      - name: Stack logs (no passwords, cookies or IPs, docs/api_design.md §4.8)
+      - name: Stack logs (no passwords, cookies or IPs, docs/api_design.md §4.8; no row values, docs/setup.md)
         if: failure()
-        run: docker compose logs api web
+        run: docker compose logs db api web
 
       - name: Stop the stack
         if: always()

@@ -1,8 +1,11 @@
-"""docker-compose.yml (Stage 17 Steps 8a, 8b): secret, storage and exposure of the api and web services.
+"""docker-compose.yml (Stage 17 Steps 8a, 8b; P2a, D53 (4)): secrets, storage and exposure of the db, api and
+web services.
 
-The HMAC key comes only from the environment (.env through Compose interpolation), never from a file in the
-repo; the api publishes no port (only nginx may front it, §4.8); the store is on a named volume; temp uploads
-are on a tmpfs large enough for the declared number of concurrent uploads at the configs/api.yaml limit.
+The HMAC key and the database passwords come only from the environment (.env through Compose interpolation),
+never from a file in the repo; the api receives its own role's password only, never the superuser's; the api
+and db publish no port (only nginx may front the api, §4.8); the store is PostgreSQL on a named volume, its
+image pinned by digest, its log kept free of row values; temp uploads are on a tmpfs large enough for the
+declared number of concurrent uploads at the configs/api.yaml limit.
 nginx (web) is built from deploy/web.Dockerfile (pins: tests/deploy/test_deploy_web_image.py) with the app and
 deploy/nginx.conf inside, publishes the port in allowed_origins and buffers request bodies on a tmpfs.
 """
@@ -16,6 +19,7 @@ import yaml
 
 from api.auth import HMAC_KEY_ENV
 from api.config import load_api_config
+from api.db import APP_PASSWORD_ENV
 from api.intake import body_limit
 
 REPO = Path(__file__).resolve().parents[2]
@@ -23,6 +27,10 @@ TEXT = (REPO / "docker-compose.yml").read_text(encoding="utf-8")
 COMPOSE = yaml.safe_load(TEXT)
 API = COMPOSE["services"]["api"]
 WEB = COMPOSE["services"]["web"]
+DB = COMPOSE["services"]["db"]
+DB_TEST = COMPOSE["services"]["db-test"]
+SUPERUSER_PASSWORD_ENV = "VSD_DB_PASSWORD"
+INIT_SCRIPT = (REPO / "deploy" / "postgres-init" / "10-app-role.sh").read_text(encoding="utf-8")
 UNITS = {"": 1, "k": 1024, "m": 1024 ** 2, "g": 1024 ** 3}
 
 
@@ -33,10 +41,32 @@ def tmpfs_bytes(entry: str) -> int:
     return int(match.group(1)) * UNITS[match.group(2)]
 
 
-def test_hmac_key_comes_only_from_the_environment_and_is_required():
-    assert API["environment"] == {HMAC_KEY_ENV: API["environment"][HMAC_KEY_ENV]}
-    assert re.fullmatch(r"\$\{" + HMAC_KEY_ENV + r":\?[^}]+\}", API["environment"][HMAC_KEY_ENV])
+def required(variable: str, value: str) -> bool:
+    """value is ${variable:?message}: interpolated from the environment, no default, no start without it."""
+    return re.fullmatch(r"\$\{" + variable + r":\?[^}]+\}", value) is not None
+
+
+def test_api_secrets_come_only_from_the_environment_and_are_required():
+    assert set(API["environment"]) == {HMAC_KEY_ENV, APP_PASSWORD_ENV}
+    assert required(HMAC_KEY_ENV, API["environment"][HMAC_KEY_ENV])
+    assert required(APP_PASSWORD_ENV, API["environment"][APP_PASSWORD_ENV])
     assert "env_file" not in API  # .env also holds the Kaggle, HF and W&B tokens
+
+
+def test_the_api_never_receives_the_superuser_password():
+    assert SUPERUSER_PASSWORD_ENV not in API["environment"]
+    assert SUPERUSER_PASSWORD_ENV not in TEXT.split("\n  api:", 1)[1].split("\n  web:", 1)[0]
+    assert load_api_config().database_user == "vsd_app"
+
+
+def test_db_passwords_are_required_with_no_default():
+    env = DB["environment"]
+    assert required(SUPERUSER_PASSWORD_ENV, env["POSTGRES_PASSWORD"])
+    assert required(APP_PASSWORD_ENV, env[APP_PASSWORD_ENV])
+    assert env["POSTGRES_USER"] == "postgres" and env["POSTGRES_DB"] == load_api_config().database_name
+    assert "env_file" not in DB
+    for name in (SUPERUSER_PASSWORD_ENV, APP_PASSWORD_ENV):
+        assert not re.search(r"\$\{" + name + r":?-", TEXT)  # never a ${VAR:-default}
 
 
 def test_no_literal_hex_secret_in_the_file():
@@ -49,10 +79,71 @@ def test_api_publishes_no_port():
     assert API["expose"] == ["8000"]
 
 
-def test_store_is_on_a_named_volume_at_the_database_folder():
-    assert "vsd-var:/app/var" in API["volumes"]
+def test_store_is_postgresql_on_a_named_volume_pinned_by_digest():
+    assert re.fullmatch(r"postgres:18\.[0-9]+-trixie@sha256:[0-9a-f]{64}", DB["image"])
+    assert DB_TEST["image"] == DB["image"]
+    assert "vsd-pg:/var/lib/postgresql" in DB["volumes"]
+    assert "vsd-pg" in COMPOSE["volumes"]
+    assert "--locale=C" in DB["environment"]["POSTGRES_INITDB_ARGS"]
+    assert "--locale=C" in DB_TEST["environment"]["POSTGRES_INITDB_ARGS"]
+    assert load_api_config().database_host == "db"
+
+
+def test_the_old_sqlite_store_is_mounted_read_only_for_the_import():
+    assert API["volumes"] == ["vsd-var:/app/var:ro"]
     assert "vsd-var" in COMPOSE["volumes"]
-    assert load_api_config().database_path.startswith("var/")  # resolves to /app/var/... in the image
+
+
+def test_db_publishes_no_port_and_the_test_db_only_on_loopback():
+    assert "ports" not in DB and "expose" not in DB
+    assert DB_TEST["profiles"] == ["test"]
+    assert DB_TEST["ports"] == ["127.0.0.1:55432:5432"]
+    assert DB_TEST["tmpfs"] == ["/var/lib/postgresql"]  # no volume: never holds real data
+    assert "volumes" not in DB_TEST
+
+
+def test_api_starts_after_a_healthy_db_whose_check_proves_the_init_is_done():
+    assert API["depends_on"] == {"db": {"condition": "service_healthy"}}
+    # Over TCP: the image's init server listens on the socket only, so on a new volume this passes after the
+    # init (which creates vsd_app). pg_isready does not log in.
+    assert DB["healthcheck"]["test"] == ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "vsd_app", "-d", "vsd"]
+
+
+def test_init_script_creates_a_non_superuser_app_role_from_its_own_variable():
+    assert "./deploy/postgres-init:/docker-entrypoint-initdb.d:ro" in DB["volumes"]
+    assert re.search(r'^: "\$\{VSD_DB_APP_PASSWORD:\?[^}]+\}"$', INIT_SCRIPT, re.M)
+    assert "set -euo pipefail" in INIT_SCRIPT and "ON_ERROR_STOP=1" in INIT_SCRIPT
+    assert re.search(r"CREATE ROLE vsd_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE PASSWORD :'app_pw';",
+                     INIT_SCRIPT)
+    assert "ALTER DATABASE vsd OWNER TO vsd_app;" in INIT_SCRIPT
+    assert "<<'SQL'" in INIT_SCRIPT  # quoted heredoc: the shell never splices the password into the SQL
+    assert SUPERUSER_PASSWORD_ENV not in INIT_SCRIPT
+    assert (REPO / "deploy" / "postgres-init" / "10-app-role.sh").stat().st_mode & 0o111  # executable
+
+
+# Each flag keeps row values (notes, hashes) and client addresses out of the PostgreSQL log.
+PRIVATE_LOG_FLAGS = {
+    "log_statement": "none", "log_min_error_statement": "panic", "log_error_verbosity": "terse",
+    "log_parameter_max_length": "0", "log_parameter_max_length_on_error": "0",
+    "log_min_duration_statement": "-1", "log_connections": "off", "log_disconnections": "off",
+    "log_hostname": "off", "log_line_prefix": "%m [%p] ",
+}
+
+
+def test_db_log_keeps_row_values_and_client_addresses_out():
+    command = DB["command"]
+    assert command[0] == "postgres"
+    flags = dict(value.split("=", 1) for flag, value in zip(command[1::2], command[2::2]) if flag == "-c")
+    assert len(command) == 1 + 2 * len(flags)
+    assert flags == PRIVATE_LOG_FLAGS
+    assert "%h" not in flags["log_line_prefix"] and "%r" not in flags["log_line_prefix"]
+
+
+def test_db_container_is_hardened():
+    assert DB["read_only"] is True
+    assert DB["cap_drop"] == ["ALL"]
+    assert set(DB["cap_add"]) == {"CHOWN", "DAC_OVERRIDE", "FOWNER", "SETGID", "SETUID"}
+    assert "no-new-privileges:true" in DB["security_opt"]
 
 
 def test_tmpfs_holds_the_declared_concurrent_uploads_at_the_config_limit():
@@ -83,7 +174,9 @@ def test_web_is_built_from_its_dockerfile_with_the_config_inside():
 
 def test_web_starts_after_a_healthy_api_without_secrets():
     assert WEB["depends_on"] == {"api": {"condition": "service_healthy"}}
-    assert "env_file" not in WEB and HMAC_KEY_ENV not in WEB.get("environment", {})
+    assert "env_file" not in WEB
+    for name in (HMAC_KEY_ENV, APP_PASSWORD_ENV, SUPERUSER_PASSWORD_ENV):
+        assert name not in WEB.get("environment", {})
 
 
 def test_web_publishes_the_port_of_allowed_origins():

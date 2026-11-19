@@ -2,15 +2,17 @@ import dataclasses
 import logging
 import os
 import re
-import sqlite3
 import threading
 
 import pytest
 from fastapi.testclient import TestClient
 
 from api.analyzer import AnalysisOutcome, AnalyzerUnavailable, MockAnalyzer
+from api.db import StoreError
 from api.intake import MULTIPART_OVERHEAD_BYTES
 from api.main import create_app
+from api.repository import TABLES
+from tests.api._pg import config_query
 from tests.api.conftest import HTTPS, audio_bytes, signed_in
 
 URL = "/api/analyses"
@@ -237,7 +239,7 @@ def test_failed_store_is_500_without_a_verdict(client, config):
 
     class Failing:
         def add(self, record):
-            raise sqlite3.OperationalError("disk I/O error")
+            raise StoreError("OperationalError")
 
     client.app.state.repository = Failing()
     response = upload(client, audio_bytes())
@@ -253,10 +255,8 @@ def test_original_file_name_is_never_stored_or_logged(client, config, caplog):
     assert upload(client, os.urandom(4000), f"{SECRET_NAME}.wav").status_code == 422
     client.app.state.analyzer = FakeAnalyzer(error=RuntimeError("boom"))
     assert upload(client, audio_bytes(), f"{SECRET_NAME}.wav").status_code == 500
-    db_dir = os.path.dirname(config.database_path)
-    for name in os.listdir(db_dir):  # the database plus any journal file
-        with open(os.path.join(db_dir, name), "rb") as f:
-            assert SECRET_NAME.encode() not in f.read()
+    for table in TABLES:  # every row of every table
+        assert SECRET_NAME not in repr(config_query(config, f"SELECT * FROM {table}"))
     assert caplog.records  # the 500 was logged
     assert SECRET_NAME not in caplog.text
     assert temp_files(config) == []

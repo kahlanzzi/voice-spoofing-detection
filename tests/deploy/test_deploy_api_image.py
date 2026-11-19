@@ -16,21 +16,22 @@ DOCKERFILE = (REPO / "deploy" / "api.Dockerfile").read_text(encoding="utf-8")
 IGNORE = [line.strip() for line in (REPO / ".dockerignore").read_text(encoding="utf-8").splitlines()
           if line.strip() and not line.startswith("#")]
 # Import name -> the requirements-api.txt package that provides it (pydantic comes with fastapi).
-PROVIDER = {"argon2": "argon2-cffi", "yaml": "pyyaml", "pydantic": "fastapi"}
+PROVIDER = {"argon2": "argon2-cffi", "yaml": "pyyaml", "pydantic": "fastapi", "psycopg_pool": "psycopg-pool"}
 FORBIDDEN = {"torch", "librosa", "scikit-learn", "pandas", "kaggle", "huggingface-hub", "pytest", "httpx",
              "wandb", "safetensors", "python-dotenv"}
 
 
 def pins(path: Path) -> dict[str, str]:
-    """name (lower case) -> exact version; raise if a line is not name==version."""
+    """name (lower case) -> exact version, with its extras if any ("[binary]==3.3.9" pins as "[binary]3.3.9",
+    so the extras must match too); raise if a line is not name[extras]==version."""
     out = {}
     for line in path.read_text(encoding="utf-8").splitlines():
         line = line.split("#", 1)[0].strip()
         if not line:
             continue
-        match = re.fullmatch(r"([A-Za-z0-9_.-]+)==([0-9][A-Za-z0-9.]*)", line)
+        match = re.fullmatch(r"([A-Za-z0-9_.-]+)(\[[a-z0-9,_-]+\])?==([0-9][A-Za-z0-9.]*)", line)
         assert match, f"{path.name}: not an exact pin: {line!r}"
-        out[match.group(1).lower()] = match.group(2)
+        out[match.group(1).lower()] = (match.group(2) or "") + match.group(3)
     return out
 
 

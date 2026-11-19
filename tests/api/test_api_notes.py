@@ -1,16 +1,13 @@
 import json
 import logging
 import re
-import sqlite3
-from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
 from api.main import create_app
-from api.repository import ACCOUNT_SCHEMA, SCHEMA, SESSION_SCHEMA, SIGN_IN_FAILURE_SCHEMA
+from tests.api._pg import config_query
 from tests.api.conftest import ANALYST, HTTPS, audio_bytes, signed_in, signed_in_client
-from tests.api.test_api_repository import OLD_NOTE_SCHEMA, OLD_NOTES, old_database
 
 SECRET = "note-secret-text-5519"
 INVALID = {"error": {"code": "invalid_request", "message": "The request is not valid.", "request_id": None}}
@@ -35,11 +32,7 @@ def put_raw(client, request_id, content, headers=JSON):
 
 
 def rows(config, sql, *params):
-    conn = sqlite3.connect(config.database_path)
-    try:
-        return conn.execute(sql, params).fetchall()
-    finally:
-        conn.close()
+    return config_query(config, sql, params)
 
 
 def note_rows(config):
@@ -47,8 +40,8 @@ def note_rows(config):
 
 
 def record_row(config, request_id):
-    """The raw analysis_record row with its rowid, so a delete-and-insert would show."""
-    return rows(config, "SELECT rowid, * FROM analysis_record WHERE request_id = ?", request_id)
+    """The raw analysis_record row with its ctid and seq, so a delete-and-insert or an update would show."""
+    return rows(config, "SELECT ctid, * FROM analysis_record WHERE request_id = %s", request_id)
 
 
 # --- save, replace, remove ---------------------------------------------------------------------
@@ -99,26 +92,11 @@ def test_removing_a_note_keeps_no_author(client, config):
 
 def test_a_note_saved_before_sign_in_has_a_null_author(client, config):
     request_id = upload(client)
-    conn = sqlite3.connect(config.database_path)
-    try:
-        with conn:
-            conn.execute("INSERT INTO analysis_note (request_id, text, updated_at) VALUES (?, ?, ?)",
-                         (request_id, "old", "2026-10-30T09:20:11Z"))
-    finally:
-        conn.close()
+    rows(config, "INSERT INTO analysis_note (request_id, text, updated_at) VALUES (%s, %s, %s)",
+         request_id, "old", "2026-10-30T09:20:11Z")
     expected = {"text": "old", "updated_at": "2026-10-30T09:20:11Z", "updated_by": None}
     assert client.get(f"/api/analyses/{request_id}").json()["note"] == expected
     assert client.get("/api/analyses").json()["items"][0]["note"] == expected
-
-
-def test_a_database_from_before_the_author_column_is_migrated_at_start(config):
-    old_database(Path(config.database_path), SCHEMA, OLD_NOTE_SCHEMA, ACCOUNT_SCHEMA, SESSION_SCHEMA,
-                 SIGN_IN_FAILURE_SCHEMA)
-    with signed_in_client(create_app(config)) as client:  # the lifespan runs the migration
-        request_id, text, updated_at = OLD_NOTES[0]
-        details = client.get(f"/api/analyses/{request_id}").json()
-        assert details["note"] == {"text": text, "updated_at": updated_at, "updated_by": None}
-        assert put(client, request_id, "Replaced.").json()["note"]["updated_by"] == ANALYST
 
 
 def test_json_with_a_charset_parameter_is_accepted(client):
@@ -308,4 +286,20 @@ def test_storage_failure_is_500_and_logs_only_the_error_class(client, config, ca
     assert SECRET not in response.text
     assert "note not saved" in caplog.text and "RuntimeError" in caplog.text
     assert SECRET not in caplog.text
+    assert note_rows(config) == []
+
+
+def test_a_database_check_violation_never_logs_the_note_text(client, config, caplog, monkeypatch):
+    # Force a real CHECK violation in PostgreSQL (a bad time), with the note text in the same row: the
+    # driver's DETAIL line would quote the row; only the class name may reach the log (api/db.py).
+    request_id = upload(client)
+    repository = client.app.state.repository
+    original = repository.save_note
+    monkeypatch.setattr(repository, "save_note",
+                        lambda rid, text, updated_at, account_id: original(rid, text, "not-a-time", account_id))
+    caplog.set_level(logging.DEBUG)
+    response = put(client, request_id, SECRET)
+    assert response.status_code == 500
+    assert "error=IntegrityViolation" in caplog.text
+    assert SECRET not in caplog.text and SECRET not in response.text
     assert note_rows(config) == []

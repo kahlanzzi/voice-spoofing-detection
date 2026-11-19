@@ -14,7 +14,6 @@ import hashlib
 import logging
 import re
 import secrets
-import sqlite3
 from datetime import datetime, timedelta, timezone
 
 from starlette.concurrency import run_in_threadpool
@@ -23,6 +22,7 @@ from starlette.requests import cookie_parser
 from starlette.responses import JSONResponse, Response
 from starlette.types import ASGIApp, Receive, Scope, Send
 
+from api.db import STORE_ERRORS
 from api.errors import HTTP_ERRORS, INTERNAL, error_body
 from api.repository import AccountRepository
 
@@ -38,8 +38,7 @@ NOTE_PATH = re.compile(r"/api/analyses/[^/]+/note")
 STATE_KEY = "session"
 # (method, path) pairs open without a session (§4.8 "Which routes need a session").
 OPEN_ROUTES = frozenset({("POST", SESSION_PATH), ("GET", HEALTH_PATH)})
-# The account store cannot be read or written.
-STORE_ERRORS = (sqlite3.Error, OSError)
+# STORE_ERRORS (api/db.py): the account store cannot be read or written. Re-exported for the routes.
 
 # §6 code -> (HTTP status, fixed message).
 ERRORS = {

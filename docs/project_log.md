@@ -7799,6 +7799,185 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 207 — Track P PR P2a: PostgreSQL behind the repositories, non-superuser app role (2026-11-17)
+
+- **Owner:** Iheb Zemzemi (Part E). Branch `feat/stage17-p2a-postgresql` from `main` `4b8f8f5`, rebased
+  onto `main` `c319638` and `1a7b500` (PR #152) on 2026-11-18, then onto `17feaa3` (PR #154) on
+  2026-11-19 (never pushed). Entry number: 207 is the next free one on `main` (Entry 200 is the SRS
+  v4.1 draft, PR #151; Entries 201–204 are Track V V1c / D64, PR #152; Entry 205 is the D64 T4
+  re-freeze evidence, PR #153; Entry 206 is the SRS v4.1 adoption, PR #154).
+- **Why [doc]:** Execution Plan v3.0 §P2 (W1–W2); D53 (4), ADR 0015; SRS v4.1 NFR-16 (same sentence as
+  v4.0); SDD v2.0 §5.
+  P2 is split in two PRs: P2a (this one, the store) and P2b (the bounded process pool, D53 (2), planned
+  after P2a merges; it needs a value for K first, D53 (3) and SDD §3.4). No API or web change: §11 and
+  every response field unchanged.
+- **What changed:**
+  - **Driver:** `psycopg[binary]==3.3.9` and `psycopg-pool==3.3.3` (`requirements.txt`, `requirements-api.txt`;
+    installed and imported on Python 3.13 and 3.14). No ORM; the SQL stays hand-written.
+  - **`api/db.py`:** `Database` (one connection pool per process, opened by the lifespan or the admin
+    command, never at import), `transaction(isolation, read_only, timeout_s)`, `StoreError` /
+    `IntegrityViolation` carrying only the driver's exception class name (raised `from None`: a driver
+    message can quote a row), `STORE_ERRORS` (moved from `session_guard.py`), `app_password_from_env()`
+    (`VSD_DB_APP_PASSWORD`). `connect_readonly` stays, for the SQLite import only.
+  - **`api/schema/0001_initial.sql` + runner:** the five tables with equivalent keys and CHECKs (GLOB →
+    regex, `instr` → `strpos`, `lastrowid` → `RETURNING`); `confidence` DOUBLE PRECISION (PostgreSQL REAL
+    is 4 bytes); `is_mock`/`disabled` BOOLEAN; `account_id` identity; new internal
+    `analysis_record.seq` (identity) replaces SQLite's `rowid` as the same-second tie-break, never
+    returned. `create_schema()` applies unapplied files in one transaction under an advisory lock and
+    records them in `schema_migration`; it refuses a database with a version it does not know. The
+    SQLite `PRAGMA`/`ALTER` note-author migration is gone (the column is in file 1).
+  - **Transactions:** `history`/`stats` REPEATABLE READ READ ONLY; `set_password`, `set_disabled`,
+    `touch_session` lock the row (`FOR UPDATE`); `record_failure` and `clear_failures` take an advisory
+    lock per username HMAC (the row may not exist yet); `probe` is read-only with a statement timeout.
+  - **Config:** `database_path` replaced by `database_host`/`port`/`name`/`user`/`pool_max`/`timeout_s`
+    (`db`, 5432, `vsd`, `vsd_app`, 4, 5); no password in the file. The lifespan and `api.admin` refuse
+    to start without `VSD_DB_APP_PASSWORD` or a reachable database.
+  - **No superuser for the API (C4):** `deploy/postgres-init/10-app-role.sh` creates `vsd_app` (LOGIN
+    NOSUPERUSER NOCREATEDB NOCREATEROLE, password from `VSD_DB_APP_PASSWORD` through a psql variable)
+    and makes it owner of `vsd`, on the volume's first start only. `VSD_DB_PASSWORD` (superuser) goes
+    to `db` only.
+  - **One-time import:** `api/migrate_sqlite.py` (`docker compose exec api python -m api.migrate_sqlite
+    /app/var/api.sqlite`): opens the SQLite file read-only, refuses a non-empty store, copies all five
+    tables in one transaction (account IDs kept, identity continued, records in `rowid` order, a null
+    author for files older than the note author), checks row count and SHA-256 per table on both sides
+    before the commit, prints only counts and hashes. `vsd-var` stays mounted `:ro` (SDD §5.4).
+  - **Compose:** `db` = `postgres:18.7-trixie@sha256:2ea8630d…61bbc`, volume `vsd-pg`, C collation,
+    no published port, healthcheck over TCP, read-only root, `cap_drop: ALL` plus the five capabilities
+    the entrypoint needs, no-new-privileges, log flags that keep row values and client addresses out
+    (`log_error_verbosity=terse`, `log_min_error_statement=panic`, no statements, no parameters, no
+    connection lines). `api` depends on `db` healthy and gets `VSD_SIGNIN_HMAC_KEY` and
+    `VSD_DB_APP_PASSWORD` only. Profile `test`: `db-test` (same image, data in memory, `127.0.0.1:55432`,
+    trust). `.env.example` gains both passwords.
+  - **CI:** `checks` gets a PostgreSQL service container (same image, pinned) with
+    `REQUIRE_POSTGRES_TESTS=1`; `e2e` makes and masks the HMAC key and both database passwords per run
+    and dumps the `db` log on failure too.
+  - **Tests:** a fresh database per test (copy of a template migrated as `vsd_app`; the app under test
+    always connects as `vsd_app`); without a server the database tests skip and the run ends with
+    `WARNING: <n> database tests skipped: no PostgreSQL server (set REQUIRE_POSTGRES_TESTS=1 to fail
+    instead)`; with `REQUIRE_POSTGRES_TESTS=1` they fail.
+  - **Docs:** README (secrets step for all three values, filling only empty ones; Getting started steps 6–7;
+    clean-database and stop/reset text for `vsd-pg`; troubleshooting), `docs/setup.md` (new "Database
+    (PostgreSQL, D53)" with password change, SQLite import and database troubleshooting incl. the
+    one-off SQL for a `vsd-pg` made before `vsd_app`; local test commands; host run against `db-test`),
+    `docs/api_design.md` §4.8 sessions line, §7 and §9 keys, `docs/architecture.md`.
+- **Not changed:** API routes and responses, `web/`, e2e specs and harness (`web/e2e/`), nginx,
+  `api/routers/*` (`session.py` still imports `STORE_ERRORS` through `session_guard`), the analysis path
+  and its timeout (P2b), `docs/uml/deployment-runtime.puml`/`.svg` (they are the SDD v2.0 figure; see C2).
+- **Plan points (approved before coding):** C1 no Protocol type, the two classes and their signatures
+  stay the interface; C2 SDD v2.0 §5.1/§11.3 allow SQLite locally and speak of "the same suite as
+  SQLite": PostgreSQL is now used everywhere and the SQLite parity is the import tests; **propose an
+  SDD v2.1 note** (and its deployment figure) rather than editing the v2.0 pair; C3 `seq` added; C4
+  resolved by `vsd_app`; C5 (K before the load test) deferred to P2b; C6 the e2e harness is
+  `web/e2e/`; C7 DOUBLE PRECISION.
+- **Deviations from the plan [verified]:** the warning is printed from `pytest_unconfigure` so that
+  it is the last line (in `pytest_terminal_summary` pytest's own result line came after it); the
+  server version appears as a summary line (`database tests ran on PostgreSQL 18.7 …`), not a report
+  header (a header hook in `tests/api/conftest.py` would not load at start); the schema runner applies
+  all pending files in one transaction (not one per file); `pg_isready` does not log in, so the
+  healthcheck proves the first-start init finished (TCP opens only after it), not that the role
+  exists (seen in check 7c); the deployment diagram was left alone (above).
+- **Rebase [verified]:** `git range-diff 4b8f8f5..b7acd5f origin/main..HEAD` (pre-rebase tip `b7acd5f`):
+  commits 1, 3, 4 and 6 identical; 2 also drops the `tests/deploy` assertion on `database_path` (it
+  failed there in the per-commit run); 5 differs in context only (`tests/deploy/test_deploy_compose.py`
+  is the same blob, `08554c3`); 7 and 8 are docs rebased onto `main`'s text. Since `4b8f8f5`, `main`
+  changed no path under `api/`, `tests/api/`, `tests/deploy/`, `configs/`, `deploy/`, `web/`,
+  `docker-compose.yml`, `.github/` or the requirements; it did change `tests/evaluation/` and
+  `tests/tuning/` (V2 work, more collected tests).
+- **Second rebase [verified], onto `1a7b500` (PR #152):** `main` changed none of `api/`, `tests/api/`,
+  `tests/deploy/`, `configs/`, `deploy/`, `web/`, Compose, `.github/`, the requirements or
+  `.env.example` since `c319638` (`git diff --stat c319638 origin/main -- …` empty); #152 changed
+  `src/augmentation/`, `src/training/`, `src/tuning/`, their tests and docs. Per commit (`git rebase -x`,
+  `tests/api` + `tests/deploy`): 512 (commit 1, SQLite), 538, 540, 551, 559, 562, 562, 562 passed; every
+  PostgreSQL run printed `database tests ran on PostgreSQL 18.7`, none the skip WARNING. The counts
+  that depend on `main` were measured again after the third rebase (table); everything else below was not
+  re-run, because none of its paths changed.
+- **Third rebase [verified], onto `17feaa3` (PRs #153, #154):** `main` changed none of `api/`,
+  `tests/api/`, `tests/deploy/`, `configs/`, `deploy/`, `web/`, Compose, `.github/`, the requirements or
+  `.env.example` since `1a7b500` (`git diff --stat 1a7b500 origin/main -- …` empty); #153 and #154
+  changed D64 evidence, `src/augmentation/selection_set_build.py`, its tests, `AGENTS.md` (SRS v4.1 is
+  now the current requirements; v4.1 NFR-16 keeps v4.0's PostgreSQL sentence and adds the D63
+  migration) and docs. Per commit (`git rebase -x`, `tests/api` + `tests/deploy`): 512 (commit 1,
+  SQLite), 538, 540, 551, 559, 562, 562, 562 passed; every PostgreSQL run printed `database tests ran
+  on PostgreSQL 18.7`, none the skip WARNING. The table holds the counts measured after this rebase;
+  times are under machine load (load average 4–5) and not comparable with the earlier runs.
+
+  | Claim | Command | Where | Output |
+  |---|---|---|---|
+  | Collected | `pytest --collect-only -q \| tail -1` | final HEAD; `main` `17feaa3` (worktree) | 1784; 1734 |
+  | Collected, `tests/api` | the same, on `tests/api` | final HEAD; `main` `17feaa3` | 505; 466 (unchanged since `c319638`) |
+  | Collected, `tests/deploy` | the same, on `tests/deploy` | final HEAD; `main` `17feaa3` | 57; 46 (unchanged since `c319638`) |
+  | Full suite | `REQUIRE_POSTGRES_TESTS=1 VSD_TEST_DATABASE_URL=… pytest -q -rs` | final HEAD (PostgreSQL 18.7) | 1765 passed, 42 skipped in 13:11; 0 failed; no WARNING |
+  | Full suite | `pytest -q -rs` (SQLite, as before) | `main` `17feaa3` (worktree) | 1715 passed, 42 skipped in 9:12 |
+  | Skips | `-rs`, summed per reason | both | 41 Torch not installed, 1 wandb not installed; none needs a database |
+  | Run vs collected | passed + test-level skips | both | 1784 = 1765 + 19; 1734 = 1715 + 19 (the other 23 skips are whole Torch modules) |
+- **Checks re-run after the first rebase [verified, local Linux, Python 3.14 venv, no torch; PostgreSQL
+  18.7 in `db-test`], at `e287e12`** (on `c319638`; the later amends change docs only; the counts that
+  depend on `main` are superseded by the table above):
+  - Collected (`pytest --collect-only -q | tail -1`): 1704 on `main` `c319638` (worktree) → 1754 here
+    (`tests/api` 466 → 505, `tests/deploy` 46 → 57).
+  - Full suite, `REQUIRE_POSTGRES_TESTS=1 VSD_TEST_DATABASE_URL=… pytest -q`: 1735 passed, 42 skipped,
+    0 failed in 4:20 (the 2 Entry 191 failures were fixed on `main` by #147). `main` `c319638` (worktree,
+    SQLite as before): 1685 passed, 42 skipped. Skips (`-rs`), the same on both: 41 Torch not installed,
+    1 wandb not installed; none needs a database. 23 of the 42 skips are whole modules skipped at
+    collection (Torch), so passed + skipped is 23 above the collected count on both (1777 vs 1754, 1727
+    vs 1704; JUnit XML compared with `--collect-only`).
+  - Per commit after the rebase (`git rebase -x`, `tests/api` + `tests/deploy`): commit 1 512 passed
+    (SQLite, before the port); 2 538; 3 540; 4 551; 5 559; 6, 7 and 8 562; each PostgreSQL run printed
+    `database tests ran on PostgreSQL 18.7`, none the skip WARNING (commit 2 re-run in a worktree at
+    `3dd63f8`: 538 passed in 57.14 s, with that line).
+  - `tests/api`: 505 passed in 59.66 s; `tests/deploy`: 57 passed in 1.18 s; `tests/web` and
+    `tests/governance`: 111 passed.
+  - Planted failures, each reverted (`git diff` empty after): (a) SQLite's `instr` back in `_where` → 6
+    history tests fail with `StoreError: UndefinedFunction` (the SQL runs on PostgreSQL); (b)
+    `REQUIRE_POSTGRES_TESTS=1` with port 55433 → 31 errors, no skip, no WARNING line (also automated in
+    `test_api_db_guard.py`); (c) the test app connecting as the superuser → 2 failed
+    (`test_the_app_connects_as_vsd_app_which_is_not_a_superuser`, `test_the_app_owns_its_tables`).
+  - Stack (images rebuilt from this tree: identical, no container recreated): `vsd_app`
+    `rolsuper, rolcreatedb, rolcreaterole` = `f|f|f`, also on a new `vsd-pg` made by the init script of
+    this tree (separate Compose project); owner of `vsd` and of 6 of 6 tables; collation C;
+    `VSD_DB_PASSWORD=` lines in the api environment: 0; either password in the `db` log: 0; either
+    variable empty → `docker compose config` refuses with the `:?` message (exit 1).
+  - Planted CHECK violation as `vsd_app` with a marker note text: the client sees the `DETAIL` line,
+    the `db` log has one `ERROR` line and 0 occurrences of the marker.
+  - Import on a copy of the real `vsd-var` file written by `main`'s API (separate Compose project, api
+    image built from this tree): 7 accounts, 87 records, 0 notes, 0 sessions, 14 failure rows = 108 rows
+    imported and verified (exit 0); a second run refused, "not empty (108 rows)" (exit 1); file SHA-256
+    unchanged (`e293b9f0…`). The project's own `vsd-var` was never mounted writable or changed.
+  - "Empty the database" (`docs/setup.md`), in a separate Compose project: after `down` and
+    `docker volume rm <project>_vsd-pg`, `vsd-var` is still there; `up` gives an empty `vsd-pg` (a marker
+    table gone), `vsd_app` `f|f|f` again, schema 1 applied, `api` healthy.
+- **Checks run before the rebase at `b7acd5f`, not re-run; `main` changed none of the paths above since
+  (Rebase, above):**
+  - Pins install on Python 3.13.2 (fresh venv) and 3.14.6, `pq` = binary; `tests/api` + `tests/deploy` on
+    3.13.2: 562 passed (1 Starlette/httpx deprecation warning from the test client, not this PR).
+  - e2e (Chromium, `npm run test:e2e`): 76 passed; sign-in POSTs 12 (planned 12), 429: 1; secret scan
+    0 matches; History +9 rows (9 in the new store).
+  - 7c: a `vsd-pg` made without the init (tables owned by `postgres`, no `vsd_app`) + the documented
+    one-off SQL → `api` healthy; account created, sign-in 200, analysis 201 with the 8 §11 fields.
+  - Host run of the API against `db-test` as documented: startup complete, `/api/health` ok.
+  - Fresh clone (#109) of the branch in a folder with another name: README step 2 (the loop) gives
+    `3`, `up -d --build --wait` → db, api healthy, `/api/health` ok; `api.admin create-account
+    analyst01`; e2e 76 passed (POSTs 12, 429: 1, scan 0); Getting started steps 6–7 → 1656 passed,
+    28 skipped, 2 failed (the Entry 191 pair, then still open on `main` `4b8f8f5`); `down -v` removed
+    both of its volumes (a throwaway clone). `npx playwright install chromium` was not rerun (browsers
+    already installed).
+  - Full suite at `b7acd5f`: 1656 passed, 28 skipped, the same 2 failed; `main` `4b8f8f5`: 1606 passed,
+    28 skipped, the same 2 failed; collected 1614 → 1686.
+- **Test time:** `tests/api` 59.66 s here against 13.66 s (466 passed) on `main` `c319638`, each run alone on
+  this machine. Before the rebase (`b7acd5f` / `4b8f8f5`): the per-test database costs about 50 ms
+  (create 25 ms, pool 12 ms, drop 5 ms); full suite back to back 3:35 and 3:29 against 3:20 on `main`;
+  two other full runs took 10:45 and 10:42 under machine load not identified (the e2e run had just
+  finished); the durations of the slowest tests (`test_stage11_report.py`, 18–35 s each) are the same in
+  fast and slow runs, so the database fixtures are not the cause [hypothesis for the slow runs].
+- **Open [hypothesis]:** none on correctness. Operational: the least-privilege role is done, the backup
+  routine is not (Open items).
+- **AI assistance:** Claude Code (Claude Opus 5.5) planned (plan approved by Iheb with changes C4, the
+  skip warning and two open items) and wrote the code, tests and docs; team review required before
+  acceptance (D26).
+- **Gate:** **WAITING FOR APPROVAL.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -8147,12 +8326,19 @@ pointers and synchronized PDF are reviewed.
 - [ ] Threat model §10.1 / §11 item 5: update the "unmitigated until access control is decided" wording once sign-in is implemented (Entry 121).
 - [ ] HTTPS outside `localhost`: the `Secure` cookie works over plain HTTP only on `localhost`; any other host needs TLS terminated in nginx first. Documented (`api_design.md` §2, `docs/setup.md`), not built (Entry 126).
 - [x] Stage 18: replace the nginx `/` placeholder in `deploy/nginx.conf` with the React build, keeping the routing and no-IP tests green (Entry 126). (merged in PR #90, `d352bad`; Entry 129)
-- [ ] Integration: before the real ModelBundle is served, the store starts empty (a fresh database file) or mock results and their notes are removed (`analysis_note` has a foreign key to `analysis_record`), so the figures never mix the two (§4.7 G6; Entry 120).
+- [ ] Integration: before the real ModelBundle is served, the store starts empty (a fresh database: stop the stack and remove only the PostgreSQL volume, `docker volume rm <project>_vsd-pg` with the name from `docker compose config`, as in `docs/setup.md` "Empty the database"; or a new `vsd-pg`) or mock results and their notes are removed (`analysis_note` has a foreign key to `analysis_record`), so the figures never mix the two (§4.7 G6; Entry 120).
 - [ ] Routes other than `POST /api/analyses` and `PUT …/note` answer a Content-Length above `max_size_bytes` + 64 KiB with Starlette's plain-text 413, not the §6 shape (GET-only today) (Entry 119).
 - [ ] Shared helpers (utc_now_iso, REQUEST_ID, invalid_request) live in routers and are imported across routers; move to a shared module in a later refactor PR (Entry 119).
 - [ ] Integration: limit concurrent analyses; a timed-out analyzer thread keeps running (cannot be killed), so repeated timeouts with the real model could pile up (Entry 116). The container's `/tmp` tmpfs is sized for `x-vsd-concurrent-uploads: 4` (2 × body limit each); the limit should match that number (Entry 125).
 - [x] uvicorn's default access log prints the client IP; §1/§7 say no IP is stored. Decide for Stage 19 (e.g. `--no-access-log` or a log filter) (Entry 116). (`--no-access-log --no-proxy-headers` in the image and the documented local command; Entry 125)
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
+- [ ] P2a review: PostgreSQL store, `vsd_app` role, SQLite import, CI service container (Entry 207).
+- [ ] Production database backup: pg_dump routine and a tested restore before production goes live (P3, D54).
+- [ ] Teammates' existing .env files need VSD_DB_PASSWORD and VSD_DB_APP_PASSWORD after P2a; announce in the PR.
+- [ ] Remove the read-only `vsd-var` mount (and the volume) once the SQLite rollback window ends; until then `docker compose exec api python -m api.migrate_sqlite /app/var/api.sqlite` imports it once (SDD v2.0 §5.4; Entry 207).
+- [ ] SDD v2.1 note: PostgreSQL is used in every environment, including local and tests (SDD v2.0 §5.1, §11.3 speak of a local SQLite adapter and "the same suite as SQLite"), and the deployment figure's "SQLite local compatibility" store; propose with the next SDD revision (Entry 207).
+- [ ] P2b (D53 (2)): bounded process pool, 503 + `Retry-After` when full, kill on timeout; needs a value for K before the P4 load test (D53 (3), SDD §3.4); plan after P2a merges (Entry 207).
+- [ ] api_design §7 still says SQLite for the D63 migration target; correct it in the D63 implementation PR (0002 schema file)
 
 **Stage 18 web (Part E, Entries 127–137)**
 - [x] PR 1a: `web/` scaffold, theme storage, CI `web` job, pytest pin guards (merged in PR #88, `86cc77d`; Entry 127).
@@ -8255,7 +8441,7 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-18 (Entries 203-206)
+## Current status — updated 2026-11-19 (Entries 203-207)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -8301,7 +8487,11 @@ No DEEP-VOICE audio was opened or scored, and no external-run claim was created 
 **Application status.** The React Docker MVP still displays mock analyzer results. F4-to-API
 integration is Iheb’s P1 work; the mock verdict must not be presented as a real model result.
 D65 (Entry 191, approved in Entry 193) names Direction D and `docs/design/HANDOFF-v2.md` as the D55 target design;
-the shipped UI is unchanged until the D55 build PRs.
+the shipped UI is unchanged until the D55 build PRs. P2a (Entry 207, waiting for review) moves the store to
+PostgreSQL behind the same repositories (D53 (4)): `db` service pinned by digest, the API as the
+non-superuser `vsd_app`, a one-time import of the old SQLite store, the API tests on PostgreSQL locally
+and in CI; no API or web change. Every `.env` needs `VSD_DB_PASSWORD` and `VSD_DB_APP_PASSWORD`. P2b
+(the process pool) follows after P2a merges.
 
 **Track V V1c implementation (Entry 185):** on `feat/stageV1-selection-set-build`, the pure frozen
 recipe, hash-verifying selection-set builder, strict training-half resource-cache builder/loader,

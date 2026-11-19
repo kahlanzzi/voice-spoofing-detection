@@ -23,7 +23,10 @@ cd voice-spoofing-detection
 
 # 3. Environment variables (placeholders only; never commit .env)
 cp .env.example .env
-# then edit .env: KAGGLE_API_TOKEN, HF_TOKEN, WANDB_API_KEY
+for name in VSD_SIGNIN_HMAC_KEY VSD_DB_PASSWORD VSD_DB_APP_PASSWORD; do   # the stack's three secrets
+  sed -i.bak "s/^$name=$/$name=$(openssl rand -hex 32)/" .env && rm .env.bak
+done
+# then edit .env: KAGGLE_API_TOKEN, HF_TOKEN, WANDB_API_KEY (datasets and W&B only)
 
 # 4. Virtual environment + dependencies (exact pins in requirements.txt)
 python -m venv .venv
@@ -31,9 +34,14 @@ source .venv/bin/activate          # Git Bash on Windows: source .venv/Scripts/a
                                    # PowerShell: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 
-# 5. Run the tests (synthetic data only; no dataset needed)
-pytest -q
+# 5. Start the test database, then run the tests (synthetic data only; no dataset needed)
+docker compose --profile test up -d db-test
+REQUIRE_POSTGRES_TESTS=1 VSD_TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:55432/postgres .venv/bin/python -m pytest -q
 ```
+
+Without the test database the API tests are skipped and the run ends with
+`WARNING: <n> database tests skipped: no PostgreSQL server (set REQUIRE_POSTGRES_TESTS=1 to fail instead)`;
+see [Tests and CI](#tests-and-ci).
 
 ## CNN dependencies (Stage 8)
 
@@ -52,29 +60,30 @@ python -m pip install -r requirements-cnn.txt
 ## API accounts (Stage 17, D47)
 
 Analyst accounts exist only through the admin command (`docs/api_design.md` §4.8). It uses the
-database and password limits of `configs/api.yaml` (or `$VSD_API_CONFIG`). Passwords are typed twice
-at a hidden prompt, never on the command line.
+database and password limits of `configs/api.yaml` (or `$VSD_API_CONFIG`) and connects as the API's
+role with `VSD_DB_APP_PASSWORD`. Passwords are typed twice at a hidden prompt, never on the command
+line. Run it in the `api` container, which has the config, the key and the database password:
 
 ```bash
-python -m api.admin create-account analyst01   # also: set-password, disable, enable, unlock
+docker compose exec api python -m api.admin create-account analyst01   # also: set-password, disable, enable, unlock
 ```
 
-`set-password` and `disable` end all of the account's sessions. `unlock` needs the sign-in key
-`VSD_SIGNIN_HMAC_KEY` (make it with the command in `.env.example` and put it in `.env`); load `.env`
-into the shell first:
-
-```bash
-set -a; . ./.env; set +a
-python -m api.admin unlock analyst01
-```
+`set-password` and `disable` end all of the account's sessions. `unlock` also needs the sign-in key
+`VSD_SIGNIN_HMAC_KEY`, which the container has. Outside Compose, load `.env` into the shell first
+(`set -a; . ./.env; set +a`) and point `VSD_API_CONFIG` at a reachable database, as in the next section.
 
 ## Running the API (Stage 17)
 
-The API refuses to start without `VSD_SIGNIN_HMAC_KEY`. Run it with `.env` loaded (`python-dotenv`,
-pinned in `requirements.txt`):
+The API refuses to start without `VSD_SIGNIN_HMAC_KEY`, `VSD_DB_APP_PASSWORD` and a reachable
+PostgreSQL database. Compose (next section) is the normal way. To run it on the host instead, use the
+test database with a role and database of its own (data in memory, gone when `db-test` stops) and a
+config copy that points at it:
 
 ```bash
-python -m uvicorn api.main:app --port 8001 --env-file .env --no-access-log --log-config configs/api_logging.yaml
+docker compose --profile test up -d db-test
+docker compose exec -T db-test psql -U postgres -c "CREATE ROLE vsd_app LOGIN" -c "CREATE DATABASE vsd OWNER vsd_app"   # once per db-test start; the first fails harmlessly if the tests made the role
+sed -e 's/^database_host: .*/database_host: 127.0.0.1/' -e 's/^database_port: .*/database_port: 55432/' configs/api.yaml > /tmp/vsd-api-local.yaml
+VSD_API_CONFIG=/tmp/vsd-api-local.yaml python -m uvicorn api.main:app --port 8001 --env-file .env --no-access-log --log-config configs/api_logging.yaml
 ```
 
 `--no-access-log` keeps client IPs out of the log (§1, §7); `configs/api_logging.yaml` shows the
@@ -99,21 +108,22 @@ build downloads the npm packages (a few minutes). **After editing `deploy/nginx.
 ```bash
 docker compose build                  # both images
 docker compose up -d
-docker compose ps                     # api: (healthy), from GET /api/health; web starts after it
+docker compose ps                     # db: (healthy); api: (healthy), from GET /api/health; web starts after it
 docker compose exec web nginx -t      # config syntax check
 curl -s http://localhost:8001/api/health   # {"ok":true}, through nginx
 docker compose logs api               # INFO lines of the api logger; no request lines, no IPs
 docker compose logs web               # time, method, path, status, bytes, duration; no IPs
 docker compose exec api python -m api.admin create-account analyst01   # also unlock, disable, ...
-docker compose down                   # keeps the store; down -v deletes it
+docker compose down                   # keeps the store; to empty it, see "Empty the database" below
 ```
 
-- **Key:** Compose reads `VSD_SIGNIN_HMAC_KEY` from `.env` and passes only that variable to the
-  container (not `env_file`: `.env` also holds the Kaggle, HF and W&B tokens). Empty or unset, Compose
-  refuses to start. `docker compose config` prints the key: do not paste its output anywhere.
-- **Store:** SQLite at `/app/var/api.sqlite` on the named volume `vsd-var` (`database_path:
-  var/api.sqlite` resolves there); it survives `down`/`up`. The tables and the note-author migration
-  run at every start.
+- **Secrets:** Compose reads `VSD_SIGNIN_HMAC_KEY` and `VSD_DB_APP_PASSWORD` from `.env` and passes only
+  those to the `api` container, and `VSD_DB_PASSWORD` and `VSD_DB_APP_PASSWORD` only to `db` (not
+  `env_file`: `.env` also holds the Kaggle, HF and W&B tokens). Empty or unset, Compose refuses to start,
+  for every command, `--profile test` included. `docker compose config` prints them: do not paste its
+  output anywhere.
+- **Store:** PostgreSQL, the `db` service, on the named volume `vsd-pg`; it survives `down`/`up`. See
+  [Database](#database-postgresql-d53).
 - **Uploads:** `temp_dir: null`, so they go to `/tmp`, a 192 MiB tmpfs: in memory, never on disk, gone
   at restart. Each upload uses `/tmp` twice (Starlette's spooled part, then the API's temp copy), so
   192 MiB holds `x-vsd-concurrent-uploads: 4` uploads at the `configs/api.yaml` limit; the deploy tests
@@ -124,6 +134,122 @@ docker compose down                   # keeps the store; down -v deletes it
   stdin (getpass falls back to stdin without a TTY and does not echo it); never put it in an argument.
 - The root filesystem is read-only, all capabilities are dropped, and FastAPI's `/docs` is reachable
   only inside the container.
+
+## Database (PostgreSQL, D53)
+
+The API stores accounts, sessions, sign-in lockout counts, analyses and notes in PostgreSQL 18
+(D53 (4)), behind the same repository classes as before (`api/repository.py`); the API contract did
+not change.
+
+- **Service:** `db`, image `postgres:18.7-trixie` pinned by digest (the same pin as CI's service
+  container), data on the named volume `vsd-pg`. It publishes no port: only the `api` container reaches
+  it. The `api` starts after `db` is healthy. Read-only root filesystem, capabilities dropped but the
+  five the image's entrypoint needs to set up its data folder.
+- **Two passwords, two roles:** `VSD_DB_PASSWORD` is the superuser `postgres`; only the image's first
+  start uses it, and the `api` container never receives it. On that first start
+  `deploy/postgres-init/10-app-role.sh` creates `vsd_app` with `VSD_DB_APP_PASSWORD`: it can log in and
+  owns the `vsd` database, but is not a superuser and cannot create databases or roles. The API and
+  `api.admin` connect only as `vsd_app` (`database_user` in `configs/api.yaml`).
+- **Only `VSD_DB_APP_PASSWORD` matters to the API.** Both passwords are read only when `vsd-pg` is
+  created. Changing `VSD_DB_APP_PASSWORD` in `.env` afterwards locks the API out until the database role
+  has the same value (procedure below). Changing `VSD_DB_PASSWORD` afterwards does not affect the API:
+  the superuser keeps its old password, so `.env` no longer matches it for a password login over TCP.
+  The `psql` commands on this page run inside the `db` container over its local socket, which the image
+  trusts without a password, so they work either way. To change one, change it in the database first,
+  then in `.env`, then recreate the containers:
+
+  ```bash
+  set -a; . ./.env; set +a                                 # the current values
+  NEW=$(openssl rand -hex 32)
+  docker compose exec -T db psql -U postgres -d vsd -v ON_ERROR_STOP=1 -v pw="$NEW" -c "ALTER ROLE vsd_app PASSWORD :'pw'"
+  sed -i.bak "s/^VSD_DB_APP_PASSWORD=.*/VSD_DB_APP_PASSWORD=$NEW/" .env && rm .env.bak
+  docker compose up -d --wait                              # the api restarts with the new value
+  ```
+
+  For the superuser, use `ALTER ROLE postgres` and `VSD_DB_PASSWORD` the same way.
+- **Tables:** `api/schema/0001_initial.sql`, applied by the API at every start (and by every
+  `api.admin` command) and recorded in `schema_migration`; each file is applied once, in one
+  transaction. A schema change is a new numbered file, never an edit of a merged one.
+- **Collation C:** the database is created with `--locale=C`, so text order is byte order; the stored
+  UTC times rely on it. The tests check it.
+- **Privacy in the database log:** the `db` command sets `log_statement=none`,
+  `log_min_error_statement=panic`, `log_error_verbosity=terse`, no parameters, no connection lines and
+  no client address. A refused write logs one `ERROR` line naming the constraint, never the row: no
+  note text, password hash or session hash. The API itself logs only the error's class name.
+- **Backups:** none yet; the production backup routine is an open item (P3, D54).
+
+### Import the SQLite store (once)
+
+Before PostgreSQL, the API kept everything in one SQLite file on the `vsd-var` volume. That volume is
+still mounted, read-only, at `/app/var` in the `api` container, so its data can be imported once into
+an **empty** PostgreSQL store:
+
+```bash
+docker compose up -d --wait
+docker compose exec api python -m api.migrate_sqlite /app/var/api.sqlite
+```
+
+It copies the five tables in one transaction, keeps account IDs and the History order, then checks
+every table on both sides (row count and SHA-256) before committing; it prints only counts and hashes.
+It refuses a store that already has rows (the e2e tests add some, so import first) and never writes the
+SQLite file. For a demo, a clean start is usually better: the old data is mock results
+([Clean database for a demo](../README.md#clean-database-for-a-demo)). `vsd-var` stays mounted
+read-only until the rollback window ends (SDD v2.0 §5.4; Open items).
+
+### Empty the database (keep `vsd-var`)
+
+To start PostgreSQL empty (dev data, or the clean start before the real ModelBundle is served), stop
+the stack and remove only the PostgreSQL volume. Do not use `docker compose down -v` for this: it also
+deletes `vsd-var`, the read-only SQLite store kept until the rollback window ends.
+
+```bash
+docker compose down                                # stop the stack; both volumes are kept
+docker compose config | grep -m1 '_vsd-pg$'        # the volume's real name: <project>_vsd-pg
+docker volume rm voice-spoofing-detection_vsd-pg   # the name printed above
+docker compose up -d --wait                        # a new vsd-pg, with the passwords now in .env
+docker compose exec api python -m api.admin create-account analyst01
+```
+
+`docker compose config --volumes` lists the volume only as `vsd-pg`; Docker puts the Compose project
+name in front, which is the folder name by default (README, step 1). Instead of removing it, you can
+also point the stack at a new `vsd-pg` (another folder name, or `docker compose -p <name>`).
+
+### Database troubleshooting
+
+- **Compose stops with `set VSD_DB_PASSWORD in .env` or `set VSD_DB_APP_PASSWORD in .env`:** run step 2
+  of the README's install. A `.env` from before PostgreSQL lacks both lines; that step adds them.
+- **`api` never becomes healthy; `docker compose logs api` says the database is not reachable
+  (`StoreError` or `OperationalError`):** `.env` holds a different `VSD_DB_APP_PASSWORD` than when
+  `vsd-pg` was created (`VSD_DB_PASSWORD` does not affect the API). Put the old value back, or change it
+  as above. For dev data,
+  [empty the database](#empty-the-database-keep-vsd-var) instead: the new `vsd-pg` takes the values in
+  `.env`.
+- **A `vsd-pg` volume created before the `vsd_app` role existed** (an early build of this branch, or
+  a volume made by hand): the init script never ran, so there is no `vsd_app` and the tables belong to
+  `postgres`. With dev data, [empty the database](#empty-the-database-keep-vsd-var). To keep the data,
+  run this once, then `docker compose up -d --wait`:
+
+  ```bash
+  set -a; . ./.env; set +a
+  docker compose up -d db
+  docker compose exec -T db psql -U postgres -d vsd -v ON_ERROR_STOP=1 -v app_pw="$VSD_DB_APP_PASSWORD" <<'SQL'
+  CREATE ROLE vsd_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE PASSWORD :'app_pw';
+  ALTER DATABASE vsd OWNER TO vsd_app;
+  DO $$
+  DECLARE t record;
+  BEGIN
+    FOR t IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' LOOP
+      EXECUTE format('ALTER TABLE public.%I OWNER TO vsd_app', t.tablename);
+    END LOOP;
+  END $$;
+  SQL
+  ```
+
+- **`db` exits with "database files are incompatible with server":** the volume was made by another
+  PostgreSQL major version. Dump it with the old image (`pg_dump`) and restore it into a new volume, or
+  [empty the database](#empty-the-database-keep-vsd-var) for dev data.
+- **The API tests are all skipped:** the test database is not running or not at
+  `VSD_TEST_DATABASE_URL`; see [Tests and CI](#tests-and-ci).
 
 ### nginx (the `web` service)
 
@@ -225,7 +351,7 @@ API (the Compose setup above). Never the Vite dev server: its proxy rewrites `Or
 exactly the Origin and cookie bugs these tests exist to catch. Chromium runs in CI; Firefox is a local run.
 
 ```bash
-docker compose up -d                       # the stack, with VSD_SIGNIN_HMAC_KEY in .env
+docker compose up -d                       # the stack, with the three secrets in .env
 cd web
 npx playwright install chromium firefox    # once; Linux system libraries: sudo npx playwright install-deps
 npm run test:e2e                           # Chromium
@@ -268,15 +394,33 @@ npm run test:e2e:firefox                   # Firefox
 - **Secret scan:** after each run, every output file is scanned for the password, the saved cookie value
   and any `vsd_session=<id>`; Playwright's console output is redacted line by line. A hit fails the run
   with exit code 3 and names the file, never the value.
-- **CI** (`e2e` job): a per-run key from `openssl rand -hex 32` (masked), `docker compose up --wait`,
+- **CI** (`e2e` job): a per-run sign-in key and both database passwords from `openssl rand -hex 32`
+  (masked), `docker compose up --wait`,
   Chromium only, `npm run test:e2e`. The JSON report is uploaded only when the job fails and the scan is
   clean; `docker compose down -v` always runs.
 
 ## Tests and CI
 
-- `pytest -q` from the project venv before every PR; paste the real output in the PR.
+- `pytest -q` from the project venv before every PR, with the test database; paste the real output in
+  the PR:
+
+  ```bash
+  docker compose --profile test up -d db-test
+  REQUIRE_POSTGRES_TESTS=1 VSD_TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:55432/postgres .venv/bin/python -m pytest -q
+  ```
+
+- **Test database:** `db-test` (Compose profile `test`) is the same PostgreSQL image with its data in
+  memory, on `127.0.0.1:55432` only, with no password (trust): never put real data in it. Compose still
+  needs the `.env` secrets to read the file. The tests use it as a superuser only to set up: they create
+  the `vsd_app` role and one database per test, and the API under test always connects as `vsd_app`.
+  `docker compose --profile test stop db-test` stops it.
+- **Without it,** the database tests are skipped and the run ends with
+  `WARNING: <n> database tests skipped: no PostgreSQL server (set REQUIRE_POSTGRES_TESTS=1 to fail instead)`.
+  A run that reached it prints `database tests ran on PostgreSQL 18.7 ...` instead. With
+  `REQUIRE_POSTGRES_TESTS=1` an unreachable server fails the run.
 - GitHub Actions (`.github/workflows/ci.yml`) runs `pytest -q` on Python 3.13 for every PR and every
-  push to `main`, then prints the docs reminder. It never downloads datasets.
+  push to `main`, with a PostgreSQL service container (same image) and `REQUIRE_POSTGRES_TESTS=1`, then
+  prints the docs reminder. It never downloads datasets.
 
 ## Troubleshooting
 

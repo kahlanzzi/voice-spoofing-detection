@@ -1,6 +1,5 @@
 import dataclasses
 import re
-from pathlib import Path
 
 import pytest
 
@@ -8,7 +7,8 @@ from api.analyzer import AnalyzerInfo
 from api.main import create_app
 from api.repository import AnalysisRepository
 from api.routers.status import derive_state
-from tests.api.conftest import signed_in_client
+from tests.api._pg import query, tables
+from tests.api.conftest import admin_connect, app_database, signed_in_client
 
 
 def test_status_returns_the_section_4_1_shape(client, config):
@@ -45,14 +45,14 @@ BUNDLE_INFO = AnalyzerInfo(ready=True, model_version="cnn-v3", profile_version="
                            mock=False)
 
 
-def status_of(config, analyzer=None, probe_path=None):
-    """GET /api/status, signed in. The session lives in the started database; with probe_path, the
-    history_and_stats check reads that file instead, so a broken history store can be tested while the
+def status_of(config, analyzer=None, probe_db=None):
+    """GET /api/status, signed in. The session lives in the started database; with probe_db (a Database),
+    the history_and_stats check reads that one instead, so a broken history store can be tested while the
     session check still works (§4.8: a session check that cannot read the store is a 500)."""
     app = create_app(config, analyzer=analyzer)
     with signed_in_client(app) as client:
-        if probe_path is not None:
-            app.state.repository = AnalysisRepository(Path(probe_path))
+        if probe_db is not None:
+            app.state.repository = AnalysisRepository(probe_db)
         return client.get("/api/status")
 
 
@@ -87,45 +87,42 @@ def assert_database_unavailable(response):
     assert body["versions"]["model_version"] == "mock"  # still the full §4.1 body
 
 
-def test_status_reports_a_missing_database_and_does_not_create_it(config, tmp_path):
-    db_path = tmp_path / "missing" / "api.sqlite"  # never made
-    assert_database_unavailable(status_of(config, probe_path=db_path))
-    assert not db_path.exists()
-    assert not db_path.parent.exists()
+def test_status_reports_a_missing_database_and_does_not_create_it(config):
+    missing = app_database("no_such_database", timeout_s=1)  # never opened, never made
+    assert_database_unavailable(status_of(config, probe_db=missing))
+    with admin_connect() as admin:
+        assert admin.execute("SELECT 1 FROM pg_database WHERE datname = 'no_such_database'").fetchone() is None
 
 
-def test_status_reports_a_file_that_is_not_a_database(config, tmp_path):
-    garbage = tmp_path / "garbage.sqlite"
-    garbage.write_bytes(b"not a database" * 100)
-    assert_database_unavailable(status_of(config, probe_path=garbage))
-    assert garbage.read_bytes() == b"not a database" * 100  # the probe never writes
+def test_status_reports_a_database_without_the_tables_and_creates_none(config, empty_db):
+    assert_database_unavailable(status_of(config, probe_db=empty_db))
+    assert tables(empty_db) == []  # the probe never writes
 
 
-def test_status_reports_an_unreadable_database_after_start(config, tmp_path):
-    history = AnalysisRepository(tmp_path / "history.sqlite")
-    history.create_schema()
+def test_status_reports_an_unreadable_database_after_start(config, empty_db):
+    AnalysisRepository(empty_db).create_schema()
     app = create_app(config)
     with signed_in_client(app) as client:
-        app.state.repository = history
+        app.state.repository = AnalysisRepository(empty_db)
         assert client.get("/api/status").json()["checks"]["history_and_stats"] == "available"
-        history.path.unlink()  # database gone while the service runs
+        query(empty_db, "DROP TABLE analysis_record CASCADE")  # table gone while the service runs
         assert_database_unavailable(client.get("/api/status"))
 
 
 def test_status_is_500_when_the_session_store_is_gone(config):
-    # One SQLite file holds the sessions too: the session check fails first, before the status body (§4.8).
+    # One database holds the sessions too: the session check fails first, before the status body (§4.8).
     app = create_app(config)
     with signed_in_client(app) as client:
-        app.state.repository.path.unlink()
+        app.state.database.close()
         response = client.get("/api/status")
     assert response.status_code == 500
     assert response.json() == {"error": {"code": "internal_error", "message": "An unexpected error occurred.",
                                          "request_id": None}}
 
 
-def test_status_is_unavailable_when_both_checks_fail(config, tmp_path):
+def test_status_is_unavailable_when_both_checks_fail(config):
     info = dataclasses.replace(BUNDLE_INFO, ready=False)
-    body = status_of(config, InfoOnly(info), probe_path=tmp_path / "missing.sqlite").json()
+    body = status_of(config, InfoOnly(info), probe_db=app_database("no_such_database", timeout_s=1)).json()
     assert body["state"] == "unavailable"
     assert body["checks"] == {"analysis": "unavailable", "history_and_stats": "unavailable"}
 

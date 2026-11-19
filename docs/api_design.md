@@ -317,8 +317,9 @@ Response `200`:
   total is 0. `awaiting_note.recent` is newest first, ordered as in History.
 - Stats and History count every stored result, mock or real; `is_mock` is not a filter.
   `monitoring_marker.mock` describes the analyzer now loaded. Before the real ModelBundle is served, the
-  store starts empty (a fresh database file) or mock results and their notes are removed (`analysis_note`
-  has a foreign key to `analysis_record`), so the figures never mix the two.
+  store starts empty (only the PostgreSQL volume `vsd-pg` removed, `docs/setup.md` "Empty the database",
+  or a new `vsd-pg`) or mock results and their notes are removed (`analysis_note` has a foreign key to
+  `analysis_record`), so the figures never mix the two.
 - Dates use the §4.4 rules (exactly `YYYY-MM-DD`, a real date). Unknown query parameters are ignored. All
   figures are read in one consistent snapshot. A failed read → `500 internal_error`.
 
@@ -412,7 +413,7 @@ no `Max-Age` (it is a browser-session cookie; the server enforces the lifetimes)
 
 #### Sessions
 
-Sessions are stored in SQLite (`session` table, section 7).
+Sessions are stored in the database (`session` table, section 7).
 
 - **Idle limit** `session_idle_minutes`: a session unused for longer than this is ended.
   `last_seen_at` is updated on every request that has a valid session.
@@ -614,7 +615,7 @@ Rules:
 
 ## 7. Storage
 
-Five tables (SQLite on a volume first; architecture §7, open):
+Five tables, in PostgreSQL (D53 (4); `api/schema/0001_initial.sql`; setup: `docs/setup.md` "Database"):
 
 **D63 storage migration target:** add nullable `spoof_probability REAL`, `threshold REAL`, `half_width REAL`,
 `target_deferral REAL`, `deferral_on_fit REAL`, `n_spoof_fit INTEGER`,
@@ -646,7 +647,10 @@ original file name.
 - `is_mock`: true for MockAnalyzer results, so they can be told apart from real ones.
 - **Never stored:** audio, the original file name, the client IP address, passwords in clear,
   session IDs in clear, the typed username of a failed sign-in. The file name is not logged either.
-- Existing database files gain `analysis_note.updated_by_account_id` through a migration in Step 7b.
+- Storage only, not part of the contract: `analysis_record` also has an internal `seq` (store order,
+  the tie-break of records stored in the same second; never returned), and `schema_migration` records
+  the applied schema files. The SQLite store used before PostgreSQL is imported once with
+  `python -m api.migrate_sqlite` (counts and hashes checked; `docs/setup.md`).
 - **D63 target:** for zero-kept-window rejection, emit exactly one structured
   `service_log` event with `request_id` and `error: no_speech`; do not include audio, request body,
   original file name or IP. The existing FR-20 service-log rules otherwise remain unchanged.
@@ -688,7 +692,8 @@ All values come from config (`configs/api.yaml`, written in Stage 17), never fro
 | `notice_text` | The §11 `notice` text | prototype wording | Proposal |
 | `mock_deferral_on_fit` | Monitoring marker for the MockAnalyzer only | 0.0993 | Mock; replaced by the bundle's value |
 | `temp_dir` | Folder for temp uploads | — | Deployment setting |
-| `database_path` | SQLite file holding the section 7 tables | `var/api.sqlite` | Deployment setting |
+| `database_host`, `database_port`, `database_name`, `database_user` | The PostgreSQL database and role holding the section 7 tables; the password is never in the file (`VSD_DB_APP_PASSWORD`) | `db`, 5432, `vsd`, `vsd_app` | Deployment setting |
+| `database_pool_max`, `database_timeout_s` | Connections per API process; wait for one | 4, 5 s | Deployment setting |
 | `session_idle_minutes` | Idle limit of a session | 30 | **Proposed, team to confirm in review** |
 | `session_absolute_hours` | Absolute limit, from sign-in | 12 | **Proposed, team to confirm in review** |
 | `lockout_threshold` | Consecutive failed sign-ins before a lock | 5 | **Proposed, team to confirm in review** |

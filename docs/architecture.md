@@ -120,7 +120,7 @@ start (NFR-09); if a request fails, no prediction is fabricated (NFR-06).
 - Access-control mechanism, SRS §7.4: decided, analyst login (username + password, server-side
   cookie sessions); D47, [ADR 0011](decisions/0011-analyst-sign-in-sessions.md), contract in
   [api_design.md](api_design.md) §4.8.
-- History persistence across restarts: SQLite volume first; open.
+- History persistence across restarts: decided, PostgreSQL on a named volume (D53 (4); P2a, `docs/setup.md` "Database").
 - Hosting vendor and TLS termination: open.
 - Differences from the SDD set by later decisions: FoR validation split into val-A (training
   decisions) and val-B (risk policy, calibration) (D9); risk policy and calibration fitted before
