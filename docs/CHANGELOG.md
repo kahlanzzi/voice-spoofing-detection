@@ -155,6 +155,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 
 ### Changed
 - SRS v4.1 adopted as the current requirements pair after all-four approval in PR #151; v4.0 remains unchanged as history (Entry 206).
+- PostgreSQL replaces SQLite for the API store (Part E, Track P PR P2a, Entry 207; D53 (4)): psycopg 3.3.9 pool behind the same repositories, schema `api/schema/0001_initial.sql` applied once under an advisory lock, the API connects as the non-superuser role `vsd_app` (`VSD_DB_APP_PASSWORD`; the superuser password `VSD_DB_PASSWORD` reaches only `db`), Compose `db` service `postgres:18.7-trixie` by digest with private log flags, one-time import `python -m api.migrate_sqlite` (counts and hashes verified), API tests on PostgreSQL (`db-test` locally, a service container in CI; skipped with a final WARNING without a server, failed with `REQUIRE_POSTGRES_TESTS=1`); no API or web change.
 - D63 approved (PR #146, Entries 194–195). The target API adds calibrated spoof probability, versioned window details and `422 no_speech` for zero kept windows. Uploads with one or two kept windows use the D34 mean. Implementation is pending.
 - Refreshed the midterm backlog from merged Stage 17–18 evidence, separating completed mock-MVP
   flows from real-model and final-release work that remains partial.
