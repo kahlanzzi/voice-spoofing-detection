@@ -3,7 +3,9 @@
 The code that trains the three D49 candidates with the D50 augmentation, selects among them on the
 selection condition set S, and measures their batch sizes. **Code and synthetic tests only:** no
 dataset, cache build, Drive, W&B online run, training run, FoR test split or DEEP-VOICE access in
-this PR. No new decision: everything follows D49, D50/D56, D61 and Protocol §9.
+this PR. No new decision: everything follows D49, D50/D56, D61 and Protocol §9. PR V2b-4 adds the
+CLI, the T4 rehearsal and notebook 08, which builds the search inputs and runs the search
+([below](#cli-rehearsal-and-notebook-08-pr-v2b-4)).
 
 Decisions: D9 (val-A only), D40 (W&B), D42 (training structure), D49 (candidates, selection, seeds),
 D50/D56 (augmentation, S), D58 (training runtime), D61 (implementation details). Candidates and the
@@ -29,7 +31,7 @@ not change the draw). Validation data is never augmented: S holds fixed degraded
 | Raw train cache (`train_raw.npz` + `.json`) | `src/features/raw_train_cache.py` | Augmentation acts **before** F3, so the post-F3 Stage 8 caches cannot be used, and decoding 12,404 files from Drive each epoch would dominate run time. Train split only; every clip as decoded (hash-checked, 1-D, 16,000 Hz enforced). |
 | Clean-train statistics | Stage 8 train log-Mel cache + `fit_bin_stats` | D61 (5): per-bin mean/std on the **clean** F3 log-Mel of FoR train (augmented features change every epoch, so stats fitted on them would not be reproducible). Its `npz_sha256` is recorded as `train_stats_npz_sha256` (`null` for aasist). Its paths and labels must equal the raw cache's. |
 | Selection set S | `src/training/selection_set.py` | D50 (4): five fixed val-A conditions; M = mean val-A EER over them (D49). |
-| Corpus halves (noise, RIR) | `AugmentationResources`, passed in | D50 (5): the audited training halves; the loader belongs to V1b (Malak), so `run_search` takes `resources` as an argument. |
+| Corpus halves (noise, RIR) | `AugmentationResources`, passed in | D50 (5): the audited training halves. `run_search` takes `resources` as an argument; the CLI loads them from the V1c resource cache with `load_v2_resources` (V2b-4, below). |
 
 Memory (float32): raw cache ≈ 12,404 × ~2 s × 16,000 × 4 B ≈ **1.6 GB** (held once; the loader
 hashes the npz by streaming); Stage 8 train log-Mel ≈ 1.25 GB, read once for the statistics and then
@@ -85,6 +87,10 @@ item every time. Malak's S builder has the same issue on val-A for the
 decision (**D62**) is needed **before any training**, covering both the train cache and S. The
 options (e.g. how the noise family treats a silent clip) are for that decision, not for this code.
 `run_search` refuses such a cache, naming the count.
+
+**Result (V2b-3, Entry 208) [verified against the committed file]:** the T4 build at commit `37b236b`
+records `n_all_zero_clips = 0` (12,404 clips; `docs/audit_evidence/v2b3_raw_train_cache/`), so D62 is
+not needed and is recorded as not used in the decision register.
 
 ## Item seed
 
@@ -207,7 +213,114 @@ makes every saved state refuse to resume.
 
 **What a Colab disconnect costs:** at most the epoch in progress (~10–17 min on the T4). A narrow
 case: a stop between logging an epoch to W&B and writing its state retrains that epoch and logs it
-once more. There is no CLI yet: V2b-4 adds it once the V1b corpus loader exists.
+once more. With the CLI (V2b-4, below), resuming is re-running the same `search` command.
+
+## CLI, rehearsal and notebook 08 (PR V2b-4)
+
+Execution Plan v3.0 §9 V3; Entries 172, 173, 184, 185, 205, 208. No new decision.
+
+### CLI (`python -m src.tuning.v2_search`)
+
+```
+python -m src.tuning.v2_search search --raw-cache-dir <raw> --stage8-train-logmel-dir <train> \
+  --stage8-val-a-logmel-dir <val-A> --selection-set-dir <S> --resources-dir <resources> \
+  --out <search folder> --version cnn-v2 --wandb-mode online --device cuda --num-workers 2
+python -m src.tuning.v2_search rehearse <same inputs> --out <new rehearsal folder> --device cuda --num-workers 2
+```
+
+Every data path is an argument; the F3 profile (`configs/preprocessing.yaml`), both configs and the
+F2 manifest are the committed files (not arguments). `search` prints `run_report.json`; re-running the
+same command after a disconnect resumes (PR V2b-R). Before `run_search` (whose checks are unchanged)
+it calls `require_versions()` and refuses:
+
+- an output folder holding the rehearsal marker `REHEARSAL_ONLY.json` or `rehearsal_report.json`;
+- a raw train cache whose npz SHA-256 differs from `npz_sha256` in the committed V2b-3 evidence
+  (`docs/audit_evidence/v2b3_raw_train_cache/train_raw.json`), or whose `train_raw.json` differs from
+  that file byte for byte (`check_raw_cache_pin`);
+- a resource cache not built from the committed V1b files (`load_v2_resources`):
+  `load_training_resources` checks the cache against its own metadata only, so its
+  `noise_inventory_sha256` / `rir_inventory_sha256` must also equal the SHA-256 of the committed
+  `musan_inventory.csv` / `rirs_noises_inventory.csv`, and `noise_archive_sha256` /
+  `rir_archive_sha256` the `configs/augmentation.yaml` pins. Each refusal names the field, the
+  expected and the actual value.
+
+### Rehearsal (`src/tuning/v2_rehearsal.py`)
+
+Run once on the T4 from the search's commit, before the search, into its own new folder. It calls
+`require_versions()` before any work (D64), then requires a clean worktree, refuses a search folder
+(`runs/` or a search report present) and any non-empty folder, writes the marker first, verifies the
+same inputs as the search (plus the two CLI checks above), and writes `rehearsal_report.json` once:
+
+| Section | What | Read as |
+|---|---|---|
+| `clean_transform` | `check_clean_transform` on 32 train indices (16 REAL, 16 FAKE, drawn with seed 2026) | must pass: raw → F3 → log-Mel equals the Stage 8 train cache byte for byte |
+| `epoch_timing` | one epoch per candidate, seed 0, configured batch sizes: seconds per epoch (train + S scoring), train items/s, peak GPU memory | planning |
+| `determinism` | crnn, seed 0, 2 epochs, run twice in one process: `best_selection_m_equal`, `weights_sha256_equal` (SHA-256 over the best state_dict), `history_equal_without_seconds` | **observed only**; D42: not promised on GPU |
+| `forced_resume` | the same run with a resume folder, stopped by an exception raised during epoch 2 (after its training pass, before its state is written, as a disconnect), then resumed: equality with the first run of `determinism` | observed (on CPU equal, tested) |
+| `cut_line` | worst case of the 5 search runs at `max_epochs` (every candidate once, the slowest one twice more) with the measured epoch times, against Fri 27 Nov 23:59 Tunis; the same without aasist | see the cut line below |
+
+No W&B (the rehearsal runs are not search runs); the epoch limits are constants of the module passed
+to `train_v2`; no config or frozen setting changes. The search refuses a rehearsal folder and the
+rehearsal refuses a search folder, so a rehearsal output can never be reused or resumed by the search.
+
+**Cut line (Execution Plan v3.0 §7, risk table):** if the 5 runs do not fit before selection on Fri
+27 Nov, `aasist` is dropped first (`crnn` still answers the temporal-model request). The estimate is
+an upper bound (early stopping can end runs sooner) and ignores Colab session gaps. Dropping a
+candidate changes `configs/v2_candidates.yaml` (`candidate_order`) and is a team decision; the code
+never does it.
+
+### Notebook 08 (`notebooks/08_trackV_v2_search.ipynb`)
+
+One fixed commit, one T4 2026.10 runtime (D58) for every search input, the rehearsal and the search:
+
+1. **Runtime gate:** T4; Python 3.13.16; Colab's torch 2.11.0+cu130 (never installed); after
+   installing `requirements.txt` + `requirements-cnn.txt`, `require_versions()` runs **in a fresh
+   process** and its result is printed (D64: notebook 07 had run with Colab's SciPy 1.16.3). FFmpeg
+   `7:6.1.1-3ubuntu5` is installed only if another version is present, then `verify_pin()` checks it.
+2. **Commit:** `COMMIT` (the merged main, 40 characters) is checked out detached; HEAD and a clean
+   worktree are asserted before and after every long cell.
+3. **Inputs, one cell each, "build once if absent, otherwise verify"**, Drive outputs written once
+   (never overwritten) and re-hashed: the raw train cache (V2b-3 pin); the FoR archive (revision
+   marker, `filter='data'`, observed SHA-256 recorded; placed before the two builds that read FoR
+   audio); the Stage 8 train and val-A log-Mel caches (built with `src.features.logmel_cache` if
+   absent, `npz_sha256` must equal `docs/audit_evidence/stage8_cnn/run_report.json`); the MUSAN and
+   RIRS_NOISES archives (only if a V1c folder is missing; SHA-256 against the pins **before**
+   extraction; extraction as notebook 07); **S** with `python -m src.augmentation.selection_set_build`
+   and the **resource cache** with `python -m src.augmentation.resource_cache build` / `verify`, both
+   Malak's reviewed builders called unchanged and only if their Drive folder is absent; S is verified
+   in both forms with `load_selection_set` and the resources with `load_v2_resources` in every
+   session; then `v1c_build_report.json` (S manifest SHA-256, resource-cache hashes, commit, runtime,
+   `require_versions`) and copies of `selection_set_manifest.json` / `training_resources.json` in
+   `processed/v2/v1c_evidence/`, committed later in a separate evidence PR.
+4. The rehearsal cell, the W&B secret, the search cell (safe to re-run after a disconnect), and a cell
+   that flushes and remounts Drive and prints the SHA-256 of the reports.
+
+**Fixed-commit rule:** the provenance of every run includes the code commit, so the whole search (5
+runs, worst case 5–8 h over several sessions) runs from one commit; after a disconnect the notebook
+is run again from the top with the same `COMMIT`. A newer commit makes every saved state refuse to
+resume.
+
+### Drive layout (Track V)
+
+Under `MyDrive/voice-spoofing-detection/` (constants in notebook 08; notebooks 09 and 10 use the same
+names). The v1 folders (`checkpoints/cnn/`, `processed/metadata/stage8/`, `stage10/`, `stage11/` other
+than the shared registry) are never written by Track V.
+
+| Folder | Writer | Readers |
+|---|---|---|
+| `processed/v2/raw_train_cache/` (`train_raw.{npz,json}`) | V2b-3 build (verified 17 Nov) | notebook 08 (search, rehearsal) |
+| `processed/v2/stage8_logmel/{train,val-A}/` | notebook 08 (once, if absent) | notebook 08 |
+| `processed/v2/selection_set_s/` | notebook 08 (V1c builder, once) | notebook 08; notebook 10 (risk-v2: exact M); notebook 09 (v2 Stage 11 rehearsal) |
+| `processed/v2/aug_resources/` | notebook 08 (V1c builder, once) | notebook 08 |
+| `processed/v2/v1c_evidence/` | notebook 08 (once) | V1c evidence PR |
+| `checkpoints/v2_search/<SEARCH_VERSION>/` (`runs/`, three reports) | notebook 08 (search CLI) | notebook 10 (bundle-seed checkpoint); notebook 09 (`runs/`); F5 local build (`runs/<winner>_seed<k>/checkpoint/`); search evidence PR |
+| `checkpoints/v2_search/rehearsal/<UTC stamp>/` | notebook 08 (rehearsal CLI) | review only |
+| `checkpoints/risk/risk-v2/`, reports in `processed/metadata/v2_risk/` | notebook 10 (risk-v2) | notebook 09; F5 local build |
+| `processed/metadata/stage11_v2/` | notebook 09 (v2 Stage 11) | F5 local build |
+| `processed/metadata/stage11/run_registry.jsonl` | Stage 11 runners (shared registry) | notebook 09; F5 local build |
+| `MyDrive/voice-spoofing-detection-v1b-checkpoint` (shortcut, `CORPUS_DIR`) | Malak (V1b/V1c) | notebook 08 (archives, read only) |
+
+Notebooks 09 and 10 do not exist yet; their rows fix the folder names they will use.
 
 ## Batch-size benchmark (`src/tuning/v2_benchmark.py`)
 
@@ -245,8 +358,9 @@ in [audit_evidence/v2b2_benchmark/](audit_evidence/v2b2_benchmark/README.md);
 ## Determinism of crnn on GPU
 
 `set_seed` asks for deterministic algorithms (warn only) and deterministic cuDNN. Whether the cuDNN
-LSTM of crnn is bit-reproducible on the T4 is **not claimed here**: it is measured in the V2b-4
-rehearsal (two identical runs) and reported only as observed (D42).
+LSTM of crnn is bit-reproducible on the T4 is **not claimed here**: the V2b-4 rehearsal measures it
+(two identical 2-epoch runs and a forced resume, `rehearsal_report.json` `determinism` and
+`forced_resume`) and reports it only as observed (D42).
 
 ## v2 risk policy (V4, `src/tuning/v2_risk_run.py`)
 
@@ -328,7 +442,12 @@ the freeze decision and the hand-over follow the v2 Stage 11 run (cut-off Fri 4 
 three candidates and the refusals; V4c: CLI input rules), `tests/tuning/test_v2_val_b_source.py` (V4c:
 rows, order, dtypes, val-B-only reads, two-pass refusal; end to end into the v2 Stage 11 rehearsal in
 `tests/evaluation/test_stage11_v2_run.py`), `tests/training/test_v2_batch_size_evidence.py` (config vs
-the V2b-2 evidence, torch-free); fakes in `tests/_v2_fakes.py` (24-clip raw cache, 10-clip S,
+the V2b-2 evidence, torch-free), `tests/tuning/test_v2_search_cli.py` (V2b-4: the resource check, each
+of its four mismatches, the raw-cache pin, both subcommands' arguments, the CLI wiring),
+`tests/tuning/test_v2_rehearsal.py` (V2b-4: report keys, clean check, determinism and forced-resume
+fields on real CPU training of a subset, folder refusals both ways, `require_versions` first),
+`tests/features/test_v2b3_raw_train_cache_evidence.py` (torch-free),
+`tests/governance/test_notebook_08_trackV_search.py` (notebook 08, static); fakes in `tests/_v2_fakes.py` (24-clip raw cache, 10-clip S,
 deterministic fake codec, tiny noise/RIR, config copies with batch size 8 (or null, for the
 refusals) and fake pins).
 
@@ -337,8 +456,7 @@ refusals) and fake pins).
 - **V2b-2 (done, Entry 173):** benchmark run on the Colab T4 (2026.10); batch sizes 256 / 256 / 32
   written into `configs/v2_candidates.yaml` (D49).
 - **V1b (done, Entry 180):** corpus/tool pins and the 6,650-row val-A recipe are frozen.
-- **V1c (Malak):** materialize the recipe in the training S folder format, verify both forms against
-  `load_selection_set` and the Stage 8 val-A known answer, and build the audited training-half
-  augmentation-resource cache outside the repository.
-- **V2b-4:** CLI and notebook wired to the V1b corpus loader; rehearsal on T4 (`check_clean_transform`
-  against the Stage 8 train cache, a short run twice for the observed determinism), then the search.
+- **V1c builds:** the real S materialization and the training-half resource cache are built by
+  notebook 08 on T4 2026.10 with Malak's builders; their evidence PR follows.
+- **V2b-4:** code done (CLI, rehearsal, notebook 08; Entry 208). Open: run notebook 08 from the merged
+  commit (inputs, rehearsal, review of the rehearsal report, then the search; selection Fri 27 Nov).
