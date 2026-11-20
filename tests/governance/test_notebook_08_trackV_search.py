@@ -365,3 +365,25 @@ def test_reports_rehashed_after_drive_flush():
 
 def test_for_guard_finds_nothing():
     assert file_hits(REL, NOTEBOOK.read_text(encoding="utf-8")) == []
+
+
+def test_rehearsal_runs_once_per_commit():
+    """A rehearsal report on Drive with inputs.code_commit == COMMIT is shown and the rehearsal skipped."""
+    tree = _tree("'rehearse'")
+    text = ast.unparse(tree)
+    (previous,) = _assigned(tree, "PREVIOUS")[:1]
+    assert "(SEARCH_ROOT / 'rehearsal').glob('*/rehearsal_report.json')" in previous
+    assert "['inputs']['code_commit'] == COMMIT" in previous
+    (rehearse,) = _command_lists(tree, "src.tuning.v2_search")
+    assert _guarding_if(tree, rehearse) == "not PREVIOUS"
+    out = [n for n in ast.walk(tree) if isinstance(n, ast.Assign) and ast.unparse(n.targets[0]) == "REHEARSAL_OUT"]
+    assert len(out) == 1 and _guarding_if(tree, out[0]) == "not PREVIOUS"
+    loop = [n for n in ast.walk(tree) if isinstance(n, ast.For) and ast.unparse(n.iter) == "PREVIOUS"]
+    assert len(loop) == 1 and _guarding_if(tree, loop[0]) is None  # printed in both cases
+    shown = ast.unparse(loop[0])
+    assert "sha256(path)" in shown and "path.relative_to(DRIVE)" in shown
+    for key in ("'epoch_timing'", "'determinism'", "'forced_resume'", "'cut_line'"):
+        assert key in shown, key
+    assert "skips the rehearsal" in _markdown() and "run all cells from the top" in _markdown()
+    assert "shows the rehearsal already done for `COMMIT`" in _markdown()
+    assert text.index("PREVIOUS = [path") < text.index("if not PREVIOUS")

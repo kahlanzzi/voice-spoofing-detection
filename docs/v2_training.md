@@ -292,7 +292,8 @@ One fixed commit, one T4 2026.10 runtime (D58) for every search input, the rehea
    session; then `v1c_build_report.json` (S manifest SHA-256, resource-cache hashes, commit, runtime,
    `require_versions`) and copies of `selection_set_manifest.json` / `training_resources.json` in
    `processed/v2/v1c_evidence/`, committed later in a separate evidence PR.
-4. The rehearsal cell, the W&B secret, the search cell (safe to re-run after a disconnect), and a cell
+4. The rehearsal cell (once per commit: a rehearsal report on Drive whose `inputs.code_commit`
+   equals `COMMIT` is shown and the rehearsal skipped), the W&B secret, the search cell (safe to re-run after a disconnect), and a cell
    that flushes and remounts Drive and prints the SHA-256 of the reports.
 
 **Fixed-commit rule:** the provenance of every run includes the code commit, so the whole search (5
