@@ -1,0 +1,13 @@
+{
+  "code_commit": "37b236b936afffd150bde5d9ad9020fb68952f2d",
+  "f2_manifest_sha256": "badfe948fb7b833357783dd18be00f6bb36253cf8699dc4c4beb4df2b07706f8",
+  "n_all_zero_clips": 0,
+  "n_bonafide": 6160,
+  "n_rows": 12404,
+  "n_spoof": 6244,
+  "npz_sha256": "026a917debfd262ff3e507ea073fa33ef14280fd8dbe235366906f549b4a75e8",
+  "sample_rate": 16000,
+  "schema_version": 1,
+  "split": "train",
+  "total_samples": 396928000
+}

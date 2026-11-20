@@ -10,9 +10,15 @@ for the clean-train statistics of D61 (5) and as a cross-check of paths and labe
 val-A log-Mel cache (the known answer: S's clean condition must equal it byte for byte), the selection
 set S (src.training.selection_set), the F2 manifest, the F3 profile, configs/v2_candidates.yaml
 (batch sizes required) and configs/augmentation.yaml (corpus and ffmpeg pins required, V1b).
-`resources` (the audited training halves of the noise and RIR corpora) is passed in because the
-corpus loader belongs to V1b. There is no CLI `main` in this PR: it is wired in V2b-4, once the V1b
-loader exists.
+`resources` (the audited training halves of the noise and RIR corpora) is passed in; run_search
+itself does not load them.
+
+CLI (V2b-4, `main`): `search` and `rehearse`, every data path explicit; the F3 profile, both configs
+and the F2 manifest are the committed repository files. Before run_search, `search` refuses a
+rehearsal folder as output, a raw train cache whose npz differs from the committed V2b-3 evidence
+(check_raw_cache_pin) and a resource cache whose inventory or archive hashes differ from the
+committed V1b inventories and configs/augmentation.yaml pins (load_v2_resources). `rehearse` is in
+src.tuning.v2_rehearsal; its output can never be used as a search output.
 
 Resumable per run and per epoch: out_dir/runs/<candidate>_seed<k>/ is either complete (checkpoint/
 written by save_v2_checkpoint + run.json) or absent. A run is built in <name>.partial/, where
@@ -30,6 +36,7 @@ Only train and val-A are read; there is no val-B, held-out or external path (D9)
 """
 from __future__ import annotations
 
+import argparse
 import json
 import shutil
 from pathlib import Path
@@ -40,9 +47,12 @@ import torch
 
 from src.augmentation import AugmentationResources, Augmenter, load_augmentation_config
 from src.augmentation.codec import FFmpegCodecBackend
+from src.augmentation.resource_cache import NOISE_COUNT, RIR_COUNT, load_training_resources
 from src.augmentation.version_guard import require_versions
 from src.evaluation.seeds import select_bundle_seed
 from src.features.logmel_cache import load_logmel_cache
+from src.features.raw_train_cache import JSON_NAME as RAW_JSON_NAME
+from src.features.raw_train_cache import NPZ_NAME as RAW_NPZ_NAME
 from src.features.raw_train_cache import check_outside_repo, load_raw_train_cache
 from src.models.v2_checkpoint import (
     INPUT_SHAPES,
@@ -82,13 +92,26 @@ RUN_REPORT = "run_report.json"
 REPORTS = (SEARCH_REPORT, SELECTION_REPORT, RUN_REPORT)
 S_FORMS = {"logmel": "logmel", "waveform": "waveform"}
 
+# The committed files the CLI uses (not arguments), read at call time.
+REPO_ROOT = Path(__file__).resolve().parents[2]
+PROFILE_PATH = REPO_ROOT / "configs" / "preprocessing.yaml"
+V2_CONFIG_PATH = REPO_ROOT / "configs" / "v2_candidates.yaml"
+AUGMENTATION_CONFIG_PATH = REPO_ROOT / "configs" / "augmentation.yaml"
+F2_MANIFEST_PATH = REPO_ROOT / "data" / "manifests" / "for2sec_frozen_manifest.csv"
+NOISE_INVENTORY_PATH = REPO_ROOT / "data" / "manifests" / "augmentation" / "musan_inventory.csv"
+RIR_INVENTORY_PATH = REPO_ROOT / "data" / "manifests" / "augmentation" / "rirs_noises_inventory.csv"
+RAW_CACHE_EVIDENCE = REPO_ROOT / "docs" / "audit_evidence" / "v2b3_raw_train_cache" / RAW_JSON_NAME
+# A rehearsal output folder holds this marker (written first) and its report; search refuses both.
+REHEARSAL_MARKER = "REHEARSAL_ONLY.json"
+REHEARSAL_REPORT = "rehearsal_report.json"
+
 
 def run_dir_name(candidate: str, seed: int) -> str:
     return f"{candidate}_seed{seed}"
 
 
 def run_name(version: str, candidate: str, seed: int) -> str:
-    """W&B run name, e.g. cnn-v2-crnn-s0."""
+    """W&B run name, e.g. model-v2-crnn-s0."""
     return f"{version}-{candidate}-s{seed}"
 
 
@@ -454,3 +477,135 @@ def run_search(*, raw_cache_dir, stage8_train_logmel_dir, stage8_val_a_logmel_di
     extra = {"version": version, "environment": env, "wandb_mode": logger_mode,
              "batch_sizes": batch_sizes, "num_workers": num_workers}
     return _write_reports(out_dir, _reports(config, selection, base, extra))
+
+
+# --- CLI checks (V2b-4) --------------------------------------------------------------------------
+
+def load_v2_resources(directory, *, noise_inventory_path=None, rir_inventory_path=None,
+                      augmentation_config_path=None, expected_noise_count: int = NOISE_COUNT,
+                      expected_rir_count: int = RIR_COUNT) -> tuple[AugmentationResources, dict]:
+    """load_training_resources, then the cache's provenance must equal the committed V1b files.
+
+    load_training_resources checks the cache against its own metadata only. Here the recorded
+    noise_inventory_sha256 / rir_inventory_sha256 must equal the SHA-256 of the committed
+    musan_inventory.csv / rirs_noises_inventory.csv, and noise_archive_sha256 / rir_archive_sha256
+    the configs/augmentation.yaml pins. Every mismatch is named with the expected and actual value.
+    """
+    noise_inventory_path = Path(noise_inventory_path or NOISE_INVENTORY_PATH)
+    rir_inventory_path = Path(rir_inventory_path or RIR_INVENTORY_PATH)
+    corpora = load_augmentation_config(Path(augmentation_config_path or AUGMENTATION_CONFIG_PATH)).corpora
+    resources, meta = load_training_resources(Path(directory), expected_noise_count=expected_noise_count,
+                                              expected_rir_count=expected_rir_count)
+    expected = {
+        "noise_inventory_sha256": sha256_file(noise_inventory_path),
+        "rir_inventory_sha256": sha256_file(rir_inventory_path),
+        "noise_archive_sha256": str(corpora["noise"]["archive_sha256"]),
+        "rir_archive_sha256": str(corpora["rir"]["archive_sha256"]),
+    }
+    wrong = [f"{field}: expected {value}, got {meta[field]}" for field, value in expected.items()
+             if meta[field] != value]
+    if wrong:
+        raise ValueError(f"training resource cache {directory} was not built from the committed V1b "
+                         f"inventories and pins: " + "; ".join(wrong))
+    return resources, meta
+
+
+def check_raw_cache_pin(raw_cache_dir, evidence_path=None) -> str:
+    """The raw train cache must be the one recorded in the committed V2b-3 evidence; return its npz SHA-256.
+
+    The npz bytes (streamed) must hash to the evidence's npz_sha256 and train_raw.json must equal the
+    evidence file byte for byte.
+    """
+    evidence_path = Path(evidence_path or RAW_CACHE_EVIDENCE)
+    expected = json.loads(evidence_path.read_text(encoding="utf-8"))["npz_sha256"]
+    folder = Path(raw_cache_dir)
+    npz, meta = folder / RAW_NPZ_NAME, folder / RAW_JSON_NAME
+    for path in (npz, meta):
+        if not path.is_file():
+            raise ValueError(f"raw train cache file {path} is missing")
+    actual = sha256_file(npz)
+    if actual != expected:
+        raise ValueError(f"raw train cache {npz}: npz SHA-256 expected {expected} (V2b-3 evidence "
+                         f"{evidence_path.name}), got {actual}")
+    expected_json, actual_json = sha256_file(evidence_path), sha256_file(meta)
+    if actual_json != expected_json:
+        raise ValueError(f"raw train cache {meta}: SHA-256 expected {expected_json} (the committed "
+                         f"V2b-3 evidence file), got {actual_json}")
+    return actual
+
+
+def refuse_rehearsal_folder(out_dir) -> None:
+    """A rehearsal output is never reused or resumed by the search."""
+    out_dir = Path(out_dir)
+    for name in (REHEARSAL_MARKER, REHEARSAL_REPORT):
+        if (out_dir / name).exists():
+            raise ValueError(f"{out_dir} is a rehearsal folder ({name} present); a rehearsal output "
+                             f"is never used by the search: choose the search folder")
+
+
+def search_cli(*, raw_cache_dir, stage8_train_logmel_dir, stage8_val_a_logmel_dir,
+               selection_set_dir, resources_dir, out_dir, version: str, logger_mode: str,
+               device: str, num_workers: int) -> dict[str, Any]:
+    """The `search` subcommand: the CLI checks above, then run_search with the committed files."""
+    require_versions()
+    refuse_rehearsal_folder(out_dir)
+    check_raw_cache_pin(raw_cache_dir)
+    resources, _ = load_v2_resources(resources_dir)
+    return run_search(
+        raw_cache_dir=raw_cache_dir, stage8_train_logmel_dir=stage8_train_logmel_dir,
+        stage8_val_a_logmel_dir=stage8_val_a_logmel_dir, selection_set_dir=selection_set_dir,
+        profile_path=PROFILE_PATH, v2_config_path=V2_CONFIG_PATH,
+        augmentation_config_path=AUGMENTATION_CONFIG_PATH, manifest_path=F2_MANIFEST_PATH,
+        resources=resources, out_dir=out_dir, version=version, logger_mode=logger_mode,
+        device=device, num_workers=num_workers,
+    )
+
+
+def _inputs(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--raw-cache-dir", required=True, type=Path,
+                        help="Raw train cache folder (train_raw.npz + .json, V2b-3)")
+    parser.add_argument("--stage8-train-logmel-dir", required=True, type=Path,
+                        help="Stage 8 train log-Mel cache folder (clean-train statistics)")
+    parser.add_argument("--stage8-val-a-logmel-dir", required=True, type=Path,
+                        help="Stage 8 val-A log-Mel cache folder (S known answer)")
+    parser.add_argument("--selection-set-dir", required=True, type=Path, help="Selection set S (V1c)")
+    parser.add_argument("--resources-dir", required=True, type=Path,
+                        help="Training-half resource cache (V1c)")
+    parser.add_argument("--device", required=True, help="torch device, e.g. cuda or cpu")
+    parser.add_argument("--num-workers", required=True, type=int, help="DataLoader workers (>= 0)")
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    sub = parser.add_subparsers(dest="command", required=True)
+    search = sub.add_parser("search", help="Run (or resume) the D49 search; prints run_report.json")
+    _inputs(search)
+    search.add_argument("--out", required=True, type=Path,
+                        help="Search folder (runs/ and the reports); re-run the same command to resume")
+    search.add_argument("--version", required=True, help="Model version, e.g. model-v2 (the F5 model version)")
+    search.add_argument("--wandb-mode", required=True, choices=MODES, help="W&B mode (D40)")
+    rehearse = sub.add_parser("rehearse", help="T4 rehearsal before the search; no W&B")
+    _inputs(rehearse)
+    rehearse.add_argument("--out", required=True, type=Path,
+                          help="New rehearsal folder, never the search folder")
+    return parser
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = build_parser().parse_args(argv)
+    common = dict(raw_cache_dir=args.raw_cache_dir,
+                  stage8_train_logmel_dir=args.stage8_train_logmel_dir,
+                  stage8_val_a_logmel_dir=args.stage8_val_a_logmel_dir,
+                  selection_set_dir=args.selection_set_dir, resources_dir=args.resources_dir,
+                  out_dir=args.out, device=args.device, num_workers=args.num_workers)
+    if args.command == "search":
+        report = search_cli(**common, version=args.version, logger_mode=args.wandb_mode)
+    else:
+        from src.tuning.v2_rehearsal import rehearse  # imports this module
+
+        report = rehearse(**common)
+    print(_json_text(report), end="")
+
+
+if __name__ == "__main__":
+    main()

@@ -14,6 +14,8 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
   identical, and the old/new recipes, reports and row-level comparison are retained (Entry 205).
 
 ### Added
+- v2 search CLI, T4 rehearsal and notebook 08 (Track V, PR V2b-4, Entry 208; Execution Plan v3.0 §9 V3): `python -m src.tuning.v2_search search|rehearse` (`run_search` unchanged), `load_v2_resources` (V1c resource cache bound to the committed V1b inventories and archive pins), the raw-cache pin to the V2b-3 evidence, `src/tuning/v2_rehearsal.py` (clean check, epoch timing, crnn twice, forced resume, cut line; never a search folder), and `notebooks/08_trackV_v2_search.ipynb`, which builds or verifies every search input (Stage 8 log-Mel, S and the resource cache with the V1c builders) on one fixed commit and runs the rehearsal and the search; Drive layout (Track V) in `docs/v2_training.md`.
+- V2b-3 evidence: `docs/audit_evidence/v2b3_raw_train_cache/` (`train_raw.json`, `n_all_zero_clips = 0`; D62 recorded as not used).
 - D64 V1c recipe re-freeze tooling: exact requirements-version guards and a fail-closed old/new
   comparison that preserves both recipes and reports every changed waveform hash (Entry 201).
 - Track V V1c implementation: pure frozen selection-recipe functions, a hash-verifying selection-set builder, a deterministic training-half MUSAN/RIRS resource cache, exact V1b condition names and once-per-instance successful FFmpeg pin verification; synthetic/full-suite validation is complete, while the real Colab T4 materialization and cache evidence remain pending (Entry 185).

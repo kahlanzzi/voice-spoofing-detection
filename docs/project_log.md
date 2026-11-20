@@ -7978,6 +7978,80 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 208 — Track V PR V2b-4: v2 search CLI, resource checks, V1c input builds, rehearsal, notebook 08 (2026-11-20)
+
+- **Owner:** Donia Mabrouk (Part C). Branch `feat/stageV2-search-cli` from `main` `c360bdc` (V1c code
+  PR #152, `1a7b500`, and the D64 evidence PR #153 on `main`; `resource_cache.py`,
+  `selection_set_build.py` and `version_guard.py` confirmed present). Entry number: 208 is the next
+  free one on `main` (207) and the open branches (206, 198, 84).
+- **Why [doc]:** Execution Plan v3.0 §9 V3; Entries 172, 173, 184, 185, 205. `run_search` had no CLI
+  and took `resources` by injection; V1c's `load_training_resources` checks a cache against its own
+  metadata only; the real S build and the training-half resource cache had no notebook and no Drive
+  folder, and the S build needs the Stage 8 val-A log-Mel cache, which is not on Drive. No new
+  decision.
+- **What changed:**
+  - `src/tuning/v2_search.py` (`run_search` unchanged): `load_v2_resources` (after
+    `load_training_resources`, the two inventory hashes must equal the SHA-256 of the committed
+    `musan_inventory.csv` / `rirs_noises_inventory.csv` and the two archive hashes the
+    `configs/augmentation.yaml` pins; each mismatch named with both values); `check_raw_cache_pin`
+    (npz SHA-256 = the V2b-3 evidence's `npz_sha256`, `train_raw.json` = the evidence file byte for
+    byte); `refuse_rehearsal_folder`; `main` with `search` and `rehearse`, every data path explicit,
+    profile, configs and F2 manifest the committed files.
+  - `src/tuning/v2_rehearsal.py`: `require_versions()` first (injectable `version=`), clean worktree,
+    folder rules (never a search folder, a new folder, marker `REHEARSAL_ONLY.json` written first),
+    the same input checks as `run_search` plus the two CLI checks; (a) `check_clean_transform` on 32
+    seeded train indices (16 per class); (b) one epoch per candidate with the configured batch sizes;
+    (c) crnn seed 0, 2 epochs, twice (equality of `best_selection_m` and of the best weights' SHA-256,
+    observed only, D42); (d) the same run stopped by an exception raised by its logger during epoch 2
+    (after epoch 1's state is written), then resumed, compared with (c); (e) cut line against Fri 27
+    Nov 23:59 Tunis, with and without `aasist`. `rehearsal_report.json` written once; no W&B; epoch
+    limits are module constants; no config changed. The forced resume uses the logger seam rather
+    than patching `train_v2` internals; it costs one extra crnn epoch on the T4.
+  - `notebooks/08_trackV_v2_search.ipynb` (07 is Malak's): runtime gate (T4, Python 3.13.16, torch
+    2.11.0+cu130, `require_versions()` in a fresh process after the install, FFmpeg
+    `7:6.1.1-3ubuntu5`), fixed `COMMIT` with HEAD/clean asserts before and after every long cell, one
+    cell per input ("build once if absent, otherwise verify"; Drive outputs written once and
+    re-hashed): raw cache (V2b-3 pin), FoR archive, Stage 8 train/val-A log-Mel (built if absent,
+    `npz_sha256` = Stage 8 evidence), MUSAN/RIRS archives (only if a V1c folder is missing; hashes
+    against the pins before extraction), S and the resource cache with the V1c builders called
+    unchanged and only if absent (verified every session), `v1c_build_report.json`; then rehearsal,
+    W&B secret, search (re-runnable), Drive flush/remount and report SHA-256s. `SEARCH_VERSION` is
+    `model-v2` (review, 2026-11-20): the F5 model version, as the SRS names it. The FoR archive cell
+    comes before the log-Mel cell (the brief listed it third) because both builds read FoR audio.
+  - `docs/audit_evidence/v2b3_raw_train_cache/`: `train_raw.json` as supplied by Donia (SHA-256
+    `34065507…c1d25a9`, not regenerated) and a README; the JSON records the F2 hash but no FoR archive
+    hash (the cache format has no such field).
+  - `docs/v2_training.md` (CLI, rehearsal, notebook 08, fixed-commit rule, cut line, Drive layout
+    (Track V) table); CHANGELOG; D62 recorded as not used (one line); open items and current status
+    (stale "waiting for review" text for PRs #137, #138, #141, #142, #144, #148, #150, #152 fixed).
+- **Checks run [verified]:** `REQUIRE_TORCH_TESTS=1 pytest -q` (Windows, before the docs
+  commit) → `1 failed, 2108 passed, 356 skipped in 909.41s` (354 database tests skipped: no local
+  PostgreSQL). The failure is `tests/deploy/test_deploy_compose.py::test_init_script_creates_a_non_superuser_app_role_from_its_own_variable`:
+  its last assertion reads the POSIX executable bit of `deploy/postgres-init/10-app-role.sh`, which
+  NTFS does not have (`st_mode` 33206); PR #155's file, untouched here; it is expected to pass on
+  CI (Linux).
+  `pytest -q tests/governance` → `109 passed in 1.91s`. Focused: `tests/tuning/test_v2_search_cli.py` 20 passed,
+  `tests/tuning/test_v2_rehearsal.py` 18 passed (on real CPU training of a 4-clip subset the two crnn
+  runs and the forced resume are equal), `tests/tuning/test_v2_search.py` 25 passed.
+  Local environment: Python 3.14.7, torch 2.11.0+cpu; `psycopg[binary]==3.3.9` and
+  `psycopg-pool==3.3.3` (pinned in `requirements.txt` by PR #155) were missing from the local venv and
+  were installed before the full run.
+- **Not verified [hypothesis]:** the notebook has not run on Colab. The archive file names under
+  `CORPUS_DIR` (`musan.tar.gz`, `rirs_noises.zip`) follow notebook 07's download names; the shared
+  folder's layout is not recorded in the repository and must be confirmed by Malak. The Debian
+  version string `7:6.1.1-3ubuntu5` is assumed to be the package of FFmpeg 6.1.1-3ubuntu5 on the
+  2026.10 image (the apt step runs only if another version is installed; `verify_pin()` is the real
+  check). Notebooks 09 and 10 in the Drive layout table are names reserved for the v2 Stage 11 and
+  risk-v2 notebooks.
+  New Drive data from notebook 08's first run is about 4.9 GB (resource cache ~3.0 GB uncompressed,
+  S ~1.2 GB, Stage 8 log-Mel ~0.7 GB) [estimate]; the operator checks that Drive has at least 6 GB
+  free before the first run.
+- **AI assistance:** Claude Code (Claude Opus 5.5) wrote the code, tests, notebook and docs from
+  Donia's V2b-4 brief; team review required before acceptance (D26). AI does not push or merge.
+- **Gate:** **WAITING FOR APPROVAL.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -7987,23 +8061,24 @@ pointers and synchronized PDF are reviewed.
 - [x] Implement V1a's strict train-only augmentation module and synthetic tests without corpus access (D50/D56; Entry 169; PR #126 merged).
 - [x] V1b: pin and audit the noise/RIR corpora (licence, archive hash, 50/50 by-file split) and exact ffmpeg/codec tools before any v2 training (D50 (5); PR #131, Entry 180); follow-up pin-preservation and closeout fixes merged in PR #134.
 - [x] Compute benchmark per v2 candidate; batch sizes in `configs/` before training (D49). Slots exist as `null` in `configs/v2_candidates.yaml`; `require_batch_sizes()` blocks training until set (Entry 170; PR V2b). Done: 256 / 256 / 32 (Entry 173).
-- [x] V2b-2: run `python -m src.tuning.v2_benchmark` on Colab T4 (2026.10) and write the batch sizes into `configs/v2_candidates.yaml` (D49; Entry 172). (Entry 173; evidence `docs/audit_evidence/v2b2_benchmark/`; review pending)
-- [x] Per-epoch resume within a run before V2b-4: a worst-case run (30 epochs × ~10–17 min) may not fit one Colab session; V2b-1 resumes only between runs (Entry 173). Done in PR V2b-R (Entry 184; review pending).
+- [x] V2b-2: run `python -m src.tuning.v2_benchmark` on Colab T4 (2026.10) and write the batch sizes into `configs/v2_candidates.yaml` (D49; Entry 172). (Entry 173; evidence `docs/audit_evidence/v2b2_benchmark/`; merged, PR #130)
+- [x] Per-epoch resume within a run before V2b-4: a worst-case run (30 epochs × ~10–17 min) may not fit one Colab session; V2b-1 resumes only between runs (Entry 173). Done in PR V2b-R (Entry 184; merged, PR #137).
 - [x] V2b-R review: `train_v2` gained `provenance` next to `resume_dir` (the brief allowed only `resume_dir`; the provenance check needs it) — accept or revise (Entry 184). Accepted in Donia's review (2026-11-15).
 - [x] V1c: move the notebook recipe into a pure `src/augmentation/` module and prove byte parity for all five conditions on synthetic audio (D50/D56; Entries 180, 185).
-- [ ] V1c: materialize S with `write_selection_set` on Colab T4 runtime 2026.10 and verify both forms with `load_selection_set`, including the Stage 8 val-A known answer (D50 (4), D58; Entries 172, 180, 185).
-- [ ] V1c: build and verify the deterministic training-half MUSAN/RIR resource cache outside the repo; refuse selection-half or all-zero resources (D50 (5); Entries 180, 185).
+- [ ] V1c: materialize S with `write_selection_set` on Colab T4 runtime 2026.10 and verify both forms with `load_selection_set`, including the Stage 8 val-A known answer (D50 (4), D58; Entries 172, 180, 185). Built by notebook 08 on T4 2026.10; evidence PR follows (Entry 208).
+- [ ] V1c: build and verify the deterministic training-half MUSAN/RIR resource cache outside the repo; refuse selection-half or all-zero resources (D50 (5); Entries 180, 185). Built by notebook 08 on T4 2026.10; evidence PR follows (Entry 208).
 - [x] V1c: make `FFmpegCodecBackend` verify its pin once per backend instance without changing encode/decode output bytes (codec 0.42 s/item dominates augmentation; Entries 172–173, 185).
 - [x] D64 (Entries 189, 201–202, 205; approved, PR #140): the whole recipe was regenerated once on
   the reviewed Colab 2026.10 T4 runtime; exactly the 1,330 reverberation hashes changed and the
   old/new evidence is committed. The selection-set materialization and training-half cache remain
   separate V1c gates.
-- [ ] V2b-4: search CLI/notebook wired to the V1c corpus loader; T4 rehearsal (`check_clean_transform`, two short runs for observed crnn/cuDNN determinism), then the search (Entry 172).
-- [ ] V2b-3: read `n_all_zero_clips` from the raw train cache (`build` / `verify` print it with the first 10 paths). If it is > 0, a decision (**D62**) is needed before any training (`run_search` refuses such a cache): `Augmenter`'s `recorded_noise` refuses a silent clip [verified], and Malak's S builder (`noise_10db`) has the same issue on val-A (Entry 172; `docs/v2_training.md`).
+- [x] V2b-4 code: search CLI/notebook wired to the V1c corpus loader (`load_v2_resources`, raw-cache pin, `src/tuning/v2_rehearsal.py`, notebook 08; Entries 172, 208).
+- [ ] V2b-4 run: notebook 08 from the merged commit: T4 rehearsal (`check_clean_transform`, two short crnn runs for the observed determinism, forced resume, cut line), team review of `rehearsal_report.json`, then the search (selection Fri 27 Nov; Entry 208).
+- [x] V2b-3: read `n_all_zero_clips` from the raw train cache (`build` / `verify` print it with the first 10 paths). If it is > 0, a decision (**D62**) is needed before any training (`run_search` refuses such a cache): `Augmenter`'s `recorded_noise` refuses a silent clip [verified], and Malak's S builder (`noise_10db`) has the same issue on val-A (Entry 172; `docs/v2_training.md`). Done: D62 not needed (n_all_zero_clips = 0; evidence `docs/audit_evidence/v2b3_raw_train_cache/`, Entry 208).
 - [x] Approve D61 (Iheb, Malak, Khalil) and add its approval commit before any v2 training (Entry 170). (PR #127, 2026-11-13)
-- [x] PR V2b-1: v2 training loop, selection metric M over set S, resumable search, benchmark code (Entry 172; review pending).
-- [x] F5 model loader dispatching on `architecture` (D61 (6)), when F5 is built (Entry 170). Done ahead of F5 on synthetic bundles, with the Stage 13 hand-over test (PR V5a, Entry 186; review pending).
-- [ ] V4: v2 risk policy (Protocol §6 unchanged, clean val-B, bundle seed only; D45, D49). Code done: `src/tuning/v2_risk_run.py` (PR V4a, Entry 188; review pending) and the aasist F3 waveform val-B source with CLI `--root` (PR V4c, Entry 199; built ahead of selection, review pending). Run pending: after the search, commit its reports to `docs/audit_evidence/v2_search/`, then run with `--version risk-v2` (`--cache-dir` for cnn-aug / crnn, `--root` for aasist).
+- [x] PR V2b-1: v2 training loop, selection metric M over set S, resumable search, benchmark code (Entry 172; merged, PR #129).
+- [x] F5 model loader dispatching on `architecture` (D61 (6)), when F5 is built (Entry 170). Done ahead of F5 on synthetic bundles, with the Stage 13 hand-over test (PR V5a, Entry 186; merged, PR #138).
+- [ ] V4: v2 risk policy (Protocol §6 unchanged, clean val-B, bundle seed only; D45, D49). Code done: `src/tuning/v2_risk_run.py` (PR V4a, Entry 188; merged, PR #141) and the aasist F3 waveform val-B source with CLI `--root` (PR V4c, Entry 199; built ahead of selection; merged, PR #150). Run pending: after the search, commit its reports to `docs/audit_evidence/v2_search/`, then run with `--version risk-v2` (`--cache-dir` for cnn-aug / crnn, `--root` for aasist).
 - [x] V4c review: reword `run`'s aasist refusal message ("none exists yet") now that the source exists, or keep it (Entry 199). Reworded at review.
 - [x] Draft the extension authentication design and security-review text in SDD v2.0 before implementation (D51; Entry 165; human approval and merge pending).
 - [ ] Choose the hosting provider and record it (D54 (9)); load test on staging, then record K, L, `analysis_timeout_s` and `L_MAX` (D53 (3)).
@@ -8019,10 +8094,10 @@ pointers and synchronized PDF are reviewed.
   200, 206).
 - [x] SDD v2.0 Markdown/PDF pair and version index merged in PR #122 (Entry 165).
 - [ ] Iheb confirms the SDD v2.0 owner review and all four reviewers explicitly accept the D51 extension-authentication design before extension implementation; PR #122 currently records Donia's approvals only.
-- [ ] Stage 13 runner (D35) and Stage 11 runner (PR #68) accept the v2 model set (D48 (3), (7)). Stage 11 part: V4b code done (`src/evaluation/stage11_v2_run.py`, Entry 190; review pending, incl. the `ALLOWED` access-rule change for Khalil).
-- [x] V4b follow-up (item 8): v2 Stage 11 metrics report code, `src/evaluation/stage11_v2_report.py`; D57 applied to the v2 set with no hypothesis (Donia, option A) (PR V6a, Entry 197; review pending).
+- [ ] Stage 13 runner (D35) and Stage 11 runner (PR #68) accept the v2 model set (D48 (3), (7)). Stage 11 part: V4b code done (`src/evaluation/stage11_v2_run.py`, Entry 190; merged, PR #142, incl. the `ALLOWED` access-rule change for Khalil).
+- [x] V4b follow-up (item 8): v2 Stage 11 metrics report code, `src/evaluation/stage11_v2_report.py`; D57 applied to the v2 set with no hypothesis (Donia, option A) (PR V6a, Entry 197; merged, PR #148).
 - [ ] V4b follow-ups: the v2 Stage 11 run (after risk-v2, before F5; target Wed 2 Dec) and its notebook (09), which also produces the real v2 metrics report on the run's platform (Entries 190, 197).
-- [ ] V5: V5b code done (`src/bundle/f5.py`, Entry 192; review pending); F5 build on Colab after the v2 Stage 11 run, the freeze decision (next free D) and the hand-over still open (cut-off Fri 4 Dec 23:59 Tunis, D48 (4)).
+- [ ] V5: V5b code done (`src/bundle/f5.py`, Entry 192; merged, PR #144); F5 build on Colab after the v2 Stage 11 run, the freeze decision (next free D) and the hand-over still open (cut-off Fri 4 Dec 23:59 Tunis, D48 (4)).
 
 
 - [ ] Status probe is read-only; a write-capability check is part of open decision 7 (Entry 117).
@@ -8441,7 +8516,7 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-19 (Entries 203-207)
+## Current status — updated 2026-11-20 (Entries 203-208)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -8450,28 +8525,32 @@ the D32 teach-back (Entry 174). Replacing the API mock with F4 remains Iheb’s 
 **Track V — current.** V1b corpus/tool pins and the original selection recipe from PR #131 are
 closed out by the pin-preserving test and review follow-up in PR #134. D64 is complete (Entry 205):
 the full recipe was re-frozen on the reviewed Colab 2026.10 Tesla T4 runtime, with exactly the 1,330
-reverberation hashes changed and all other row fields identical. V1c still must build and verify the
-training-format S folder and deterministic training-half resource cache outside Git. V2
-candidate/training code and the benchmark batch sizes are merged. Entry 203 makes the synthetic
-FFT-reverberation oracle portable across Windows and Ubuntu without changing production
-augmentation. Entry 204 preserves the old D64 report bytes and binds the carried inventory hashes
-to the committed CSVs. Model training, search, selection, risk policy and F5 freeze remain. PR V2b-R (Entry
-184, waiting for review) makes a v2 run resumable per epoch, so a Colab disconnect costs at most the
-current epoch. PR V5a (Entry 186, waiting for review) adds the F5 model loader: `load_bundle_model`
-dispatches on the checkpoint's `architecture` (D61 (6)) and passes a synthetic hand-over with the
-Stage 13 runner for all three candidates. PR V4a (Entry 188, waiting for review) adds the v2
-risk-policy run (Protocol §6 unchanged, bundle seed only, exact M reproduction); the real run waits
-for the search evidence. PR V4c (Entry 199, waiting for approval) adds the aasist F3 waveform val-B
-source and the CLI `--root`, built before selection by Donia's schedule choice so an aasist win can be
-fitted on Mon 30 Nov without new code; code and synthetic tests only. PR V4b (Entry 190, waiting for review) adds the Stage 11 runner for the v2
-model set (D48 (7)), code and synthetic tests only; the real v2 Stage 11 run and notebook 09 follow
-risk-v2. PR V6a (Entry 197, waiting for approval) adds the v2 metrics report
-(`src/evaluation/stage11_v2_report.py`), code and synthetic tests only: D57 applied to the v2 set as
-written, with no hypothesis (Donia, option A; v2–v1 comparisons stay H8 and H9); notebook 09 runs it
-on the stored v2 files on the run's platform. PR V5b (Entry 192, waiting for review) adds the F5 build and verify
-tool (`src/bundle/f5.py`), code and synthetic tests only: it refuses F5 until the v2 Stage 11 run is
-completed in the registry (D48 (7)); the real build, the freeze decision and the hand-over follow
-that run, before the Fri 4 Dec 23:59 cut-off. See the open items above and [Execution Plan v3.0](reference/Execution_Plan_v3.0.md).
+reverberation hashes changed and all other row fields identical. V2 candidate/training code and the
+benchmark batch sizes are merged. Entry 203 makes the synthetic FFT-reverberation oracle portable
+across Windows and Ubuntu without changing production augmentation. Entry 204 preserves the old D64
+report bytes and binds the carried inventory hashes to the committed CSVs. Merged since: PR V2b-R
+(Entry 184, PR #137: a v2 run resumes per epoch, so a Colab disconnect costs at most the current
+epoch); PR V5a (Entry 186, PR #138: the F5 model loader `load_bundle_model` dispatching on the
+checkpoint's `architecture`, D61 (6)); PR V4a (Entry 188, PR #141: the v2 risk-policy run, Protocol
+§6 unchanged, bundle seed only, exact M reproduction); PR V4b (Entry 190, PR #142: the Stage 11
+runner for the v2 model set, D48 (7)); PR V5b (Entry 192, PR #144: the F5 build and verify tool,
+refused until the v2 Stage 11 run is completed); PR V6a (Entry 197, PR #148: the v2 metrics report,
+D57 applied to the v2 set with no hypothesis); PR V4c (Entry 199, PR #150: the aasist F3 waveform
+val-B source and CLI `--root`); V1c code (Entry 185, PR #152). All of these are code and synthetic
+tests only; their real runs follow the search.
+
+**V2b-3 and V2b-4 (Entry 208).** V2b-3 is closed: the T4 raw train cache records
+`n_all_zero_clips = 0`, so D62 is not needed (recorded as not used); its `train_raw.json` is committed
+as evidence and the search CLI refuses any other cache. PR V2b-4 (Entry 208, waiting for approval)
+adds the search CLI (`python -m src.tuning.v2_search search|rehearse`; `run_search` unchanged), the
+check that binds the V1c resource cache to the committed V1b inventories and archive pins, the T4
+rehearsal, and notebook 08, which builds or verifies every search input on one fixed commit (Stage 8
+log-Mel caches, S and the resource cache with Malak's V1c builders, unchanged) and then runs the
+rehearsal and the search. Open: the real V1c builds and their evidence PR, the rehearsal (reviewed
+before the search) and the search itself (selection Fri 27 Nov; cut line: drop `aasist` first,
+Execution Plan v3.0 §7). Then risk-v2 (Mon 30 Nov), the v2 Stage 11 run and notebook 09, and F5
+before the Fri 4 Dec 23:59 cut-off. See the open items above and
+[Execution Plan v3.0](reference/Execution_Plan_v3.0.md).
 
 **Khalil / Stage 13 — preparation merged; external run not ready.** Runner preparation from Entries
 175–179 merged in PR #133. The synthetic Stage 13 suite reported 33 passed; PR #134 subsequently
@@ -8493,12 +8572,12 @@ non-superuser `vsd_app`, a one-time import of the old SQLite store, the API test
 and in CI; no API or web change. Every `.env` needs `VSD_DB_PASSWORD` and `VSD_DB_APP_PASSWORD`. P2b
 (the process pool) follows after P2a merges.
 
-**Track V V1c implementation (Entry 185):** on `feat/stageV1-selection-set-build`, the pure frozen
-recipe, hash-verifying selection-set builder, strict training-half resource-cache builder/loader,
-exact condition names, successful-once FFmpeg verification and official-runtime evidence guard are
-implemented and synthetically tested. The Torch-required full suite passes (`2045 passed, 2 skipped`).
-No real corpus audio was accessed or committed. V1c remains open for the real Colab T4 S
-materialization, real training-half cache build and small permitted evidence.
+**Track V V1c implementation (Entry 185, merged in PR #152):** the pure frozen recipe,
+hash-verifying selection-set builder, strict training-half resource-cache builder/loader, exact
+condition names, successful-once FFmpeg verification and official-runtime evidence guard are
+implemented and synthetically tested. No real corpus audio was accessed or committed. V1c remains
+open for the real Colab T4 S materialization, real training-half cache build and small permitted
+evidence: notebook 08 builds both on T4 2026.10 (Entry 208); the evidence PR follows.
 
 **D64 preparation (Entry 201):** the exact requirements-version guard and fail-closed old-vs-new
 recipe comparison are implemented and focused tests pass. No regeneration has been run. Donia must
@@ -8522,7 +8601,8 @@ implementation and single migration with Iheb.
 The D52 warm-up analysis is scheduled for W3 (23–29 November); Stages 15–16 follow later in the plan.
 
 **What is next:**
-1. Track V proceeds with Malak’s V1c and the remaining v2 training/selection work.
+1. Track V: review and merge PR V2b-4, then run notebook 08 from the merged commit (V1c builds,
+   rehearsal, team review of the rehearsal report, search), then the V1c and search evidence PRs.
 2. Review and merge the SRS v4.1 adoption update, then coordinate D63 implementation with Iheb and
    keep Stage 13 within its gates.
 3. Do not open, score or claim DEEP-VOICE until the single-run prerequisites and team review pass.
