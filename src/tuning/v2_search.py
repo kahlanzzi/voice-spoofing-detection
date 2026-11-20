@@ -111,7 +111,7 @@ def run_dir_name(candidate: str, seed: int) -> str:
 
 
 def run_name(version: str, candidate: str, seed: int) -> str:
-    """W&B run name, e.g. cnn-v2-crnn-s0."""
+    """W&B run name, e.g. model-v2-crnn-s0."""
     return f"{version}-{candidate}-s{seed}"
 
 
@@ -582,7 +582,7 @@ def build_parser() -> argparse.ArgumentParser:
     _inputs(search)
     search.add_argument("--out", required=True, type=Path,
                         help="Search folder (runs/ and the reports); re-run the same command to resume")
-    search.add_argument("--version", required=True, help="Model version, e.g. cnn-v2")
+    search.add_argument("--version", required=True, help="Model version, e.g. model-v2 (the F5 model version)")
     search.add_argument("--wandb-mode", required=True, choices=MODES, help="W&B mode (D40)")
     rehearse = sub.add_parser("rehearse", help="T4 rehearsal before the search; no W&B")
     _inputs(rehearse)

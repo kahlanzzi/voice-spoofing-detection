@@ -224,7 +224,7 @@ Execution Plan v3.0 §9 V3; Entries 172, 173, 184, 185, 205, 208. No new decisio
 ```
 python -m src.tuning.v2_search search --raw-cache-dir <raw> --stage8-train-logmel-dir <train> \
   --stage8-val-a-logmel-dir <val-A> --selection-set-dir <S> --resources-dir <resources> \
-  --out <search folder> --version cnn-v2 --wandb-mode online --device cuda --num-workers 2
+  --out <search folder> --version model-v2 --wandb-mode online --device cuda --num-workers 2
 python -m src.tuning.v2_search rehearse <same inputs> --out <new rehearsal folder> --device cuda --num-workers 2
 ```
 

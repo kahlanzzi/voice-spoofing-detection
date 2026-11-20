@@ -107,7 +107,7 @@ def test_parameters_commit_placeholder_and_refusals():
     assert values == {
         "REPO_URL": "https://github.com/kahlanzzi/voice-spoofing-detection.git",
         "COMMIT": "REPLACE_WITH_MERGED_MAIN_COMMIT",
-        "SEARCH_VERSION": "cnn-v2",
+        "SEARCH_VERSION": "model-v2",
         "NUM_WORKERS": 2,
         "COLAB_RUNTIME_VERSION": "2026.10",
         "DRIVE_ROOT": "/content/drive/MyDrive/voice-spoofing-detection",

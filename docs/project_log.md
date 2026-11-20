@@ -8015,7 +8015,8 @@ pointers and synchronized PDF are reviewed.
     `npz_sha256` = Stage 8 evidence), MUSAN/RIRS archives (only if a V1c folder is missing; hashes
     against the pins before extraction), S and the resource cache with the V1c builders called
     unchanged and only if absent (verified every session), `v1c_build_report.json`; then rehearsal,
-    W&B secret, search (re-runnable), Drive flush/remount and report SHA-256s. The FoR archive cell
+    W&B secret, search (re-runnable), Drive flush/remount and report SHA-256s. `SEARCH_VERSION` is
+    `model-v2` (review, 2026-11-20): the F5 model version, as the SRS names it. The FoR archive cell
     comes before the log-Mel cell (the brief listed it third) because both builds read FoR audio.
   - `docs/audit_evidence/v2b3_raw_train_cache/`: `train_raw.json` as supplied by Donia (SHA-256
     `34065507…c1d25a9`, not regenerated) and a README; the JSON records the F2 hash but no FoR archive
