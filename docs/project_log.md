@@ -8043,6 +8043,9 @@ pointers and synchronized PDF are reviewed.
   2026.10 image (the apt step runs only if another version is installed; `verify_pin()` is the real
   check). Notebooks 09 and 10 in the Drive layout table are names reserved for the v2 Stage 11 and
   risk-v2 notebooks.
+  New Drive data from notebook 08's first run is about 4.9 GB (resource cache ~3.0 GB uncompressed,
+  S ~1.2 GB, Stage 8 log-Mel ~0.7 GB) [estimate]; the operator checks that Drive has at least 6 GB
+  free before the first run.
 - **AI assistance:** Claude Code (Claude Opus 5.5) wrote the code, tests, notebook and docs from
   Donia's V2b-4 brief; team review required before acceptance (D26). AI does not push or merge.
 - **Gate:** **WAITING FOR APPROVAL.**
