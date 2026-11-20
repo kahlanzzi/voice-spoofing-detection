@@ -387,3 +387,11 @@ def test_rehearsal_runs_once_per_commit():
     assert "skips the rehearsal" in _markdown() and "run all cells from the top" in _markdown()
     assert "shows the rehearsal already done for `COMMIT`" in _markdown()
     assert text.index("PREVIOUS = [path") < text.index("if not PREVIOUS")
+
+
+def test_for_archive_copy_and_extract_between_clean_checks():
+    tree = _tree("for_2sec_ff8c82c7.tar")
+    clean = [n.lineno for n in _calls(tree, "assert_clean")]
+    work = [n.lineno for n in ast.walk(tree) if isinstance(n, ast.Call)
+            and ast.unparse(n.func) in ("shutil.copy2", "archive.extractall", "shutil.rmtree")]
+    assert clean and work and min(clean) < min(work) and max(clean) > max(work)
