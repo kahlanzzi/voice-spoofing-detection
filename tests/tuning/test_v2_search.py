@@ -435,4 +435,35 @@ def test_module_has_no_val_b_test_or_external_path():
     for forbidden in ("val-B", "val_b", "test", "external"):
         assert forbidden not in strings
     assert vs.TRAIN_SPLIT == "train"
-    assert not hasattr(vs, "main")  # no CLI in this PR (wired in V2b-4)
+    assert callable(vs.main)  # the CLI (V2b-4): tests/tuning/test_v2_search_cli.py
+
+
+# --- CLI end to end (V2b-4) ----------------------------------------------------------------------
+
+def test_main_search_end_to_end_and_rerun_resumes(inputs, patched, tmp_path, monkeypatch, capsys):
+    evidence = tmp_path / "evidence" / "train_raw.json"
+    evidence.parent.mkdir()
+    shutil.copy2(inputs["raw"] / "train_raw.json", evidence)
+    monkeypatch.setattr(vs, "RAW_CACHE_EVIDENCE", evidence)
+    monkeypatch.setattr(vs, "V2_CONFIG_PATH", inputs["v2"])
+    monkeypatch.setattr(vs, "AUGMENTATION_CONFIG_PATH", inputs["aug"])
+    monkeypatch.setattr(vs, "F2_MANIFEST_PATH", inputs["manifest_path"])
+    monkeypatch.setattr(vs, "load_v2_resources", lambda d: (fake_resources(), {}))
+    out = tmp_path / "search"
+    argv = ["search", "--raw-cache-dir", str(inputs["raw"]),
+            "--stage8-train-logmel-dir", str(inputs["lm"] / "train"),
+            "--stage8-val-a-logmel-dir", str(inputs["lm"] / "val-A"),
+            "--selection-set-dir", str(inputs["base"] / "S"), "--resources-dir", str(tmp_path / "res"),
+            "--out", str(out), "--version", "cnn-v2-check", "--wandb-mode", "disabled",
+            "--device", "cpu", "--num-workers", "0"]
+    vs.main(argv)
+    printed = capsys.readouterr().out
+    report = json.loads(printed[printed.index("{"):])
+    assert report == json.loads((out / "run_report.json").read_text(encoding="utf-8"))
+    assert report["selected"] == "crnn" and len(patched) == 5
+    patched.clear()
+    vs.main(argv)  # the same command after a disconnect: verified and returned, nothing retrained
+    assert patched == []
+    (out / vs.REHEARSAL_MARKER).write_text("{}", encoding="utf-8")
+    with pytest.raises(ValueError, match="is a rehearsal folder"):
+        vs.main(argv)
