@@ -8052,6 +8052,66 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 209 — Track V PR V7: notebook 10, the risk-v2 run (2026-11-21)
+
+- **Owner:** Donia Mabrouk (Part C). Branch `feat/stageV7-notebook10-risk-v2` from `main` `0914484`
+  (PR V2b-4 #156 merged: notebook 08 and the "Drive layout (Track V)" table; PR V4c #150 (`--root`)
+  and `version_guard.py` (#152) confirmed present). Entry number: 209 is the next free one on `main`
+  (208) and the remote branches (206, 198, 191, 84); open PRs from forks could not be listed (no
+  `gh` locally).
+- **Why [doc]:** Execution Plan v3.0 §9 V4, Remaining item 6 (risk-v2 due Mon 30 Nov). `v2_risk_run`
+  (PR V4a) had no notebook and its outputs no fixed Drive location, while notebook 09, the v2 Stage
+  11 runner and F5 read `docs/audit_evidence/v2_risk/` and `checkpoints/risk/risk-v2/val_b_scores.npz`.
+  No new decision.
+- **What changed:**
+  - `notebooks/10_trackV_risk_v2.ipynb`: notebook 05's cell structure and order, differences only
+    where v2 needs them. Parameters `COMMIT`, `VERSION = 'risk-v2'`, `SEARCH_VERSION = 'model-v2'`
+    (notebook 08's constant; a test reads 08 and keeps them equal), `DRIVE_ROOT`. Drive layout
+    constants; `refuse_existing_outputs()` on `checkpoints/risk/risk-v2/` and
+    `processed/metadata/v2_risk/` before any work and before export. Winner, bundle seed, expected
+    checkpoint hash, input kind and run folder from `v2_risk_run.bundle_checkpoint` +
+    `run_dir_name` in a fresh process; the committed search `run_report.json` must name
+    `SEARCH_VERSION`. FoR archive and pytest as 05. val-B log-Mel cache for log-Mel winners only,
+    built twice, byte-identical, F3 and commit checked, `npz_sha256` = the val-B hash in
+    `docs/audit_evidence/stage10_risk/run_report.json`. Checkpoint folder and S copied to `/content`.
+    One runner call with `*VAL_B_ARGS` = `--cache-dir` (log-Mel) or `--root` (`aasist`), rerun rule
+    adapted from 05 above it. Identity checks on `run_report.json` (commit, version, architecture,
+    bundle seed, checkpoint SHA-256, `val_b_input.form`, `scoring.device`, F3). Export, manifest
+    (`v2_risk_export_manifest.json`), flush/unmount/remount and re-hash as 05.
+  - `tests/governance/test_notebook_10_risk_v2.py` (33 tests): 05's checks adapted, plus winner
+    only from `bundle_checkpoint` (no candidate name in the code), both input branches with exactly
+    one of `--cache-dir` / `--root`, exact Python/torch strings and T4, `require_versions` in a fresh
+    process after the install, val-B cache only (twice, compared, Stage 10 hash), every Drive path in
+    an allow-list (never `risk-v1` / `stage10`), one runner call with the exact arguments and no
+    `--device`, the FoR guard finds nothing, steps in order.
+  - `docs/v2_training.md` ("Notebook 10" in the risk-v2 section, Drive layout note, tests, Next);
+    CHANGELOG.
+- **Deviation from the brief (Donia's choice, 2026-11-21, before writing the notebook):** the brief
+  said "no GPU is required". The val-B log-Mel known answer it asks for reproduced only on the T4
+  runtime (Entry 94: a CPU runtime gave a different val-A `npz`; D46 (1), D58 (1)), and for an
+  `aasist` winner nothing here would catch a CPU-runtime difference before notebook 09's T4 val-B
+  check. Option chosen: require the T4 + 2026.10 as notebooks 06 and 08 (asserted from `nvidia-smi`;
+  metadata `gpuType` T4); the GPU is never used, scoring stays on CPU with no device argument.
+  Option rejected: no GPU check (brief as written).
+- **No change** to `v2_risk_run.py`, `risk_run.py`, `risk_fit`, `version_guard.py`, configs, evidence
+  or other notebooks.
+- **Checks run [verified]:** `REQUIRE_TORCH_TESTS=1 pytest -q` (Windows, project `.venv`, Python
+  3.14.7, torch 2.11.0+cpu, before the docs commit) → `1 failed, 2143 passed, 356 skipped in
+  586.30s` (354 database tests skipped: no local PostgreSQL). The failure is the same as in Entry 208:
+  `tests/deploy/test_deploy_compose.py::test_init_script_creates_a_non_superuser_app_role_from_its_own_variable`
+  reads a POSIX executable bit that NTFS does not have; untouched here, expected to pass on CI.
+  `pytest -q tests/governance` → `144 passed in 2.05s` (33 of them new). The new test fails on each of five hand-made notebook mutations
+  (a `--device` argument, a hard-coded winner, val-A cached, a v1 output folder, a loose Python
+  check) [verified locally, mutated copies outside the repository].
+- **Not verified [hypothesis]:** the notebook has not run on Colab. The search reports' layout on
+  Drive (`runs/<winner>_seed<k>/checkpoint/`) is taken from `v2_search.py`; the exact M reproduction
+  on the T4 runtime's CPU is the hypothesis already stated for V4a.
+- **AI assistance:** Claude Code (Claude Opus 5.5) wrote the notebook, test and docs from Donia's V7
+  brief; team review required before acceptance (D26). AI does not push or merge.
+- **Gate:** **WAITING FOR APPROVAL.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -8079,6 +8139,8 @@ pointers and synchronized PDF are reviewed.
 - [x] PR V2b-1: v2 training loop, selection metric M over set S, resumable search, benchmark code (Entry 172; merged, PR #129).
 - [x] F5 model loader dispatching on `architecture` (D61 (6)), when F5 is built (Entry 170). Done ahead of F5 on synthetic bundles, with the Stage 13 hand-over test (PR V5a, Entry 186; merged, PR #138).
 - [ ] V4: v2 risk policy (Protocol §6 unchanged, clean val-B, bundle seed only; D45, D49). Code done: `src/tuning/v2_risk_run.py` (PR V4a, Entry 188; merged, PR #141) and the aasist F3 waveform val-B source with CLI `--root` (PR V4c, Entry 199; built ahead of selection; merged, PR #150). Run pending: after the search, commit its reports to `docs/audit_evidence/v2_search/`, then run with `--version risk-v2` (`--cache-dir` for cnn-aug / crnn, `--root` for aasist).
+- [x] V7 code: notebook 10 (`notebooks/10_trackV_risk_v2.ipynb`) runs the risk-v2 fit on the T4 runtime 2026.10 (scoring on CPU) and exports to `checkpoints/risk/risk-v2/` and `processed/metadata/v2_risk/` (Entry 209, waiting for approval).
+- [ ] V7 run: notebook 10 from the approved commit after the search evidence PR (risk-v2 due Mon 30 Nov), then the results PR (`docs/audit_evidence/v2_risk/`: run report, policy, diagnostics, export manifest), then notebook 09 (Entry 209).
 - [x] V4c review: reword `run`'s aasist refusal message ("none exists yet") now that the source exists, or keep it (Entry 199). Reworded at review.
 - [x] Draft the extension authentication design and security-review text in SDD v2.0 before implementation (D51; Entry 165; human approval and merge pending).
 - [ ] Choose the hosting provider and record it (D54 (9)); load test on staging, then record K, L, `analysis_timeout_s` and `L_MAX` (D53 (3)).
@@ -8516,7 +8578,7 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-20 (Entries 203-208)
+## Current status — updated 2026-11-21 (Entries 203-209)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -8549,7 +8611,14 @@ log-Mel caches, S and the resource cache with Malak's V1c builders, unchanged) a
 rehearsal and the search. Open: the real V1c builds and their evidence PR, the rehearsal (reviewed
 before the search) and the search itself (selection Fri 27 Nov; cut line: drop `aasist` first,
 Execution Plan v3.0 §7). Then risk-v2 (Mon 30 Nov), the v2 Stage 11 run and notebook 09, and F5
-before the Fri 4 Dec 23:59 cut-off. See the open items above and
+before the Fri 4 Dec 23:59 cut-off.
+
+**V7, risk-v2 notebook (Entry 209, waiting for approval).** Notebook 10 runs `v2_risk_run` once from
+one fixed commit after the search evidence PR: winner and bundle seed from the committed search
+evidence, T4 runtime 2026.10 (Donia's choice over the brief's "no GPU", because only the T4
+reproduces the Stage 10 val-B log-Mel bytes; scoring stays on CPU), val-B cache equal to the Stage 10
+hash for log-Mel winners, outputs in `checkpoints/risk/risk-v2/` and `processed/metadata/v2_risk/`.
+Not yet run. See the open items above and
 [Execution Plan v3.0](reference/Execution_Plan_v3.0.md).
 
 **Khalil / Stage 13 — preparation merged; external run not ready.** Runner preparation from Entries
