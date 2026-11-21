@@ -321,8 +321,8 @@ than the shared registry) are never written by Track V.
 | `processed/metadata/stage11/run_registry.jsonl` | Stage 11 runners (shared registry) | notebook 09; F5 local build |
 | `MyDrive/voice-spoofing-detection-v1b-checkpoint` (shortcut, `CORPUS_DIR`) | Malak (V1b/V1c) | notebook 08 (archives, read only) |
 
-Notebook 10 (risk-v2, PR V7) uses these names; notebook 09 does not exist yet, and its rows fix the
-folder names it will use.
+Notebook 10 (risk-v2, PR V7) and notebook 09 (v2 Stage 11, PR V6;
+[stage11_run.md, "Notebook 09"](stage11_run.md#notebook-09)) use these names.
 
 ## Batch-size benchmark (`src/tuning/v2_benchmark.py`)
 
@@ -467,7 +467,8 @@ path knob.
 **What is committed** (results PR, after review): `docs/audit_evidence/v2_risk/` = `run_report.json`,
 `risk_policy.json`, `diagnostics_report.json`, `v2_risk_export_manifest.json`. `val_b_scores.npz`
 stays on Drive only (AGENTS.md rule 7), bound by `val_b_scores_sha256`. **Order:** this run → results
-PR → notebook 09 (reads `v2_risk/`, copies `val_b_scores.npz` from `checkpoints/risk/risk-v2/`) → F5.
+PR → notebook 09 (reads `v2_risk/`, copies `val_b_scores.npz` from `checkpoints/risk/risk-v2/`;
+[stage11_run.md, "Notebook 09"](stage11_run.md#notebook-09)) → F5.
 Static test: `tests/governance/test_notebook_10_risk_v2.py`.
 
 ## v2 Stage 11 (V4b, `src/evaluation/stage11_v2_run.py`)
@@ -476,8 +477,10 @@ The separate `stage11_test` claim for the v2 model set (D48 (7)): the winner's t
 `<winner>-v2-seed<k>`, `p` and prediction for the bundle seed only (D45), scored on CPU through
 `v2_risk_run.model_inputs` + `score_clips`. It reads the committed search evidence and the risk-v2
 outputs in `docs/audit_evidence/v2_risk/`; its rehearsal recomputes M per seed and the val-B bytes
-of risk-v2. Details: [stage11_run.md](stage11_run.md#v2-model-set-d48-7). Code only so far; the
-real run (notebook 09) follows risk-v2.
+of risk-v2. Details: [stage11_run.md](stage11_run.md#v2-model-set-d48-7). The real run is
+`notebooks/09_stage11_v2_for_test.ipynb` (PR V6, Entry 210; steps, Drive folders, registry pre-check,
+rerun rule and what is committed in [stage11_run.md, "Notebook 09"](stage11_run.md#notebook-09)); it
+follows the risk-v2 results PR, and F5 follows its own results PR.
 
 ## F5 (V5b, `src/bundle/f5.py`)
 
@@ -518,3 +521,5 @@ refusals) and fake pins).
   commit (inputs, rehearsal, review of the rehearsal report, then the search; selection Fri 27 Nov).
 - **V7 (risk-v2):** notebook 10 code done (Entry 209). Open: run it after the search evidence PR
   (risk-v2 due Mon 30 Nov), then the results PR, then notebook 09.
+- **V6 (v2 Stage 11):** notebook 09 code done (Entry 210). Open: dry run, then the official run from
+  the approved commit after the risk-v2 results PR (deadline Wed 2 Dec), then its results PR, then F5.
