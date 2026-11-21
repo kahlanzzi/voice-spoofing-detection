@@ -321,7 +321,8 @@ than the shared registry) are never written by Track V.
 | `processed/metadata/stage11/run_registry.jsonl` | Stage 11 runners (shared registry) | notebook 09; F5 local build |
 | `MyDrive/voice-spoofing-detection-v1b-checkpoint` (shortcut, `CORPUS_DIR`) | Malak (V1b/V1c) | notebook 08 (archives, read only) |
 
-Notebooks 09 and 10 do not exist yet; their rows fix the folder names they will use.
+Notebook 10 (risk-v2, PR V7) uses these names; notebook 09 does not exist yet, and its rows fix the
+folder names it will use.
 
 ## Batch-size benchmark (`src/tuning/v2_benchmark.py`)
 
@@ -367,7 +368,7 @@ LSTM of crnn is bit-reproducible on the T4 is **not claimed here**: the V2b-4 re
 
 Protocol §6 unchanged, on clean val-B, for the bundle seed's checkpoint only (D45, D49 addendum).
 `risk_run.py` (Stage 10) stays v1-only; the v2 run reuses its val-B loader, diagnostics and file
-formats, and `fit_risk_policy` as is. Code only so far: the real run follows the search.
+formats, and `fit_risk_policy` as is. Code and notebook 10 only so far: the real run follows the search.
 
 - **Inputs:** the committed search evidence `docs/audit_evidence/v2_search/` (path fixed in code;
   written after the search), the bundle checkpoint folder, S, the F3 profile,
@@ -416,6 +417,59 @@ python -m src.tuning.v2_risk_run --checkpoint <bundle ckpt> --selection-set <S> 
 # aasist winner: --root <local extracted FoR root> in place of --cache-dir
 ```
 
+### Notebook 10 (`notebooks/10_trackV_risk_v2.ipynb`, PR V7)
+
+Runs the CLI above once on Colab, from one fixed reviewed commit, in notebook 05's order. It is merged
+before the search evidence exists but **run** only after the search evidence PR has committed
+`docs/audit_evidence/v2_search/`. Parameters: `COMMIT`, `VERSION = 'risk-v2'`, `SEARCH_VERSION`
+(notebook 08's constant, `model-v2`; a test keeps the two equal) and `DRIVE_ROOT`; no winner, seed or
+path knob.
+
+1. **Drive:** mount; `refuse_existing_outputs()` on `checkpoints/risk/risk-v2/` and
+   `processed/metadata/v2_risk/` before any work and again before export (never overwritten; v1's
+   `risk/risk-v1/` and `stage10/` are never touched).
+2. **Commit:** `len(COMMIT) == 40`, detached checkout, `assert_clean()` before and after every long cell.
+3. **Runtime:** Colab **T4**, runtime **2026.10**: torch exactly 2.11.0+cu130 (preinstalled, never
+   installed), then after the install, in a fresh process, Python exactly 3.13.16, torch again and
+   `version_guard.require_versions()` (D64). The T4 is required only because it is the runtime that
+   reproduces the Stage 8 / Stage 10 log-Mel bytes (D58 (1), Entry 94); the GPU is never used, the
+   runner scores on CPU and takes no device argument. (The brief said "no GPU required"; Donia chose
+   the T4 on 2026-11-21, Entry 209.)
+4. **Winner from evidence:** `WINNER`, `BUNDLE_SEED`, the expected checkpoint SHA-256, the input kind
+   and `run_dir_name(WINNER, BUNDLE_SEED)` come from `v2_risk_run.bundle_checkpoint(REPO /
+   'docs/audit_evidence/v2_search')` in a fresh process (no duplicated rule); the committed search
+   `run_report.json` must have `version == SEARCH_VERSION`.
+5. **FoR archive** (revision marker, `filter='data'`, observed SHA-256 recorded only) and **pytest**
+   (`REQUIRE_TORCH_TESTS=1`, JUnit counts, no failure, error or skip), as notebook 05.
+6. **val-B log-Mel cache** (`cnn-aug` / `crnn` only; `aasist` builds none): built twice
+   (`/content/cache_a/val-B`, `/content/cache_b/val-B`), byte-identical, F3 config SHA-256,
+   fingerprint and `code_commit` checked. **Known answer:** its `npz_sha256` equals the val-B
+   `npz_sha256` in `docs/audit_evidence/stage10_risk/run_report.json` (the cache risk-v1 was fitted
+   on). val-B only: S covers val-A; train and test are never built.
+7. **Copies** to `/content/v2_risk_inputs/` (outside the clone, never loaded in the notebook):
+   `checkpoints/v2_search/<SEARCH_VERSION>/runs/<winner>_seed<k>/checkpoint/` and
+   `processed/v2/selection_set_s/`; the runner verifies both.
+8. **One runner call:** the arguments above, plus exactly one of `--cache-dir /content/cache_a`
+   (log-Mel) or `--root /content/data/for_2sec` (`aasist`), into `/content/v2_risk_out`.
+   **Rerun rule:** a check failure (search evidence, checkpoint hash, architecture, seed, provenance,
+   M reproduction, completeness, determinism or fit) stops the run for a logged decision; only an
+   infrastructure failure before the run cell (Drive, clone, pip, archive, copies) may be rerun from
+   the same `COMMIT`.
+9. **Identity checks only** on `run_report.json`: `code_commit`, `version`, `architecture`,
+   `bundle_seed`, `checkpoint_sha256`, `val_b_input.form`, `scoring.device == 'cpu'`, F3 fingerprint
+   and config hash. The diagnostics are printed for review; nothing reads the fitted values.
+10. **Export** as notebook 05: `risk_policy.json`, `val_b_scores.npz` → `checkpoints/risk/risk-v2/`;
+    `run_report.json`, `diagnostics_report.json` and `v2_risk_export_manifest.json` (commit,
+    versions, winner and seed, environment, `require_versions`, pytest counts, cache hashes or
+    `null`, F3 values, observed FoR hash) → `processed/metadata/v2_risk/`; exclusive folders, every
+    copy re-hashed, then flush, unmount, remount and every file re-hashed.
+
+**What is committed** (results PR, after review): `docs/audit_evidence/v2_risk/` = `run_report.json`,
+`risk_policy.json`, `diagnostics_report.json`, `v2_risk_export_manifest.json`. `val_b_scores.npz`
+stays on Drive only (AGENTS.md rule 7), bound by `val_b_scores_sha256`. **Order:** this run → results
+PR → notebook 09 (reads `v2_risk/`, copies `val_b_scores.npz` from `checkpoints/risk/risk-v2/`) → F5.
+Static test: `tests/governance/test_notebook_10_risk_v2.py`.
+
 ## v2 Stage 11 (V4b, `src/evaluation/stage11_v2_run.py`)
 
 The separate `stage11_test` claim for the v2 model set (D48 (7)): the winner's three seeds,
@@ -448,7 +502,8 @@ of its four mismatches, the raw-cache pin, both subcommands' arguments, the CLI 
 `tests/tuning/test_v2_rehearsal.py` (V2b-4: report keys, clean check, determinism and forced-resume
 fields on real CPU training of a subset, folder refusals both ways, `require_versions` first),
 `tests/features/test_v2b3_raw_train_cache_evidence.py` (torch-free),
-`tests/governance/test_notebook_08_trackV_search.py` (notebook 08, static); fakes in `tests/_v2_fakes.py` (24-clip raw cache, 10-clip S,
+`tests/governance/test_notebook_08_trackV_search.py` (notebook 08, static),
+`tests/governance/test_notebook_10_risk_v2.py` (notebook 10, static); fakes in `tests/_v2_fakes.py` (24-clip raw cache, 10-clip S,
 deterministic fake codec, tiny noise/RIR, config copies with batch size 8 (or null, for the
 refusals) and fake pins).
 
@@ -461,3 +516,5 @@ refusals) and fake pins).
   notebook 08 on T4 2026.10 with Malak's builders; their evidence PR follows.
 - **V2b-4:** code done (CLI, rehearsal, notebook 08; Entry 208). Open: run notebook 08 from the merged
   commit (inputs, rehearsal, review of the rehearsal report, then the search; selection Fri 27 Nov).
+- **V7 (risk-v2):** notebook 10 code done (Entry 209). Open: run it after the search evidence PR
+  (risk-v2 due Mon 30 Nov), then the results PR, then notebook 09.
