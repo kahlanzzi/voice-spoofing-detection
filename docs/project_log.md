@@ -8110,6 +8110,56 @@ pointers and synchronized PDF are reviewed.
   brief; team review required before acceptance (D26). AI does not push or merge.
 - **Gate:** **WAITING FOR APPROVAL.**
 
+### Entry 210 — Track V PR V6: notebook 09, the v2 Stage 11 run (2026-11-21)
+
+- **Owner:** Donia Mabrouk (Part C). Branch `feat/stageV6-notebook09-stage11-v2` from `main` `97373c9`
+  (PR V2b-4 #156 and PR V7 #157 merged; PR V6a #148 `stage11_v2_report.py` and `version_guard.py`
+  #152 present). Entry number: 209 was the last used (main; the remote branches stop at 207).
+- **Why [doc]:** Execution Plan v3.0 §9 V6, D48 (7), Remaining item 7 (deadline Wed 2 Dec). The v2
+  model set needs its own one-time `stage11_test` claim through the reviewed `stage11_v2_run`, before
+  F5, which reads the committed `stage11_v2_run/run_report.json` and registry. No new decision.
+- **What changed:**
+  - `notebooks/09_stage11_v2_for_test.ipynb`: notebook 06's cells and order (dry run default;
+    official: rehearse → claim → flush/remount → score → report → export → results view). v2
+    differences: parameters `RISK_VERSION`, `SEARCH_VERSION` (= notebook 08's), `RESULTS_REF =
+    docs/results/stage11_v2_for_test.md`, no winner/seed/path knob; outputs in the new
+    `processed/metadata/stage11_v2/{run,dry_run/<stamp>}/`, shared registry
+    `processed/metadata/stage11/run_registry.jsonl`; `require_versions()` in a fresh process after the
+    install (D64), in both manifests; winner, input kind, bundle seed and the three run folders from
+    `v2_risk_run.bundle_checkpoint` + `run_dir_name` over the runner's `SEEDS` in a fresh process;
+    the committed search and risk-v2 run reports' `version` asserted equal to the parameters;
+    log-Mel caches for `cnn-aug`/`crnn` only (`cache_a` val-A + val-B, `cache_b` val-A), none and no
+    `--cache-*` for `aasist`; no MFCC, D58 reference or baseline; three checkpoints, S and
+    `val_b_scores.npz` copied outside the clone; a read-only registry pre-check (Drive SHA-256 and
+    line count = committed `docs/audit_evidence/run_registry.jsonl`) before the rehearsal; the claim
+    cell re-checks that hash; after the remount the registry must be the committed bytes plus exactly
+    one line, the `started` record with `claim.json`'s model set; 6 clip-score files; export manifest
+    `stage11_v2_export_manifest.json`.
+  - `tests/governance/test_notebook_09_stage11_v2.py` (50 tests): 06's helpers copied and its
+    checks adapted, plus the v2 checks of the brief.
+  - Docs: `docs/stage11_run.md` "Notebook 09" (steps, Drive folders, registry pre-check, rerun rule,
+    what is committed); `docs/v2_training.md` points to it (Drive layout note, notebook 10 order, v2
+    Stage 11 section, Next); CHANGELOG.
+- **Choices beyond the brief (for review):** `claim` also takes `--root` (the runner requires it on
+  all three subcommands; `aasist`'s gate reads val-A). The manifests add `input_kind` and
+  `registry_pre_check`. The "no mfcc/baseline" test covers every code cell; the markdown explains
+  their absence in words but names none of their arguments. The brief's "line 293" of
+  `docs/v2_training.md` had drifted; the lines that said notebook 09 was pending were updated.
+- **No change** to `stage11_v2_run.py`, `stage11_run.py`, `stage11_report.py`, `stage11_v2_report.py`,
+  `f5.py`, `version_guard.py`, configs, evidence or notebooks 06/08/10.
+- **Checks run [verified]:** `REQUIRE_TORCH_TESTS=1 pytest -q` (Windows, project `.venv`) →
+  `1 failed, 2193 passed, 356 skipped in 1518.67s` (354 database tests skipped: no local PostgreSQL);
+  the failure is the known NTFS one of Entries 208–209
+  (`tests/deploy/test_deploy_compose.py::test_init_script_creates_a_non_superuser_app_role_from_its_own_variable`).
+  `pytest -q tests/governance` → `194 passed in 16.03s` (50 new). The FoR guard finds nothing in the
+  notebook. The new test fails on hand-made mutations (`--cache-a` in the `aasist` branch, a literal
+  winner, outputs under v1's `stage11/`) [verified locally, notebook restored].
+- **Not verified [hypothesis]:** the notebook has not run on Colab; the v2 search and risk-v2
+  evidence it reads is not committed yet.
+- **AI assistance:** Claude Code (Claude Opus 5.5) wrote the notebook, test and docs from Donia's V6
+  brief; team review required before acceptance (D26). AI does not push or merge.
+- **Gate:** **WAITING FOR APPROVAL.**
+
 ---
 
 ## Open items
@@ -8139,8 +8189,11 @@ pointers and synchronized PDF are reviewed.
 - [x] PR V2b-1: v2 training loop, selection metric M over set S, resumable search, benchmark code (Entry 172; merged, PR #129).
 - [x] F5 model loader dispatching on `architecture` (D61 (6)), when F5 is built (Entry 170). Done ahead of F5 on synthetic bundles, with the Stage 13 hand-over test (PR V5a, Entry 186; merged, PR #138).
 - [ ] V4: v2 risk policy (Protocol §6 unchanged, clean val-B, bundle seed only; D45, D49). Code done: `src/tuning/v2_risk_run.py` (PR V4a, Entry 188; merged, PR #141) and the aasist F3 waveform val-B source with CLI `--root` (PR V4c, Entry 199; built ahead of selection; merged, PR #150). Run pending: after the search, commit its reports to `docs/audit_evidence/v2_search/`, then run with `--version risk-v2` (`--cache-dir` for cnn-aug / crnn, `--root` for aasist).
-- [x] V7 code: notebook 10 (`notebooks/10_trackV_risk_v2.ipynb`) runs the risk-v2 fit on the T4 runtime 2026.10 (scoring on CPU) and exports to `checkpoints/risk/risk-v2/` and `processed/metadata/v2_risk/` (Entry 209, waiting for approval).
+- [x] V7 code: notebook 10 (`notebooks/10_trackV_risk_v2.ipynb`) runs the risk-v2 fit on the T4 runtime 2026.10 (scoring on CPU) and exports to `checkpoints/risk/risk-v2/` and `processed/metadata/v2_risk/` (Entry 209; merged, PR #157).
 - [ ] V7 run: notebook 10 from the approved commit after the search evidence PR (risk-v2 due Mon 30 Nov), then the results PR (`docs/audit_evidence/v2_risk/`: run report, policy, diagnostics, export manifest), then notebook 09 (Entry 209).
+- [x] V6 code: notebook 09 (`notebooks/09_stage11_v2_for_test.ipynb`) runs the v2 `stage11_test` claim (D48 (7)) in notebook 06's order through `stage11_v2_run` and `stage11_v2_report`; outputs in `processed/metadata/stage11_v2/`, read-only registry pre-check before the rehearsal (Entry 210, waiting for approval).
+- [ ] V6 dry run: notebook 09 with `MODE = 'dry_run'` from the approved commit after the risk-v2 results PR; team review of the rehearsal report before the official run (Entry 210).
+- [ ] V6 official run: notebook 09 with `MODE = 'official'` (once; target Wed 2 Dec), then the results PR (`docs/audit_evidence/run_registry.jsonl`, `docs/audit_evidence/stage11_v2_run/`, `docs/results/stage11_v2_for_test.md`), then F5 (Entry 210).
 - [x] V4c review: reword `run`'s aasist refusal message ("none exists yet") now that the source exists, or keep it (Entry 199). Reworded at review.
 - [x] Draft the extension authentication design and security-review text in SDD v2.0 before implementation (D51; Entry 165; human approval and merge pending).
 - [ ] Choose the hosting provider and record it (D54 (9)); load test on staging, then record K, L, `analysis_timeout_s` and `L_MAX` (D53 (3)).
@@ -8158,7 +8211,7 @@ pointers and synchronized PDF are reviewed.
 - [ ] Iheb confirms the SDD v2.0 owner review and all four reviewers explicitly accept the D51 extension-authentication design before extension implementation; PR #122 currently records Donia's approvals only.
 - [ ] Stage 13 runner (D35) and Stage 11 runner (PR #68) accept the v2 model set (D48 (3), (7)). Stage 11 part: V4b code done (`src/evaluation/stage11_v2_run.py`, Entry 190; merged, PR #142, incl. the `ALLOWED` access-rule change for Khalil).
 - [x] V4b follow-up (item 8): v2 Stage 11 metrics report code, `src/evaluation/stage11_v2_report.py`; D57 applied to the v2 set with no hypothesis (Donia, option A) (PR V6a, Entry 197; merged, PR #148).
-- [ ] V4b follow-ups: the v2 Stage 11 run (after risk-v2, before F5; target Wed 2 Dec) and its notebook (09), which also produces the real v2 metrics report on the run's platform (Entries 190, 197).
+- [ ] V4b follow-ups: the v2 Stage 11 run (after risk-v2, before F5; target Wed 2 Dec) and its notebook (09), which also produces the real v2 metrics report on the run's platform (Entries 190, 197). Notebook code done (Entry 210); the runs are the two V6 items above.
 - [ ] V5: V5b code done (`src/bundle/f5.py`, Entry 192; merged, PR #144); F5 build on Colab after the v2 Stage 11 run, the freeze decision (next free D) and the hand-over still open (cut-off Fri 4 Dec 23:59 Tunis, D48 (4)).
 
 
@@ -8578,7 +8631,7 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-21 (Entries 203-209)
+## Current status — updated 2026-11-21 (Entries 203-210)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -8603,7 +8656,7 @@ tests only; their real runs follow the search.
 
 **V2b-3 and V2b-4 (Entry 208).** V2b-3 is closed: the T4 raw train cache records
 `n_all_zero_clips = 0`, so D62 is not needed (recorded as not used); its `train_raw.json` is committed
-as evidence and the search CLI refuses any other cache. PR V2b-4 (Entry 208, waiting for approval)
+as evidence and the search CLI refuses any other cache. PR V2b-4 (Entry 208; merged, PR #156)
 adds the search CLI (`python -m src.tuning.v2_search search|rehearse`; `run_search` unchanged), the
 check that binds the V1c resource cache to the committed V1b inventories and archive pins, the T4
 rehearsal, and notebook 08, which builds or verifies every search input on one fixed commit (Stage 8
@@ -8613,12 +8666,21 @@ before the search) and the search itself (selection Fri 27 Nov; cut line: drop `
 Execution Plan v3.0 §7). Then risk-v2 (Mon 30 Nov), the v2 Stage 11 run and notebook 09, and F5
 before the Fri 4 Dec 23:59 cut-off.
 
-**V7, risk-v2 notebook (Entry 209, waiting for approval).** Notebook 10 runs `v2_risk_run` once from
+**V7, risk-v2 notebook (Entry 209; merged, PR #157).** Notebook 10 runs `v2_risk_run` once from
 one fixed commit after the search evidence PR: winner and bundle seed from the committed search
 evidence, T4 runtime 2026.10 (Donia's choice over the brief's "no GPU", because only the T4
 reproduces the Stage 10 val-B log-Mel bytes; scoring stays on CPU), val-B cache equal to the Stage 10
 hash for log-Mel winners, outputs in `checkpoints/risk/risk-v2/` and `processed/metadata/v2_risk/`.
-Not yet run. See the open items above and
+Not yet run.
+
+**V6, v2 Stage 11 notebook (Entry 210, waiting for approval).** Notebook 09 runs the separate v2
+`stage11_test` claim (D48 (7)) in notebook 06's order: dry run by default (rehearsal, then stop);
+official: rehearse → claim → flush/remount → score → `stage11_v2_report` → export → results view.
+Winner, input kind and bundle seed from the committed search evidence; `require_versions` (D64) in a
+fresh process; log-Mel caches only for `cnn-aug`/`crnn`; a read-only check that the Drive registry
+equals the committed one before the rehearsal; outputs in `processed/metadata/stage11_v2/`. Not yet
+run: after the risk-v2 results PR, dry run, then the official run (target Wed 2 Dec), then its
+results PR, then F5. See the open items above and
 [Execution Plan v3.0](reference/Execution_Plan_v3.0.md).
 
 **Khalil / Stage 13 — preparation merged; external run not ready.** Runner preparation from Entries
@@ -8670,8 +8732,10 @@ implementation and single migration with Iheb.
 The D52 warm-up analysis is scheduled for W3 (23–29 November); Stages 15–16 follow later in the plan.
 
 **What is next:**
-1. Track V: review and merge PR V2b-4, then run notebook 08 from the merged commit (V1c builds,
-   rehearsal, team review of the rehearsal report, search), then the V1c and search evidence PRs.
+1. Track V: run notebook 08 from the merged commit (V1c builds, rehearsal, team review of the
+   rehearsal report, search), then the V1c and search evidence PRs; notebook 10 (risk-v2) and its
+   results PR; review and merge PR V6, then notebook 09 (dry run, official run) and its results PR;
+   then F5.
 2. Review and merge the SRS v4.1 adoption update, then coordinate D63 implementation with Iheb and
    keep Stage 13 within its gates.
 3. Do not open, score or claim DEEP-VOICE until the single-run prerequisites and team review pass.

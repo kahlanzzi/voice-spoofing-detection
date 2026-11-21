@@ -356,7 +356,7 @@ IDs, loader and Stage 7/8/10 evidence are fixed in its code, and its `claim` ref
 `split_rows`, `_ArrayDigest` / `array_sha256` / `features_sha256`, `bundle_outputs`, `_create`,
 `_check` / `_record`, `_read_claim`, `_load_cache`, the file names) and keeps the same two-phase
 procedure, marker and rerun rule; none of them needed a change. Code and synthetic tests only; the
-real run is notebook 09 (a later PR). No baseline: `baseline-v1` was scored in the v1 claim, so there
+real run is notebook 09 ([below](#notebook-09), PR V6). No baseline: `baseline-v1` was scored in the v1 claim, so there
 is no MFCC, no D58 reference and no D29 prediction here.
 
 ```
@@ -492,6 +492,66 @@ Governance: `src/evaluation/stage11_v2_run.py` (the file, not the folder) is in 
 `stage11_run.SPLIT`, which the guard's `import` rule now reports; the `ALLOWED` entry is what
 permits it.
 
+### Notebook 09
+
+[`notebooks/09_stage11_v2_for_test.ipynb`](../notebooks/09_stage11_v2_for_test.ipynb) (PR V6) runs
+the v2 claim on a Colab T4 runtime 2026.10 in [notebook 06](#notebook-06)'s order, with the
+differences the v2 model set requires. Static test: `tests/governance/test_notebook_09_stage11_v2.py`
+(06's helpers copied, its checks adapted, plus the v2 ones below); it also runs the FoR guard on the
+notebook, which needs no `ALLOWED` entry. Parameters: `COMMIT`, `MODE` (`'dry_run'` default /
+`'official'`), `RISK_VERSION = 'risk-v2'`, `SEARCH_VERSION = 'model-v2'` (notebook 08's constant),
+`DRIVE_ROOT`, `RESULTS_REF = 'docs/results/stage11_v2_for_test.md'`; no winner, seed or path knob.
+From the claim cell on, every code cell starts with `assert MODE == 'official'`.
+
+| Step | What |
+|---|---|
+| 1–3 | parameters; Drive mount, constants from the Track V layout, `refuse_existing_outputs()`; exact commit (`assert_clean` before and after every long cell: install, winner probe, archive, pytest, caches, copies, each runner call, report) |
+| 4 | environment gate as 06 (T4, Python 3.13.16, Colab torch 2.11.0+cu130 never installed), then in a fresh process after the install `version_guard.require_versions()` (D64; NumPy, SciPy, SoundFile equal to `requirements.txt`), its result in both manifests |
+| 5 | winner, input kind, bundle seed and the three run folders from `v2_risk_run.bundle_checkpoint(docs/audit_evidence/v2_search)` in a fresh process (no rule duplicated, no candidate name in the code); the committed search report's `version` = `SEARCH_VERSION`, the committed risk-v2 `run_report.json` `version` = `RISK_VERSION`; both printed |
+| 6–7 | FoR archive (D21 revision, `filter='data'`, observed SHA-256 recorded only); `pytest` via JUnit XML, 0 failures, errors, skips, `REQUIRE_TORCH_TESTS=1` |
+| 8 | `cnn-aug` / `crnn` only: `cache_a` = `log_mel/val-A` + `log_mel/val-B`, `cache_b` = `log_mel/val-A`; val-A byte-identical, F3 and `code_commit` checked; `aasist`: no cache, no `--cache-*` argument. No MFCC, no D58 reference |
+| 9 | copied to `/content/stage11_v2_artifacts/`: `runs/<winner>_seed<k>/checkpoint/` for k = 0, 1, 2 only, S, `val_b_scores.npz` from `checkpoints/risk/risk-v2/`; not loaded (the runner checks every hash; the policy is read from the committed `v2_risk/`) |
+| 10 | **registry pre-check** (below) |
+| 11 | `rehearse`, `passed` must be `true`; dry run: into `stage11_v2/dry_run/<UTC stamp>/rehearsal/` on Drive; official: `/content/stage11_v2_rehearsal` |
+| 12 | dry run only: manifest `stage11_v2_dry_run_manifest.json`, flush, remount, re-verify; "Dry run complete. Stop here." |
+| 13 | rerun rule (markdown); `run/` must not exist and the Drive registry must still have the pre-check hash; `claim` (+ `--root`, `--registry`, `--results-ref`, `--out run/runner/`) |
+| 14 | flush, remount; `RUN_ID` from `claim.json` (winner and bundle seed = step 5); registry SHA-256 = `registry_sha256`, the committed lines unchanged plus exactly one new line, last line this run's `started` record with the model set of `claim.json`; claim files unchanged |
+| 15 | `score --run-id RUN_ID --out run/runner/`; identity checks only (`code_commit`, `run_id`, last registry line `completed` with `RESULTS_REF`) |
+| 16 | `stage11_v2_report --run-dir run/runner --registry --manifest --search-evidence docs/audit_evidence/v2_search --risk-evidence docs/audit_evidence/v2_risk` into `/content/stage11_v2_report`, once |
+| 17 | `run/runner/` holds exactly the seven runner files and `clip_scores/` with 6 files (3 models × CSV + JSON), hashed in place; metrics report and rehearsal copied with `export_file`; `stage11_v2_export_manifest.json` (06's fields without CNN, baseline and MFCC, plus `search_version`, `risk_version`, `winner`, `input_kind`, `bundle_seed`, `require_versions`, `registry_pre_check`, `run_id`, registry SHA-256 and line count after `complete`); flush, remount, re-verify every file and the registry |
+| 18 | only now: display `metrics_report.md` |
+
+**Drive folders** (the "Drive layout (Track V)" table in [v2_training.md](v2_training.md)): the
+shared live registry `processed/metadata/stage11/run_registry.jsonl` (the v2 claim appends to it,
+D48 (7); written only by the runner); the new `processed/metadata/stage11_v2/` with `run/` (official)
+and `dry_run/<UTC stamp>/` (one per dry run). v1's `processed/metadata/stage11/run/` is never touched.
+Read only: `checkpoints/v2_search/model-v2/runs/`, `processed/v2/selection_set_s/`,
+`checkpoints/risk/risk-v2/`.
+
+**Registry pre-check** (step 10, before the rehearsal and so before any claim; read-only): the Drive
+registry's SHA-256 and line count must equal those of the committed
+`docs/audit_evidence/run_registry.jsonl` (the reviewed v1 pair). A mismatch stops the notebook with
+both hashes and line counts. The runner's own registry rule (exactly the v1 pair, no v2 record) runs
+again inside `claim`.
+
+**Rerun rule** (D46 (8) and D48 (7), in the notebook above the claim): before the claim, an
+infrastructure failure (Drive, clone, pip, archive, artifact copies) may be rerun from the same
+commit; an environment-gate failure (including `require_versions`), a reproduction-gate failure, a
+registry pre-check mismatch, or a rehearsal that ends with a failed check (`failed_check` not null)
+stops the v2 run until a logged decision; a rehearsal that crashes on an infrastructure error
+(`failed_check` null) may be rerun from the same commit. After the claim, no rerun ever without a new
+decision; the v2 claim cannot be repeated.
+
+**What is committed** (results PR, after human review): a byte copy of the Drive registry to
+`docs/audit_evidence/run_registry.jsonl` (SHA-256 and line count equal to the export manifest);
+`docs/audit_evidence/stage11_v2_run/` = `claim.json`, `environment.json`, `pip_freeze.txt`,
+`scoring_started.json`, `environment_score.json`, `features.json`, `run_report.json`,
+`rehearsal_report.json`, `metrics_report.json`, `stage11_v2_export_manifest.json`;
+`metrics_report.md` at `docs/results/stage11_v2_for_test.md`. The clip scores stay on Drive
+(`stage11_v2/run/runner/clip_scores/`, AGENTS.md rule 7). F5 (`src.bundle.f5`) reads
+`stage11_v2_run/run_report.json` and the committed registry, so the F5 build runs only after this
+results PR is merged.
+
 ## Limitations
 
 - The guard (`tests/governance/test_for_test_access.py`) allows exactly two files,
@@ -504,8 +564,8 @@ permits it.
   test split itself.
 - The environment record is descriptive; only Python and torch are asserted (D46 (2)). The
   `pytest` and requirements parts of the gate belong to the notebook.
-- The Drive flush between `claim` and `score` is notebook 06, step 12 ([below](#notebook-06)); the
-  code checks its result (registry bytes equal to `claim.json`) but cannot flush.
+- The Drive flush between `claim` and `score` is notebook 06, step 12 ([above](#notebook-06)), and
+  for the v2 run notebook 09, step 14 ([above](#notebook-09)); the code checks its result (registry bytes equal to `claim.json`) but cannot flush.
 - A wrong `run_id` (or a commit other than the claim's) is refused from `claim.json` before the
   marker, so it does not block scoring. Once the marker exists, any further `score` call needs a
   new decision (D46 (8)).
