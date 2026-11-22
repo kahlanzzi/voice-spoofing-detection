@@ -24,6 +24,9 @@ TYPES = {
     "max_duration_s": int,
     "audio_deletion": str,
     "analysis_timeout_s": int,
+    "analysis_workers": int,
+    "analysis_retry_after_s": int,
+    "analysis_worker_start_timeout_s": int,
     "page_size_max": int,
     "note_max_chars": int,
     "stats_time_zone": str,
@@ -44,7 +47,8 @@ TYPES = {
     "password_max_chars": int,
     "allowed_origins": list,
 }
-POSITIVE = ("max_size_bytes", "max_duration_s", "analysis_timeout_s", "page_size_max", "note_max_chars",
+POSITIVE = ("max_size_bytes", "max_duration_s", "analysis_timeout_s", "analysis_workers", "analysis_retry_after_s",
+            "analysis_worker_start_timeout_s", "page_size_max", "note_max_chars",
             "session_idle_minutes", "session_absolute_hours", "lockout_threshold", "lockout_minutes",
             "password_min_chars", "password_max_chars", "database_port", "database_pool_max",
             "database_timeout_s")
@@ -61,6 +65,9 @@ class ApiConfig:
     max_duration_s: int
     audio_deletion: str
     analysis_timeout_s: int
+    analysis_workers: int
+    analysis_retry_after_s: int
+    analysis_worker_start_timeout_s: int
     page_size_max: int
     note_max_chars: int
     stats_time_zone: str
@@ -116,6 +123,9 @@ def load_api_config(path=None) -> ApiConfig:
     formats = cfg["formats"]
     if not formats or not all(isinstance(f, str) and f and f == f.lower() for f in formats):
         raise ValueError(f"{path}: formats must be a non-empty list of lower-case extensions, got {formats!r}")
+    if cfg["analysis_retry_after_s"] > cfg["analysis_timeout_s"]:
+        # The analysis deadline is the longest an analysis holds a worker (D53 (2)).
+        raise ValueError(f"{path}: analysis_retry_after_s must not exceed analysis_timeout_s")
     if not 0.0 <= cfg["mock_deferral_on_fit"] <= 1.0:
         raise ValueError(f"{path}: mock_deferral_on_fit must be in [0, 1], got {cfg['mock_deferral_on_fit']!r}")
     if not cfg["notice_text"].strip():
