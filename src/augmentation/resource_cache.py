@@ -172,7 +172,10 @@ def build_training_resources(
     out_dir.mkdir(parents=True)
     try:
         npz_path = out_dir / NPZ_NAME
-        _write_npz(npz_path, arrays)
+        # The 2,257,171,132-byte packed RIR array exceeds zipfile's streamed-member
+        # ZIP64_LIMIT of 2^31 - 1 bytes on the real corpus.
+        # ZIP64 changes this cache's container only; other frozen NPZ writers keep their bytes.
+        _write_npz(npz_path, arrays, force_zip64=True)
         meta = {
             "schema_version": SCHEMA_VERSION, "sample_rate": SAMPLE_RATE, "split_seed": SEED,
             "noise_count": len(noise_rows), "rir_count": len(rir_rows),

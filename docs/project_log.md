@@ -7098,6 +7098,31 @@ module, training-format S build/verification, training-half resource cache and o
   team review required before acceptance.
 - **Gate:** **WAITING FOR APPROVAL.**
 
+### Entry 211 — V1c training resource-cache ZIP64 fix (2026-11-22)
+
+- **Owner:** Malak Ben Salem (Track V V1c). Branch `fix/stageV1-resource-cache-zip64` from
+  `main` `768b75a`.
+- **Why [verified]:** the first real T4 training-half resource-cache build decoded the audited
+  training resources, then failed while writing `training_resources.npz` with
+  `RuntimeError: File size too large, try using force_zip64`. No local or Drive resource-cache
+  folder remained. The packed RIR member is 2,257,171,132 bytes (2.10 GiB), exceeding Python
+  `zipfile`'s streamed-member `ZIP64_LIMIT` of `2^31 - 1` bytes unless `force_zip64` is enabled.
+- **What changed:** `_write_npz` gains an opt-in `force_zip64` argument whose default is false;
+  only `resource_cache.py` enables it. Existing model, feature-cache and selection-set NPZ writers
+  therefore keep their prior byte format. Tests cover the default/ZIP64 container versions,
+  round-trip loading and the resource builder's required opt-in.
+- **Checks run [verified]:**
+  `pytest -q tests/models/test_baseline.py tests/augmentation/test_resource_cache.py` →
+  `31 passed in 6.15s`. Full Python 3.13 Linux suite →
+  `1521 passed, 398 skipped in 206.24s (0:03:26)`; 354 PostgreSQL tests skipped because no
+  PostgreSQL server was attached. DEEP-VOICE governance → `4 passed in 1.27s`.
+- **Data/governance:** no dataset, audio, checkpoint or generated cache is committed; no
+  DEEP-VOICE access. The real V1c cache and evidence remain open until the corrected code is
+  reviewed, merged and run on the official T4 runtime.
+- **AI assistance:** Codex diagnosed the Colab traceback, scoped ZIP64 to the oversized V1c cache,
+  added regression tests and drafted this record; human review is required.
+- **Gate:** **WAITING FOR APPROVAL.**
+
 ---
 
 ### Entry 186 — Track V PR V5a: F5 model loader dispatching on `architecture` (2026-11-15)
@@ -8176,7 +8201,7 @@ pointers and synchronized PDF are reviewed.
 - [x] V2b-R review: `train_v2` gained `provenance` next to `resume_dir` (the brief allowed only `resume_dir`; the provenance check needs it) — accept or revise (Entry 184). Accepted in Donia's review (2026-11-15).
 - [x] V1c: move the notebook recipe into a pure `src/augmentation/` module and prove byte parity for all five conditions on synthetic audio (D50/D56; Entries 180, 185).
 - [ ] V1c: materialize S with `write_selection_set` on Colab T4 runtime 2026.10 and verify both forms with `load_selection_set`, including the Stage 8 val-A known answer (D50 (4), D58; Entries 172, 180, 185). Built by notebook 08 on T4 2026.10; evidence PR follows (Entry 208).
-- [ ] V1c: build and verify the deterministic training-half MUSAN/RIR resource cache outside the repo; refuse selection-half or all-zero resources (D50 (5); Entries 180, 185). Built by notebook 08 on T4 2026.10; evidence PR follows (Entry 208).
+- [ ] V1c: build and verify the deterministic training-half MUSAN/RIR resource cache outside the repo; refuse selection-half or all-zero resources (D50 (5); Entries 180, 185). The first real run exposed the streamed-member `ZIP64_LIMIT` defect for the 2,257,171,132-byte packed RIR array; the scoped fix is Entry 211. Rerun after review and merge, then commit the small evidence (Entry 208).
 - [x] V1c: make `FFmpegCodecBackend` verify its pin once per backend instance without changing encode/decode output bytes (codec 0.42 s/item dominates augmentation; Entries 172–173, 185).
 - [x] D64 (Entries 189, 201–202, 205; approved, PR #140): the whole recipe was regenerated once on
   the reviewed Colab 2026.10 T4 runtime; exactly the 1,330 reverberation hashes changed and the
@@ -8631,7 +8656,7 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-21 (Entries 203-210)
+## Current status — updated 2026-11-22 (Entries 203-211)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -8722,6 +8747,13 @@ runs before output creation. The complete governance folder passes.
 reverberation hashes changed; 5,320 hashes and every non-hash invariant stayed identical. The old and
 new recipe/report pairs and full comparison are retained. D64 is closed; the two real V1c builders
 remain open.
+
+**V1c real resource-cache blocker (Entry 211):** the official-runtime build reached the final NPZ
+write and failed because the 2,257,171,132-byte (2.10 GiB) packed RIR member exceeds Python
+`zipfile`'s streamed-member `ZIP64_LIMIT` of `2^31 - 1` bytes. The fix enables
+ZIP64 only for `training_resources.npz`; all other deterministic NPZ writers retain their existing
+format. Focused tests pass. The real cache, its verification and the V1c evidence PR remain open until
+this fix is reviewed, merged and rerun on T4.
 
 **Khalil’s next project work.** The synchronized SRS v4.1 pair prepared in Entry 200 received all-four
 approval in PR #151 and is adopted as the current SRS in Entry 206; v4.0 remains unchanged as history.
