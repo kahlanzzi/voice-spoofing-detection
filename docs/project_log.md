@@ -7123,6 +7123,29 @@ module, training-format S build/verification, training-half resource cache and o
   added regression tests and drafted this record; human review is required.
 - **Gate:** **WAITING FOR APPROVAL.**
 
+### Entry 212 — Stage 14 v1 robustness contract and paired-score core (2026-11-22)
+
+- **Owner:** Malak Ben Salem. Branch `feat/stage14-robustness-v1-malak` from `main` `d5ffe18`.
+- **Scope:** first reviewed Stage 14 implementation unit only; no FoR test audio, registry claim,
+  model scoring, dataset output, checkpoint or DEEP-VOICE access.
+- **What changed:** strict `configs/robustness.yaml` for the Protocol section 9 grid; deterministic
+  white Gaussian noise, pinned-backend MP3 and explicit Butterworth low-pass transformations;
+  D41 clean-score reuse gate bound to F2 and exactly one completed Stage 11 registry record; exact
+  row/model pairing; EER and CNN REAL false-synthetic-rate increases with the paired 2,000-resample
+  D14-group bootstrap (seed 2026) and the frozen 0.05 support rule. The noise seed derivation and
+  filter design are review-visible in config and `docs/stage14_robustness.md`.
+- **Governance:** only `src/evaluation/stage14_run.py` is added to the FoR test allow-list. The
+  condition/statistics module cannot request that split. The runner file currently holds only the
+  clean-score hand-over gate; claim/score, F3/model integration, D58, output/reporting and notebook
+  work remain before any official access.
+- **Checks [verified, local Windows]:** Stage 14 synthetic tests → `21 passed`; Stage 14 plus reused
+  clip-score and registry suites → `157 passed`; full governance suite after the explicit allow-list
+  change → `194 passed`. Ruff was unavailable in the existing virtual environment. `git diff
+  --check` passes.
+- **AI assistance:** Codex mapped the existing Stage 11/score/registry APIs, implemented this scoped
+  unit and its tests, and drafted the design/log records. Human review is required before acceptance.
+- **Gate:** **WAITING FOR APPROVAL.**
+
 ---
 
 ### Entry 186 — Track V PR V5a: F5 model loader dispatching on `architecture` (2026-11-15)
