@@ -4,8 +4,8 @@ web services.
 The HMAC key and the database passwords come only from the environment (.env through Compose interpolation),
 never from a file in the repo; the api receives its own role's password only, never the superuser's; the api
 and db publish no port (only nginx may front the api, §4.8); the store is PostgreSQL on a named volume, its
-image pinned by digest, its log kept free of row values; temp uploads are on a tmpfs large enough for the
-declared number of concurrent uploads at the configs/api.yaml limit.
+image pinned by digest, its log kept free of row values; temp uploads are on a tmpfs large enough for K
+(analysis_workers) uploads at the configs/api.yaml limit (D53 (2), (3)).
 nginx (web) is built from deploy/web.Dockerfile (pins: tests/deploy/test_deploy_web_image.py) with the app and
 deploy/nginx.conf inside, publishes the port in allowed_origins and buffers request bodies on a tmpfs.
 """
@@ -146,13 +146,26 @@ def test_db_container_is_hardened():
     assert "no-new-privileges:true" in DB["security_opt"]
 
 
-def test_tmpfs_holds_the_declared_concurrent_uploads_at_the_config_limit():
+def test_api_tmpfs_holds_k_uploads_at_the_config_limit():
     (entry,) = [t for t in API["tmpfs"] if t.split(":", 1)[0] == "/tmp"]
-    assert load_api_config().temp_dir is None  # so uploads go to the system temp folder, /tmp
-    uploads = COMPOSE["x-vsd-concurrent-uploads"]
-    assert isinstance(uploads, int) and uploads >= 1
+    config = load_api_config()
+    assert config.temp_dir is None  # so uploads go to the system temp folder, /tmp
+    # The API takes a worker before it reads the body, so at most K uploads are in /tmp at once (api/pool.py).
     # Two copies per upload: Starlette's spooled multipart part and the API's temp file (api/intake.py).
-    assert tmpfs_bytes(entry) >= 2 * body_limit(load_api_config()) * uploads
+    assert tmpfs_bytes(entry) >= 2 * body_limit(config) * config.analysis_workers
+
+
+def test_api_tmpfs_is_the_32_mib_round_up_for_k():
+    (entry,) = [t for t in API["tmpfs"] if t.split(":", 1)[0] == "/tmp"]
+    config = load_api_config()
+    needed = 2 * body_limit(config) * config.analysis_workers
+    assert tmpfs_bytes(entry) == -(-needed // (32 * 1024 ** 2)) * 32 * 1024 ** 2  # not oversized either
+
+
+def test_concurrent_uploads_key_is_gone():
+    # Replaced by analysis_workers, which the pool enforces (D53 (3), Entry 125).
+    assert "x-vsd-concurrent-uploads" not in COMPOSE
+    assert "x-vsd-concurrent-uploads" not in TEXT
 
 
 def test_tmpfs_size_parser():
@@ -185,9 +198,9 @@ def test_web_publishes_the_port_of_allowed_origins():
     assert {urlsplit(o).port for o in load_api_config().allowed_origins} == {published}
 
 
-def test_web_tmpfs_holds_the_declared_concurrent_uploads_at_the_nginx_limit():
+def test_web_tmpfs_holds_two_k_bodies_at_the_nginx_limit():
     (entry,) = [t for t in WEB["tmpfs"] if t.split(":", 1)[0] == "/var/cache/nginx"]
     conf = (REPO / "deploy" / "nginx.conf").read_text(encoding="utf-8")
     match = re.search(r"^\s*client_max_body_size\s+(\d+)([kmg]?);", conf, re.M)
     nginx_limit = int(match.group(1)) * UNITS[match.group(2)]
-    assert tmpfs_bytes(entry) >= nginx_limit * COMPOSE["x-vsd-concurrent-uploads"]
+    assert tmpfs_bytes(entry) >= nginx_limit * 2 * load_api_config().analysis_workers

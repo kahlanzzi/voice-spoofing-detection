@@ -196,6 +196,16 @@ def test_nginx_answers_use_the_section6_shape_and_codes():
         assert (body["error"]["code"], status) in rows
 
 
+def test_nginx_own_503_carries_retry_after_equal_to_the_config():
+    retry = [n.args for n in LOCATIONS["@unavailable"].find("add_header") if n.args[0] == "Retry-After"]
+    assert retry == [["Retry-After", str(load_api_config().analysis_retry_after_s), "always"]]
+
+
+def test_only_the_unavailable_answer_sets_retry_after():
+    setters = [n for n in ROOT.walk() if n.name == "add_header" and n.args[0] == "Retry-After"]
+    assert len(setters) == 1 and setters[0] in LOCATIONS["@unavailable"].find("add_header")
+
+
 def test_body_limit_and_timeouts_sit_above_the_api_limits():
     config = load_api_config()
     (limit,) = SERVER.find("client_max_body_size")
