@@ -7105,7 +7105,8 @@ module, training-format S build/verification, training-half resource cache and o
 - **Why [verified]:** the first real T4 training-half resource-cache build decoded the audited
   training resources, then failed while writing `training_resources.npz` with
   `RuntimeError: File size too large, try using force_zip64`. No local or Drive resource-cache
-  folder remained. The packed RIR member exceeds ZIP's ordinary 4 GiB per-member limit.
+  folder remained. The packed RIR member is 2,257,171,132 bytes (2.10 GiB), exceeding Python
+  `zipfile`'s streamed-member `ZIP64_LIMIT` of `2^31 - 1` bytes unless `force_zip64` is enabled.
 - **What changed:** `_write_npz` gains an opt-in `force_zip64` argument whose default is false;
   only `resource_cache.py` enables it. Existing model, feature-cache and selection-set NPZ writers
   therefore keep their prior byte format. Tests cover the default/ZIP64 container versions,
@@ -8200,7 +8201,7 @@ pointers and synchronized PDF are reviewed.
 - [x] V2b-R review: `train_v2` gained `provenance` next to `resume_dir` (the brief allowed only `resume_dir`; the provenance check needs it) — accept or revise (Entry 184). Accepted in Donia's review (2026-11-15).
 - [x] V1c: move the notebook recipe into a pure `src/augmentation/` module and prove byte parity for all five conditions on synthetic audio (D50/D56; Entries 180, 185).
 - [ ] V1c: materialize S with `write_selection_set` on Colab T4 runtime 2026.10 and verify both forms with `load_selection_set`, including the Stage 8 val-A known answer (D50 (4), D58; Entries 172, 180, 185). Built by notebook 08 on T4 2026.10; evidence PR follows (Entry 208).
-- [ ] V1c: build and verify the deterministic training-half MUSAN/RIR resource cache outside the repo; refuse selection-half or all-zero resources (D50 (5); Entries 180, 185). The first real run exposed the >4 GiB NPZ ZIP64 defect; the scoped fix is Entry 211. Rerun after review and merge, then commit the small evidence (Entry 208).
+- [ ] V1c: build and verify the deterministic training-half MUSAN/RIR resource cache outside the repo; refuse selection-half or all-zero resources (D50 (5); Entries 180, 185). The first real run exposed the streamed-member `ZIP64_LIMIT` defect for the 2,257,171,132-byte packed RIR array; the scoped fix is Entry 211. Rerun after review and merge, then commit the small evidence (Entry 208).
 - [x] V1c: make `FFmpegCodecBackend` verify its pin once per backend instance without changing encode/decode output bytes (codec 0.42 s/item dominates augmentation; Entries 172–173, 185).
 - [x] D64 (Entries 189, 201–202, 205; approved, PR #140): the whole recipe was regenerated once on
   the reviewed Colab 2026.10 T4 runtime; exactly the 1,330 reverberation hashes changed and the
@@ -8748,7 +8749,8 @@ new recipe/report pairs and full comparison are retained. D64 is closed; the two
 remain open.
 
 **V1c real resource-cache blocker (Entry 211):** the official-runtime build reached the final NPZ
-write and failed because the packed RIR member exceeds ZIP's ordinary 4 GiB limit. The fix enables
+write and failed because the 2,257,171,132-byte (2.10 GiB) packed RIR member exceeds Python
+`zipfile`'s streamed-member `ZIP64_LIMIT` of `2^31 - 1` bytes. The fix enables
 ZIP64 only for `training_resources.npz`; all other deterministic NPZ writers retain their existing
 format. Focused tests pass. The real cache, its verification and the V1c evidence PR remain open until
 this fix is reviewed, merged and rerun on T4.
