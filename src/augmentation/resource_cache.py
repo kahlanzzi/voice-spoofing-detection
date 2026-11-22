@@ -172,7 +172,9 @@ def build_training_resources(
     out_dir.mkdir(parents=True)
     try:
         npz_path = out_dir / NPZ_NAME
-        _write_npz(npz_path, arrays)
+        # The packed RIR sample array exceeds ZIP's 4 GiB per-member limit on the real corpus.
+        # ZIP64 changes this cache's container only; other frozen NPZ writers keep their bytes.
+        _write_npz(npz_path, arrays, force_zip64=True)
         meta = {
             "schema_version": SCHEMA_VERSION, "sample_rate": SAMPLE_RATE, "split_seed": SEED,
             "noise_count": len(noise_rows), "rir_count": len(rir_rows),

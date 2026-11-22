@@ -8,6 +8,10 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 
 ## [Unreleased]
 
+### Fixed
+- The V1c training-half resource cache writes its oversized packed RIR member with ZIP64, while
+  every other deterministic NPZ writer keeps its existing byte format (Entry 211).
+
 ### Changed
 - D64 re-freezes the complete 6,650-row selection recipe on the reviewed Colab 2026.10 Tesla T4
   runtime: exactly the 1,330 reverberation waveform hashes changed, all other row fields are

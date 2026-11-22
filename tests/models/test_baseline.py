@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import ast
 import json
+import zipfile
 from pathlib import Path
 
 import numpy as np
@@ -165,6 +166,26 @@ def test_save_is_byte_deterministic(tmp_path):
         assert (a / name).read_bytes() == (b / name).read_bytes()
     assert artifact_sha256(a) == artifact_sha256(b)
     np.testing.assert_array_equal(load(b).score(x), model.score(x))
+
+
+def test_write_npz_can_force_zip64_without_changing_the_default(tmp_path, monkeypatch):
+    arrays = {"value": np.arange(128, dtype=np.float32)}
+    default = tmp_path / "default.npz"
+    oversized = tmp_path / "oversized.npz"
+    zip64 = tmp_path / "zip64.npz"
+    baseline_module._write_npz(default, arrays)
+
+    monkeypatch.setattr(zipfile, "ZIP64_LIMIT", 256)
+    with pytest.raises(RuntimeError, match="force_zip64"):
+        baseline_module._write_npz(oversized, arrays)
+    baseline_module._write_npz(zip64, arrays, force_zip64=True)
+
+    with zipfile.ZipFile(default) as archive:
+        assert archive.getinfo("value.npy").extract_version == 20
+    with zipfile.ZipFile(zip64) as archive:
+        assert archive.getinfo("value.npy").extract_version == 45
+    with np.load(zip64, allow_pickle=False) as loaded:
+        np.testing.assert_array_equal(loaded["value"], arrays["value"])
 
 
 def test_save_refuses_non_empty_folder(tmp_path):

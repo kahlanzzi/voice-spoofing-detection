@@ -10,6 +10,7 @@ import pandas as pd
 import pytest
 import soundfile as sf
 
+import src.augmentation.resource_cache as resource_cache_module
 from src.augmentation.resource_cache import (
     JSON_NAME,
     NPZ_NAME,
@@ -65,6 +66,19 @@ def test_build_load_and_read_only_views(tmp_path):
     assert not resources.noise_waveforms[0].flags.writeable
     assert training_rir_channel("r0.wav", 1) == 0
     assert training_rir_channel("r0.wav", 8) == training_rir_channel("r0.wav", 8)
+
+
+def test_build_uses_zip64_for_the_packed_resource_cache(tmp_path, monkeypatch):
+    calls = []
+    write_npz = resource_cache_module._write_npz
+
+    def checked_write(path, arrays, *, force_zip64=False):
+        calls.append(force_zip64)
+        return write_npz(path, arrays, force_zip64=force_zip64)
+
+    monkeypatch.setattr(resource_cache_module, "_write_npz", checked_write)
+    _build(tmp_path)
+    assert calls == [True]
 
 
 def test_refuses_wrong_half_hash_and_zero(tmp_path):

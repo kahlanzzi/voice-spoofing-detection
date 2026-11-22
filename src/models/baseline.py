@@ -188,7 +188,12 @@ def from_sklearn(svc, *, mean, std, threshold, version: str) -> BaselineModel:
     )
 
 
-def _write_npz(path: Path, arrays: dict[str, np.ndarray]) -> None:
+def _write_npz(
+    path: Path,
+    arrays: dict[str, np.ndarray],
+    *,
+    force_zip64: bool = False,
+) -> None:
     """Write arrays as an uncompressed .npz with fixed metadata, so equal arrays give equal bytes.
 
     np.savez stamps each entry with the current time; here every entry ("<name>.npy", sorted by
@@ -200,7 +205,7 @@ def _write_npz(path: Path, arrays: dict[str, np.ndarray]) -> None:
             info.compress_type = zipfile.ZIP_STORED
             info.create_system = 3  # fixed (ZipInfo defaults to the running OS)
             info.external_attr = 0o644 << 16
-            with zf.open(info, "w") as f:
+            with zf.open(info, "w", force_zip64=force_zip64) as f:
                 np.lib.format.write_array(f, np.ascontiguousarray(arrays[name]), allow_pickle=False)
 
 
