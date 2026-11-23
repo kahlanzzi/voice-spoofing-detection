@@ -5,19 +5,20 @@
 *Execution Plan v3.0: from the midterm to delivery, with model v2, live analysis and production, stage by stage, and who owns what*
 
 - **Team:** Donia Mabrouk · Iheb Zemzemi · Malak Ben Salem · Khalil Dridi
-- **Version / date:** v3.0 · 10 November 2026 (replaces v2.1 and the unadopted v2.2 draft)
+- **Version / date:** v3.0 · 10 November 2026 (replaces v2.1 and the unadopted v2.2 draft) · **status updated 23 November 2026** (`main` `7bcec77`)
 - **Repository:** github.com/kahlanzzi/voice-spoofing-detection
 - **Controlling documents:** Decision register (D1–D55) › SRS v3.0 (v4.0 in preparation) › SDD v1.0 (v2.0 in preparation) › Protocol v1.0 + addendum › this plan › Proposal
 
-### Where we are today
+### Where we are today (23 November 2026)
 
 | | Item | Detail |
 |---|---|---|
-| **DONE** | Stages 0–10 | Repository, audit, threat model, Protocol v1.0 (F1), split and freeze (F2), preprocessing (F3), baseline, CNN (3 seeds), risk policy on val-B. Briefs 00–10 accepted. |
-| **DONE** | Mock MVP | Stage 17 API and Stage 18 React app merged (PRs #77–#109): sign-in, upload, result, History, status, Docker/nginx. Runs on a labelled MockAnalyzer. |
-| **DONE** | Stage 11 ready | D46 run procedure approved (PRs #67, #112); runner merged (PR #68). |
-| **NEW** | After the midterm | Professor's feedback (9 Nov) turned into D48–D55, approved in PR #111: model v2, one joint external run, live analysis, production infrastructure, UI redesign. |
-| **NEXT** | This week | Stage 11 PR B and PR C · D50 corpora and augmentation · UI directions · PostgreSQL and process pool · Stage 13 runner for three model sets. |
+| **DONE** | Stages 0–12 | Stage 11 official run once (Entry 161) and closed (Entry 163); F4 `bundle-v1` frozen 12 Nov (`edf4a205…40efc`, D60, Entry 168), hand-over verified by Iheb and Khalil 15 Nov (Entry 174). |
+| **DONE** | Track V code | V1 corpora, augmentation, S and the training resource cache built on T4 (Entries 169, 180, 185, 205, 211; notebook 08 sections 1–12); V2 candidates and training code; V4/V5/V6/V7 code and notebooks 09–10 (PRs #129–#159). |
+| **DONE** | Decisions | D63 (calibrated p) and D65 (UI Direction D) approved 17 Nov; SRS v4.1 adopted (Entry 206). |
+| **NOW** | Track V | Notebook 08 T4 rehearsal (section 13) on `d5ffe18`; first attempt stopped by free Colab limits; re-run by Khalil 23 Nov. Then the search (V3). |
+| **NOW** | Stage 14 v1 | Runner merged (#160, merged without review); post-merge review posted 23 Nov; **official run blocked** until a reviewed follow-up PR and the all-four approval (Entries 212–213). |
+| **LATE** | Track P | Hosting provider (D54 (9), due W1) not chosen: blocks staging, P4 and production. P1 (real model in the API) due Tue 24 Nov; P2a PostgreSQL merged (Entry 207); P2b process pool in review. |
 | **DATE** | Hard dates | v2 freeze (F5) cut-off: Fri 4 Dec 2026, 23:59 Tunis (D48). Delivery target: Wed 23 Dec 2026, to be confirmed against the course calendar. |
 
 ## Contents
@@ -214,7 +215,7 @@ Six weeks plus a short buffer. Weeks run Monday to Sunday. Dates are targets the
 
 ## 8. Track R — v1 to its freeze (Stages 11–12) · Donia
 
-#### 11 · FoR internal test, v1 (once) — NOW
+#### 11 · FoR internal test, v1 (once) — DONE (Entries 161, 163)
 
 - **Done:** D41 registry and per-clip storage (PR #62); D46 procedure (PRs #67, #112); runner, PR A (PR #68).
 - **Tasks:**
@@ -225,7 +226,7 @@ Six weeks plus a short buffer. Weeks run Monday to Sunday. Dates are targets the
 - **Dates:** PR B Fri 13 Nov · PR C Mon 16 Nov · dry run Tue 17 Nov · official run Wed 18–Thu 19 Nov.
 - **Gate:** One completed `stage11_test` claim for the v1 model set; results and brief merged; Khalil's teach-back.
 
-#### 12 · ModelBundle v1 freeze (F4) and hand-over — NEXT
+#### 12 · ModelBundle v1 freeze (F4) and hand-over — DONE (F4 12 Nov, Entries 168, 174)
 
 - **Tasks:**
   - Assemble F4: bundle-seed checkpoint + F3 profile + `risk-v1` + manifest; record `baseline-v1` hash (D36).
@@ -235,7 +236,7 @@ Six weeks plus a short buffer. Weeks run Monday to Sunday. Dates are targets the
 
 ## 9. Track V — model v2 (V1–V5) · Donia, with Malak
 
-#### V1 · Corpora and augmentation pipeline (D50) — NEXT
+#### V1 · Corpora and augmentation pipeline (D50) — DONE (S and resource cache built 22 Nov; evidence PR pending)
 
 - **Owner:** Malak; review Donia.
 - **Tasks:**
@@ -246,14 +247,14 @@ Six weeks plus a short buffer. Weeks run Monday to Sunday. Dates are targets the
 - **Dates:** Corpora Fri 13 Nov · module and S merged Wed 18 Nov.
 - **Gate:** Merged with tests; pins and hashes recorded; Donia's review.
 
-#### V2 · Candidate models — TO DO
+#### V2 · Candidate models — DONE (Entry 170; training code, benchmark and resume PRs #129, #130, #137)
 
 - **Tasks:**
   - `cnn-aug` reuses the v1 network (D42); `crnn` and `aasist` as specified in D49 (`aasist` from a reference implementation pinned by commit, F3 waveform input).
   - Unit tests (shapes, one logit, determinism); short compute benchmark → batch sizes in `configs/` before training.
 - **Dates:** Merged Fri 20 Nov. Review Khalil and Iheb.
 
-#### V3 · Training and selection on val-A — TO DO
+#### V3 · Training and selection on val-A — NOW (rehearsal; search not started)
 
 - **Tasks:**
   - Seed 0 per candidate, max 30 epochs, early stopping on the mean val-A EER over S (patience 5); W&B for every run.
@@ -261,14 +262,14 @@ Six weeks plus a short buffer. Weeks run Monday to Sunday. Dates are targets the
 - **Dates:** Selection Fri 27 Nov · seeds 1–2 Mon 30 Nov.
 - **Gate:** Selection results committed (validation only); every candidate's val-A table reported.
 
-#### V4 · v2 risk policy and v2 Stage 11 — TO DO
+#### V4 · v2 risk policy and v2 Stage 11 — CODE DONE (PRs #141, #142, #150; notebooks 09–10); runs after V3
 
 - **Tasks:**
   - Protocol §6 method unchanged on clean val-B, bundle seed only (D45 rule).
   - Runner extended to the v2 model set (small PR); one `stage11_test` claim for v2, all three seeds stored.
 - **Dates:** v2 Stage 11 Wed 2 Dec.
 
-#### V5 · ModelBundle v2 freeze (F5) — TO DO
+#### V5 · ModelBundle v2 freeze (F5) — CODE DONE (PRs #138, #144); build after V4
 
 - **Tasks:**
   - Assemble and verify F5 with the existing loader; hand over to Iheb (deployment) and Khalil (Stage 13).
@@ -286,7 +287,7 @@ Six weeks plus a short buffer. Weeks run Monday to Sunday. Dates are targets the
 - **Run:** Sat 5–Sun 6 Dec, after F5 or the cut-off. Review by all four.
 - **Report:** H2, H8 (paired v1–v2), RQ2 (CNN vs baseline), the live rule's end-of-call accuracy via D34, 87.5% FAKE share and RVC-only scope stated.
 
-#### 14 · Robustness (FoR test only) — TO DO
+#### 14 · Robustness (FoR test only) — v1 RUNNER MERGED, OFFICIAL RUN BLOCKED (post-merge review 23 Nov)
 
 - **Owner:** Malak; review Donia.
 - **Tasks:**
@@ -334,14 +335,14 @@ Six weeks plus a short buffer. Weeks run Monday to Sunday. Dates are targets the
   - End-to-end tests with the real bundle; later swap to F5 by the deployment rule (D48 (5)).
 - **Dates:** Tue 24 Nov (after F4).
 
-#### P2 · PostgreSQL and process pool (D53) — NOW
+#### P2 · PostgreSQL and process pool (D53) — P2a DONE (Entry 207); P2b in review (provisional K = 2)
 
 - **Tasks:**
   - PostgreSQL behind the repository interface for analyses, notes and D47 sessions; migration; CI service container.
   - Bounded process pool (kills timed-out work); `503` + `Retry-After` when full; no broker.
 - **Dates:** W1–W2.
 
-#### P3 · Staging and production (D54) — TO DO
+#### P3 · Staging and production (D54) — LATE (hosting provider not chosen)
 
 - **Tasks:**
   - Hosting provider chosen and recorded (W1); images to GHCR once per `main` commit; staging auto-deploy; production from a release tag with a required reviewer; HTTPS; smoke test and rollback.
@@ -353,7 +354,7 @@ Six weeks plus a short buffer. Weeks run Monday to Sunday. Dates are targets the
   - Reference workload on staging with the deployed bundle; record K, L, `analysis_timeout_s`, `L_MAX` by decision; tmpfs follows K.
 - **Dates:** W4.
 
-#### P5 · Interface redesign and usability (D55) — NOW
+#### P5 · Interface redesign and usability (D55) — DIRECTION CHOSEN (D65, 17 Nov); build
 
 - **Tasks:**
   - Three directions (Claude prepares) → team vote → implementation keeping §11 fields, NFR-05 wording, axe scans.
@@ -377,18 +378,19 @@ Six weeks plus a short buffer. Weeks run Monday to Sunday. Dates are targets the
 | Test results tempt a change to v2 | v2 design approved before any test result (D48 (6)); deployment by rule (D48 (5)); registry refuses reruns. |
 | Iheb's tracks are the heaviest | Cut line starts with the extension; Khalil writes SRS v4.0; UI directions prepared by Claude; reviews spread. |
 | Extension cannot authenticate safely | Design and security review before code (D51); live mic mode remains the Must. |
+| Free Colab GPU quota stops long T4 sessions (seen 22–23 Nov) | Rehearsal and search resume per epoch on Drive and are bound to the commit and input hashes, not to an account: sessions rotate between team accounts; the rehearsal's measured cut line decides whether `aasist` is dropped (§7). |
+| PR merged by its author without review (#159, #160) | Reviewer merges after the diff review (§5.1); a post-merge review blocks any irreversible step (registry claim, freeze) until a reviewed follow-up is merged. |
 | Merge before approval commit | Approval commit on the branch before merge (Section 5.1); record PR otherwise, as #112. |
 | AI-generated errors accepted unchecked | Line-by-line review, real test output, CI with torch; ground truth over self-report. |
 
-## 14. Open items this week (W1)
+## 14. Open items this week (W3, 23–29 Nov)
 
-1. Monday sync: confirm every date in Section 7 and the delivery date against the course calendar.
-2. Donia: Stage 11 PR B (Claude Code prompt), then PR C.
-3. Malak: D50 corpora licence, hashes and split; augmentation module (Claude Code prompt).
-4. Khalil: Stage 13 runner for three model sets; start the SRS v4.0 outline.
-5. Iheb: hosting provider recorded; PostgreSQL and process pool; review of the three UI directions.
-6. All: vote on a UI direction by Friday 13 November.
-7. Adopt this plan: one docs PR with this file and its PDF in `docs/reference/`.
+1. Donia: review Khalil's rehearsal report (checks (a)–(e)); start the search (V3) on rotating free T4 sessions; selection by Fri 27 Nov.
+2. Malak: V1c evidence PR; Stage 14 v1 follow-up PR (scoring marker, per-condition resume, H6 forced-binary endpoint, approved-commit check, official-only extraction, docs); no self-merge; official run only after the all-four approval.
+3. Iheb: hosting provider recorded as a D54 amendment (overdue since 15 Nov) with a date; P1 real model in the API (Tue 24 Nov); P2b merge. Vercel can host the web app only; the API and PostgreSQL need the D54 VM.
+4. Khalil: rehearsal session (23 Nov); Stage 13 runner review; is `feat/stage13-window-runner` still needed?
+5. All: all-four approval of the Stage 14 follow-up, including the H6 clarification, before any Stage 14 test access.
+6. Dates still missing: hosting, staging live, D55 UI build. Owners give them at the next sync.
 
 <!-- pagebreak -->
 
