@@ -66,11 +66,11 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCANNED = ("src/", "notebooks/", "configs/")
 # Prefixes (directories end with "/") and exact files allowed to request the FoR test split.
-# Exactly the Stage 11 runner, added in its own reviewed PR (D41, D46), and the Stage 11 runner for
-# the v2 model set (D48 (7): the separate v2 stage11_test claim), added in PR V4b.
+# The Stage 11 runners and the Stage 14 runner, each added in its own reviewed PR.
 ALLOWED: tuple[str, ...] = (
     "src/evaluation/stage11_run.py",
     "src/evaluation/stage11_v2_run.py",  # D48 (7), PR V4b; one file, not a folder
+    "src/evaluation/stage14_run.py",  # D41; one file, not a folder
 )
 # (file, exact stripped line text, rule, reason): one rule on one line that is not data access;
 # any other rule on that line is still reported.
@@ -304,7 +304,11 @@ def test_no_for_test_split_access_outside_allowed_files():
 def test_allow_list_is_pinned():
     # Changing it is a reviewed step (the Stage 11 runner PR and PR V4b each added one exact file),
     # never a side effect.
-    assert ALLOWED == ("src/evaluation/stage11_run.py", "src/evaluation/stage11_v2_run.py")
+    assert ALLOWED == (
+        "src/evaluation/stage11_run.py",
+        "src/evaluation/stage11_v2_run.py",
+        "src/evaluation/stage14_run.py",
+    )
 
 
 PLANTED = {
