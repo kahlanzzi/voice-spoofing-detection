@@ -11,6 +11,9 @@ SECTION_9 = {
     "max_duration_s": 60,
     "audio_deletion": "Deleted when processing finishes",
     "analysis_timeout_s": 30,
+    "analysis_workers": 2,
+    "analysis_retry_after_s": 30,
+    "analysis_worker_start_timeout_s": 60,
     "page_size_max": 50,
     "note_max_chars": 2000,
     "stats_time_zone": "UTC",
@@ -122,3 +125,25 @@ def test_the_config_holds_no_database_password():
     text = DEFAULT_PATH.read_text(encoding="utf-8")
     assert "password:" not in text.replace("password_min_chars:", "").replace("password_max_chars:", "")
     assert "VSD_DB_APP_PASSWORD" in text  # it says where the password comes from instead
+
+
+@pytest.mark.parametrize("workers", [0, -1, True, 1.5, "2", None])
+def test_config_rejects_fewer_than_one_worker(tmp_path, workers):
+    with pytest.raises(ValueError, match="analysis_workers"):
+        load_api_config(write_config(tmp_path, analysis_workers=workers))
+
+
+def test_config_accepts_one_worker(tmp_path):
+    assert load_api_config(write_config(tmp_path, analysis_workers=1)).analysis_workers == 1
+
+
+@pytest.mark.parametrize("retry_after", [0, 31, 2.5, True])
+def test_retry_after_must_be_positive_and_not_exceed_timeout(tmp_path, retry_after):
+    with pytest.raises(ValueError, match="analysis_retry_after_s"):
+        load_api_config(write_config(tmp_path, analysis_retry_after_s=retry_after))
+
+
+@pytest.mark.parametrize("start_timeout", [0, -5, 60.0, None])
+def test_start_timeout_must_be_positive(tmp_path, start_timeout):
+    with pytest.raises(ValueError, match="analysis_worker_start_timeout_s"):
+        load_api_config(write_config(tmp_path, analysis_worker_start_timeout_s=start_timeout))

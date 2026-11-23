@@ -51,7 +51,7 @@ def get_stats(
     today = generated_at[:10]  # §4.7: today is the day of generated_at
     first, last = period(parse_day(day_from), parse_day(to), date.fromisoformat(today))
     figures = request.app.state.repository.stats(first.isoformat(), last.isoformat(), today, RECENT_AWAITING)
-    info = request.app.state.analyzer.info()
+    info = request.app.state.pool.info()
 
     days = []
     for offset in range((last - first).days + 1):

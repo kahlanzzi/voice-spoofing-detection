@@ -151,7 +151,11 @@ The eight-field body above remains current until D63 is implemented.
 
 **Processing order.** The `Origin` and session checks (section 4.8) run first, before the body is
 read; their errors carry `request_id: null` in the body. The upload is given its request ID next, so
-every upload error below carries it.
+every upload error below carries it. Then the API takes one of the K analysis workers (D53 (2);
+`analysis_workers`, section 9), before it reads the body, so at most K uploads are in the temp folder at
+once. If all K are busy, the answer is `503 analysis_unavailable` with a `Retry-After` header
+(`analysis_retry_after_s` seconds), the body is drained unread, and no step below runs. There is no
+queue. The worker is released when the request ends, on success and on every error below.
 
 | Step | Check | On failure |
 |---|---|---|
@@ -160,7 +164,7 @@ every upload error below carries it.
 | 3 | File is not empty (more than 0 bytes) | `422 empty_file` |
 | 4 | Decodes with `soundfile`; a file that decodes to 0 frames counts as empty | `422 corrupt_audio`; `422 empty_file` for 0 frames |
 | 5 | Duration (frames ÷ sample rate) ≤ `max_duration_s` | `422 recording_too_long` |
-| 6 | `analyzer.analyze(path)` within `analysis_timeout_s` | `503 analysis_unavailable`, `504 analysis_timeout`, `500 internal_error` |
+| 6 | `analyzer.analyze(path)` in the request's worker process, within `analysis_timeout_s` | `503 analysis_unavailable`, `504 analysis_timeout`, `500 internal_error` |
 | 7 | Store the analysis record (section 7) | `500 internal_error` |
 
 - **Size protection (step 2):** Starlette reads the whole multipart body before the handler runs,
@@ -173,7 +177,8 @@ every upload error below carries it.
   ends, on success and on every error (NFR-03). **Open decision 4:** what happens if deletion fails.
 - No record is stored when any step fails. A verdict is returned only after the record is stored,
   so every shown result can be found again in History.
-- On `504` the API stops waiting and stores nothing, even if the analyzer finishes later.
+- On `504` the API kills the worker process running that analysis, stores nothing, and starts a
+  replacement worker (D53 (2)). The temp file is deleted after the worker is gone.
 - Stage 18: the prototype's timeout screen must not say a late result will appear in History;
   with this contract a server timeout stores nothing.
 - **Open decision 3:** how recordings longer than 2 s are handled (the model works on 2 s clips).
@@ -582,7 +587,7 @@ Every error uses one shape:
 | `empty_file` | 422 | 0 bytes, or decodes to 0 frames | S3 check, repeated by the API |
 | `corrupt_audio` | 422 | `soundfile` cannot decode it | S5 Corrupt audio (input) |
 | **D63 target:** `no_speech` | 422 | No complete window survives D17 | New S5 no-speech error kind (11th) |
-| `analysis_unavailable` | 503 | Analyzer not loaded or refusing work | S5 Analysis service unavailable |
+| `analysis_unavailable` | 503 | Analyzer not loaded or refusing work; or all K analysis workers busy, then with `Retry-After` (section 4.3) | S5 Analysis service unavailable |
 | `analysis_timeout` | 504 | Analyzer did not finish in `analysis_timeout_s` | S5 Request timeout |
 | `session_expired` | 401 | No cookie, unknown, idle or expired session (section 4.8) | S5 / S1 Expired session |
 | `access_denied` | 403 | Correct password but account disabled; or signed in, not allowed (section 4.8) | S1 Access denied |
@@ -610,7 +615,7 @@ Rules:
   its proxy timeouts above `analysis_timeout_s`, so the API's codes reach the app first. nginx answers
   itself only in these cases, in this shape with `request_id: null` and no `X-Request-ID` header:
   `413 file_too_large` (body above its own limit), `503 analysis_unavailable` (API not reachable or
-  silent past the proxy timeout), `429 too_many_requests` (`POST /api/session` rate limit) and
+  silent past the proxy timeout; with `Retry-After` equal to `analysis_retry_after_s`), `429 too_many_requests` (`POST /api/session` rate limit) and
   `404 not_found` (a path it does not route, section 2).
 
 ## 7. Storage
@@ -672,6 +677,13 @@ info() -> AnalyzerInfo             # ready, versions, deferral_on_fit,
 - **Later:** the team's frozen ModelBundle (Stage 12), loaded and verified by `src/bundle/`, which
   supplies `deferral_on_fit` from its risk policy. The API code does not change.
 - The API adds `request_id` and `notice` to the outcome to make the §11 response.
+- The analyzer runs in a pool of K worker processes (`api/pool.py`, D53 (2)), started with the spawn
+  method when the API starts. Each worker builds its analyzer once, at start, and reuses it for every
+  job; workers never touch the database (the API stores the record). If any worker cannot build its
+  analyzer, the API does not start. A worker that times out or dies is replaced; if a replacement
+  cannot build its analyzer, the pool stops taking work (`503`, `GET /status` analysis unavailable)
+  until the API is restarted. A full pool is not "unavailable" in `GET /status`. Risk: the pool needs a
+  selector event loop (Linux or macOS), so on Windows the API refuses to start; run it in Docker or WSL2.
 - Analyzer not ready → `503 analysis_unavailable`; over `analysis_timeout_s` → `504`; any other
   exception → `500 internal_error`.
 
@@ -686,6 +698,9 @@ All values come from config (`configs/api.yaml`, written in Stage 17), never fro
 | `max_duration_s` | Recording duration cap | 60 | Mock; **open decision 2** |
 | `audio_deletion` | Deletion statement shown on S2 | "Deleted when processing finishes" | Depends on **open decision 4** |
 | `analysis_timeout_s` | How long the API waits for the analyzer | 30 | Proposal |
+| `analysis_workers` | K: analysis worker processes per API process | 2 | Mock, not measured; replaced by the P4 load-test decision on the staging host with the real bundle (D53 (3)) |
+| `analysis_retry_after_s` | `Retry-After` on a full pool; at most `analysis_timeout_s` | 30 | Mock, not measured; replaced by the P4 load-test decision on the staging host with the real bundle (D53 (3)) |
+| `analysis_worker_start_timeout_s` | How long one worker may take to build its analyzer | 60 | Mock; one worker's start-up hook; set from the measured bundle load time in P1 |
 | `page_size_max` | Largest `page_size` | 50 | Proposal |
 | `note_max_chars` | Longest note | 2,000 | Proposal |
 | `stats_time_zone` | Time zone for counting days | `UTC` | **Open decision 6** |

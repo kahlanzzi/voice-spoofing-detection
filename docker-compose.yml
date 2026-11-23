@@ -2,11 +2,12 @@
 # (web) is the only way in, on http://localhost:8001; the api and db publish no port. Never expose the API
 # without nginx (docs/api_design.md §4.8 rate limit).
 
-# Uploads that fit in /tmp at once. Each one uses /tmp twice (Starlette's spooled part, then the API's temp
-# copy), so the tmpfs must be at least 2 x (max_size_bytes + 64 KiB) x this. nginx buffers each body once
-# (client_max_body_size at most). The deploy tests check both.
-# Nothing enforces this count yet: see the "limit concurrent analyses" Open item (Entry 116).
-x-vsd-concurrent-uploads: 4
+# tmpfs sizes follow K = analysis_workers in configs/api.yaml (D53 (2), (3)); the deploy tests check both.
+# api /tmp: the API takes a worker before it reads an upload, so at most K uploads are there at once, each twice
+#   (Starlette's spooled part, then the API's temp copy): at least 2 x (max_size_bytes + 64 KiB) x K.
+# nginx /var/cache/nginx: client_max_body_size x 2K (K bodies being analysed, K arriving or being refused). Nothing
+#   bounds how many bodies nginx buffers, so this one is an assumption, not an enforced limit.
+# Both rounded up to a multiple of 32 MiB. K=1: 64m/64m; K=2: 96m/96m; K=3: 128m/160m; K=4: 192m/192m.
 
 # PostgreSQL 18.7 for db and db-test (D53 (4)); tag and digest pinned together. CI's service container uses the
 # same image (tests/deploy/test_deploy_ci.py checks they match).
@@ -101,7 +102,7 @@ services:
       # the rollback window (SDD v2.0 §5.4).
       - vsd-var:/app/var:ro
     tmpfs:
-      - /tmp:size=192m,mode=1777   # temp uploads (temp_dir: null); in memory, gone at restart (NFR-03)
+      - /tmp:size=96m,mode=1777   # temp uploads (temp_dir: null), sized for K (above); in memory, gone at restart (NFR-03)
     read_only: true
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
@@ -119,7 +120,7 @@ services:
     ports:
       - "8001:80"   # the port in allowed_origins (configs/api.yaml)
     tmpfs:
-      - /var/cache/nginx:size=96m   # buffered request bodies (uploads); in memory, gone at restart (NFR-03)
+      - /var/cache/nginx:size=96m   # buffered request bodies (uploads), sized for K (above); in memory, gone at restart (NFR-03)
     environment:
       NGINX_ENTRYPOINT_QUIET_LOGS: "1"
     depends_on:

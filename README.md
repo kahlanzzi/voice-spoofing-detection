@@ -140,7 +140,9 @@ username, `vsd`, `voice` or `spoof`. Never put it in a command, a file or the re
 | Audio | Deleted when processing finishes |
 
 These are prototype values in [configs/api.yaml](configs/api.yaml), not final decisions. Only results
-are stored: no audio and no original filenames.
+are stored: no audio and no original filenames. At most `analysis_workers` analyses run at once; a further
+upload gets "service unavailable, try again" (mock value, not measured; replaced by the P4 load-test
+decision on the staging host with the real bundle).
 
 The repository holds no audio. Use a recording of your own, or make a 1-second test tone outside the
 repository while the stack is running:

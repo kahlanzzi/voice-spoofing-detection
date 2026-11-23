@@ -34,12 +34,14 @@ INTERNAL = ("internal_error", "An unexpected error occurred.")
 class ApiError(Exception):
     """An error the API raises on purpose, answered with its own status and §6 code."""
 
-    def __init__(self, status: int, code: str, message: str, request_id: str | None = None):
+    def __init__(self, status: int, code: str, message: str, request_id: str | None = None,
+                 headers: dict[str, str] | None = None):
         super().__init__(message)
         self.status = status
         self.code = code
         self.message = message
         self.request_id = request_id
+        self.headers = headers  # e.g. Retry-After on a full analysis pool (D53 (2))
 
 
 def error_body(code: str, message: str, request_id: str | None = None) -> dict:
@@ -47,7 +49,8 @@ def error_body(code: str, message: str, request_id: str | None = None) -> dict:
 
 
 async def _api_error(request: Request, exc: ApiError) -> JSONResponse:
-    return JSONResponse(error_body(exc.code, exc.message, exc.request_id), status_code=exc.status)
+    return JSONResponse(error_body(exc.code, exc.message, exc.request_id), status_code=exc.status,
+                        headers=exc.headers)
 
 
 async def _http_error(request: Request, exc: StarletteHTTPException) -> JSONResponse:
