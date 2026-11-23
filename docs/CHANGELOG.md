@@ -18,6 +18,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
   identical, and the old/new recipes, reports and row-level comparison are retained (Entry 205).
 
 ### Added
+- Analyses run in a bounded pool of K spawned worker processes (D53 (2)): a full pool answers `503 analysis_unavailable` with `Retry-After`, a timed-out analysis is killed and its worker replaced, and the api tmpfs follows K (`x-vsd-concurrent-uploads` removed; K and Retry-After are mock, not measured values until the P4 load test; the start timeout is a mock value until P1) (Track P, PR P2b, Entry 214).
 - Stage 14 v1 preparation: strict nine-condition robustness config, deterministic degradation core,
   exact completed-Stage-11 clean-score gate, paired D14-group bootstrap endpoints, and separate
   fail-closed claim/score lifecycles for `baseline-v1` and the frozen F4 bundle seed; synthetic tests

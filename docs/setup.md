@@ -124,11 +124,17 @@ docker compose down                   # keeps the store; to empty it, see "Empty
   output anywhere.
 - **Store:** PostgreSQL, the `db` service, on the named volume `vsd-pg`; it survives `down`/`up`. See
   [Database](#database-postgresql-d53).
-- **Uploads:** `temp_dir: null`, so they go to `/tmp`, a 192 MiB tmpfs: in memory, never on disk, gone
-  at restart. Each upload uses `/tmp` twice (Starlette's spooled part, then the API's temp copy), so
-  192 MiB holds `x-vsd-concurrent-uploads: 4` uploads at the `configs/api.yaml` limit; the deploy tests
-  fail if a larger `max_size_bytes` no longer fits. More at once fail until concurrency is limited
-  (Open items).
+- **Uploads:** `temp_dir: null`, so they go to `/tmp`, a tmpfs: in memory, never on disk, gone at
+  restart. The API takes one of its K analysis workers (`analysis_workers` in `configs/api.yaml`)
+  before it reads an upload, so at most K uploads are in `/tmp` at once, each twice (Starlette's spooled
+  part, then the API's temp copy). The size is 2 x (`max_size_bytes` + 64 KiB) x K, rounded up to a
+  multiple of 32 MiB: 96 MiB for K = 2. The deploy tests fail if K or `max_size_bytes` grows past it. A
+  further upload while all K are busy gets `503 analysis_unavailable` with `Retry-After`.
+- **Analysis workers:** the API starts K worker processes (spawn) at start-up; each builds the
+  MockAnalyzer once. If one cannot, the API does not start. A worker whose analysis passes
+  `analysis_timeout_s` is killed and replaced. Linux and macOS only: on Windows the API refuses to
+  start (the pool needs a selector event loop) and the tests that start an app are skipped; use Docker
+  or WSL2.
 - **Admin:** `docker compose exec` gives a TTY, so the hidden password prompt works; it uses the same
   config, key and volume as the API. Scripts use `docker compose exec -T` and pipe the password twice on
   stdin (getpass falls back to stdin without a TTY and does not echo it); never put it in an argument.
@@ -276,7 +282,9 @@ also point the stack at a new `vsd-pg` (another folder name, or `docker compose 
   (its lines carry a `client:` field); `X-Forwarded-For`, `X-Real-IP` and `Forwarded` are cleared towards
   the API. The IP is used only as the rate-limit key, in nginx memory.
 - **Uploads:** nginx buffers each request body before passing it on, under `/var/cache/nginx`, a 96 MiB
-  tmpfs (4 x 22 MiB): in memory, never on disk.
+  tmpfs (2K x 22 MiB = 88 MiB for K = 2, rounded up to 32 MiB): in memory, never on disk. Nothing bounds
+  how many bodies nginx buffers, so this size is an assumption, not an enforced limit. nginx's own `503`
+  carries `Retry-After` too.
 - **Restart:** nginx resolves `api` once at start. If the `api` container is recreated (not just
   stopped and started), run `docker compose restart web` too.
 - **HTTPS:** plain HTTP, `localhost` only. The `Secure` session cookie works over plain HTTP only on

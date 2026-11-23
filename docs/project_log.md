@@ -8258,6 +8258,104 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 214 — Track P PR P2b: bounded analysis process pool, 503 + Retry-After (2026-11-23)
+
+- **Owner:** Iheb Zemzemi (Part E). Branch `feat/stage17-p2b-process-pool` from `main` `d5ffe18`, not
+  stacked, rebased onto `main` `7bcec77` (PR #160). Entry number: 213 was the last used on `origin/main`
+  `7bcec77` (read 23 Nov).
+- **Why [doc]:** D53 (2) and Execution Plan v3.0 P2: a bounded **process** pool, `503` + `Retry-After`
+  when full, timed-out work killed; closes the Entry 116 / Entry 125 open item (an analyzer thread
+  that cannot be killed; an unenforced `x-vsd-concurrent-uploads: 4`). The plan and its pre-reports
+  (D53 (3) quote, analysis path, container measurements) were reviewed by Iheb before any code. No new
+  decision: `analysis_unavailable` (503) is already in `api_design.md` §6, and `Retry-After` is part
+  of D53 (2).
+- **What changed:**
+  - `api/pool.py`: K worker processes started with `multiprocessing.get_context("spawn")`, one pipe
+    each, no queue, no broker. Each worker builds its analyzer once from a picklable factory
+    (MockAnalyzer now; P1 swaps in the bundle loader with its pinned `manifest_sha256` check, with no
+    pool change). A start-up hook that fails, times out or reports a different `info()` stops the API
+    from starting. A job that times out, is cancelled or loses its worker has that worker killed and
+    reaped before the temp file is deleted, then replaced with the same factory. A failed replacement
+    marks the pool broken (503, `/status` analysis unavailable) until the API is restarted; there is no
+    automatic retry. Workers never import the database layer. Linux and macOS only (risk, as in the
+    plan): the pool needs a selector event loop (`add_reader`), so on Windows, or on any loop without
+    `add_reader`, `start()` raises `PoolStartError` before spawning anything ("the analysis pool needs
+    a selector event loop (Linux or macOS); on Windows run the API in Docker or WSL2") and the API does
+    not start. A thread fallback for Windows was written during development and removed (Iheb's
+    decision): it was outside the approved plan.
+  - `POST /api/analyses` takes a worker before it reads the body. If all K are busy it answers
+    `503 analysis_unavailable` with `Retry-After: analysis_retry_after_s`, the request ID in the body
+    and header, the body drained unread, and one log line with no audio or file name. Every release
+    path (success, analyzer error, unavailable, timeout, lost worker, cancellation, failed check, send
+    failure) returns or replaces the worker exactly once. `/status` stays `available` while the pool is
+    full; `/health` is unchanged. The web app is unchanged (the code reaches the existing S5 variant).
+  - `configs/api.yaml`: `analysis_workers: 2`, `analysis_retry_after_s: 30` (mock values, not
+    measured; replaced by the P4 load-test decision on the staging host with the real bundle, D53 (3))
+    and `analysis_worker_start_timeout_s: 60` (mock; one worker's start-up hook; set from the measured bundle load time in P1). The loader rejects K < 1 and a
+    Retry-After above `analysis_timeout_s`.
+  - `docker-compose.yml`: `x-vsd-concurrent-uploads` removed (closes the Entry 125 open item). api
+    `/tmp` tmpfs 192m → 96m: 2 × (`max_size_bytes` + 64 KiB) × K, rounded up to a multiple of 32 MiB.
+    nginx `/var/cache/nginx` stays 96m: `client_max_body_size` × 2K, same rounding; an assumption, not
+    an enforced bound. Table: K=1 64m/64m; K=2 96m/96m; K=3 128m/160m; K=4 192m/192m (api/nginx).
+    `deploy/nginx.conf`: its own `503` carries `Retry-After 30` (`always`), equal to the config.
+  - Docs: `api_design.md` §4.3, §6, §8, §9; README limits paragraph; `docs/setup.md`; CHANGELOG.
+  - Tests: `tests/api/test_api_pool.py` (real spawned workers, every release path, timeout kills
+    exactly one worker, built once per worker, start-up failure and timeout, no database imports,
+    spawn method, no worker left after close, start refused without a child on a loop without
+    `add_reader` and on Windows); app-level tests for the 503 +
+    `Retry-After` answer, each release path, temp folder empty and hung worker reaped after a `504`;
+    config and deploy tests. Test-only fallback (agreed in the plan for a slow
+    `tests/api`; what triggered it was not measured at the final code): apps built with the default
+    MockAnalyzer factory and one worker share one pool per session, started by the first lifespan; every other factory or K, and the pool tests, get real per-app workers.
+- **Checks run [verified]:** at `8ef26a9` (the commit that carries this text differs from it only in this
+  file), base `origin/main` `7bcec77`, `REQUIRE_POSTGRES_TESTS=1` and `VSD_TEST_DATABASE_URL` = the
+  Compose db-test service; the rebase, timing, full-suite and Python 3.13 runs each printed `database
+  tests ran on PostgreSQL 18.7`.
+  - `tests/api` + `tests/deploy` at each of the five commits (`git rebase -x`): 577, 597, 610, 614 and
+    614 passed, 0 skipped, 0 failed.
+  - Full suite (Python 3.14.6, `--continue-on-collection-errors`): `1932 passed, 44 skipped, 2 errors`;
+    `7bcec77` alone: `1880 passed, 44 skipped, 2 errors`. Same skip reasons on both (43 torch not
+    installed, 1 wandb not installed). The 2 errors are the same on both: `tests/evaluation/test_robustness.py`
+    and `test_stage14_run.py` (PR #160) import torch at collection without the `tests/_torch.py` guard;
+    the local venv has no torch, CI installs it.
+  - `tests/api` time, `.venv/bin/python -m pytest tests/api -q -p no:cacheprovider`, alternating: base
+    `505 passed in 41.38s`, head `553 passed in 56.33s`, base `505 passed in 40.59s`, head
+    `553 passed in 56.03s`.
+  - Python 3.13.2 venv, pool, main, config and analyses tests: `122 passed, 1 warning`.
+  - Planted bugs, each restored: `slot()` releases only on success →
+    `test_intake_check_failure_releases_slot` (`assert 503 == 422`) and `test_slot_never_released_twice`
+    fail; no event-loop check → both start-refusal tests fail; no Windows skip at the lifespan → both
+    Windows tests of `test_api_main.py` fail; the skip moved back to `create_app` (shared-pool path) → the
+    shared-pool one fails. Restored: pool, analyses and main tests `67 passed`.
+  - Compose, measured at `d765720`; `api/`, `deploy/`, `docker-compose.yml`, `configs/` and the
+    requirements files are unchanged since (`git diff --stat d765720 8ef26a9` over them is empty), so the
+    results stand (`docker compose up -d --build --wait`, all healthy): VmRSS uvicorn (PID 1) 79000 kB,
+    resource tracker 17452 kB, K = 2 workers 30828 kB and 30088 kB; `/tmp` 96M; `nginx -t` successful;
+    after `docker compose restart api` the same process set and no orphan (79552, 17344, 30688
+    and 30844 kB); with the api stopped nginx answered `503`, `Retry-After: 30` and the §6 body.
+- **Not verified [hypothesis]:** a full pool behind nginx (MockAnalyzer jobs take milliseconds; the
+  drain path is covered by app-level tests only, to be seen in P4 on staging); a signed-in upload
+  through nginx in this session (Iheb does it in the live check); nothing ran on Windows or macOS: on Windows the
+  pool tests are skipped (`skipif(sys.platform == "win32")`) and a test that starts an app's pool is
+  skipped with the same reason when it enters the app lifespan (`tests/api/conftest.py`); a test that only
+  builds an app is not skipped.
+- **K agreement:** K = 2 agreed as a provisional, not measured value by Donia (team lead), team chat,
+  2026-11-23 15:33; x-vsd-concurrent-uploads removed, both tmpfs sizes follow K; worker RSS with the real
+  bundle to be measured in P1 for the P4 decision.
+- **Earlier Part E work recorded here:** The Friday 20 Nov Part E entry was missed; the two lines
+  below, given by Iheb, stand in for it.
+  - P2a final-HEAD checks (Entry 207 labels its e2e run as before the rebase, at b7acd5f): run after merge on main c360bdc, whose tree equals the final PR HEAD 4d63ef4 (git diff --stat empty): e2e 76 passed (Chromium), sign-in POSTs 12 (planned 12), 429: 1, secret scan 0; full suite on PostgreSQL 18.7: 1765 passed, 42 skipped (41 torch, 1 wandb). Recorded in the #155 correction comment 7022727084.
+  - No live check was done on 2026-11-22 (an earlier draft of this line and of the #155 correction comment said otherwise; corrected 2026-11-23). This stack's PostgreSQL store had never received the one-time SQLite import, so analyst01 did not exist there; see the P2a import and the live check below.
+- **Iheb's checks before the push (final code e93c942):**
+  - e2e at e93c942 (final code; this amend changes only this log), run by Iheb 2026-11-23: 76 passed (Chromium, 3.7 min), sign-in POSTs through nginx 12 (planned 12), 429: 1 (planned 1), secret scan 0 matches.
+  - P2a import on Iheb's stack, 2026-11-23 22:25 local: the dev PostgreSQL store had held only e2e data since 2026-11-17 (the one-time import had never run); a first import attempt on that non-empty store was refused with nothing changed; then emptied per docs/setup.md "Empty the database (keep vsd-var)" (vsd-var untouched, created 2026-11-01) and python -m api.migrate_sqlite /app/var/api.sqlite imported and verified 108 rows in 5 tables (account 7, analysis_record 87, analysis_note 0, session 0, sign_in_failure 14; SHA-256 per table), SQLite file unchanged.
+  - Live check on :8001 by Iheb at e93c942, after the import: signed in as analyst01, older History rows present, upload gave a result (stored at 2026-11-23T21:30:41Z, from analysis_record), new row on top of History. api processes after the upload (VmRSS/VmHWM kB; no list before it, the import had recreated the containers): uvicorn 82320/145164, worker 67 31048/31048, worker 68 30776/30776, resource tracker 17500/17748; exactly 2 workers, none replaced.
+- **AI assistance:** Claude Code (Claude Opus 5.5) produced the pre-reports, the plan and this
+  implementation from Iheb's P2b brief; Iheb reviews before acceptance (D26). AI does not push or merge.
+- **Gate:** **WAITING FOR APPROVAL.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -8615,15 +8713,21 @@ pointers and synchronized PDF are reviewed.
 - [ ] Integration: before the real ModelBundle is served, the store starts empty (a fresh database: stop the stack and remove only the PostgreSQL volume, `docker volume rm <project>_vsd-pg` with the name from `docker compose config`, as in `docs/setup.md` "Empty the database"; or a new `vsd-pg`) or mock results and their notes are removed (`analysis_note` has a foreign key to `analysis_record`), so the figures never mix the two (§4.7 G6; Entry 120).
 - [ ] Routes other than `POST /api/analyses` and `PUT …/note` answer a Content-Length above `max_size_bytes` + 64 KiB with Starlette's plain-text 413, not the §6 shape (GET-only today) (Entry 119).
 - [ ] Shared helpers (utc_now_iso, REQUEST_ID, invalid_request) live in routers and are imported across routers; move to a shared module in a later refactor PR (Entry 119).
-- [ ] Integration: limit concurrent analyses; a timed-out analyzer thread keeps running (cannot be killed), so repeated timeouts with the real model could pile up (Entry 116). The container's `/tmp` tmpfs is sized for `x-vsd-concurrent-uploads: 4` (2 × body limit each); the limit should match that number (Entry 125).
+- [x] Integration: limit concurrent analyses; a timed-out analyzer thread keeps running (cannot be killed), so repeated timeouts with the real model could pile up (Entry 116). The container's `/tmp` tmpfs is sized for `x-vsd-concurrent-uploads: 4` (2 × body limit each); the limit should match that number (Entry 125). (P2b: K worker processes, a timed-out one is killed; `x-vsd-concurrent-uploads` removed, tmpfs follows K; Entry 214, waiting for approval)
 - [x] uvicorn's default access log prints the client IP; §1/§7 say no IP is stored. Decide for Stage 19 (e.g. `--no-access-log` or a log filter) (Entry 116). (`--no-access-log --no-proxy-headers` in the image and the documented local command; Entry 125)
 - [ ] Context7 rejects the configured `CONTEXT7_API_KEY` ("Invalid API key"); the key owner checks it (Entry 101).
-- [ ] P2a review: PostgreSQL store, `vsd_app` role, SQLite import, CI service container (Entry 207).
+- [x] P2a review: PostgreSQL store, `vsd_app` role, SQLite import, CI service container (Entry 207). (merged in PR #155, `c360bdc`; Entry 214)
 - [ ] Production database backup: pg_dump routine and a tested restore before production goes live (P3, D54).
 - [ ] Teammates' existing .env files need VSD_DB_PASSWORD and VSD_DB_APP_PASSWORD after P2a; announce in the PR.
 - [ ] Remove the read-only `vsd-var` mount (and the volume) once the SQLite rollback window ends; until then `docker compose exec api python -m api.migrate_sqlite /app/var/api.sqlite` imports it once (SDD v2.0 §5.4; Entry 207).
 - [ ] SDD v2.1 note: PostgreSQL is used in every environment, including local and tests (SDD v2.0 §5.1, §11.3 speak of a local SQLite adapter and "the same suite as SQLite"), and the deployment figure's "SQLite local compatibility" store; propose with the next SDD revision (Entry 207).
-- [ ] P2b (D53 (2)): bounded process pool, 503 + `Retry-After` when full, kill on timeout; needs a value for K before the P4 load test (D53 (3), SDD §3.4); plan after P2a merges (Entry 207).
+- [ ] P2b (D53 (2)): bounded process pool, 503 + `Retry-After` when full, kill on timeout; needs a value for K before the P4 load test (D53 (3), SDD §3.4); plan after P2a merges (Entry 207). Built with K = 2 as a mock, not measured value (agreed as provisional by Donia, 2026-11-23); review of Entry 214.
+- [ ] P4 (D53 (3)): set K (`analysis_workers`) and `analysis_retry_after_s` from the load test on the staging host with the real bundle and record them by decision; until then both are mock, not measured values; worker RSS with the real bundle comes from P1; the tmpfs table in Entry 214 gives the compose sizes for K = 1–4 (Entry 214).
+- [ ] P1: `analysis_worker_start_timeout_s` (mock; one worker's start-up hook; set from the measured bundle load time in P1); also check the API healthcheck start period against that load time (Entry 214).
+- [ ] P1: measure one real worker's RSS and peak (`VmRSS`, `VmHWM` from `/proc/<pid>/status` in the api container, after a warm-up of maximum-size uploads) to choose K; a MockAnalyzer worker under uvicorn measured 30828 kB and 30088 kB VmRSS idle at `d765720` (Entry 214).
+- [ ] P1: re-check the api `/tmp` tmpfs sizing once torch and librosa are in the image (numba cache, torch temp files); the read-only root filesystem may also need `NUMBA_CACHE_DIR` (Entry 214).
+- [ ] P4: nothing bounds how many request bodies nginx buffers (`/var/cache/nginx` is sized for 2K bodies as an assumption); decide whether to add `limit_conn` on `POST /api/analyses` (Entry 214).
+- [ ] P4 on staging: observe a full pool behind nginx (the API's own `503` with request ID after the drain, not nginx's) (Entry 214).
 - [ ] api_design §7 still says SQLite for the D63 migration target; correct it in the D63 implementation PR (0002 schema file)
 
 **Stage 18 web (Part E, Entries 127–137)**
@@ -8727,7 +8831,7 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-22 (Entries 203-211)
+## Current status — updated 2026-11-23 (Entries 203-214)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -8793,11 +8897,15 @@ No DEEP-VOICE audio was opened or scored, and no external-run claim was created 
 **Application status.** The React Docker MVP still displays mock analyzer results. F4-to-API
 integration is Iheb’s P1 work; the mock verdict must not be presented as a real model result.
 D65 (Entry 191, approved in Entry 193) names Direction D and `docs/design/HANDOFF-v2.md` as the D55 target design;
-the shipped UI is unchanged until the D55 build PRs. P2a (Entry 207, waiting for review) moves the store to
+the shipped UI is unchanged until the D55 build PRs. P2a (Entry 207; merged, PR #155) moved the store to
 PostgreSQL behind the same repositories (D53 (4)): `db` service pinned by digest, the API as the
 non-superuser `vsd_app`, a one-time import of the old SQLite store, the API tests on PostgreSQL locally
-and in CI; no API or web change. Every `.env` needs `VSD_DB_PASSWORD` and `VSD_DB_APP_PASSWORD`. P2b
-(the process pool) follows after P2a merges.
+and in CI. Every `.env` needs `VSD_DB_PASSWORD` and `VSD_DB_APP_PASSWORD`. P2b (Entry 214, waiting for
+approval) runs analyses in a bounded pool of K spawned worker processes (D53 (2)): `503
+analysis_unavailable` with `Retry-After` when all K are busy, a timed-out analysis killed and its worker
+replaced, the api tmpfs sized from K; K = 2 and Retry-After 30 s are mock, not measured values (P4, on
+the staging host with the real bundle) and the 60 s start timeout is a mock value (P1). P1 (the F4
+bundle in the API) plugs its loader into the pool as the worker factory.
 
 **Track V V1c implementation (Entry 185, merged in PR #152):** the pure frozen recipe,
 hash-verifying selection-set builder, strict training-half resource-cache builder/loader, exact
