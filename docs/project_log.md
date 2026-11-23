@@ -7148,6 +7148,54 @@ module, training-format S build/verification, training-half resource cache and o
 
 ---
 
+### Entry 213 — Stage 14 v1 fail-closed runner implementation (2026-11-23)
+
+- **Owner:** Malak Ben Salem. Same branch and reviewed base as Entry 212. This follow-up completes
+  the v1 runner implementation; it does not access FoR audio, create a registry claim, score a
+  model, or access DEEP-VOICE.
+- **Two separate claims (D41):** `stage14_run claim|score` has one exact model set for
+  `baseline-v1` and another for the F4 bundle seed. Each covers all nine conditions and reuses the
+  corresponding clean Stage 11 per-clip scores. The clean record must be the completed exact
+  four-model Stage 11 v1 set; partial or merely containing records are refused. Its CSV, sidecar,
+  row count, role and artifact are also bound to Stage 11's stored `run_report.json`, so changing a
+  CSV and its sidecar together cannot create a new accepted clean input.
+- **Preflight:** clean full-SHA commit, F2/F3 and Stage 7/8/10 evidence, strict robustness config,
+  FFmpeg pin, Colab 2026.10 / Python 3.13.16 / torch 2.11.0+cu130 / Tesla T4 runtime, and model
+  hashes. F4 is bound to the committed F4 record bytes and its checkpoint/profile/policy hashes.
+  The baseline repeats D58's exact artifact and MFCC reference reproduction gate before claim and
+  score. Scoring remains on CPU.
+- **Once-only score:** after claim re-read, `scoring_started.json` is exclusively created before the
+  first test clip read. Every degradation precedes unchanged F3; canonical waveform/feature hashes
+  are recorded; every model scores twice with byte-identical raw outputs and independent decision
+  checks. Condition score files are written and re-read, paired metrics use the frozen D14-group
+  bootstrap, reports are written, then the registry is completed. A failure remains started and is
+  not retried without a new decision.
+- **Read-only hand-off:** `stage14_run check` performs the complete runtime/artifact/D58/clean-score
+  preflight without an output folder, registry append or test-audio read. The official notebook can
+  therefore stop safely after setup validation and team review, before either irreversible claim.
+- **Notebook 11:** `notebooks/11_stage14_v1_for_test.ipynb` checks out one full approved commit,
+  asserts the Colab 2026.10 T4 environment, runs the evaluation/governance suites, verifies/extracts
+  FoR, rebuilds D58 val-A caches and copies frozen artifacts outside the clone. Its default `check`
+  mode runs both model preflights and stops. Only explicit `official` mode exposes baseline claim →
+  remount → score, followed by F4 claim → remount → score and a final Drive re-verification. It has
+  no stored outputs and a static governance contract.
+- **Checks [verified, local Windows, synthetic only]:** Stage 14 + registry core → `74 passed` after
+  the exact-model-set refusal was added; Stage 14 plus shared Stage 11 and FoR governance regression
+  set → `190 passed`; complete `tests/evaluation` → `675 passed` (the evaluation share of the
+  `869 passed in 374.12s` combined run); complete governance after notebook 11 → `199 passed`.
+  Notebook 11 passes strict `nbformat` validation with 21 unique cell IDs and no stored outputs.
+  The complete run exposed two stale report-test allow-list expectations; both now name only the
+  three exact runners, and the complete rerun passes. `git diff --check` passes. No real data path
+  was supplied.
+- **Remaining gate:** review the official notebook hand-off and runner, then all-four review before the
+  two v1 claim/score lifecycles on Colab. Per-clip outputs stay on Drive; only permitted evidence is
+  committed. The v2 Stage 14 model set is later, after its Stage 11 run.
+- **AI assistance:** Codex implemented and synthetically tested the runner and drafted this record;
+  Malak must review every change and the team must approve before official access.
+- **Gate:** **WAITING FOR APPROVAL.**
+
+---
+
 ### Entry 186 — Track V PR V5a: F5 model loader dispatching on `architecture` (2026-11-15)
 
 - **Owner:** Donia Mabrouk (Part C). Branch `feat/stageV2-bundle-loader` from `main` `b78c15d`.

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import json
 from pathlib import Path
 
 import numpy as np
@@ -20,6 +21,7 @@ from src.evaluation.robustness import (
     load_robustness_config,
 )
 from src.evaluation.stage14_run import read_stage11_clean_scores
+from src.evaluation.stage11_run import MODEL_IDS
 
 
 REPO = Path(__file__).resolve().parents[2]
@@ -125,8 +127,7 @@ def _clean_score_world(tmp_path, monkeypatch):
     monkeypatch.setattr(stage14_module, "F2_MANIFEST_SHA256", manifest_sha)
     registry_path = tmp_path / "registry.jsonl"
     registry = RunRegistry(registry_path)
-    model_set = ("baseline-v1", "cnn-v1-seed0")
-    run_id = registry.claim("for", "test", model_set, "a" * 40,
+    run_id = registry.claim("for", "test", MODEL_IDS, "a" * 40,
                             evaluation_purpose="stage11_test")
     registry.complete(run_id, "stage11/run_report.json")
     score_dir = tmp_path / "scores"
@@ -148,11 +149,49 @@ def _write_clean(score_dir, run_id, manifest_sha, *, purpose="stage11_test",
     write_clip_scores(score_dir, **kwargs)
 
 
+def _write_stage11_report(tmp_path, score_dir, run_id, *, model_id="baseline-v1",
+                          role="baseline"):
+    artifact = "b" * 64
+    roles = {
+        "baseline-v1": "baseline",
+        "cnn-v1-seed0": "cnn_bundle_seed",
+        "cnn-v1-seed1": "cnn_other_seed",
+        "cnn-v1-seed2": "cnn_other_seed",
+    }
+    report = {
+        "schema_version": 1,
+        "dataset": "for",
+        "split": "test",
+        "evaluation_purpose": "stage11_test",
+        "run_id": run_id,
+        "code_commit": "a" * 40,
+        "model_set": {
+            name: {"role": value, "artifact_sha256": artifact}
+            for name, value in roles.items()
+        },
+        "clip_scores": {"folder": "clip_scores", "files": {
+            model_id: {
+                "csv_sha256": hashlib.sha256(
+                    (score_dir / f"{model_id}.csv").read_bytes()).hexdigest(),
+                "sidecar_sha256": hashlib.sha256(
+                    (score_dir / f"{model_id}.json").read_bytes()).hexdigest(),
+                "n_rows": 1,
+            }
+        }},
+    }
+    report["model_set"][model_id] = {"role": role, "artifact_sha256": artifact}
+    path = tmp_path / f"{model_id}-run-report.json"
+    path.write_text(json.dumps(report), encoding="utf-8")
+    return path
+
+
 def test_clean_score_reader_binds_f2_sidecar_and_completed_stage11_run(tmp_path, monkeypatch):
     manifest, manifest_sha, registry, run_id, scores = _clean_score_world(tmp_path, monkeypatch)
     _write_clean(scores, run_id, manifest_sha)
+    report = _write_stage11_report(tmp_path, scores, run_id)
     loaded = read_stage11_clean_scores(
-        scores, model_id="baseline-v1", registry_path=registry, manifest_path=manifest)
+        scores, model_id="baseline-v1", registry_path=registry, manifest_path=manifest,
+        run_report_path=report)
     assert loaded.metadata["run_id"] == run_id
     assert loaded.clip_id == ("REAL/a.wav",)
 
@@ -162,7 +201,27 @@ def test_clean_score_reader_refuses_uncompleted_or_wrong_run(tmp_path, monkeypat
     _write_clean(scores, "f" * 32, manifest_sha)
     with pytest.raises(RobustnessError, match="0 matching completed"):
         read_stage11_clean_scores(
-            scores, model_id="baseline-v1", registry_path=registry_path, manifest_path=manifest)
+            scores, model_id="baseline-v1", registry_path=registry_path, manifest_path=manifest,
+            run_report_path=tmp_path / "not-read.json")
+
+
+def test_clean_score_reader_refuses_a_partial_stage11_model_set(tmp_path, monkeypatch):
+    manifest = tmp_path / "manifest.csv"
+    manifest.write_bytes(b"path,label\nREAL/a.wav,REAL\n")
+    manifest_sha = hashlib.sha256(manifest.read_bytes()).hexdigest()
+    monkeypatch.setattr(stage14_module, "F2_MANIFEST_SHA256", manifest_sha)
+    registry_path = tmp_path / "registry.jsonl"
+    registry = RunRegistry(registry_path)
+    run_id = registry.claim(
+        "for", "test", ("baseline-v1",), "a" * 40, evaluation_purpose="stage11_test")
+    registry.complete(run_id, "stage11/run_report.json")
+    scores = tmp_path / "scores"
+    scores.mkdir()
+    _write_clean(scores, run_id, manifest_sha)
+    with pytest.raises(RobustnessError, match="0 matching completed"):
+        read_stage11_clean_scores(
+            scores, model_id="baseline-v1", registry_path=registry_path, manifest_path=manifest,
+            run_report_path=tmp_path / "not-read.json")
 
 
 def test_clean_score_reader_refuses_wrong_manifest_or_non_primary_role(tmp_path, monkeypatch):
@@ -170,14 +229,29 @@ def test_clean_score_reader_refuses_wrong_manifest_or_non_primary_role(tmp_path,
     _write_clean(scores, run_id, "c" * 64)
     with pytest.raises(RobustnessError, match="differs from F2"):
         read_stage11_clean_scores(
-            scores, model_id="baseline-v1", registry_path=registry, manifest_path=manifest)
+            scores, model_id="baseline-v1", registry_path=registry, manifest_path=manifest,
+            run_report_path=tmp_path / "not-read.json")
 
     other = tmp_path / "other"
     other.mkdir()
     _write_clean(other, run_id, manifest_sha, model_id="cnn-v1-seed0", role="cnn_other_seed")
     with pytest.raises(RobustnessError, match="only baseline or frozen CNN bundle"):
         read_stage11_clean_scores(
-            other, model_id="cnn-v1-seed0", registry_path=registry, manifest_path=manifest)
+            other, model_id="cnn-v1-seed0", registry_path=registry, manifest_path=manifest,
+            run_report_path=tmp_path / "not-read.json")
+
+
+def test_clean_score_reader_refuses_files_not_bound_by_stage11_report(tmp_path, monkeypatch):
+    manifest, manifest_sha, registry, run_id, scores = _clean_score_world(tmp_path, monkeypatch)
+    _write_clean(scores, run_id, manifest_sha)
+    report = _write_stage11_report(tmp_path, scores, run_id)
+    data = json.loads(report.read_text(encoding="utf-8"))
+    data["clip_scores"]["files"]["baseline-v1"]["csv_sha256"] = "f" * 64
+    report.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(RobustnessError, match="hashes/count"):
+        read_stage11_clean_scores(
+            scores, model_id="baseline-v1", registry_path=registry, manifest_path=manifest,
+            run_report_path=report)
 
 
 def _scores(*, role, purpose, raw, prediction=None, clip_ids=None):
