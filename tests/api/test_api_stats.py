@@ -1,4 +1,4 @@
-import dataclasses
+import functools
 import logging
 from datetime import datetime, timedelta, timezone
 
@@ -7,6 +7,7 @@ import pytest
 from api.analyzer import MockAnalyzer
 from api.main import create_app
 from api.repository import AnalysisRecord
+from tests.api._analyzers import FakeAnalyzer
 from tests.api.conftest import audio_bytes, signed_in_client
 
 URL = "/api/stats"
@@ -133,14 +134,12 @@ def test_awaiting_note_six_newest_synthetic_or_uncertain_without_note_in_the_per
 
 
 def test_monitoring_marker_comes_from_the_analyzer(config):
-    class RealLike(MockAnalyzer):
-        def info(self):
-            return dataclasses.replace(super().info(), policy_version="risk-test", mock=False)
-
-    with signed_in_client(create_app(config, analyzer=RealLike(0.1234))) as client:
+    real_like = functools.partial(FakeAnalyzer, deferral_on_fit=0.1234,
+                                  info_overrides={"policy_version": "risk-test", "mock": False})
+    with signed_in_client(create_app(config, analyzer_factory=real_like)) as client:
         assert stats(client)["monitoring_marker"] == {"deferral_on_fit": 0.1234, "policy_version": "risk-test",
                                                       "mock": False}
-    with signed_in_client(create_app(config, analyzer=MockAnalyzer(0.5))) as client:
+    with signed_in_client(create_app(config, analyzer_factory=functools.partial(MockAnalyzer, 0.5))) as client:
         assert stats(client)["monitoring_marker"]["deferral_on_fit"] == 0.5
 
 

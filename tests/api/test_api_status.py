@@ -1,4 +1,5 @@
 import dataclasses
+import functools
 import re
 
 import pytest
@@ -7,6 +8,7 @@ from api.analyzer import AnalyzerInfo
 from api.main import create_app
 from api.repository import AnalysisRepository
 from api.routers.status import derive_state
+from tests.api._analyzers import FakeAnalyzer
 from tests.api._pg import query, tables
 from tests.api.conftest import admin_connect, app_database, signed_in_client
 
@@ -32,24 +34,21 @@ def test_deferral_on_fit_comes_from_config(config):
         assert client.get("/api/status").json()["deferral_on_fit"] == 0.25
 
 
-class InfoOnly:
-    def __init__(self, info):
-        self._info = info
-
-    def info(self):
-        return self._info
-
-
 BUNDLE_INFO = AnalyzerInfo(ready=True, model_version="cnn-v3", profile_version="preprocessing-v1",
                            policy_version="risk-v1", deferral_on_fit=0.12, bundle_manifest_sha256="ab" * 32,
                            mock=False)
 
 
-def status_of(config, analyzer=None, probe_db=None):
+def info_only(info: AnalyzerInfo):
+    """A picklable factory whose analyzer reports exactly this info."""
+    return functools.partial(FakeAnalyzer, info_overrides=dataclasses.asdict(info))
+
+
+def status_of(config, analyzer_factory=None, probe_db=None):
     """GET /api/status, signed in. The session lives in the started database; with probe_db (a Database),
     the history_and_stats check reads that one instead, so a broken history store can be tested while the
     session check still works (§4.8: a session check that cannot read the store is a 500)."""
-    app = create_app(config, analyzer=analyzer)
+    app = create_app(config, analyzer_factory=analyzer_factory)
     with signed_in_client(app) as client:
         if probe_db is not None:
             app.state.repository = AnalysisRepository(probe_db)
@@ -57,7 +56,7 @@ def status_of(config, analyzer=None, probe_db=None):
 
 
 def test_status_values_come_from_the_analyzer_info(config):
-    body = status_of(config, InfoOnly(BUNDLE_INFO)).json()
+    body = status_of(config, info_only(BUNDLE_INFO)).json()
     assert body["state"] == "ready"
     assert body["checks"]["analysis"] == "available"
     assert body["versions"] == {"model_version": "cnn-v3", "profile_version": "preprocessing-v1",
@@ -69,7 +68,7 @@ def test_status_values_come_from_the_analyzer_info(config):
 
 def test_status_is_unavailable_when_the_analyzer_is_not_ready(config):
     info = dataclasses.replace(BUNDLE_INFO, ready=False)
-    response = status_of(config, InfoOnly(info))
+    response = status_of(config, info_only(info))
     assert response.status_code == 200
     assert response.json()["state"] == "unavailable"
     assert response.json()["checks"] == {"analysis": "unavailable", "history_and_stats": "available"}
@@ -122,7 +121,7 @@ def test_status_is_500_when_the_session_store_is_gone(config):
 
 def test_status_is_unavailable_when_both_checks_fail(config):
     info = dataclasses.replace(BUNDLE_INFO, ready=False)
-    body = status_of(config, InfoOnly(info), probe_db=app_database("no_such_database", timeout_s=1)).json()
+    body = status_of(config, info_only(info), probe_db=app_database("no_such_database", timeout_s=1)).json()
     assert body["state"] == "unavailable"
     assert body["checks"] == {"analysis": "unavailable", "history_and_stats": "unavailable"}
 

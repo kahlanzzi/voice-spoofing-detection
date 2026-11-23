@@ -2,7 +2,10 @@
 of docs/api_design.md.
 
 POST:
-The request ID is assigned first (by the middleware), so every error carries it. A verdict is
+The request ID is assigned first (by the middleware), so every error carries it. Then one worker of the
+analysis pool is taken (D53 (2)), before the body is read: at most K uploads are in the temp folder at
+once, which is what the tmpfs sizing relies on. If every worker is busy the answer is 503
+analysis_unavailable with Retry-After, and the body is drained unread (no temp file). A verdict is
 returned only after its record is stored; on any failure nothing is stored and the error has no
 prediction, confidence or risk_level (NFR-06). processing_ms runs from the handler's start (the
 handler reads the body itself) to the result being ready.
@@ -14,7 +17,6 @@ null (§6).
 """
 from __future__ import annotations
 
-import asyncio
 import logging
 import re
 import time
@@ -29,6 +31,7 @@ from api.analyzer import AnalyzerUnavailable
 from api.errors import HTTP_ERRORS, INTERNAL, ApiError
 from api.intake import received_upload
 from api.middleware import request_id_of
+from api.pool import AnalyzerFailed, PoolBusy, PoolUnavailable, WorkerLost
 from api.repository import AnalysisRecord, HistoryQuery, StoredNote
 from api.routers.status import utc_now_iso
 from api.schemas import (REQUEST_ID_PATTERN, AnalysisResponse, HistoryResponse, Note, StoredAnalysis,
@@ -39,6 +42,7 @@ log = logging.getLogger("api")
 router = APIRouter()
 
 UNAVAILABLE = (503, "analysis_unavailable", "The analysis service is not available.")
+BUSY = (503, "analysis_unavailable", "The analysis service is busy; try again later.")
 TIMEOUT = (504, "analysis_timeout", "The analysis did not finish in time.")
 
 DEFAULT_PAGE_SIZE = 10  # §4.4; lowered to page_size_max if that is smaller
@@ -70,28 +74,48 @@ def to_stored(record: AnalysisRecord, note: StoredNote | None) -> StoredAnalysis
                                                               updated_by=note.updated_by))
 
 
+async def drain(request: Request) -> None:
+    """Read and discard a refused upload's body, in memory chunk by chunk (no temp file), so the connection
+    ends cleanly and nginx relays this answer. Errors while reading (client gone, body limit) are ignored:
+    the refusal stands."""
+    try:
+        async for _ in request.stream():
+            pass
+    except Exception:
+        pass
+
+
 @router.post("/analyses", status_code=201, response_model=AnalysisResponse)
 async def create_analysis(request: Request) -> JSONResponse:
     started = time.perf_counter()
     request_id = request_id_of(request)
     config = request.app.state.config
-    analyzer = request.app.state.analyzer
+    pool = request.app.state.pool
     internal = ApiError(500, *INTERNAL, request_id=request_id)
 
-    async with received_upload(request, config, request_id) as path:
-        info = analyzer.info()
-        if not info.ready:
-            raise ApiError(*UNAVAILABLE, request_id=request_id)
-        try:
-            # The thread cannot be stopped: on timeout we stop waiting and nothing stores its result.
-            outcome = await asyncio.wait_for(asyncio.to_thread(analyzer.analyze, path), config.analysis_timeout_s)
-        except TimeoutError:
-            raise ApiError(*TIMEOUT, request_id=request_id) from None
-        except AnalyzerUnavailable:
-            raise ApiError(*UNAVAILABLE, request_id=request_id) from None
-        except Exception:
-            log.exception("analyzer failed, request_id=%s", request_id)
-            raise internal from None
+    try:
+        async with pool.slot() as job:
+            async with received_upload(request, config, request_id) as path:
+                try:
+                    outcome = await pool.run(job, path, config.analysis_timeout_s)
+                except TimeoutError:  # the worker was already killed and reaped: nothing holds the file
+                    raise ApiError(*TIMEOUT, request_id=request_id) from None
+                except AnalyzerUnavailable:
+                    raise ApiError(*UNAVAILABLE, request_id=request_id) from None
+                except AnalyzerFailed as exc:
+                    log.error("analyzer failed, request_id=%s\n%s", request_id, exc.worker_traceback)
+                    raise internal from None
+                except WorkerLost:
+                    log.error("analysis worker lost during the job, request_id=%s", request_id)
+                    raise internal from None
+    except PoolBusy:
+        await drain(request)
+        log.warning("analysis refused: all %d workers busy, request_id=%s", pool.size, request_id)
+        raise ApiError(*BUSY, request_id=request_id,
+                       headers={"Retry-After": str(config.analysis_retry_after_s)}) from None
+    except PoolUnavailable:
+        await drain(request)
+        raise ApiError(*UNAVAILABLE, request_id=request_id) from None
 
     try:
         response = AnalysisResponse(
@@ -110,7 +134,7 @@ async def create_analysis(request: Request) -> JSONResponse:
     processing_ms = round((time.perf_counter() - started) * 1000)
 
     record = AnalysisRecord(**response.model_dump(), created_at=utc_now_iso(),
-                            processing_ms=processing_ms, is_mock=info.mock)
+                            processing_ms=processing_ms, is_mock=pool.info().mock)
     try:
         await run_in_threadpool(request.app.state.repository.add, record)
     except Exception:

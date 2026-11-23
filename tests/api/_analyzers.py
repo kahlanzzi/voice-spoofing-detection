@@ -95,3 +95,21 @@ class ScriptedAnalyzer(MockAnalyzer):
         if self.pid_versions:
             info = AnalyzerInfo(**{**info.__dict__, "model_version": f"pid-{os.getpid()}"})
         return AnalyzerInfo(**{**info.__dict__, "ready": self.ready})
+
+
+class FakeAnalyzer(MockAnalyzer):
+    """A picklable stand-in for app-level tests: a fixed error or outcome, and info() fields overridden."""
+
+    def __init__(self, ready: bool = True, error: BaseException | None = None, outcome: AnalysisOutcome | None = None,
+                 info_overrides: dict | None = None, deferral_on_fit: float = 0.1):
+        super().__init__(deferral_on_fit)
+        self.ready, self.error, self.outcome = ready, error, outcome
+        self.info_overrides = info_overrides or {}
+
+    def analyze(self, path: Path) -> AnalysisOutcome:
+        if self.error is not None:
+            raise self.error
+        return self.outcome or super().analyze(path)
+
+    def info(self) -> AnalyzerInfo:
+        return AnalyzerInfo(**{**super().info().__dict__, "ready": self.ready, **self.info_overrides})

@@ -55,7 +55,7 @@ def derive_state(analysis: Check, history_and_stats: Check) -> State:
 
 @router.get("/status", response_model=StatusResponse)
 def get_status(request: Request) -> StatusResponse:
-    info = request.app.state.analyzer.info()
+    info = request.app.state.pool.info()
     analysis: Check = "available" if info.ready else "unavailable"
     history_and_stats = history_and_stats_check(request.app.state.repository)
     return StatusResponse(

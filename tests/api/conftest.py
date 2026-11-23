@@ -14,13 +14,25 @@ for real_hasher, a fast argon2id hasher in place of the §4.8 one (about 80 ms p
 
 Every route under /api but POST /session and GET /health needs a session (§4.8), so `client` is signed
 in and sends an allowed Origin on every request; `anon` is the same client before sign-in. Tests that
-build their own app sign in with signed_in()."""
+build their own app sign in with signed_in().
+
+Analysis pool (api/pool.py): the test config has one worker. Starting a spawned worker for every app is
+slow, so apps built with the default MockAnalyzer factory and one worker share one pool for the session
+(shared_default_pool): the first app lifespan starts it, later ones check that it is idle and ready, and it
+is closed at the end of the session. Any other factory or K, the pool tests (test_api_pool.py) and tests
+marked own_pool get real per-app workers.
+
+The pool does not run on Windows: there, a test is skipped when it enters a TestClient of an app that has
+a pool (that runs the lifespan, which starts the pool). Building an app starts nothing and still works."""
 from __future__ import annotations
 
+import asyncio
 import dataclasses
+import functools
 import io
 import os
 import secrets
+import sys
 import uuid
 from contextlib import contextmanager
 from typing import Iterator
@@ -36,7 +48,9 @@ import api.main
 from api.auth import HMAC_KEY_ENV, password_hasher
 from api.config import load_api_config
 from api.db import APP_PASSWORD_ENV, Database
+from api.analyzer import MockAnalyzer
 from api.main import create_app
+from api.pool import NEEDS_SELECTOR_LOOP, AnalysisPool
 from api.repository import AnalysisRepository
 
 HTTPS = "https://testserver"  # httpx keeps the Secure cookie only over https (§4.8 Cookie)
@@ -115,6 +129,70 @@ def signed_in_client(app, username: str = ANALYST, **kwargs) -> Iterator[TestCli
     """A TestClient of app, lifespan run, signed in as username."""
     with TestClient(app, base_url=HTTPS, **kwargs) as test_client:
         yield signed_in(test_client, username)
+
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "own_pool: build apps with their own pool, never the shared one")
+
+
+class _SharedPool:
+    """The session's pool, handed to one app at a time: the first start starts it, close is a no-op."""
+
+    def __init__(self, pool: AnalysisPool):
+        self._pool = pool
+
+    async def start(self) -> None:
+        if not self._pool._started:
+            await self._pool.start()
+        counts = self._pool.counts()
+        if counts != {"idle": self._pool.size, "held": 0, "restarting": 0} or not self._pool.info().ready:
+            raise RuntimeError(f"the shared test pool is not idle and ready: {counts}")
+
+    async def close(self) -> None:
+        pass
+
+    def __getattr__(self, name):
+        return getattr(self._pool, name)
+
+
+@pytest.fixture(scope="session")
+def _shared_pools() -> Iterator[dict]:
+    pools: dict[float, AnalysisPool] = {}
+    yield pools
+    for pool in pools.values():
+        asyncio.run(pool.close())
+
+
+@pytest.fixture(autouse=True)
+def shared_default_pool(request, monkeypatch, _shared_pools):
+    """Apps built with the default MockAnalyzer factory and one worker get the session's shared pool."""
+    if request.node.get_closest_marker("own_pool") or request.node.path.name == "test_api_pool.py":
+        return
+
+    def pool_for(factory, size, start_timeout_s):
+        default = (isinstance(factory, functools.partial) and factory.func is MockAnalyzer
+                   and len(factory.args) == 1 and not factory.keywords)
+        if not default or size != 1:
+            return AnalysisPool(factory, size=size, start_timeout_s=start_timeout_s)
+        deferral = factory.args[0]
+        if deferral not in _shared_pools:
+            _shared_pools[deferral] = AnalysisPool(factory, size=1, start_timeout_s=start_timeout_s)
+        return _SharedPool(_shared_pools[deferral])
+
+    monkeypatch.setattr(api.main, "AnalysisPool", pool_for)
+
+
+@pytest.fixture(autouse=True)
+def no_pool_start_on_windows(monkeypatch):
+    """Skip on Windows before an app lifespan starts its pool (sys.platform is read then: tests patch it)."""
+    enter = TestClient.__enter__
+
+    def enter_or_skip(self):
+        if sys.platform == "win32" and hasattr(getattr(self.app, "state", None), "pool"):
+            pytest.skip(NEEDS_SELECTOR_LOOP)
+        return enter(self)
+
+    monkeypatch.setattr(TestClient, "__enter__", enter_or_skip)
 
 
 @pytest.fixture(autouse=True)
@@ -212,7 +290,8 @@ def config(tmp_path, pg_database):
     info = psycopg.conninfo.conninfo_to_dict(test_database_url())
     return dataclasses.replace(load_api_config(), database_host=info.get("host", "127.0.0.1"),
                                database_port=int(info.get("port", 5432)), database_name=pg_database,
-                               database_user=APP_ROLE, temp_dir=str(tmp_path / "uploads"))
+                               database_user=APP_ROLE, temp_dir=str(tmp_path / "uploads"),
+                               analysis_workers=1)  # one spawned worker per app; pool tests set K themselves
 
 
 @pytest.fixture
