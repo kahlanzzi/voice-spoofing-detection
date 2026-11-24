@@ -236,7 +236,7 @@ Six weeks plus a short buffer. Weeks run Monday to Sunday. Dates are targets the
 
 ## 9. Track V — model v2 (V1–V5) · Donia, with Malak
 
-#### V1 · Corpora and augmentation pipeline (D50) — DONE (S and resource cache built 22 Nov; evidence PR pending)
+#### V1 · Corpora and augmentation pipeline (D50) — DONE (S and resource cache built 22 Nov; evidence Entry 215)
 
 - **Owner:** Malak; review Donia.
 - **Tasks:**

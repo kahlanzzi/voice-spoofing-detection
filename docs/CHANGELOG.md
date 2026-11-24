@@ -19,6 +19,10 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 
 ### Added
 - Analyses run in a bounded pool of K spawned worker processes (D53 (2)): a full pool answers `503 analysis_unavailable` with `Retry-After`, a timed-out analysis is killed and its worker replaced, and the api tmpfs follows K (`x-vsd-concurrent-uploads` removed; K and Retry-After are mock, not measured values until the P4 load test; the start timeout is a mock value until P1) (Track P, PR P2b, Entry 214).
+- Official Track V V1c build evidence: the D64-pinned five-condition selection set S and the
+  training-half resource cache were built and verified on Colab 2026.10 with a Tesla T4; the cache
+  contains 465 noise and 30,162 RIR resources with no all-zero entries, while generated NPZ files
+  remain on Drive (Entry 215).
 - Stage 14 v1 preparation: strict nine-condition robustness config, deterministic degradation core,
   exact completed-Stage-11 clean-score gate, paired D14-group bootstrap endpoints, and separate
   fail-closed claim/score lifecycles for `baseline-v1` and the frozen F4 bundle seed; synthetic tests
