@@ -188,3 +188,11 @@ def test_a_missing_argument_is_a_usage_error():
 
 def test_the_admin_and_the_import_share_one_way_to_open_the_database():
     assert migrate_sqlite.open_database is admin.open_database
+
+
+def test_migrate_refuses_with_the_bundle_analyzer(tmp_path, target, monkeypatch, capsys):
+    mock_config = migrate_sqlite.load_api_config()
+    monkeypatch.setattr(migrate_sqlite, "load_api_config", lambda: dataclasses.replace(mock_config, analyzer="bundle"))
+    monkeypatch.setattr(migrate_sqlite, "open_database", lambda config: pytest.fail("the store was opened"))
+    assert migrate_sqlite.main([str(build(tmp_path / "api.sqlite"))]) == 1
+    assert "selects the bundle analyzer" in capsys.readouterr().err

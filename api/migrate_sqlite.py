@@ -4,7 +4,8 @@
 
 The SQLite file is opened read-only (the vsd-var volume is mounted read-only too) and never changed, so
 it stays the rollback copy. The target is the API's own database (config and VSD_DB_APP_PASSWORD, as
-the admin command), with the schema applied; it must be empty, or nothing is done.
+the admin command), with the schema applied; it must be empty, or nothing is done. Refused when the config
+selects the bundle analyzer: the old store holds mock results, and a store never holds both kinds.
 
 All five tables are copied in one transaction: account IDs are kept (and the identity continues after
 the highest one), records are inserted in their SQLite rowid order (so seq keeps the same-second order
@@ -126,8 +127,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("sqlite_file", type=Path, help="the old store, e.g. /app/var/api.sqlite")
     args = parser.parse_args(argv)
     try:
+        config = load_api_config()
+        if config.analyzer != "mock":
+            raise Refused(f"The old store holds mock results and the config selects the {config.analyzer} analyzer. "
+                          "Nothing was changed.")
         source = read_source(args.sqlite_file)
-        database = open_database(load_api_config())
+        database = open_database(config)
         try:
             report = import_store(source, database)
         except STORE_ERRORS as exc:

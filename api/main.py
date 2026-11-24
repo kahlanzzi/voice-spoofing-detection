@@ -4,7 +4,8 @@ Every route is under /api (docs/api_design.md §2); every error uses the §6 sha
 carries an X-Request-ID header. The database tables and the temp folder are created at startup
 (lifespan), not at import. The lifespan also reads VSD_SIGNIN_HMAC_KEY and VSD_DB_APP_PASSWORD:
 without a valid key or a reachable PostgreSQL database the API refuses to start (§4.8, D53 (4)). It then
-starts the analysis pool (api/pool.py, D53 (2)): if any worker's start-up hook fails, it refuses to start.
+starts the analysis pool (api/pool.py, D53 (2)): if any worker's start-up hook fails, it refuses to start;
+so it does if the store holds results of the other kind (mock or real) than the analyzer's.
 Locally: docs/setup.md ("Running the API outside Compose").
 """
 from __future__ import annotations
@@ -48,6 +49,8 @@ async def lifespan(app: FastAPI):
             resolve_path(config.temp_dir).mkdir(parents=True, exist_ok=True)
         try:
             await app.state.pool.start()  # PoolStartError: refuse to start (no serving with a missing worker)
+            # MixedStoreError: refuse to start (a store holds mock results or real ones, never both)
+            app.state.repository.require_one_kind(mock=app.state.pool.info().mock)
             yield
         finally:
             await app.state.pool.close()
