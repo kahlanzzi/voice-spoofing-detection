@@ -700,7 +700,7 @@ All values come from config (`configs/api.yaml`, written in Stage 17), never fro
 | `analysis_timeout_s` | How long the API waits for the analyzer | 30 | Proposal |
 | `analysis_workers` | K: analysis worker processes per API process | 2 | Mock, not measured; replaced by the P4 load-test decision on the staging host with the real bundle (D53 (3)) |
 | `analysis_retry_after_s` | `Retry-After` on a full pool; at most `analysis_timeout_s` | 30 | Mock, not measured; replaced by the P4 load-test decision on the staging host with the real bundle (D53 (3)) |
-| `analysis_worker_start_timeout_s` | How long one worker may take to build its analyzer | 60 | Mock; one worker's start-up hook; set from the measured bundle load time in P1 |
+| `analysis_worker_start_timeout_s` | How long one worker may take to build its analyzer | 20 | Measured in P1 (see the P1 log entry) |
 | `page_size_max` | Largest `page_size` | 50 | Proposal |
 | `note_max_chars` | Longest note | 2,000 | Proposal |
 | `stats_time_zone` | Time zone for counting days | `UTC` | **Open decision 6** |

@@ -7,7 +7,7 @@ audio_deletion: Deleted when processing finishes
 analysis_timeout_s: 30
 analysis_workers: 2
 analysis_retry_after_s: 30
-analysis_worker_start_timeout_s: 60
+analysis_worker_start_timeout_s: 20
 page_size_max: 50
 note_max_chars: 2000
 stats_time_zone: UTC
