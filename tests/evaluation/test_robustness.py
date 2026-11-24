@@ -254,7 +254,7 @@ def test_clean_score_reader_refuses_files_not_bound_by_stage11_report(tmp_path, 
             run_report_path=report)
 
 
-def _scores(*, role, purpose, raw, prediction=None, clip_ids=None):
+def _scores(*, role, purpose, raw, p=None, prediction=None, clip_ids=None):
     clip_ids = tuple(f"clip/{i}.wav" for i in range(8)) if clip_ids is None else tuple(clip_ids)
     return ClipScores(
         metadata={
@@ -272,7 +272,7 @@ def _scores(*, role, purpose, raw, prediction=None, clip_ids=None):
         label=("REAL", "FAKE", "REAL", "FAKE", "REAL", "FAKE", "REAL", "FAKE"),
         group_id=tuple(f"g{i}" for i in range(8)),
         raw_score=np.asarray(raw, dtype=np.float64),
-        p=None,
+        p=None if p is None else np.asarray(p, dtype=np.float64),
         prediction=None if prediction is None else tuple(prediction),
     )
 
@@ -299,19 +299,39 @@ def test_paired_baseline_comparison_reports_primary_endpoint(config):
 
 def test_paired_bundle_comparison_reports_h6_real_false_synthetic(config):
     clean_predictions = ["authentic", "synthetic"] * 4
-    degraded_predictions = ["synthetic", "synthetic"] * 4
+    degraded_predictions = ["uncertain", "synthetic"] * 4
     clean = _scores(
         role="cnn_bundle_seed", purpose="stage11_test",
-        raw=[0.1, 0.9, 0.2, 0.8, 0.3, 0.7, 0.4, 0.6], prediction=clean_predictions)
+        raw=[0.1, 0.9, 0.2, 0.8, 0.3, 0.7, 0.4, 0.6],
+        p=[0.1, 0.9, 0.2, 0.8, 0.3, 0.7, 0.4, 0.6], prediction=clean_predictions)
     degraded = _scores(
         role="cnn_bundle_seed", purpose="stage14_robustness",
-        raw=[0.8, 0.9, 0.7, 0.8, 0.6, 0.7, 0.5, 0.6], prediction=degraded_predictions)
+        raw=[0.8, 0.9, 0.7, 0.8, 0.6, 0.7, 0.5, 0.6],
+        p=[0.8, 0.9, 0.7, 0.8, 0.6, 0.7, 0.5, 0.6], prediction=degraded_predictions)
     result = compare_condition(
-        clean, degraded, condition_id="low_pass_3400hz", config=config)
-    assert result["clean_real_false_synthetic_rate"] == 0.0
-    assert result["degraded_real_false_synthetic_rate"] == 1.0
-    assert result["real_false_synthetic_rate_increase"]["estimate"] == 1.0
+        clean, degraded, condition_id="low_pass_3400hz", config=config,
+        forced_binary_threshold=0.5)
+    assert result["clean_real_false_synthetic_rate_forced_binary"] == 0.0
+    assert result["degraded_real_false_synthetic_rate_forced_binary"] == 1.0
+    assert result["real_false_synthetic_rate_increase_forced_binary"]["estimate"] == 1.0
+    assert result["descriptive_three_way_rates"] == {
+        "clean_real_synthetic_rate": 0.0,
+        "degraded_real_synthetic_rate": 0.0,
+        "clean_real_uncertain_rate": 0.0,
+        "degraded_real_uncertain_rate": 1.0,
+    }
     assert result["h6_supported"] is True
+
+
+def test_paired_bundle_comparison_requires_frozen_threshold(config):
+    clean = _scores(
+        role="cnn_bundle_seed", purpose="stage11_test", raw=[0.1] * 8,
+        p=[0.1] * 8, prediction=["authentic"] * 8)
+    degraded = _scores(
+        role="cnn_bundle_seed", purpose="stage14_robustness", raw=[0.2] * 8,
+        p=[0.2] * 8, prediction=["authentic"] * 8)
+    with pytest.raises(RobustnessError, match="frozen threshold"):
+        compare_condition(clean, degraded, condition_id=CONDITION_IDS[0], config=config)
 
 
 def test_paired_comparison_refuses_row_or_identity_drift(config):

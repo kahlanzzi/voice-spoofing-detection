@@ -1,7 +1,9 @@
 """Stage 14 claim/score lifecycle tests; synthetic rows only, no dataset access."""
 from __future__ import annotations
 
+import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pandas as pd
@@ -64,9 +66,22 @@ def _context(model_kind: str) -> run.Context:
         f2_manifest_sha256="d" * 64,
         profile_config_sha256="f" * 64,
         baseline=object() if baseline else None,
-        bundle=object() if not baseline else None,
+        bundle=(SimpleNamespace(bundle=SimpleNamespace(
+            policy=SimpleNamespace(threshold=0.5))) if not baseline else None),
         batch_size=None if baseline else 2,
     )
+
+
+def _approval(tmp_path: Path) -> Path:
+    path = tmp_path / "stage14_v1_approval.json"
+    path.write_text(json.dumps({
+        "schema_version": 1,
+        "scope": run.APPROVAL_SCOPE,
+        "approved_commit": COMMIT,
+        "h6_definition": run.H6_DEFINITION,
+        "approvals": {name: f"review:{name.lower()}" for name in run.REQUIRED_APPROVERS},
+    }), encoding="utf-8")
+    return path
 
 
 @pytest.fixture
@@ -86,6 +101,7 @@ def _claim(tmp_path, model_kind: str):
         registry_path=registry,
         out_dir=out,
         results_ref=f"stage14/{model_kind}/run_report.json",
+        approval_record=_approval(tmp_path),
         model_kind=model_kind,
     )
     return registry, out, record
@@ -104,6 +120,42 @@ def test_check_is_read_only_and_covers_the_complete_grid(tmp_path, lifecycle):
     assert list(tmp_path.iterdir()) == []
 
 
+def test_check_timing_uses_val_a_only_and_writes_nothing(tmp_path, lifecycle, monkeypatch):
+    validation_rows = pd.DataFrame({
+        "path": ["REAL/val.wav"], "label": ["REAL"], "group": ["vg"],
+        "subgroup": ["REAL"],
+    })
+    monkeypatch.setattr(
+        run, "split_rows",
+        lambda _manifest, split: validation_rows if split == "val-A" else pytest.fail(split),
+    )
+    monkeypatch.setattr(
+        run, "_condition_features",
+        lambda _root, ctx, condition: (
+            np.zeros((1, 40), dtype=np.float32),
+            {"n_clips": len(ctx.rows), "condition": condition},
+        ),
+    )
+    monkeypatch.setattr(
+        run, "_score_condition",
+        lambda ctx, _features: (
+            np.zeros(len(ctx.rows), dtype=np.float64), None, ("authentic",),
+        ),
+    )
+    clock = iter((10.0, 12.0, 15.0))
+    monkeypatch.setattr(run.time, "perf_counter", lambda: next(clock))
+    report = run.time_validation_condition(
+        root=tmp_path / "val-a", registry_path=tmp_path / "registry.jsonl",
+        model_kind=run.MODEL_BASELINE,
+    )
+    assert report["split"] == "val-A"
+    assert report["condition_id"] == run.TIMING_CONDITION
+    assert report["feature_seconds"] == 2.0
+    assert report["two_pass_score_seconds"] == 3.0
+    assert report["estimated_nine_condition_seconds"] == 45.0
+    assert list(tmp_path.iterdir()) == []
+
+
 def test_claims_are_separate_single_model_sets_and_durable(tmp_path, lifecycle):
     registry, baseline_out, baseline = _claim(tmp_path, run.MODEL_BASELINE)
     bundle_out = tmp_path / run.MODEL_BUNDLE
@@ -111,6 +163,7 @@ def test_claims_are_separate_single_model_sets_and_durable(tmp_path, lifecycle):
         registry_path=registry,
         out_dir=bundle_out,
         results_ref="stage14/cnn_bundle/run_report.json",
+        approval_record=_approval(tmp_path),
         model_kind=run.MODEL_BUNDLE,
     )
 
@@ -134,6 +187,7 @@ def test_claim_refuses_a_second_run_for_the_same_model(tmp_path, lifecycle):
             registry_path=registry,
             out_dir=tmp_path / "again",
             results_ref="stage14/again/run_report.json",
+            approval_record=_approval(tmp_path),
             model_kind=run.MODEL_BASELINE,
         )
     assert len(RunRegistry(registry).records()) == 1
@@ -169,7 +223,10 @@ def test_score_writes_all_nine_conditions_and_completes_once(tmp_path, lifecycle
     monkeypatch.setattr(
         run,
         "compare_condition",
-        lambda _clean, _degraded, *, condition_id, config: {"condition": condition_id},
+        lambda _clean, _degraded, *, condition_id, config, forced_binary_threshold: {
+            "condition": condition_id,
+            "forced_binary_threshold": forced_binary_threshold,
+        },
     )
 
     report = run.score(
@@ -177,6 +234,7 @@ def test_score_writes_all_nine_conditions_and_completes_once(tmp_path, lifecycle
         registry_path=registry,
         out_dir=out,
         run_id=claimed["run_id"],
+        approval_record=_approval(tmp_path),
         model_kind=run.MODEL_BASELINE,
     )
 
@@ -193,6 +251,7 @@ def test_score_writes_all_nine_conditions_and_completes_once(tmp_path, lifecycle
             registry_path=registry,
             out_dir=out,
             run_id=claimed["run_id"],
+            approval_record=_approval(tmp_path),
             model_kind=run.MODEL_BASELINE,
         )
 
@@ -205,6 +264,18 @@ def test_wrong_run_id_is_refused_before_the_once_only_marker(tmp_path, lifecycle
             registry_path=registry,
             out_dir=out,
             run_id="f" * 32,
+            approval_record=_approval(tmp_path),
             model_kind=run.MODEL_BASELINE,
         )
     assert not (out / run.SCORING_MARKER).exists()
+
+
+def test_official_approval_binds_commit_h6_and_all_four_reviewers(tmp_path):
+    approval = _approval(tmp_path)
+    assert run.validate_official_approval(approval, COMMIT)["approved_commit"] == COMMIT
+
+    data = json.loads(approval.read_text(encoding="utf-8"))
+    del data["approvals"]["Khalil"]
+    approval.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(RobustnessError, match="requires exactly"):
+        run.validate_official_approval(approval, COMMIT)

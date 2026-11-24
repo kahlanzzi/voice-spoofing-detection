@@ -14,7 +14,8 @@ import argparse
 import hashlib
 import json
 import re
-from dataclasses import dataclass
+import time
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -84,6 +85,7 @@ PURPOSE = "stage14_robustness"
 MODEL_BASELINE = "baseline"
 MODEL_BUNDLE = "cnn_bundle"
 MODEL_KINDS = (MODEL_BASELINE, MODEL_BUNDLE)
+TIMING_CONDITION = "low_pass_3400hz"
 ROLE_BASELINE = "baseline"
 ROLE_BUNDLE = "cnn_bundle_seed"
 RUN_REPORT = "run_report.json"
@@ -97,6 +99,9 @@ F4_RECORD_PATH = (
 )
 _RUN_ID = re.compile(r"[0-9a-f]{32}")
 _COMMIT = re.compile(r"[0-9a-f]{40}")
+APPROVAL_SCOPE = "stage14_v1_official"
+H6_DEFINITION = "forced_binary_false_synthetic_rate_at_frozen_threshold"
+REQUIRED_APPROVERS = frozenset({"Donia", "Iheb", "Khalil", "Malak"})
 
 
 @dataclass
@@ -135,6 +140,31 @@ def _model_kind(value: str) -> str:
     if value not in MODEL_KINDS:
         raise RobustnessError(f"model_kind must be one of {MODEL_KINDS}, got {value!r}")
     return value
+
+
+def validate_official_approval(path: str | Path, commit: str) -> dict[str, Any]:
+    """Bind an irreversible claim to the reviewed commit and explicit four-person approval."""
+    path = Path(path)
+    try:
+        record = json.loads(path.read_bytes().decode("utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise RobustnessError(f"cannot read official approval record {path}: {error}") from None
+    expected_keys = {
+        "schema_version", "scope", "approved_commit", "h6_definition", "approvals"}
+    if not isinstance(record, dict) or set(record) != expected_keys:
+        raise RobustnessError(
+            f"official approval record keys must be exactly {sorted(expected_keys)}")
+    if (record["schema_version"], record["scope"], record["approved_commit"],
+            record["h6_definition"]) != (1, APPROVAL_SCOPE, commit, H6_DEFINITION):
+        raise RobustnessError(
+            "official approval record does not bind this commit and the reviewed H6 definition")
+    approvals = record["approvals"]
+    if not isinstance(approvals, dict) or set(approvals) != REQUIRED_APPROVERS:
+        raise RobustnessError(
+            f"official approval requires exactly {sorted(REQUIRED_APPROVERS)}")
+    if any(not isinstance(value, str) or not value.strip() for value in approvals.values()):
+        raise RobustnessError("every official approval must contain a non-empty evidence reference")
+    return record
 
 
 def read_stage11_clean_scores(
@@ -291,6 +321,7 @@ def preflight(
     manifest_path,
     robustness_config,
     augmentation_config,
+    colab_runtime_version,
     stage7_evidence,
     stage8_evidence,
     stage10_evidence,
@@ -388,13 +419,45 @@ def check(*, registry_path, **inputs) -> dict[str, Any]:
     }
 
 
-def claim(*, registry_path, out_dir, results_ref, **inputs) -> dict[str, Any]:
+def time_validation_condition(*, root, registry_path, **inputs) -> dict[str, Any]:
+    """Time one reviewed condition on val-A without reading FoR test audio or writing output."""
+    ctx = preflight({}, registry_path=registry_path, **inputs)
+    validation_rows = split_rows(ctx.manifest, "val-A")
+    validation_ctx = replace(ctx, rows=validation_rows)
+    started = time.perf_counter()
+    features, feature_record = _condition_features(root, validation_ctx, TIMING_CONDITION)
+    features_done = time.perf_counter()
+    _score_condition(validation_ctx, features)
+    scoring_done = time.perf_counter()
+    feature_seconds = features_done - started
+    scoring_seconds = scoring_done - features_done
+    total_seconds = scoring_done - started
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "code_commit": ctx.commit,
+        "dataset": DATASET,
+        "split": "val-A",
+        "evaluation_purpose": "stage14_check_timing",
+        "model_kind": ctx.model_kind,
+        "model_id": ctx.model_id,
+        "condition_id": TIMING_CONDITION,
+        "n_rows": len(validation_rows),
+        "feature_record": feature_record,
+        "feature_seconds": feature_seconds,
+        "two_pass_score_seconds": scoring_seconds,
+        "condition_total_seconds": total_seconds,
+        "estimated_nine_condition_seconds": total_seconds * len(CONDITION_IDS),
+    }
+
+
+def claim(*, registry_path, out_dir, results_ref, approval_record, **inputs) -> dict[str, Any]:
     """Validate without test audio, make one purpose claim, then write durable evidence."""
     results_ref = _check_results_ref(results_ref)
     out_dir = Path(out_dir)
     if out_dir.exists():
         raise RobustnessError(f"output folder already exists: {out_dir}")
     ctx = preflight({}, registry_path=registry_path, **inputs)
+    approval = validate_official_approval(approval_record, ctx.commit)
     registry = RunRegistry(registry_path)
     earlier = _stage14_records(registry, ctx.model_id)
     if earlier:
@@ -438,6 +501,8 @@ def claim(*, registry_path, out_dir, results_ref, **inputs) -> dict[str, Any]:
             ENVIRONMENT_JSON: hashlib.sha256(environment_bytes).hexdigest(),
             PIP_FREEZE: hashlib.sha256(freeze_bytes).hexdigest()},
         "counts": _counts(ctx.rows),
+        "official_approval_sha256": sha256_file(Path(approval_record)),
+        "official_approval": approval,
     }
     _create(out_dir / CLAIM_JSON, _json_text(record).encode("utf-8"))
     return record
@@ -510,7 +575,7 @@ def _score_condition(ctx: Context, features: np.ndarray):
     return first, p, prediction
 
 
-def score(*, root, registry_path, out_dir, run_id, **inputs) -> dict[str, Any]:
+def score(*, root, registry_path, out_dir, run_id, approval_record, **inputs) -> dict[str, Any]:
     """Consume one claim exactly once and score all nine degraded conditions."""
     if not isinstance(run_id, str) or _RUN_ID.fullmatch(run_id) is None:
         raise RobustnessError(f"run_id must be 32 lowercase hex chars, got {run_id!r}")
@@ -522,6 +587,10 @@ def score(*, root, registry_path, out_dir, run_id, **inputs) -> dict[str, Any]:
     commit = code_version()["git_commit"]
     if (claimed.get("run_id"), claimed.get("code_commit")) != (run_id, commit):
         raise RobustnessError("claim run_id/commit mismatch; nothing was written")
+    approval = validate_official_approval(approval_record, commit)
+    if (claimed.get("official_approval_sha256") != sha256_file(Path(approval_record))
+            or claimed.get("official_approval") != approval):
+        raise RobustnessError("official approval record changed since the claim")
 
     marker = {
         "run_id": run_id,
@@ -566,8 +635,13 @@ def score(*, root, registry_path, out_dir, run_id, **inputs) -> dict[str, Any]:
             manifest_sha256=ctx.f2_manifest_sha256, raw_score=raw, p=p,
             prediction=prediction, **columns)
         degraded = read_clip_scores(folder, ctx.model_id)
+        forced_binary_threshold = (
+            float(ctx.bundle.bundle.policy.threshold)
+            if ctx.model_kind == MODEL_BUNDLE else None
+        )
         metrics[condition_id] = compare_condition(
-            ctx.clean, degraded, condition_id=condition_id, config=ctx.robustness)
+            ctx.clean, degraded, condition_id=condition_id, config=ctx.robustness,
+            forced_binary_threshold=forced_binary_threshold)
         condition_records[condition_id] = {
             "features": feature_record,
             "csv_sha256": sha256_file(csv_path),
@@ -632,7 +706,7 @@ def _inputs(args) -> dict[str, Any]:
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     commands = parser.add_subparsers(dest="command", required=True)
-    for name in ("check", "claim", "score"):
+    for name in ("check", "time-condition", "claim", "score"):
         command = commands.add_parser(name)
         command.add_argument("--model-kind", choices=MODEL_KINDS, required=True)
         command.add_argument("--registry", type=Path, required=True)
@@ -655,24 +729,31 @@ def main(argv: list[str] | None = None) -> None:
         command.add_argument("--mfcc-reference", type=Path)
         if name in {"claim", "score"}:
             command.add_argument("--out", type=Path, required=True)
+            command.add_argument("--approval-record", type=Path, required=True)
         if name == "claim":
             command.add_argument("--results-ref", required=True)
         elif name == "score":
             command.add_argument("--root", type=Path, required=True)
             command.add_argument("--run-id", required=True)
+        elif name == "time-condition":
+            command.add_argument("--root", type=Path, required=True)
     args = parser.parse_args(argv)
     inputs = _inputs(args)
     if args.command == "check":
         result = check(registry_path=args.registry, **inputs)
         print(_json_text(result), end="")
+    elif args.command == "time-condition":
+        result = time_validation_condition(root=args.root, registry_path=args.registry, **inputs)
+        print(_json_text(result), end="")
     elif args.command == "claim":
         result = claim(
-            registry_path=args.registry, out_dir=args.out, results_ref=args.results_ref, **inputs)
+            registry_path=args.registry, out_dir=args.out, results_ref=args.results_ref,
+            approval_record=args.approval_record, **inputs)
         print(_json_text(result), end="")
     else:
         result = score(
             root=args.root, registry_path=args.registry, out_dir=args.out,
-            run_id=args.run_id, **inputs)
+            run_id=args.run_id, approval_record=args.approval_record, **inputs)
         print(_json_text(result), end="")
 
 

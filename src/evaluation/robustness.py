@@ -112,7 +112,7 @@ def load_robustness_config(path: str | Path) -> RobustnessConfig:
     if endpoints != {
         "meaningful_increase": 0.05,
         "baseline_primary": "eer_increase_low_pass_3400_vs_clean",
-        "cnn_h6": "real_false_synthetic_rate_increase_low_pass_3400_vs_clean",
+        "cnn_h6": "real_false_synthetic_rate_increase_forced_binary_low_pass_3400_vs_clean",
     }:
         raise RobustnessError("Stage 14 v1 endpoint definitions drifted")
     return RobustnessConfig(1, "robustness-v1", SAMPLE_RATE, _freeze(conditions),
@@ -218,6 +218,7 @@ def compare_condition(
     *,
     condition_id: str,
     config: RobustnessConfig,
+    forced_binary_threshold: float | None = None,
 ) -> dict[str, Any]:
     """Compute paired clean-to-condition endpoints with the frozen D14 group bootstrap."""
     if condition_id not in CONDITION_IDS:
@@ -248,8 +249,23 @@ def compare_condition(
         )),
     }
     if clean.metadata["model_role"] == "cnn_bundle_seed":
+        if clean.p is None or degraded.p is None:
+            raise RobustnessError("CNN bundle H6 scores require calibrated probabilities")
+        if (not isinstance(forced_binary_threshold, (int, float))
+                or not np.isfinite(forced_binary_threshold)
+                or not 0.0 < float(forced_binary_threshold) < 1.0):
+            raise RobustnessError(
+                "CNN bundle H6 requires its finite frozen threshold strictly inside (0, 1)")
         if clean.prediction is None or degraded.prediction is None:
-            raise RobustnessError("CNN bundle scores require predictions")
+            raise RobustnessError("CNN bundle descriptive rates require three-way predictions")
+        threshold_value = float(forced_binary_threshold)
+        clean_p = np.asarray(clean.p, dtype=np.float64)
+        degraded_p = np.asarray(degraded.p, dtype=np.float64)
+        if (clean_p.shape != (n,) or degraded_p.shape != (n,)
+                or not np.isfinite(clean_p).all() or not np.isfinite(degraded_p).all()):
+            raise RobustnessError("CNN bundle probabilities must be finite and match the row set")
+        clean_forced_synthetic = clean_p >= threshold_value
+        degraded_forced_synthetic = degraded_p >= threshold_value
         clean_prediction = np.asarray(clean.prediction, dtype=object)
         degraded_prediction = np.asarray(degraded.prediction, dtype=object)
         if not np.any(labels == 0):
@@ -259,19 +275,31 @@ def compare_condition(
             real = indices[labels[indices] == 0]
             if not len(real):
                 raise ValueError("resample contains no REAL clips")
-            return float(np.mean(degraded_prediction[real] == "synthetic")
-                         - np.mean(clean_prediction[real] == "synthetic"))
+            return float(np.mean(degraded_forced_synthetic[real])
+                         - np.mean(clean_forced_synthetic[real]))
 
         real = labels == 0
         result.update({
-            "clean_real_false_synthetic_rate": float(np.mean(clean_prediction[real] == "synthetic")),
-            "degraded_real_false_synthetic_rate": float(
-                np.mean(degraded_prediction[real] == "synthetic")),
-            "real_false_synthetic_rate_increase": _ci_record(bootstrap_ci(
+            "forced_binary_threshold": threshold_value,
+            "clean_real_false_synthetic_rate_forced_binary": float(
+                np.mean(clean_forced_synthetic[real])),
+            "degraded_real_false_synthetic_rate_forced_binary": float(
+                np.mean(degraded_forced_synthetic[real])),
+            "real_false_synthetic_rate_increase_forced_binary": _ci_record(bootstrap_ci(
                 false_synthetic_delta, n, clusters=clean.group_id,
                 n_resamples=int(settings["n_resamples"]), seed=int(settings["seed"]),
                 confidence=float(settings["confidence"]),
             )),
+            "descriptive_three_way_rates": {
+                "clean_real_synthetic_rate": float(
+                    np.mean(clean_prediction[real] == "synthetic")),
+                "degraded_real_synthetic_rate": float(
+                    np.mean(degraded_prediction[real] == "synthetic")),
+                "clean_real_uncertain_rate": float(
+                    np.mean(clean_prediction[real] == "uncertain")),
+                "degraded_real_uncertain_rate": float(
+                    np.mean(degraded_prediction[real] == "uncertain")),
+            },
         })
     threshold = float(config.endpoints["meaningful_increase"])
     if condition_id == "low_pass_3400hz":
@@ -280,7 +308,7 @@ def compare_condition(
             result["primary_supported"] = bool(
                 interval["estimate"] >= threshold and interval["low"] > 0.0)
         elif clean.metadata["model_role"] == "cnn_bundle_seed":
-            interval = result["real_false_synthetic_rate_increase"]
+            interval = result["real_false_synthetic_rate_increase_forced_binary"]
             result["h6_supported"] = bool(
                 interval["estimate"] >= threshold and interval["low"] > 0.0)
     return result
