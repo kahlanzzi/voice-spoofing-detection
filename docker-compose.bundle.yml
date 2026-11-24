@@ -1,0 +1,16 @@
+# The real model instead of the mock (D48 (1), D60): added to docker-compose.yml, never used alone, and only in a
+# Compose project of its own, because a store holds mock or real results, never both. Commands: docs/setup.md,
+# "Real model stack (vsd-real)".
+services:
+  api:
+    environment:
+      VSD_API_CONFIG: /app/configs/api.bundle.yaml
+    volumes:
+      # A verified copy of F4 (python -m src.bundle.f4 verify), outside the repo, read-only. A missing folder is an
+      # error, never created empty.
+      - type: bind
+        source: ${VSD_BUNDLE_DIR:?set VSD_BUNDLE_DIR to the verified bundle-v1 folder (docs/setup.md)}
+        target: /app/bundle/bundle-v1
+        read_only: true
+        bind:
+          create_host_path: false

@@ -38,9 +38,12 @@ def test_store_with_the_other_kind_of_row_refuses_to_start(config, stored, serve
     analyse(config, stored)
     app = app_for(config, served)
     words = {True: "mock", False: "real"}
-    with pytest.raises(MixedStoreError, match=f"gives {words[served]} results but the store holds {words[stored]}"):
+    with pytest.raises(MixedStoreError, match=f"gives {words[served]} results but the store holds {words[stored]}") as raised:
         with TestClient(app, base_url=HTTPS):
             pass
+    message = str(raised.value)
+    assert f"run the {words[served]} analyzer on a store of its own" in message
+    assert "vsd-real" in message and "Empty the database" not in message  # switch stores, never wipe one
     assert app.state.pool.worker_pids() == set()  # no worker left
     assert not app.state.database.is_open
 

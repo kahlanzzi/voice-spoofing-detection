@@ -16,6 +16,10 @@ ENV OMP_NUM_THREADS=1 \
     MKL_NUM_THREADS=1 \
     OPENBLAS_NUM_THREADS=1
 
+# librosa's first use decorates numba functions, which refuse a process with no writable cache folder; the root
+# filesystem is read-only, so docker-compose.yml mounts a tmpfs here.
+ENV NUMBA_CACHE_DIR=/var/cache/numba
+
 WORKDIR /app
 COPY requirements-api.txt ./
 # The same command as .github/workflows/ci.yml (F4 was built with 2.11.0+cpu).
@@ -34,12 +38,14 @@ COPY src/models/ src/models/
 COPY src/preprocessing/ src/preprocessing/
 COPY src/risk/ src/risk/
 COPY src/training/__init__.py src/training/normalization.py src/training/
-COPY configs/api.yaml configs/api_logging.yaml configs/
+COPY configs/api.yaml configs/api.bundle.yaml configs/api_logging.yaml configs/
 USER app
 
 EXPOSE 8000
 # Liveness only (§4.8 GET /health); Python's urllib because the slim image has no curl.
-HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 \
+# The API listens only once every worker is ready: start-period = analysis_worker_start_timeout_s (60, not yet
+# measured) + 30 s, checked by tests/deploy; a probe that passes sooner makes the container healthy at once.
+HEALTHCHECK --interval=10s --timeout=5s --start-period=90s --retries=3 \
     CMD ["python", "-c", "import sys, urllib.request; sys.exit(urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3).status != 200)"]
 # No access log and no proxy headers: no client IP is logged or read (§1, §7). The api logger runs at INFO.
 CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000", \

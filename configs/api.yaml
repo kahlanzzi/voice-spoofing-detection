@@ -10,7 +10,7 @@ analysis_timeout_s: 30                         # proposal; not a latency target 
 # 503 analysis_unavailable with Retry-After. docker-compose.yml sizes the api and web tmpfs from K.
 analysis_workers: 2                            # mock, not measured; K per API process, replaced by the P4 load-test decision on the staging host with the real bundle (D53 (3))
 analysis_retry_after_s: 30                     # mock, not measured; Retry-After on a full pool, <= analysis_timeout_s, replaced by the P4 load-test decision on the staging host with the real bundle (D53 (3))
-analysis_worker_start_timeout_s: 60            # mock; one worker's start-up hook; set from the measured bundle load time in P1
+analysis_worker_start_timeout_s: 60            # mock; one worker's start-up hook; TO MEASURE in P1 (bundle load time); the image's start-period follows it
 page_size_max: 50                              # proposal
 note_max_chars: 2000                           # proposal
 stats_time_zone: UTC                           # open decision 6

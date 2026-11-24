@@ -14,6 +14,8 @@ from pathlib import Path
 
 import yaml
 
+from api.config import load_api_config
+
 REPO = Path(__file__).resolve().parents[2]
 DOCKERFILE = (REPO / "deploy" / "api.Dockerfile").read_text(encoding="utf-8")
 IGNORE = [line.strip() for line in (REPO / ".dockerignore").read_text(encoding="utf-8").splitlines()
@@ -26,7 +28,7 @@ TORCH_COMMAND = "pip install torch==2.11.0 --index-url https://download.pytorch.
 # The scoring path's modules (Donia, 23 Nov), and nothing else of src/.
 SRC = {"src/__init__.py", "src/bundle/", "src/models/", "src/preprocessing/", "src/risk/",
        "src/training/__init__.py", "src/training/normalization.py"}
-API_FILES = {"requirements-api.txt", "api/", "configs/api.yaml", "configs/api_logging.yaml"}
+API_FILES = {"requirements-api.txt", "api/", "configs/api.yaml", "configs/api.bundle.yaml", "configs/api_logging.yaml"}
 
 
 def pins(path: Path) -> dict[str, str]:
@@ -93,6 +95,12 @@ def test_healthcheck_calls_api_health():
     (check,) = instructions("HEALTHCHECK")
     assert "http://127.0.0.1:8000/api/health" in check
     assert "curl" not in check and "wget" not in check
+
+
+def test_start_period_covers_the_worker_start_timeout():
+    (check,) = instructions("HEALTHCHECK")
+    (seconds,) = re.findall(r"--start-period=(\d+)s\b", check)
+    assert int(seconds) == load_api_config().analysis_worker_start_timeout_s + 30
 
 
 def test_api_requirements_pin_exactly_as_requirements_txt():

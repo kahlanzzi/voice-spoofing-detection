@@ -3,6 +3,7 @@
 *
 !api/
 !configs/api.yaml
+!configs/api.bundle.yaml
 !configs/api_logging.yaml
 !requirements-api.txt
 !src/__init__.py

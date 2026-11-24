@@ -157,6 +157,10 @@ def _where(query: HistoryQuery, with_verdicts: bool) -> tuple[str, list]:
     return (" WHERE " + " AND ".join(clauses)) if clauses else "", params
 
 
+# The docs/setup.md section on a separate store. Never the one that empties a store: that deletes the History.
+REAL_STACK_SECTION = "Real model stack (vsd-real)"
+
+
 class MixedStoreError(Exception):
     """The store holds results of the other kind (mock or real): the API must not start."""
 
@@ -202,8 +206,8 @@ class AnalysisRepository:
                                     (mock,)).fetchone()
         if other:
             ours, theirs = ("mock", "real") if mock else ("real", "mock")
-            raise MixedStoreError(f"the analyzer gives {ours} results but the store holds {theirs} results; use a "
-                                  "store of its own (docs/setup.md, \"Empty the database\")")
+            raise MixedStoreError(f"the analyzer gives {ours} results but the store holds {theirs} results; run the "
+                                  f"{ours} analyzer on a store of its own (docs/setup.md, \"{REAL_STACK_SECTION}\")")
 
     def get(self, request_id: str) -> AnalysisRecord | None:
         with self.db.transaction(read_only=True) as conn:

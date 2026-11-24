@@ -42,3 +42,19 @@ def test_e2e_job_makes_and_masks_every_stack_secret_per_run():
     assert "openssl rand -hex 32" in run and '::add-mask::$k' in run
     assert run.index("::add-mask::") < run.index("GITHUB_ENV")  # masked before it is exported
     assert step(E2E, "Stop the stack")["run"] == "docker compose down -v"
+
+
+def test_e2e_job_runs_the_image_check_in_the_running_container():
+    names = [s.get("name", "") for s in E2E["steps"]]
+    run = step(E2E, "Image check")["run"]
+    assert run == ('docker compose exec -T -e VSD_CHECK_PROFILE="$(cat configs/preprocessing.yaml)" api python - '
+                   "< deploy/image_check.py")
+    assert names.index("Start the stack") < names.index("Image check (inside the api container)")
+    assert (REPO / "deploy" / "image_check.py").is_file()
+
+
+def test_the_wait_is_longer_than_the_api_start_period():
+    dockerfile = (REPO / "deploy" / "api.Dockerfile").read_text(encoding="utf-8")
+    start_period = int(dockerfile.split("--start-period=", 1)[1].split("s", 1)[0])
+    wait = int(step(E2E, "Start the stack")["run"].split("--wait-timeout ", 1)[1].split()[0])
+    assert wait > start_period
