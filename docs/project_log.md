@@ -8392,6 +8392,48 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 216 — Stage 14 v1 post-merge review corrections (2026-11-24)
+
+- **Owner:** Malak Ben Salem (Stage 14); reviewer Donia Mabrouk. Follow-up to the post-merge review
+  of PR #160 / Entries 212–213. No FoR test audio is opened by this implementation work.
+- **Final review scope:** Donia withdrew the proposed marker-order change and per-condition resume
+  after checking D46 (8): a failed or interrupted post-claim run is never retried without a new
+  decision. The existing once-only marker order remains, and the official run is planned as one
+  attended session instead of gaining a resume path.
+- **H6 CLARIFICATION — explicit all-four approval required before test access:** H6's primary
+  endpoint is the forced-binary false-synthetic rate on REAL clips at the frozen F4 policy threshold
+  (`p >= threshold`). The clean/degraded three-way synthetic and uncertain rates are descriptive
+  only. The official approval record must name this definition and contain evidence references from
+  Donia, Iheb, Khalil and Malak for one exact commit.
+- **Fail-closed implementation:** the paired comparison now requires calibrated probabilities and
+  the frozen threshold for the F4 bundle seed; the official `claim` and `score` commands require the
+  byte-identical approval record and bind it into the claim. Notebook 11 copies that record from
+  current `main` before detaching the approved commit and refuses any mismatch.
+- **Check versus official access:** notebook 11 extracts only val-A in default `check` mode and adds
+  FoR test members only in `official` mode. The read-only path times feature extraction plus two CPU
+  score passes for the 3.4 kHz condition on val-A for each model, then prints the nine-condition,
+  two-lifecycle estimate. The governance allow-list adds this exact notebook (one file, no directory)
+  so any other test-split reference still fails. The measured numeric estimate is still required
+  from the first reviewed check-mode run before official approval.
+- **Documentation:** D41 is recorded as two separate single-model claims (`baseline-v1` and the
+  frozen F4 bundle seed); `sosfiltfilt` is recorded as zero-phase with doubled effective order. The
+  official run is scheduled after notebook 09 on Wednesday 2 December unless its registry evidence
+  can be merged by Tuesday 1 December; registry writers never overlap.
+- **Checks [verified]:** the affected evaluation/governance suite passed (`196 passed in 444.27s`)
+  and the complete governance folder passed (`200 passed in 10.24s`),
+  including H6, both Stage 11 report allow-list assertions, the Stage 14 lifecycle, the exact-file
+  FoR guard and notebook 11; Python syntax compilation, notebook JSON parsing and `git diff --check`
+  passed. The full Python 3.13 Linux suite passed (`2277 passed, 368 skipped, 6 warnings in
+  409.32s`); 367 database tests were skipped because that container had no PostgreSQL server.
+  The first complete folder run exposed only stale three-file allow-list assertions; those were
+  corrected and are included in the 196-test rerun.
+- **AI assistance:** Codex implemented the reviewed corrections and tests; Malak reviews before
+  approval. AI does not push, approve, merge or access FoR test audio.
+- **Gate:** **WAITING FOR REVIEW AND ALL-FOUR H6 APPROVAL.** Check mode is permitted. Official mode
+  remains blocked.
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -8408,6 +8450,9 @@ pointers and synchronized PDF are reviewed.
 - [x] V1c: materialize S with `write_selection_set` on Colab T4 runtime 2026.10 and verify both forms with `load_selection_set`, including the Stage 8 val-A known answer (D50 (4), D58; Entries 172, 180, 185, 215). Built and verified by notebook 08; small evidence recorded in Entry 215.
 - [x] V1c: build and verify the deterministic training-half MUSAN/RIR resource cache outside the repo; refuse selection-half or all-zero resources (D50 (5); Entries 180, 185, 211, 215). The reviewed ZIP64 fix was exercised on the real cache; 465 noise and 30,162 RIR entries, with zero all-zero resources, are recorded in Entry 215.
 - [x] V1c: make `FFmpegCodecBackend` verify its pin once per backend instance without changing encode/decode output bytes (codec 0.42 s/item dominates augmentation; Entries 172–173, 185).
+- [ ] Stage 14 v1 follow-up (Entry 216): review the forced-binary H6 correction, exact approved-commit
+  gate, official-only test extraction, val-A timing and documentation; record the check-mode numeric
+  estimate and explicit all-four H6 approval before any official test access.
 - [x] D64 (Entries 189, 201–202, 205; approved, PR #140): the whole recipe was regenerated once on
   the reviewed Colab 2026.10 T4 runtime; exactly the 1,330 reverberation hashes changed and the
   old/new evidence is committed. The selection-set materialization and training-half cache remain
@@ -8867,7 +8912,7 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-24 (Entries 203-215)
+## Current status — updated 2026-11-24 (Entries 203-216)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -8948,8 +8993,15 @@ hash-verifying selection-set builder, strict training-half resource-cache builde
 condition names, successful-once FFmpeg verification and official-runtime evidence guard are
 implemented and synthetically tested. The real Colab T4 S materialization and training-half cache
 build passed under notebook 08; Entry 215 commits only their small JSON evidence and integrity checks.
-No corpus audio, generated NPZ, dataset or cache is committed. V1c is complete pending review of the
-Entry 215 evidence PR.
+No corpus audio, generated NPZ, dataset or cache is committed. V1c is closed; the Entry 215 evidence
+PR was reviewed and merged as PR #163.
+
+**Stage 14 v1 follow-up (Entry 216):** post-merge corrections are in preparation. H6 uses the
+forced-binary REAL false-synthetic rate at the frozen F4 threshold, with three-way rates descriptive;
+official claims require one exact-commit, all-four approval record. Check mode extracts val-A only
+and measures one condition for the attended-session estimate; official test extraction remains
+blocked pending review, the numeric timing and explicit all-four approval. The once-only marker and
+no-rerun behavior remain unchanged under D46 (8).
 
 **D64 preparation (Entry 201):** the exact requirements-version guard and fail-closed old-vs-new
 recipe comparison are implemented and focused tests pass. No regeneration has been run. Donia must

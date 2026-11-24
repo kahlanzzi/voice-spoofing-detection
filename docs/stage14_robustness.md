@@ -13,7 +13,8 @@ section 9. It is a new `stage14_robustness` purpose under D41, not another Stage
 - MP3 at 128, 64 and 32 kbps through the FFmpeg version and library pins already recorded in
   `configs/augmentation.yaml`;
 - an eighth-order Butterworth low-pass at 6,000, 4,000 and 3,400 Hz, applied with second-order
-  sections and forward/backward filtering.
+  sections and `sosfiltfilt`. This is zero-phase forward/backward filtering, so its effective filter
+  order is doubled; the configured design order remains eight.
 
 White-noise power is mean square. Each realization uses NumPy's `default_rng` with the little-endian
 unsigned 64-bit value formed from the first eight bytes of
@@ -46,23 +47,46 @@ manifest. EER increases and the CNN's REAL false-synthetic-rate increases use pa
 D14-group percentile bootstrap intervals with seed 2026. At 3.4 kHz, an increase is meaningful only
 when it is at least 0.05 and the interval excludes zero.
 
+### H6 endpoint clarification (requires explicit all-four approval)
+
+The H6 endpoint is the forced-binary false-synthetic rate on REAL clips at the frozen F4 policy
+threshold: calibrated probability `p >= threshold` is synthetic, including clips whose stored
+three-way decision is `uncertain`. Clean and degraded three-way synthetic and uncertain rates remain
+in the report as descriptive values only. They do not determine H6. This definition must be named
+explicitly in the all-four approval record before any FoR test access.
+
 ## Official runner contract
 
-`python -m src.evaluation.stage14_run` has read-only `check` plus separate `claim` and `score`
-commands. Run them once for
-`--model-kind baseline` and once for `--model-kind cnn_bundle`; each registry key contains exactly
-one model. Both commands require the reviewed Colab 2026.10 Tesla T4 runtime (scoring itself remains
+`python -m src.evaluation.stage14_run` has read-only `check` and `time-condition` commands plus
+separate `claim` and `score` commands. D41 is read as two independent single-model claims: run one
+lifecycle for `--model-kind baseline` (`baseline-v1`) and a second lifecycle for
+`--model-kind cnn_bundle` (the frozen F4 bundle seed). Each registry key contains exactly one model;
+the two models are not one combined claim. All commands require the reviewed Colab 2026.10 Tesla T4
+runtime (scoring itself remains
 on CPU), the pinned FFmpeg build, exact F2/F3 and Stage 7/8/10 evidence, and the completed Stage 11
 clean-score files. The CNN path verifies F4 against the byte-identical committed F4 record and
 anchors its checkpoint, profile and policy hashes. The baseline path verifies the exact D41 artifact
 and repeats D58's two-build MFCC/reference gate before the claim and before scoring.
 
 `check` performs the complete preflight without creating an output folder or registry record, so the
-notebook can be reviewed before irreversible access. `claim` repeats those checks. It refuses an existing
+notebook can be reviewed before irreversible access. Notebook 11 extracts val-A only in this mode;
+FoR test members are extracted only in official mode. `time-condition` measures feature extraction
+and two-pass CPU scoring for `low_pass_3400hz` on all 1,330 val-A rows, separately for the baseline
+and bundle. The expected two-lifecycle scoring time is the sum of nine times each observed condition
+time. The first reviewed check-mode run must copy the printed numeric estimate into Entry 216 before
+official approval; no value is invented in advance.
+
+`claim` repeats the preflight and requires `docs/audit_evidence/stage14_v1_approval.json`, copied from
+current `main` before the exact approved commit is checked out. That record must bind the commit,
+the H6 definition above and explicit evidence references from Donia, Iheb, Khalil and Malak. It refuses an existing
 output folder or any prior started/completed Stage 14 record for that model, appends the registry
 claim, and writes the durable claim/environment files. `score` checks the claimed run and commit,
 creates `scoring_started.json` exclusively before the first test-audio read, then repeats preflight.
-An interrupted or failed score is not retried without a new decision.
+An interrupted or failed score is not retried without a new decision. The two official lifecycles
+must therefore run as one attended, uninterrupted session sized from the check-mode timing. They
+must not overlap another registry writer. The current schedule places Stage 14 after the v2 Stage 11
+notebook 09 run on 2 December; an earlier run would require its updated registry evidence merged by
+1 December.
 
 For every condition, the runner reads each F2 test clip through the hash-verifying reader, applies
 the degradation to the decoded 16 kHz float32 waveform, and only then calls unchanged F3. It records

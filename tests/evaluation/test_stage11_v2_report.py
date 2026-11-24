@@ -647,13 +647,14 @@ def test_v1_report_module_is_unchanged_and_reused():
 def test_report_module_is_not_test_split_access_for_the_guard():
     # D31: the module reads the stored files only, so it needs no allow-list entry; the guard finds no
     # test-split request in it (it never names the split) and ALLOWED holds only the three exact
-    # runners (Stage 11 v1/v2 and Stage 14).
+    # runners plus the reviewed Stage 14 official notebook.
     rel = "src/evaluation/stage11_v2_report.py"
     assert file_hits(rel, (REPO_ROOT / rel).read_text(encoding="utf-8")) == []
     assert ALLOWED == (
         "src/evaluation/stage11_run.py",
         "src/evaluation/stage11_v2_run.py",
         "src/evaluation/stage14_run.py",
+        "notebooks/11_stage14_v1_for_test.ipynb",
     )
 
 

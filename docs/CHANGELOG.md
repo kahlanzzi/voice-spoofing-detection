@@ -13,6 +13,10 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
   every other deterministic NPZ writer keeps its existing byte format (Entry 211).
 
 ### Changed
+- Stage 14 H6 now uses the forced-binary REAL false-synthetic rate at the frozen F4 threshold;
+  three-way synthetic/uncertain rates are descriptive. Official claims require an exact-commit,
+  all-four approval record, while notebook 11 check mode extracts only val-A and times one condition
+  before the attended official session (Entry 216).
 - D64 re-freezes the complete 6,650-row selection recipe on the reviewed Colab 2026.10 Tesla T4
   runtime: exactly the 1,330 reverberation waveform hashes changed, all other row fields are
   identical, and the old/new recipes, reports and row-level comparison are retained (Entry 205).

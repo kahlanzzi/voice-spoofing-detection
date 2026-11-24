@@ -3,8 +3,8 @@
 The FoR test split is evaluated once (Stage 11, D31) and again only under the D41 purpose
 stage14_robustness, through code reviewed for that purpose. This test scans src/, notebooks/ and
 configs/ for code that asks for the test split, so a stray loader, cache build or notebook cell is
-caught in CI. ALLOWED holds exactly the Stage 11 runner and the Stage 11 runner for the v2 model set
-(D48 (7), PR V4b), each added in its own reviewed PR.
+caught in CI. ALLOWED holds exactly the Stage 11 runners, the Stage 14 runner and its reviewed
+official hand-off notebook; each is added in its own reviewed PR.
 ALLOWED_LINES exempts one rule on one line that is not data access; an entry names the file, the
 exact stripped line text, the rule and the reason. Any other rule on that line is still reported,
 and any edit to the line text ends the exemption.
@@ -71,6 +71,7 @@ ALLOWED: tuple[str, ...] = (
     "src/evaluation/stage11_run.py",
     "src/evaluation/stage11_v2_run.py",  # D48 (7), PR V4b; one file, not a folder
     "src/evaluation/stage14_run.py",  # D41; one file, not a folder
+    "notebooks/11_stage14_v1_for_test.ipynb",  # D41; official-only extraction, Entry 216
 )
 # (file, exact stripped line text, rule, reason): one rule on one line that is not data access;
 # any other rule on that line is still reported.
@@ -308,6 +309,7 @@ def test_allow_list_is_pinned():
         "src/evaluation/stage11_run.py",
         "src/evaluation/stage11_v2_run.py",
         "src/evaluation/stage14_run.py",
+        "notebooks/11_stage14_v1_for_test.ipynb",
     )
 
 

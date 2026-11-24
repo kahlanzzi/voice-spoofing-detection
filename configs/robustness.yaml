@@ -26,4 +26,4 @@ bootstrap:
 endpoints:
   meaningful_increase: 0.05
   baseline_primary: eer_increase_low_pass_3400_vs_clean
-  cnn_h6: real_false_synthetic_rate_increase_low_pass_3400_vs_clean
+  cnn_h6: real_false_synthetic_rate_increase_forced_binary_low_pass_3400_vs_clean
