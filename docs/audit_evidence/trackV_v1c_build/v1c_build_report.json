@@ -1,0 +1,46 @@
+{
+  "archive_sha256_observed": {
+    "noise": "86d1061c7e15b5c9e906777685c519701df51bfde3001e1070dcc9ffac955ee1",
+    "rir": "3b50cfde915b3984738169b4beb341e9f6b8062ae4c2076146c5db71c2c05dc7"
+  },
+  "built_in_this_session": {
+    "resource_cache": true,
+    "selection_set": true,
+    "stage8_logmel": {
+      "train": false,
+      "val-A": false
+    }
+  },
+  "code_commit": "d5ffe18da5912b4a4d4174f738dbe1b2d5603fcd",
+  "created_utc": "2026-11-22T21:37:42+00:00",
+  "for_archive_sha256_observed": "9bddb83503ab442e9c7f54a1b7b9c02bc0ce32ed93f7863f28de5f59b6540b46",
+  "raw_train_cache_npz_sha256": "026a917debfd262ff3e507ea073fa33ef14280fd8dbe235366906f549b4a75e8",
+  "require_versions": {
+    "numpy": "2.5.3",
+    "scipy": "1.18.1",
+    "soundfile": "0.14.0"
+  },
+  "resource_cache": {
+    "code_commit": "d5ffe18da5912b4a4d4174f738dbe1b2d5603fcd",
+    "noise_archive_sha256": "86d1061c7e15b5c9e906777685c519701df51bfde3001e1070dcc9ffac955ee1",
+    "noise_count": 465,
+    "noise_inventory_sha256": "2ce6c6e6be1bc8d5054ddbd4b90612727e682f662947dfce3910c7a4e8b5b4d8",
+    "rir_archive_sha256": "3b50cfde915b3984738169b4beb341e9f6b8062ae4c2076146c5db71c2c05dc7",
+    "rir_count": 30162,
+    "rir_inventory_sha256": "2a5d9152f15cd5666e6b78efd49d2202ad69a67fac09d7a95174c740aafd0117"
+  },
+  "resource_cache_json_sha256": "0afc6e439d3201fd26dae921db62d082ae94e4dd214cbb404e19526f6f11aa24",
+  "resource_cache_npz_sha256": "becc00609a667a68eda02a5184466e42cdb9a232912607639ee69e67f2e393c8",
+  "runtime": {
+    "colab_runtime_version": "2026.10",
+    "ffmpeg_version_line": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+    "gpu_name": "Tesla T4",
+    "python": "3.13.16",
+    "torch": "2.11.0+cu130"
+  },
+  "selection_set_sha256": "7aaa69f916027f52bfa29a8cce935f48d3a9ac7d9481cf8a0fb04fdebfdc092e",
+  "stage8_logmel_npz_sha256": {
+    "train": "37b8915f6632bf8789eba922b02929170a0d8c2da5360feb6328aa95ae2ddda8",
+    "val-A": "4502eea2f77cfd83d7e2b1d777e392fa460a13e805a936faa2788df8e7862c81"
+  }
+}

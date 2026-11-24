@@ -1,0 +1,73 @@
+{
+  "augmentation_config_sha256": "8501b1ddf1b38cdb512c0d15df1d45735c57871851e164f4068d090338b8dcd2",
+  "code_commit": "d5ffe18da5912b4a4d4174f738dbe1b2d5603fcd",
+  "conditions": [
+    {
+      "name": "clean",
+      "parameters": {
+        "recipe_file_sha256": "70a2105425838c64b9bf674fbdbf3f3e121fc97ae2d6d3bf647c9aceff12d0a1"
+      }
+    },
+    {
+      "name": "recorded_noise_10db",
+      "parameters": {
+        "corpus_half": "selection",
+        "recipe_file_sha256": "70a2105425838c64b9bf674fbdbf3f3e121fc97ae2d6d3bf647c9aceff12d0a1",
+        "snr_db": 10.0
+      }
+    },
+    {
+      "name": "reverberation",
+      "parameters": {
+        "channel_policy": "seeded_single_channel",
+        "convolution": "full_then_crop_to_input",
+        "corpus_half": "selection",
+        "recipe_file_sha256": "70a2105425838c64b9bf674fbdbf3f3e121fc97ae2d6d3bf647c9aceff12d0a1"
+      }
+    },
+    {
+      "name": "opus_16",
+      "parameters": {
+        "application": "voip",
+        "bitrate_kbps": 16,
+        "codec_option": "opus_16",
+        "recipe_file_sha256": "70a2105425838c64b9bf674fbdbf3f3e121fc97ae2d6d3bf647c9aceff12d0a1",
+        "vbr": false
+      }
+    },
+    {
+      "name": "narrowband_mulaw",
+      "parameters": {
+        "codec_option": "narrowband_mulaw",
+        "intermediate_sample_rate_hz": 8000,
+        "output_sample_rate_hz": 16000,
+        "recipe_file_sha256": "70a2105425838c64b9bf674fbdbf3f3e121fc97ae2d6d3bf647c9aceff12d0a1"
+      }
+    }
+  ],
+  "f2_manifest_sha256": "badfe948fb7b833357783dd18be00f6bb36253cf8699dc4c4beb4df2b07706f8",
+  "files": {
+    "clean.npz": "2c1b987ec926660ef04cb43db5d2be775921ea85788a159f390faefc7dadd359",
+    "narrowband_mulaw.npz": "6d87376044b4885faf2aebb767e8816c024b5c54bbcde2112ac857782d5b793b",
+    "opus_16.npz": "23b0978a2faae484720e764cdae3656196164e93ab0d3325ae512773820d0ffc",
+    "recorded_noise_10db.npz": "a00572a73c73c7b0487c2aa7db0fe2ebb52cdc5688373292fe6bfa7c20c6a93a",
+    "reverberation.npz": "9b5827d909695eeb73ed3c72d1c628ab26ed91d37a1f610d9642415d5ec15216"
+  },
+  "n_rows": 1330,
+  "profile_config_sha256": "7bd35bfdcb9270dd55ea9e73449c7bf6c6a359a80335b2551c0c89dde77c8630",
+  "profile_fingerprint": "5b4f5849a9bb63f9016dd79969ff5bfb9e37006acbff1e26bbfee4ee2bad68f2",
+  "runtime": {
+    "colab_runtime_version": "2026.10",
+    "ffmpeg_version_line": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+    "gpu": "Tesla T4",
+    "implementation": "CPython",
+    "librosa": "1.0.0",
+    "numpy": "2.5.3",
+    "platform": "Linux-6.6.159+-x86_64-with-glibc2.39",
+    "python": "3.13.16",
+    "torch": "2.11.0+cu130"
+  },
+  "schema_version": 1,
+  "seed": 2026,
+  "source_split": "val-A"
+}

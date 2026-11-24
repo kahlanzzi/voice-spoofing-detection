@@ -8356,6 +8356,42 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 215 — Track V V1c real selection-set and training-resource evidence (2026-11-24)
+
+- **Owner:** Malak Ben Salem (Track V V1); reviewer Donia Mabrouk. Branch
+  `docs/stageV1-v1c-build-evidence-malak` from `main` `e8460fa` (PR #162 / Entry 214 present).
+- **Why [doc]:** D50 (4)–(5), D64 and Execution Plan v3.0 §9 V1 require one verified selection set S
+  in the training format and one deterministic training-half MUSAN/RIRS resource cache. The builders
+  and ZIP64 correction are already merged; this entry records their real T4 outputs without committing
+  generated arrays, audio, corpora or caches.
+- **Run [verified]:** notebook 08 sections 9–12 ran on Colab runtime `2026.10`, Tesla T4, Python
+  `3.13.16`, torch `2.11.0+cu130`, numpy `2.5.3`, scipy `1.18.1`, soundfile `0.14.0` and FFmpeg
+  `6.1.1-3ubuntu5`, from merge commit `d5ffe18da5912b4a4d4174f738dbe1b2d5603fcd`.
+- **Selection set S [verified]:** 1,330 val-A sources under each of the five frozen conditions; the
+  builder checked all 6,650 waveforms against the D64 recipe. Manifest SHA-256
+  `7aaa69f916027f52bfa29a8cce935f48d3a9ac7d9481cf8a0fb04fdebfdc092e`; the five generated NPZ
+  hashes are recorded in that manifest and the NPZ files remain on Drive.
+- **Training resources [verified]:** 465 MUSAN noise resources and 30,162 RIRS resources from the
+  training halves, with zero all-zero noise and zero all-zero RIR entries. Metadata SHA-256
+  `0afc6e439d3201fd26dae921db62d082ae94e4dd214cbb404e19526f6f11aa24`; generated NPZ SHA-256
+  `becc00609a667a68eda02a5184466e42cdb9a232912607639ee69e67f2e393c8`.
+- **Evidence:** byte-preserved `selection_set_manifest.json`, `training_resources.json` and
+  `v1c_build_report.json` under `docs/audit_evidence/trackV_v1c_build/`; build-report SHA-256
+  `dfd53330cc6521c377d83b46b09e6cc6573548cccbe9f496c7eeb14b3578ffff`. The README states the
+  scope and hashes; a torch-free test binds the exact bytes, cross-file hashes, official runtime,
+  counts, zero gates and committed inventory CSV hashes.
+- **Checks run [verified]:** focused evidence/resource tests: `8 passed in 9.59s`; full governance
+  folder: `199 passed in 2.55s`; `git diff --check` passed; secret-pattern scan found no token.
+  One broader local selection-builder test could not load Numba's `_helperlib` because Windows
+  Application Control blocked the DLL; this is an environment restriction, not reported as a pass.
+- **AI assistance:** Codex verified the supplied hashes, prepared the README, integrity checks and
+  documentation, and ran the reported local checks. Malak reviews and approves the change; AI does
+  not push, approve or merge.
+- **Gate:** **WAITING FOR HUMAN REVIEW.** This PR closes V1c evidence only. The notebook 08 rehearsal
+  and v2 search are separate Track V runs.
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -8369,8 +8405,8 @@ pointers and synchronized PDF are reviewed.
 - [x] Per-epoch resume within a run before V2b-4: a worst-case run (30 epochs × ~10–17 min) may not fit one Colab session; V2b-1 resumes only between runs (Entry 173). Done in PR V2b-R (Entry 184; merged, PR #137).
 - [x] V2b-R review: `train_v2` gained `provenance` next to `resume_dir` (the brief allowed only `resume_dir`; the provenance check needs it) — accept or revise (Entry 184). Accepted in Donia's review (2026-11-15).
 - [x] V1c: move the notebook recipe into a pure `src/augmentation/` module and prove byte parity for all five conditions on synthetic audio (D50/D56; Entries 180, 185).
-- [ ] V1c: materialize S with `write_selection_set` on Colab T4 runtime 2026.10 and verify both forms with `load_selection_set`, including the Stage 8 val-A known answer (D50 (4), D58; Entries 172, 180, 185). Built by notebook 08 on T4 2026.10; evidence PR follows (Entry 208).
-- [ ] V1c: build and verify the deterministic training-half MUSAN/RIR resource cache outside the repo; refuse selection-half or all-zero resources (D50 (5); Entries 180, 185). The first real run exposed the streamed-member `ZIP64_LIMIT` defect for the 2,257,171,132-byte packed RIR array; the scoped fix is Entry 211. Rerun after review and merge, then commit the small evidence (Entry 208).
+- [x] V1c: materialize S with `write_selection_set` on Colab T4 runtime 2026.10 and verify both forms with `load_selection_set`, including the Stage 8 val-A known answer (D50 (4), D58; Entries 172, 180, 185, 215). Built and verified by notebook 08; small evidence recorded in Entry 215.
+- [x] V1c: build and verify the deterministic training-half MUSAN/RIR resource cache outside the repo; refuse selection-half or all-zero resources (D50 (5); Entries 180, 185, 211, 215). The reviewed ZIP64 fix was exercised on the real cache; 465 noise and 30,162 RIR entries, with zero all-zero resources, are recorded in Entry 215.
 - [x] V1c: make `FFmpegCodecBackend` verify its pin once per backend instance without changing encode/decode output bytes (codec 0.42 s/item dominates augmentation; Entries 172–173, 185).
 - [x] D64 (Entries 189, 201–202, 205; approved, PR #140): the whole recipe was regenerated once on
   the reviewed Colab 2026.10 T4 runtime; exactly the 1,330 reverberation hashes changed and the
@@ -8831,7 +8867,7 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-23 (Entries 203-214)
+## Current status — updated 2026-11-24 (Entries 203-215)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -8861,10 +8897,10 @@ adds the search CLI (`python -m src.tuning.v2_search search|rehearse`; `run_sear
 check that binds the V1c resource cache to the committed V1b inventories and archive pins, the T4
 rehearsal, and notebook 08, which builds or verifies every search input on one fixed commit (Stage 8
 log-Mel caches, S and the resource cache with Malak's V1c builders, unchanged) and then runs the
-rehearsal and the search. Open: the real V1c builds and their evidence PR, the rehearsal (reviewed
-before the search) and the search itself (selection Fri 27 Nov; cut line: drop `aasist` first,
-Execution Plan v3.0 §7). Then risk-v2 (Mon 30 Nov), the v2 Stage 11 run and notebook 09, and F5
-before the Fri 4 Dec 23:59 cut-off.
+rehearsal and the search. The real V1c builds are complete and their small evidence is Entry 215.
+Open: the rehearsal (reviewed before the search) and the search itself (selection Fri 27 Nov; cut
+line: drop `aasist` first, Execution Plan v3.0 §7). Then risk-v2 (Mon 30 Nov), the v2 Stage 11 run
+and notebook 09, and F5 before the Fri 4 Dec 23:59 cut-off.
 
 **V7, risk-v2 notebook (Entry 209; merged, PR #157).** Notebook 10 runs `v2_risk_run` once from
 one fixed commit after the search evidence PR: winner and bundle seed from the committed search
@@ -8900,8 +8936,8 @@ D65 (Entry 191, approved in Entry 193) names Direction D and `docs/design/HANDOF
 the shipped UI is unchanged until the D55 build PRs. P2a (Entry 207; merged, PR #155) moved the store to
 PostgreSQL behind the same repositories (D53 (4)): `db` service pinned by digest, the API as the
 non-superuser `vsd_app`, a one-time import of the old SQLite store, the API tests on PostgreSQL locally
-and in CI. Every `.env` needs `VSD_DB_PASSWORD` and `VSD_DB_APP_PASSWORD`. P2b (Entry 214, waiting for
-approval) runs analyses in a bounded pool of K spawned worker processes (D53 (2)): `503
+and in CI. Every `.env` needs `VSD_DB_PASSWORD` and `VSD_DB_APP_PASSWORD`. P2b (Entry 214; merged,
+PR #162) runs analyses in a bounded pool of K spawned worker processes (D53 (2)): `503
 analysis_unavailable` with `Retry-After` when all K are busy, a timed-out analysis killed and its worker
 replaced, the api tmpfs sized from K; K = 2 and Retry-After 30 s are mock, not measured values (P4, on
 the staging host with the real bundle) and the 60 s start timeout is a mock value (P1). P1 (the F4
@@ -8910,9 +8946,10 @@ bundle in the API) plugs its loader into the pool as the worker factory.
 **Track V V1c implementation (Entry 185, merged in PR #152):** the pure frozen recipe,
 hash-verifying selection-set builder, strict training-half resource-cache builder/loader, exact
 condition names, successful-once FFmpeg verification and official-runtime evidence guard are
-implemented and synthetically tested. No real corpus audio was accessed or committed. V1c remains
-open for the real Colab T4 S materialization, real training-half cache build and small permitted
-evidence: notebook 08 builds both on T4 2026.10 (Entry 208); the evidence PR follows.
+implemented and synthetically tested. The real Colab T4 S materialization and training-half cache
+build passed under notebook 08; Entry 215 commits only their small JSON evidence and integrity checks.
+No corpus audio, generated NPZ, dataset or cache is committed. V1c is complete pending review of the
+Entry 215 evidence PR.
 
 **D64 preparation (Entry 201):** the exact requirements-version guard and fail-closed old-vs-new
 recipe comparison are implemented and focused tests pass. No regeneration has been run. Donia must
@@ -8925,14 +8962,14 @@ runs before output creation. The complete governance folder passes.
 **D64 official evidence (Entry 205):** the reviewed T4 regeneration passed. Exactly the 1,330
 reverberation hashes changed; 5,320 hashes and every non-hash invariant stayed identical. The old and
 new recipe/report pairs and full comparison are retained. D64 is closed; the two real V1c builders
-remain open.
+subsequently passed and are recorded in Entry 215.
 
 **V1c real resource-cache blocker (Entry 211):** the official-runtime build reached the final NPZ
 write and failed because the 2,257,171,132-byte (2.10 GiB) packed RIR member exceeds Python
 `zipfile`'s streamed-member `ZIP64_LIMIT` of `2^31 - 1` bytes. The fix enables
 ZIP64 only for `training_resources.npz`; all other deterministic NPZ writers retain their existing
-format. Focused tests pass. The real cache, its verification and the V1c evidence PR remain open until
-this fix is reviewed, merged and rerun on T4.
+format. Focused tests passed, PR #159 merged, and the real cache subsequently built and verified on
+T4; Entry 215 records the result and closes the blocker.
 
 **Khalil’s next project work.** The synchronized SRS v4.1 pair prepared in Entry 200 received all-four
 approval in PR #151 and is adopted as the current SRS in Entry 206; v4.0 remains unchanged as history.

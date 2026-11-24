@@ -1,0 +1,15 @@
+{
+  "code_commit": "d5ffe18da5912b4a4d4174f738dbe1b2d5603fcd",
+  "n_all_zero_noise": 0,
+  "n_all_zero_rir": 0,
+  "noise_archive_sha256": "86d1061c7e15b5c9e906777685c519701df51bfde3001e1070dcc9ffac955ee1",
+  "noise_count": 465,
+  "noise_inventory_sha256": "2ce6c6e6be1bc8d5054ddbd4b90612727e682f662947dfce3910c7a4e8b5b4d8",
+  "npz_sha256": "becc00609a667a68eda02a5184466e42cdb9a232912607639ee69e67f2e393c8",
+  "rir_archive_sha256": "3b50cfde915b3984738169b4beb341e9f6b8062ae4c2076146c5db71c2c05dc7",
+  "rir_count": 30162,
+  "rir_inventory_sha256": "2a5d9152f15cd5666e6b78efd49d2202ad69a67fac09d7a95174c740aafd0117",
+  "sample_rate": 16000,
+  "schema_version": 1,
+  "split_seed": 2026
+}
