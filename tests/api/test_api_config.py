@@ -1,3 +1,5 @@
+import dataclasses
+import json
 from pathlib import Path
 
 import pytest
@@ -19,6 +21,9 @@ SECTION_9 = {
     "stats_time_zone": "UTC",
     "notice_text": "Decision support only. This result estimates whether the recording is synthetic. "
                    "It does not prove fraud and does not verify identity.",
+    "analyzer": "mock",
+    "bundle_dir": "/app/bundle/bundle-v1",
+    "bundle_manifest_sha256": "edf4a205e12fc948a68575ebaa929145481aaa535d34e3353ef9535f92840efc",
     "mock_deferral_on_fit": 0.0993,
     "temp_dir": None,
     "database_host": "db",
@@ -147,3 +152,30 @@ def test_retry_after_must_be_positive_and_not_exceed_timeout(tmp_path, retry_aft
 def test_start_timeout_must_be_positive(tmp_path, start_timeout):
     with pytest.raises(ValueError, match="analysis_worker_start_timeout_s"):
         load_api_config(write_config(tmp_path, analysis_worker_start_timeout_s=start_timeout))
+
+
+# --- analyzer selection and the bundle pin ---------------------------------------------------------
+
+F4_RECORD = REPO_ROOT / "docs" / "audit_evidence" / "stage12_bundle" / "f4_record.json"
+
+
+def test_bundle_config_differs_only_in_analyzer():
+    default, bundle = load_api_config(DEFAULT_PATH), load_api_config(DEFAULT_PATH.with_name("api.bundle.yaml"))
+    assert (default.analyzer, bundle.analyzer) == ("mock", "bundle")
+    assert dataclasses.replace(bundle, analyzer="mock") == default
+
+
+def test_the_pin_is_f4():
+    recorded = json.loads(F4_RECORD.read_text(encoding="utf-8"))["manifest_sha256"]
+    assert load_api_config(DEFAULT_PATH).bundle_manifest_sha256 == recorded
+
+
+@pytest.mark.parametrize("changes", [
+    {"analyzer": "Bundle"}, {"analyzer": ""}, {"analyzer": None}, {"analyzer": ...},
+    {"bundle_dir": "bundle/bundle-v1"}, {"bundle_dir": ""}, {"bundle_dir": None}, {"bundle_dir": ...},
+    {"bundle_manifest_sha256": "edf4a205"}, {"bundle_manifest_sha256": "E" * 64},
+    {"bundle_manifest_sha256": "a" * 64 + "\n"}, {"bundle_manifest_sha256": None}, {"bundle_manifest_sha256": ...},
+])
+def test_invalid_analyzer_settings_are_refused(tmp_path, changes):
+    with pytest.raises(ValueError):
+        load_api_config(write_config(tmp_path, **changes))

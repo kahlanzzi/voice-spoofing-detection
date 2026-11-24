@@ -235,6 +235,27 @@ def test_parent_process_never_imports_torch():
     assert done.stdout.strip() == "[]"
 
 
+# --- through the config ---------------------------------------------------------------------------
+
+@posix_only
+def test_the_pinned_bundle_of_the_config_is_the_one_served(config, bundle, pin):
+    served = dataclasses.replace(config, analyzer="bundle", bundle_dir=str(bundle), bundle_manifest_sha256=pin)
+    with signed_in_client(create_app(served)) as client:
+        status = client.get("/api/status").json()
+        assert (status["mock"], status["bundle_manifest_sha256"]) == (False, pin)
+    with pytest.raises(PoolStartError, match="is not the pinned"):  # the F4 pin, another bundle
+        with TestClient(create_app(dataclasses.replace(served, bundle_manifest_sha256=config.bundle_manifest_sha256))):
+            pass
+
+
+@posix_only
+def test_a_missing_bundle_refuses_to_start(config, tmp_path):
+    missing = dataclasses.replace(config, analyzer="bundle", bundle_dir=str(tmp_path / "none"))
+    with pytest.raises(PoolStartError, match="does not exist or is not a directory"):
+        with TestClient(create_app(missing)):
+            pass
+
+
 # --- through the API ------------------------------------------------------------------------------
 
 @posix_only

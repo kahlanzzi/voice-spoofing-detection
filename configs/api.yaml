@@ -17,6 +17,12 @@ stats_time_zone: UTC                           # open decision 6
 notice_text: >-
   Decision support only. This result estimates whether the recording is synthetic.
   It does not prove fraud and does not verify identity.
+# Which analyzer the workers build: mock (default; dev, CI) or bundle (the frozen ModelBundle, D48 (1)). The only
+# key configs/api.bundle.yaml changes. The bundle is mounted read-only at bundle_dir and refused at start unless its
+# bundle_manifest.json has this SHA-256 (F4, D60).
+analyzer: mock
+bundle_dir: /app/bundle/bundle-v1
+bundle_manifest_sha256: edf4a205e12fc948a68575ebaa929145481aaa535d34e3353ef9535f92840efc
 mock_deferral_on_fit: 0.0993                   # MockAnalyzer only; replaced by the bundle's value
 temp_dir: null                                 # deployment setting; null = the system temp folder
 # PostgreSQL store (§7, D53 (4)); deployment settings. The password is never here: the API reads it
