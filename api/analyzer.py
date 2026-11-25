@@ -1,8 +1,8 @@
 """The analyzer seam (docs/api_design.md §8): the only place the API calls model code.
 
 analyze(path) returns the verdict part of the §11 response; info() returns what GET /api/status
-reports. The API adds request_id and notice. MockAnalyzer is the stand-in until the frozen
-ModelBundle (Stage 12): it never imports torch or src.models.
+reports. The API adds request_id and notice. MockAnalyzer is the default (dev, CI): it never imports
+torch or src.models. The frozen ModelBundle is served by api/bundle_analyzer.py (config: analyzer).
 """
 from __future__ import annotations
 

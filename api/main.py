@@ -4,7 +4,8 @@ Every route is under /api (docs/api_design.md §2); every error uses the §6 sha
 carries an X-Request-ID header. The database tables and the temp folder are created at startup
 (lifespan), not at import. The lifespan also reads VSD_SIGNIN_HMAC_KEY and VSD_DB_APP_PASSWORD:
 without a valid key or a reachable PostgreSQL database the API refuses to start (§4.8, D53 (4)). It then
-starts the analysis pool (api/pool.py, D53 (2)): if any worker's start-up hook fails, it refuses to start.
+starts the analysis pool (api/pool.py, D53 (2)): if any worker's start-up hook fails, it refuses to start;
+so it does if the store holds results of the other kind (mock or real) than the analyzer's.
 Locally: docs/setup.md ("Running the API outside Compose").
 """
 from __future__ import annotations
@@ -18,6 +19,7 @@ from fastapi import FastAPI
 from starlette.middleware.body_limit import RequestBodyLimitMiddleware
 
 from api.analyzer import MockAnalyzer
+from api.bundle_analyzer import BundleAnalyzer
 from api.auth import password_hasher, signin_key_from_env
 from api.config import ApiConfig, load_api_config, resolve_path
 from api.db import Database, app_password_from_env
@@ -47,6 +49,8 @@ async def lifespan(app: FastAPI):
             resolve_path(config.temp_dir).mkdir(parents=True, exist_ok=True)
         try:
             await app.state.pool.start()  # PoolStartError: refuse to start (no serving with a missing worker)
+            # MixedStoreError: refuse to start (a store holds mock results or real ones, never both)
+            app.state.repository.require_one_kind(mock=app.state.pool.info().mock)
             yield
         finally:
             await app.state.pool.close()
@@ -54,10 +58,20 @@ async def lifespan(app: FastAPI):
         database.close()
 
 
+def analyzer_factory_for(config: ApiConfig) -> AnalyzerFactory:
+    """The factory for config.analyzer (the loader accepts mock and bundle only)."""
+    if config.analyzer == "bundle":
+        return functools.partial(BundleAnalyzer, config.bundle_dir, config.bundle_manifest_sha256)
+    if config.analyzer == "mock":
+        return functools.partial(MockAnalyzer, config.mock_deferral_on_fit)
+    raise ValueError(f"unknown analyzer {config.analyzer!r}")
+
+
 def create_app(config: ApiConfig | None = None, analyzer_factory: AnalyzerFactory | None = None,
                hasher: PasswordHasher | None = None) -> FastAPI:
     """Build the app. Without a config, load it from $VSD_API_CONFIG or configs/api.yaml.
-    Without an analyzer factory, each pool worker builds the MockAnalyzer (§8); the factory must be
+    Without an analyzer factory, each pool worker builds the one config.analyzer names (§8): the MockAnalyzer,
+    or the BundleAnalyzer with the pinned manifest SHA-256. A factory must be
     picklable (api/pool.py). Without a hasher, use the §4.8 argon2id one. No process starts here: the
     lifespan starts the pool. Raise ValueError if stats_time_zone is not UTC."""
     config = config if config is not None else load_api_config()
@@ -66,8 +80,7 @@ def create_app(config: ApiConfig | None = None, analyzer_factory: AnalyzerFactor
         raise ValueError(f"stats_time_zone must be UTC until open decision 6 is taken, got {config.stats_time_zone!r}")
     app = FastAPI(title="Voice-spoofing detection API", lifespan=lifespan)
     app.state.config = config
-    factory = analyzer_factory if analyzer_factory is not None else functools.partial(
-        MockAnalyzer, config.mock_deferral_on_fit)
+    factory = analyzer_factory if analyzer_factory is not None else analyzer_factory_for(config)
     app.state.pool = AnalysisPool(factory, size=config.analysis_workers,
                                   start_timeout_s=config.analysis_worker_start_timeout_s)
     app.state.database = Database.from_config(config)  # opened by the lifespan; building never connects

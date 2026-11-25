@@ -157,6 +157,14 @@ def _where(query: HistoryQuery, with_verdicts: bool) -> tuple[str, list]:
     return (" WHERE " + " AND ".join(clauses)) if clauses else "", params
 
 
+# The docs/setup.md section on a separate store. Never the one that empties a store: that deletes the History.
+REAL_STACK_SECTION = "Real model stack (vsd-real)"
+
+
+class MixedStoreError(Exception):
+    """The store holds results of the other kind (mock or real): the API must not start."""
+
+
 class AnalysisRepository:
     def __init__(self, db: Database):
         self.db = db
@@ -189,6 +197,17 @@ class AnalysisRepository:
         with self.db.transaction() as conn:
             conn.execute(f"INSERT INTO analysis_record ({', '.join(COLUMNS)}) VALUES ({placeholders})",
                          astuple(record))
+
+    def require_one_kind(self, mock: bool) -> None:
+        """Raise MixedStoreError if any record is of the other kind than this analyzer's (§4.7: the figures
+        never mix mock and real results). Checked at start, before the API serves."""
+        with self.db.transaction(read_only=True) as conn:
+            (other,) = conn.execute("SELECT EXISTS (SELECT 1 FROM analysis_record WHERE is_mock <> %s)",
+                                    (mock,)).fetchone()
+        if other:
+            ours, theirs = ("mock", "real") if mock else ("real", "mock")
+            raise MixedStoreError(f"the analyzer gives {ours} results but the store holds {theirs} results; run the "
+                                  f"{ours} analyzer on a store of its own (docs/setup.md, \"{REAL_STACK_SECTION}\")")
 
     def get(self, request_id: str) -> AnalysisRecord | None:
         with self.db.transaction(read_only=True) as conn:

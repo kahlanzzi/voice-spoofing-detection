@@ -91,7 +91,8 @@ Response `200`:
   within a short timeout. The check never writes. A failure is reported here, never as an error.
 - The connection check on S10 is done by the browser: no answer means "cannot reach the service".
 - `versions`, `bundle_manifest_sha256`, `deferral_on_fit` and `mock` come from the analyzer
-  (section 8). With the MockAnalyzer the manifest hash is `null`.
+  (section 8). With the MockAnalyzer the manifest hash is `null`; with the real bundle it is the pinned
+  F4 hash and `mock` is `false`.
 - The endpoint reports problems in its body; it answers `200` even when `state` is `unavailable`.
 - Sessions use the same store, so if the store cannot be read, the session check answers
   `500 internal_error` before `GET /status` runs; the app treats a `500` or no answer from `/status`
@@ -182,7 +183,8 @@ queue. The worker is released when the request ends, on success and on every err
 - Stage 18: the prototype's timeout screen must not say a late result will appear in History;
   with this contract a server timeout stores nothing.
 - **Open decision 3:** how recordings longer than 2 s are handled (the model works on 2 s clips).
-  That rule lives inside the analyzer, not in this endpoint.
+  That rule lives inside the analyzer, not in this endpoint. With the real bundle (section 8):
+  until D63 is implemented, the verdict uses the centre 2 s of the upload only; silence gets a verdict; no 422 no_speech.
 
 **D63 target:** a recording with zero kept windows under D17 returns the
 section 6 `Error` shape with code `no_speech` and the assigned request ID, then stores no row.
@@ -321,10 +323,10 @@ Response `200`:
   the period, or the mean of the two middle values rounded to the nearest integer (halves up); `null` when
   total is 0. `awaiting_note.recent` is newest first, ordered as in History.
 - Stats and History count every stored result, mock or real; `is_mock` is not a filter.
-  `monitoring_marker.mock` describes the analyzer now loaded. Before the real ModelBundle is served, the
-  store starts empty (only the PostgreSQL volume `vsd-pg` removed, `docs/setup.md` "Empty the database",
-  or a new `vsd-pg`) or mock results and their notes are removed (`analysis_note` has a foreign key to
-  `analysis_record`), so the figures never mix the two.
+  `monitoring_marker.mock` describes the analyzer now loaded. A store holds one kind only: at every start
+  the API refuses a store with any row whose `is_mock` differs from the loaded analyzer's `mock`
+  (`MixedStoreError`), so the figures never mix the two. The real bundle runs on a store of its own
+  (`docs/setup.md` "Real model stack (vsd-real)"). The check is at start only.
 - Dates use the §4.4 rules (exactly `YYYY-MM-DD`, a real date). Unknown query parameters are ignored. All
   figures are read in one consistent snapshot. A failed read → `500 internal_error`.
 
@@ -671,11 +673,15 @@ info() -> AnalyzerInfo             # ready, versions, deferral_on_fit,
                                    # bundle_manifest_sha256, mock
 ```
 
-- **Now:** `MockAnalyzer`, with `model_version: "mock"` and `mock: true`. It returns fixed,
+- **`analyzer: mock`** (default; dev and CI): `MockAnalyzer`, with `model_version: "mock"` and `mock: true`. It returns fixed,
   plausible outcomes that follow `risk-v1` behaviour (as the prototype's mock data does) and reads
   its `deferral_on_fit` from config, labelled mock.
-- **Later:** the team's frozen ModelBundle (Stage 12), loaded and verified by `src/bundle/`, which
-  supplies `deferral_on_fit` from its risk policy. The API code does not change.
+- **`analyzer: bundle`**: the frozen ModelBundle F4 (D60), `api/bundle_analyzer.py`. Each worker verifies
+  the whole bundle with `src/bundle/`, refuses any manifest SHA-256 but the pinned one, uses one torch
+  thread (D53 (1)) and runs a warm-up; a failure refuses the start. Scoring is that of
+  `src.tuning.risk_run.score_clips` at batch 1, then the bundled policy, which also supplies
+  `deferral_on_fit`. Only architecture `cnn` is served; F5 gets its scoring in its own PR.
+  Limit: until D63 is implemented, the verdict uses the centre 2 s of the upload only; silence gets a verdict; no 422 no_speech.
 - The API adds `request_id` and `notice` to the outcome to make the §11 response.
 - The analyzer runs in a pool of K worker processes (`api/pool.py`, D53 (2)), started with the spawn
   method when the API starts. Each worker builds its analyzer once, at start, and reuses it for every
@@ -700,11 +706,14 @@ All values come from config (`configs/api.yaml`, written in Stage 17), never fro
 | `analysis_timeout_s` | How long the API waits for the analyzer | 30 | Proposal |
 | `analysis_workers` | K: analysis worker processes per API process | 2 | Mock, not measured; replaced by the P4 load-test decision on the staging host with the real bundle (D53 (3)) |
 | `analysis_retry_after_s` | `Retry-After` on a full pool; at most `analysis_timeout_s` | 30 | Mock, not measured; replaced by the P4 load-test decision on the staging host with the real bundle (D53 (3)) |
-| `analysis_worker_start_timeout_s` | How long one worker may take to build its analyzer | 60 | Mock; one worker's start-up hook; set from the measured bundle load time in P1 |
+| `analysis_worker_start_timeout_s` | How long one worker may take to build its analyzer | 20 | Measured in P1 (see the P1 log entry) |
 | `page_size_max` | Largest `page_size` | 50 | Proposal |
 | `note_max_chars` | Longest note | 2,000 | Proposal |
 | `stats_time_zone` | Time zone for counting days | `UTC` | **Open decision 6** |
 | `notice_text` | The §11 `notice` text | prototype wording | Proposal |
+| `analyzer` | `mock` or `bundle` (section 8); any other value is refused | `mock`; `bundle` in `configs/api.bundle.yaml`, the only difference | Deployment setting |
+| `bundle_dir` | Absolute folder of the ModelBundle in the container, mounted read-only | `/app/bundle/bundle-v1` | Deployment setting |
+| `bundle_manifest_sha256` | The only manifest SHA-256 a worker accepts | `edf4a205e12fc948a68575ebaa929145481aaa535d34e3353ef9535f92840efc` | F4 (D60); changes only with a new bundle decision |
 | `mock_deferral_on_fit` | Monitoring marker for the MockAnalyzer only | 0.0993 | Mock; replaced by the bundle's value |
 | `temp_dir` | Folder for temp uploads | — | Deployment setting |
 | `database_host`, `database_port`, `database_name`, `database_user` | The PostgreSQL database and role holding the section 7 tables; the password is never in the file (`VSD_DB_APP_PASSWORD`) | `db`, 5432, `vsd`, `vsd_app` | Deployment setting |

@@ -103,6 +103,7 @@ services:
       - vsd-var:/app/var:ro
     tmpfs:
       - /tmp:size=96m,mode=1777   # temp uploads (temp_dir: null), sized for K (above); in memory, gone at restart (NFR-03)
+      - /var/cache/numba:size=32m,uid=10001,gid=10001,mode=0700   # NUMBA_CACHE_DIR; apart from /tmp, which is sized for uploads; measured in P1: numba wrote 0 kB (df at 0.3 s intervals after start, after a max WAV, a max FLAC and two FLAC uploads); the folder must be writable (without it the warm-up fails: cannot cache function '__o_fold': no locator available); 32m is a cap, not a reservation
     read_only: true
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]

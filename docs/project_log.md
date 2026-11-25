@@ -8434,6 +8434,166 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 217 — Track P PR P1: the F4 bundle in the process pool (2026-11-25)
+
+- **Owner:** Iheb Zemzemi (Part E). Branch `feat/stage17-p1-f4-bundle` from `main` `e8460fa`, rebased onto
+  `4111897` (PR #163), then `44c3e13` (PR #164); `git range-diff` showed `=` on every line both times.
+  Entry number: 216 was the last used on `origin/main` `44c3e13` (read 25 Nov).
+- **Why [doc]:** D48 (1), D53 (1), D59 (5), D60; Execution Plan v3.0 P1: the verified F4 bundle runs in the
+  P2b process pool (Entry 214). No new D-ID.
+- **Entry 214 approved:** post-merge review by Donia, 2026-11-24, no blocking findings
+  (https://github.com/kahlanzzi/voice-spoofing-detection/pull/162#issuecomment-7130107469).
+- **Review:** Donia's PR review is the independent check (D26). A reviewer merges this PR, not the author.
+- **SHAs (pre-rebase → on the branch):** commit 1 `7ec31e1` → `4e42bb8`; 2 `b73b97a` → `0e87b22`;
+  3 `6b24951` → `1402579`; 4 `dae6622` → `1bdd4da`; 5 `0723c3f`, then `08d1e85` → `febdb6f`;
+  6 `135ab64` → `38204b0`. Commit 7 is the docs commit that carries this text.
+- **What changed:**
+  - `api/bundle_analyzer.py`, built once per worker by the pool's start-up hook (`api/pool.py` unchanged):
+    one torch thread, `load_bundle_model`, refusal of any manifest but the pinned
+    `edf4a205e12fc948a68575ebaa929145481aaa535d34e3353ef9535f92840efc` and of any architecture but `cnn`, then
+    a warm-up (2 s of zeros at 44.1 kHz). A failure refuses the start. Scoring is that of `score_clips` at
+    batch 1 and `RiskPolicy.decide`; always `LoadedBundle.profile`. The API process imports no torch.
+  - Config: strict keys `analyzer`, `bundle_dir`, `bundle_manifest_sha256`; mock stays the default in dev and
+    CI; `configs/api.bundle.yaml` differs only in `analyzer`. An unknown value never falls back to the mock.
+  - One kind of row per store: the API refuses to start (`MixedStoreError`) if any stored row's `is_mock`
+    differs from the analyzer's `mock`, both ways; `api.migrate_sqlite` refuses with the bundle config.
+  - Image: CPU torch 2.11.0 by CI's command, librosa, safetensors, scipy, scikit-learn, and from `src/` only
+    the scoring modules; one thread for OMP, MKL and OpenBLAS; numba cache on its own tmpfs;
+    `docker-compose.bundle.yml` (read-only bind mount, no folder created); `deploy/image_check.py` as a step of
+    CI's e2e job. `.gitignore` gains `checkpoints/` and `*.safetensors`.
+  - `analysis_worker_start_timeout_s` 60 → 20, `--start-period` 90 s → 50 s (start timeout + 30 s; it was 10 s
+    before P1); numba tmpfs kept at 32m (a cap, not a reservation).
+  - Docs: `docs/setup.md` "Real model stack (vsd-real)" and a test that the heading named by the error exists;
+    `docs/setup.md` "Database" password steps now feed `ALTER ROLE` to psql on stdin (psql does not
+    interpolate `:'pw'` inside `-c`); the `docker compose config` command of "Empty the database" replaced by a
+    project-filtered `docker volume ls`; `docs/api_design.md` §4.1, §4.3, §4.7, §8, §9; CHANGELOG.
+  - Until D63 is implemented, the verdict uses the centre 2 s of the upload only; silence gets a verdict; no
+    422 no_speech. Donia's answers: F4 on staging yes (D48 (1)), staging demo audio only (D54 (8)); the API's
+    value is batch 1 (Stage 13 also scores one window per call).
+- **Checks run [verified]:** `tests/api` + `tests/deploy` with `REQUIRE_POSTGRES_TESTS=1`; every run printed
+  `database tests ran on PostgreSQL 18.7`.
+  - At each commit, `git rebase -x` onto `44c3e13`, `~/.venvs/vsd-p1` (Python 3.14.6, torch 2.11.0+cpu),
+    `REQUIRE_TORCH_TESTS=1`: 616, 627, 646, 652, 658, 658 passed at `4e42bb8`, `0e87b22`, `1402579`, `1bdd4da`,
+    `febdb6f`, `38204b0`; 0 skipped. `.venv` (no torch), on the working tree just before each commit: 616;
+    616 + 1 skipped; 633 + 1; 639 + 1; 645 + 1; 645 + 1 (the skip is the torch module). Commit 7, on the
+    working tree just before its commit: `.venv` 646 passed + 1 skipped, `vsd-p1` 659 passed.
+  - Iheb re-ran both venvs independently: b73b97a 627 / 616 + 1 skipped, 6b24951 646 / 633 + 1, dae6622 652 / 639 + 1
+    (pre-rebase SHAs; 0e87b22, 1402579, 1bdd4da on the branch), and 38204b0 658 / 645 + 1.
+  - **Parity, one environment:** batch-1 logits are bit-identical to `score_clips` at batch 1 within one
+    environment. Claude Code's parity run at `b73b97a` (pre-rebase; `0e87b22`), `vsd-p1` (Python 3.14.6, torch
+    2.11.0+cpu, numpy 2.5.3, numba 0.68.1, librosa 1.0.0, soxr 1.1.0), F4, seed 0, random data only:
+    (a) 4,000 audio files through `analyze(path)`: 0 logits not bit-identical (LOW 3,093, MEDIUM 887, HIGH 20);
+    (b) batch 1 vs 256: largest difference 3.81e-06 on those files, 7.63e-06 on 300 feature arrays (all HIGH,
+    so weak evidence for levels), 1.53e-05 on 4,000 spread arrays (HIGH 3,430, MEDIUM 302, LOW 268);
+    `risk_level` and prediction differ 0; (c) batch 1 bit-identical at 1 and 4 threads. The 300 arrays were
+    the evidence first given to Donia for the batch question; the 4,000 arrays replace it. Iheb's run at 38204b0 gives the same
+    figures (below).
+  - **Parity, Python 3.13.15 (image) vs 3.14.6 (`vsd-p1`)**, Iheb at `08d1e85` (pre-rebase; `febdb6f` on the
+    branch), image `sha256:d3b8479d…`, dev laptop, 400 random files (`p1_image_parity.py`): 162 of 400 logits
+    not bit-identical (wav 75, flac 47, mp3 40), the image's value differs from the `vsd-p1` reference by at
+    most 3.81e-06 (3.814697265625e-06, `upload_0086.flac`), with every `risk_level` equal (differ 0; 1 of the 400 is
+    HIGH on the host). `api/`/`src/` modules identical (23 vs 23); versions printed identical except Python; pip
+    freeze differs only in `filelock==4.2.4`. The cause of the difference is not established.
+  - **Image check** in a throwaway container with the base Compose settings (Claude Code, `0723c3f`, pre-rebase;
+    `febdb6f`): `image check OK`, exit 0. F4 mounted read-only there: ready, `mock=False`, manifest
+    `edf4a205…`; a write to the bundle refused.
+  - **Live check** by Iheb, 24 Nov, `vsd-real` at `08d1e85` (pre-rebase; `febdb6f` on the branch): sign-in as
+    analyst01 worked; History kept its rows across down/up; every upload gave a result (short WAV, max WAV,
+    max FLAC); the Status page showed the bundle manifest `edf4a205…840efc`.
+  - Final checks by Iheb, 25 Nov, at 0ad687f (code identical to 38204b0): full .venv suite 1969 passed, 45
+    skipped, 2 collection errors (tests/evaluation/test_robustness.py, tests/evaluation/test_stage14_run.py:
+    torch-only, no torch in .venv); vsd-p1 tests/api + tests/deploy 659 passed; web: npm ci, typecheck, lint,
+    Vitest 1394 passed (44 files), build, npm audit --omit=dev 0; e2e on the mock stack 76 passed, sign-in POSTs
+    12 (planned 12), 429: 1; image check in the docker compose exec form on the mock stack: image check OK.
+    Final live check on vsd-real (image sha256:5114ba8a…): one upload, result with no 'Mock result' tag; History
+    9 rows, none tagged 'Mock result'; System status without 'Mock status values'; rail without '(mock)'; SELECT
+    is_mock, count(*) FROM analysis_record: one row, f = 9. History also shows both uploads of the two-tab FLAC
+    test (17:02, 24 Nov) got a result, no 503. NaN/inf check re-run by Iheb: 1 passed, worker log 'waveform
+    contains NaN or infinity'. The final checks ran at 0ad687f; the pushed commit 7 differs from it only in
+    docs/project_log.md and docs/setup.md.
+- **Planted bugs (each restored, each caught by a failing test unless noted):**
+  - 1 (4): all of `src/` copied; torch index URL dropped; a changed safetensors pin; torch in
+    `requirements-api.txt`.
+  - 2 (12): wrong hash accepted; `apply_bin_stats` skipped; std replaced by ones; warm-up swallowed; architecture
+    unchecked; thread call dropped; validation imported; torch at module top; `mock=True`; profile re-read;
+    model per job; calibration slope changed. Substitutions: "std replaced by ones" for the plan's std/mean
+    swap, "calibration slope changed" for calibration skipped. Two first attempts were ill-formed, discarded
+    and redone: "profile re-read" raised `AttributeError`; "model per job" changed nothing.
+  - 3 (7): pin edited; bundle config drifts; analyzer not validated; pin not validated; pin regex lets a newline
+    pass; relative `bundle_dir`; bundle served as mock.
+  - 4 (8): guard call removed; only mock rows refused; only real rows refused; comparison inverted; only the
+    first row checked; kind hard-coded to mock; `pool.close()` replaced by `pass` (renamed: first labelled "guard
+    runs before start"); import refusal removed.
+  - 5 (13 + 6): old message text; start-period 10 s; start timeout raised alone; numba tmpfs removed, in `/tmp`,
+    not owned by app; mount writable; missing folder created; bundle path optional; bundle in the base stack;
+    bundle config not copied; image check step removed; wait shorter than start-period. Caught by the image
+    check: no numba tmpfs; `NUMBA_CACHE_DIR` unset (both `cannot cache function '__o_fold': no locator
+    available`); all of `src/training`; `src/evaluation` added; a stand-in validation module in `sys.modules`
+    (the real one cannot import in the image); writable root.
+  - 6 (3): start-period left at 90 s; `api.bundle.yaml` left at 60; numba tmpfs removed.
+  - 7 (1): the `docs/setup.md` heading renamed.
+- **Measured by Iheb** at `08d1e85` (pre-rebase; `febdb6f` on the branch), image `sha256:d3b8479d…` (the same
+  image ID as `0723c3f`), dev laptop (8 threads, SSD, 7.7 GiB RAM), K = 2 on `vsd-real` unless noted. Never a
+  staging or production figure.
+  - Image size 224,810,132 → 1,490,327,160 B (before: image `b1d339d19b38`, no SHA label).
+  - Starts, "Waiting for application startup" to "Application startup complete": 4.94 s (earlier start: start 5
+    of the first loop, the only one with log lines), 4.14, 5.02, 5.05, 4.82, 5.16 s warm, 4.61 s after "echo 3 >
+    /proc/sys/vm/drop_caches"; slowest 5.16 s. Wall time to healthy with `up --wait` 14.0-15.5 s (healthcheck
+    interval 10 s). Load of one process in a throwaway container: 4.92, 6.36, 4.84, 3.21 s; slowest 6.36 s. Three
+    times either, rounded up to 10 s, is 20 s.
+  - Memory, one process in a throwaway container: VmRSS about 378,760 kB after load; peak VmHWM 458,716 kB with a
+    max WAV (20,880,044 B, 87 kHz, 2 channels) and 801,824 kB with a max FLAC (12,011,984 B, 192 kHz, 8 channels),
+    both 60 s; exit 0.
+  - Memory per process on `vsd-real`: uvicorn VmRSS 78,144-89,172 kB, VmHWM 137,924-146,268 kB; resource tracker
+    17,180-17,460 kB; each worker 376,012-380,812 kB after start; a worker's VmHWM 455,856 kB after a max WAV and
+    798,692-799,836 kB after a max FLAC, VmRSS back to 393,756-394,876 kB.
+  - `/tmp` held twice the upload while processed (max WAV 40,784 kB, max FLAC 23,464 kB), as the 96m budget for
+    K = 2 assumes. numba cache 0 kB (df at 0.3 s intervals after start, after a max WAV, a max FLAC and two FLAC
+    uploads). A manual two-tab test did not produce overlapping uploads; no `/tmp` sample showed two at once.
+  - Repeated by Iheb at 38204b0: image sha256:5114ba8a94af38878c7470806a67e72f7724b68a8be7d77eb93c5ff8d00dc718,
+    1,490,327,305 B (only the configs layer rebuilt; 145 B more than at 08d1e85 from the longer api.yaml
+    comment); five starts with start period 50 s, all exit 0, gaps 4.79, 5.17, 5.10, 5.49, 4.38 s, slowest of
+    all 12 starts 5.49 s (3 x 5.49 = 16.5 s, so 20 s holds); image check in the docker compose exec form on
+    vsd-real OK; image vs host parity identical to the 08d1e85 run (modules identical, 162 of 400 not
+    bit-identical, max 3.814697265625e-06, risk_level differ 0). Iheb's p1_parity.py at 38204b0 (vsd-p1, F4,
+    seed 0): identical to Claude Code's b73b97a run on every line but the HEAD line: (a) 4,000 audio files, 0
+    logits not bit-identical, max 0.0, risk_level differ 0 (LOW 3,093, MEDIUM 887, HIGH 20); (b) batch 1 vs 256
+    at 1 and 4 threads: audio set max 3.81e-06 (267 within 0.5 of a band edge; 2.38e-06 within 3), 300 arrays
+    max 7.63e-06 (all HIGH), 4,000 spread arrays max 1.53e-05 (90 within 0.5; 1.91e-06 within 3), risk_level and
+    prediction differ 0; (c) batch 1 bit-identical across 1 and 4 threads for all three sets; RESULT OK.
+- **Departure on measurements (section G of the plan):** memory, `/tmp` and load stay at `08d1e85` (pre-rebase;
+  `febdb6f`) because commit 6 changes no scoring, pool or upload code; the repeats above are at `38204b0`. The
+  other departures from the approved plan are in the PR text.
+- **Risks:**
+  - P1 refuses non-`cnn` bundles, so the F5 swap needs its own PR, using the reference functions
+    `src/evaluation/external_run.py` `score_aasist` (F3 waveform `(profile.samples,)` float32, no log-Mel, no
+    mean/std, one forward in `inference_mode`, one float64 logit) and `src/tuning/v2_risk_run.score_clips` with
+    `model_inputs('waveform', …)`, and a batch-1 parity test.
+  - The CI batch-256 check runs on a synthetic bundle whose logits span about 0.1; there atol=5e-5 is about 1,100×
+    the observed difference (4.47e-08, at b73b97a), so it is a loose bound. The strict checks are batch-1
+    bit-identity with score_clips (CI) and the F4 parity script (offline, all four parts). (`b73b97a` is
+    pre-rebase; `0e87b22`.)
+  - Mixed-store guard: checked at start only (rows written while the API runs, or imported with a mock config,
+    are caught at the next start); mock vs real only (F4 and F5 rows are told apart by `model_version`);
+    rollback to the mock needs another store.
+  - A worker that takes over 20 s refuses the start; a replacement worker that takes over 20 s marks the pool
+    broken until the API restarts; the replacement under load is not measured; P4 measures it on the staging host.
+  - A float WAV with NaN or infinity passes intake and gives `500` (worker kept): run by Claude Code at `fd8ab60`
+    (before the amend of commit 7; same code), `vsd-p1`, F4 in a spawned worker: NaN 500, infinity 500, the next
+    recording 201 on the same worker. Decoded size is unbounded: a max FLAC
+    raises a worker's VmHWM to about 800 MB (above). librosa's transitive dependencies match `vsd-p1` by
+    resolution, not by pin. Python 3.13 (image) and 3.14 (test environment) give logits up to 3.81e-06 apart.
+- **Not verified [hypothesis]:** staging; K; overlapping uploads; a replacement worker under load; D63
+  windows; the first CI image build time against the job's 20 min limit; the password steps of
+  `docs/setup.md` as now written were not run by Claude Code.
+- **AI assistance:** Claude Code (Claude Opus 5.5) wrote the pre-reports, the plan, the code, tests and docs,
+  and the measurement scripts (outside the repo); Iheb reviewed each commit, ran the measurements and the live
+  check (D26). The dev VSD_DB_APP_PASSWORD and VSD_SIGNIN_HMAC_KEY printed during planning were rotated on 24
+  Nov. AI does not push or merge.
+- **Gate:** **WAITING FOR APPROVAL.**
+
+---
+
 ## Open items
 
 **v2 track, live analysis and infrastructure (Entry 150)**
@@ -8765,7 +8925,7 @@ pointers and synchronized PDF are reviewed.
 - [x] Khalil's teach-back of the Stage 11 brief (D32), then a closeout PR marking Stage 11 done in `AGENTS.md`. (Khalil, Iheb and Malak, face to face, 2026-11-10, no corrections; closeout on `docs/stage11-closeout`, Entry 163)
 - [x] `stage11_report`'s byte-exact `p` re-derivation reproduces only on the run's platform (T4, 2026.10); document in `docs/stage11_report.md` Limitations in a later PR (no code change) (Entry 161). (Entry 171)
 - [x] Stage 12: ModelBundle v1 freeze (F4) after Stage 11 closes. (D60, Entry 168; hand-over verified, Entry 174)
-- [ ] v1 replaces the mock in the API (D48 (5)): Iheb, P1, planned 2026-11-24 (Stage 17; Entry 174).
+- [ ] v1 replaces the mock in the API (D48 (5)): Iheb, P1, planned 2026-11-24 (Stage 17; Entry 174). Built: F4 served by `analyzer: bundle` (mock stays the dev and CI default); review of Entry 217.
 
 **Stage 17 API (Part E, Entry 100)**
 - [x] Team review of the API contract `docs/api_design.md`, including the proposed `invalid_request` (400) code. (approved, PR #65, Donia, 2026-10-30; Entry 101)
@@ -8791,7 +8951,7 @@ pointers and synchronized PDF are reviewed.
 - [ ] Threat model §10.1 / §11 item 5: update the "unmitigated until access control is decided" wording once sign-in is implemented (Entry 121).
 - [ ] HTTPS outside `localhost`: the `Secure` cookie works over plain HTTP only on `localhost`; any other host needs TLS terminated in nginx first. Documented (`api_design.md` §2, `docs/setup.md`), not built (Entry 126).
 - [x] Stage 18: replace the nginx `/` placeholder in `deploy/nginx.conf` with the React build, keeping the routing and no-IP tests green (Entry 126). (merged in PR #90, `d352bad`; Entry 129)
-- [ ] Integration: before the real ModelBundle is served, the store starts empty (a fresh database: stop the stack and remove only the PostgreSQL volume, `docker volume rm <project>_vsd-pg` with the name from `docker compose config`, as in `docs/setup.md` "Empty the database"; or a new `vsd-pg`) or mock results and their notes are removed (`analysis_note` has a foreign key to `analysis_record`), so the figures never mix the two (§4.7 G6; Entry 120).
+- [ ] Integration: before the real ModelBundle is served, the store starts empty (a fresh database: stop the stack and remove only the PostgreSQL volume, `docker volume rm <project>_vsd-pg` with the name from `docker volume ls`, as in `docs/setup.md` "Empty the database"; or a new `vsd-pg`) or mock results and their notes are removed (`analysis_note` has a foreign key to `analysis_record`), so the figures never mix the two (§4.7 G6; Entry 120). P1: the API refuses at start a store of the other kind, and the real stack has its own volumes (`docs/setup.md` "Real model stack (vsd-real)"); review of Entry 217.
 - [ ] Routes other than `POST /api/analyses` and `PUT …/note` answer a Content-Length above `max_size_bytes` + 64 KiB with Starlette's plain-text 413, not the §6 shape (GET-only today) (Entry 119).
 - [ ] Shared helpers (utc_now_iso, REQUEST_ID, invalid_request) live in routers and are imported across routers; move to a shared module in a later refactor PR (Entry 119).
 - [x] Integration: limit concurrent analyses; a timed-out analyzer thread keeps running (cannot be killed), so repeated timeouts with the real model could pile up (Entry 116). The container's `/tmp` tmpfs is sized for `x-vsd-concurrent-uploads: 4` (2 × body limit each); the limit should match that number (Entry 125). (P2b: K worker processes, a timed-out one is killed; `x-vsd-concurrent-uploads` removed, tmpfs follows K; Entry 214, waiting for approval)
@@ -8802,13 +8962,19 @@ pointers and synchronized PDF are reviewed.
 - [ ] Teammates' existing .env files need VSD_DB_PASSWORD and VSD_DB_APP_PASSWORD after P2a; announce in the PR.
 - [ ] Remove the read-only `vsd-var` mount (and the volume) once the SQLite rollback window ends; until then `docker compose exec api python -m api.migrate_sqlite /app/var/api.sqlite` imports it once (SDD v2.0 §5.4; Entry 207).
 - [ ] SDD v2.1 note: PostgreSQL is used in every environment, including local and tests (SDD v2.0 §5.1, §11.3 speak of a local SQLite adapter and "the same suite as SQLite"), and the deployment figure's "SQLite local compatibility" store; propose with the next SDD revision (Entry 207).
-- [ ] P2b (D53 (2)): bounded process pool, 503 + `Retry-After` when full, kill on timeout; needs a value for K before the P4 load test (D53 (3), SDD §3.4); plan after P2a merges (Entry 207). Built with K = 2 as a mock, not measured value (agreed as provisional by Donia, 2026-11-23); review of Entry 214.
-- [ ] P4 (D53 (3)): set K (`analysis_workers`) and `analysis_retry_after_s` from the load test on the staging host with the real bundle and record them by decision; until then both are mock, not measured values; worker RSS with the real bundle comes from P1; the tmpfs table in Entry 214 gives the compose sizes for K = 1–4 (Entry 214).
-- [ ] P1: `analysis_worker_start_timeout_s` (mock; one worker's start-up hook; set from the measured bundle load time in P1); also check the API healthcheck start period against that load time (Entry 214).
-- [ ] P1: measure one real worker's RSS and peak (`VmRSS`, `VmHWM` from `/proc/<pid>/status` in the api container, after a warm-up of maximum-size uploads) to choose K; a MockAnalyzer worker under uvicorn measured 30828 kB and 30088 kB VmRSS idle at `d765720` (Entry 214).
-- [ ] P1: re-check the api `/tmp` tmpfs sizing once torch and librosa are in the image (numba cache, torch temp files); the read-only root filesystem may also need `NUMBA_CACHE_DIR` (Entry 214).
+- [x] P2b (D53 (2)): bounded process pool, 503 + `Retry-After` when full, kill on timeout; needs a value for K before the P4 load test (D53 (3), SDD §3.4); plan after P2a merges (Entry 207). Built with K = 2 as a mock, not measured value (agreed as provisional by Donia, 2026-11-23); review of Entry 214. (Merged, PR #162; approved by Donia, 2026-11-24, Entry 217)
+- [ ] P4 (D53 (3)): set K (`analysis_workers`) and `analysis_retry_after_s` from the load test on the staging host with the real bundle and record them by decision; until then both are mock, not measured values; worker RSS with the real bundle was measured in P1 (Entry 217); re-measure `analysis_worker_start_timeout_s` there too; a replacement worker that takes over 20 s marks the pool broken until the API restarts; the replacement under load is not measured; P4 measures it on the staging host; the tmpfs table in Entry 214 gives the compose sizes for K = 1–4 (Entry 214).
+- [x] P1: `analysis_worker_start_timeout_s` (was mock; one worker's start-up hook; set from the measured bundle load time in P1); also check the API healthcheck start period against that load time (Entry 214). (20 s and start period 50 s, measured; Entry 217)
+- [x] P1: measure one real worker's RSS and peak (`VmRSS`, `VmHWM` from `/proc/<pid>/status` in the api container, after a warm-up of maximum-size uploads) to choose K; a MockAnalyzer worker under uvicorn measured 30828 kB and 30088 kB VmRSS idle at `d765720` (Entry 214). (Measured, Entry 217; K is chosen in P4)
+- [x] P1: re-check the api `/tmp` tmpfs sizing once torch and librosa are in the image (numba cache, torch temp files); the read-only root filesystem may also need `NUMBA_CACHE_DIR` (Entry 214). (96m kept, numba cache on its own tmpfs; Entry 217)
 - [ ] P4: nothing bounds how many request bodies nginx buffers (`/var/cache/nginx` is sized for 2K bodies as an assumption); decide whether to add `limit_conn` on `POST /api/analyses` (Entry 214).
 - [ ] P4 on staging: observe a full pool behind nginx (the API's own `503` with request ID after the drain, not nginx's) (Entry 214).
+- [ ] Align the image's Python (3.13.15) with the test environment (3.14.6), after P1: logits differ by at most 3.81e-06, every `risk_level` equal (Entry 217).
+- [ ] Decide a decoded-size bound (Q1) before staging is reachable by others: a max FLAC raises a worker's VmHWM to about 800 MB (measured, Entry 217).
+- [ ] Reject non-finite samples at intake with 422 (a float WAV with NaN reaches the analyzer); Iheb, follow-up PR after P1 (Entry 217).
+- [ ] README.md:193 still gets the volume name with `docker compose config | grep` before a delete step; replace it with the project-filtered `docker volume ls` (follow-up PR, Iheb) (Entry 217).
+- [ ] Pin librosa's transitive dependencies (numba, soxr and the others): today they match `vsd-p1` by resolution, not by pin; only `filelock` differs (Entry 217).
+- [ ] P4: test concurrency by script (a manual two-tab test did not produce overlapping uploads; no `/tmp` sample showed two at once) and measure the replacement worker under load (Entry 217).
 - [ ] api_design §7 still says SQLite for the D63 migration target; correct it in the D63 implementation PR (0002 schema file)
 
 **Stage 18 web (Part E, Entries 127–137)**
@@ -8912,7 +9078,7 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-24 (Entries 203-216)
+## Current status — updated 2026-11-25 (Entries 203-217)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -8975,8 +9141,10 @@ or v1 plus baseline after it) and recheck D58 in the run session. Complete any f
 integration and all-four review before the run. The Stage 13 brief follows the run.
 No DEEP-VOICE audio was opened or scored, and no external-run claim was created during preparation.
 
-**Application status.** The React Docker MVP still displays mock analyzer results. F4-to-API
-integration is Iheb’s P1 work; the mock verdict must not be presented as a real model result.
+**Application status.** The default React Docker stack still displays mock analyzer results; the mock
+verdict must not be presented as a real model result. P1 (Entry 217; PR in review) serves the frozen F4
+bundle in the process pool, on a Compose project and store of its own (`docs/setup.md` "Real model stack
+(vsd-real)"); until D63, its verdict uses the centre 2 s of the upload only.
 D65 (Entry 191, approved in Entry 193) names Direction D and `docs/design/HANDOFF-v2.md` as the D55 target design;
 the shipped UI is unchanged until the D55 build PRs. P2a (Entry 207; merged, PR #155) moved the store to
 PostgreSQL behind the same repositories (D53 (4)): `db` service pinned by digest, the API as the
@@ -8985,8 +9153,7 @@ and in CI. Every `.env` needs `VSD_DB_PASSWORD` and `VSD_DB_APP_PASSWORD`. P2b (
 PR #162) runs analyses in a bounded pool of K spawned worker processes (D53 (2)): `503
 analysis_unavailable` with `Retry-After` when all K are busy, a timed-out analysis killed and its worker
 replaced, the api tmpfs sized from K; K = 2 and Retry-After 30 s are mock, not measured values (P4, on
-the staging host with the real bundle) and the 60 s start timeout is a mock value (P1). P1 (the F4
-bundle in the API) plugs its loader into the pool as the worker factory.
+the staging host with the real bundle). The start timeout is 20 s, measured in P1 (Entry 217).
 
 **Track V V1c implementation (Entry 185, merged in PR #152):** the pure frozen recipe,
 hash-verifying selection-set builder, strict training-half resource-cache builder/loader, exact

@@ -3,8 +3,16 @@
 *
 !api/
 !configs/api.yaml
+!configs/api.bundle.yaml
 !configs/api_logging.yaml
 !requirements-api.txt
+!src/__init__.py
+!src/bundle/
+!src/models/
+!src/preprocessing/
+!src/risk/
+!src/training/__init__.py
+!src/training/normalization.py
 **/__pycache__
 **/*.py[cod]
 # Listed for readers; already excluded by the first line.

@@ -204,3 +204,34 @@ def test_web_tmpfs_holds_two_k_bodies_at_the_nginx_limit():
     match = re.search(r"^\s*client_max_body_size\s+(\d+)([kmg]?);", conf, re.M)
     nginx_limit = int(match.group(1)) * UNITS[match.group(2)]
     assert tmpfs_bytes(entry) >= nginx_limit * 2 * load_api_config().analysis_workers
+
+# --- the numba cache and the real model (P1) -------------------------------------------------------
+
+def test_numba_cache_is_its_own_writable_tmpfs():
+    """In the base file, so the mock stack and CI's image check have it too; owned by the image's user, not /tmp."""
+    dockerfile = (REPO / "deploy" / "api.Dockerfile").read_text(encoding="utf-8")
+    (folder,) = re.findall(r"^ENV NUMBA_CACHE_DIR=(\S+)$", dockerfile, re.M)
+    (uid,) = re.findall(r"useradd --uid (\d+)", dockerfile)
+    assert folder != "/tmp" and not folder.startswith("/tmp/")
+    (entry,) = [t for t in API["tmpfs"] if t.split(":", 1)[0] == folder]
+    options = entry.split(":", 1)[1].split(",")
+    assert tmpfs_bytes(entry) > 0
+    assert f"uid={uid}" in options and f"gid={uid}" in options and "mode=0700" in options
+
+
+def test_bundle_override_mounts_read_only_and_selects_the_bundle_config():
+    override = yaml.safe_load((REPO / "docker-compose.bundle.yml").read_text(encoding="utf-8"))
+    assert set(override) == {"services"} and set(override["services"]) == {"api"}
+    api = override["services"]["api"]
+    assert set(api) == {"environment", "volumes"}
+    assert api["environment"] == {"VSD_API_CONFIG": "/app/configs/api.bundle.yaml"}
+    (mount,) = api["volumes"]
+    assert required("VSD_BUNDLE_DIR", mount["source"])
+    assert mount["type"] == "bind" and mount["read_only"] is True
+    assert mount["bind"] == {"create_host_path": False}
+    assert mount["target"] == load_api_config(REPO / "configs" / "api.bundle.yaml").bundle_dir
+
+
+def test_the_base_stack_serves_the_mock():
+    assert "VSD_API_CONFIG" not in TEXT and "VSD_BUNDLE_DIR" not in TEXT
+    assert load_api_config(REPO / "configs" / "api.yaml").analyzer == "mock"

@@ -94,7 +94,8 @@ and an `Origin` header from `allowed_origins` (`http://localhost:8001` in `confi
 ## Running with Docker Compose (Stage 17)
 
 `docker-compose.yml` builds the API image from `deploy/api.Dockerfile` (Python 3.13.15 slim, pinned by
-digest; non-root; only `requirements-api.txt`, whose pins must equal `requirements.txt`). The `api`
+digest; non-root; CPU torch by CI's command, then `requirements-api.txt`, whose pins must equal
+`requirements.txt` or `requirements-cnn.txt`; from `src/` only the scoring modules). The `api`
 service publishes **no port**; nginx (the `web` service) is the only way in, on http://localhost:8001.
 Never expose the API without nginx (§4.8 rate limit). Needs Docker Compose v2 (BuildKit).
 
@@ -130,8 +131,9 @@ docker compose down                   # keeps the store; to empty it, see "Empty
   part, then the API's temp copy). The size is 2 x (`max_size_bytes` + 64 KiB) x K, rounded up to a
   multiple of 32 MiB: 96 MiB for K = 2. The deploy tests fail if K or `max_size_bytes` grows past it. A
   further upload while all K are busy gets `503 analysis_unavailable` with `Retry-After`.
-- **Analysis workers:** the API starts K worker processes (spawn) at start-up; each builds the
-  MockAnalyzer once. If one cannot, the API does not start. A worker whose analysis passes
+- **Analysis workers:** the API starts K worker processes (spawn) at start-up; each builds its analyzer
+  once (`analyzer` in `configs/api.yaml`: the mock by default; the real model:
+  [Real model stack](#real-model-stack-vsd-real)). If one cannot, the API does not start. A worker whose analysis passes
   `analysis_timeout_s` is killed and replaced. Linux and macOS only: on Windows the API refuses to
   start (the pool needs a selector event loop) and the tests that start an app are skipped; use Docker
   or WSL2.
@@ -140,6 +142,63 @@ docker compose down                   # keeps the store; to empty it, see "Empty
   stdin (getpass falls back to stdin without a TTY and does not echo it); never put it in an argument.
 - The root filesystem is read-only, all capabilities are dropped, and FastAPI's `/docs` is reachable
   only inside the container.
+
+## Real model stack (vsd-real)
+
+`docker compose up` serves the **mock** analyzer. The frozen F4 bundle (D60) runs in a Compose project of
+its own, `vsd-real`, with its own volumes (`vsd-real_vsd-pg`, `vsd-real_vsd-var`), because a store holds
+mock results or real ones, never both: at every start the API refuses a store that holds the other kind
+(`MixedStoreError`). To go back to the mock, go back to the normal stack; never empty a store for it.
+
+1. **Get F4 and verify it.** Download the team's shared Drive folder `bundle/bundle-v1` (owner Donia; teammates
+   find it under Shared with me; ask her for access) to a folder **outside the repo**: five files, `bundle_manifest.json`, `policy.json` and
+   `preprocessing.yaml` at the top, `checkpoint.json` and `weights.safetensors` under `checkpoint/`. Never
+   commit them (AGENTS.md rule 7). In a venv with the [CNN dependencies](#cnn-dependencies-stage-8):
+
+   ```bash
+   export VSD_BUNDLE_DIR="$HOME/vsd-bundles/bundle-v1"     # an absolute path
+   python -m src.bundle.f4 verify --bundle "$VSD_BUNDLE_DIR" --record docs/audit_evidence/stage12_bundle/f4_record.json
+   ```
+
+   It must print `manifest_sha256: edf4a205e12fc948a68575ebaa929145481aaa535d34e3353ef9535f92840efc` (the pin
+   in `configs/api.yaml`) and `F4 verify OK`. Every worker checks the bundle and the pin again at start.
+2. **One stack at a time.** Both use http://localhost:8001, so stop the normal one (volumes kept), then start
+   `vsd-real` with both Compose files. `.env` is the same; its database passwords enter `vsd-real_vsd-pg` at
+   that volume's first start.
+
+   ```bash
+   export VSD_BUNDLE_DIR="$HOME/vsd-bundles/bundle-v1"
+   docker compose stop web api db
+   dcr() { docker compose -p vsd-real -f docker-compose.yml -f docker-compose.bundle.yml "$@"; }
+   dcr up -d --build --wait --wait-timeout 240
+   dcr exec api python -m api.admin create-account analyst01     # first time only: this store starts empty
+   ```
+
+   `vsd-real_vsd-pg` takes the role passwords from `.env` at its first start only. After rotating
+   `VSD_DB_APP_PASSWORD` ([Database](#database-postgresql-d53), below), run the same stdin `ALTER ROLE` step
+   against this stack: `dcr exec -T db psql …` instead of `docker compose exec -T db psql …`.
+
+   Do not run `python -m api.migrate_sqlite` here: the old results are mock, and it refuses with the bundle
+   config. Do not run the e2e tests against this stack.
+3. **Check.** Status page → Technical details: the manifest hash above, and no mock tag.
+4. **Back to the normal stack.** Sign in again in the browser after each switch.
+
+   ```bash
+   dcr down                          # never -v: it deletes this stack's results
+   docker compose up -d --wait
+   ```
+
+The bundle is bind-mounted read-only at `/app/bundle/bundle-v1`; a missing folder is an error, never created.
+`docker-compose.bundle.yml` selects `configs/api.bundle.yaml`, which differs from `configs/api.yaml` only in
+`analyzer: bundle`. numba needs a writable cache folder (`/var/cache/numba`, a tmpfs): without it the warm-up
+fails and the API does not start. `docker compose config` prints secrets: do not paste its output.
+
+**Image check** (also a CI step): the image holds the scoring modules and no research code, and one analysis
+of a synthetic bundle works. Against the running normal stack:
+
+```bash
+docker compose exec -T -e VSD_CHECK_PROFILE="$(cat configs/preprocessing.yaml)" api python - < deploy/image_check.py
+```
 
 ## Database (PostgreSQL, D53)
 
@@ -167,12 +226,12 @@ not change.
   ```bash
   set -a; . ./.env; set +a                                 # the current values
   NEW=$(openssl rand -hex 32)
-  docker compose exec -T db psql -U postgres -d vsd -v ON_ERROR_STOP=1 -v pw="$NEW" -c "ALTER ROLE vsd_app PASSWORD :'pw'"
+  printf "ALTER ROLE vsd_app PASSWORD :'pw';\n" | docker compose exec -T db psql -U postgres -d vsd -v ON_ERROR_STOP=1 -v pw="$NEW"   # on stdin: psql fills in :'pw' there, not in -c
   sed -i.bak "s/^VSD_DB_APP_PASSWORD=.*/VSD_DB_APP_PASSWORD=$NEW/" .env && rm .env.bak
   docker compose up -d --wait                              # the api restarts with the new value
   ```
 
-  For the superuser, use `ALTER ROLE postgres` and `VSD_DB_PASSWORD` the same way.
+  For the superuser, use `ALTER ROLE postgres` and `VSD_DB_PASSWORD` with the same stdin form.
 - **Tables:** `api/schema/0001_initial.sql`, applied by the API at every start (and by every
   `api.admin` command) and recorded in `schema_migration`; each file is applied once, in one
   transaction. A schema change is a new numbered file, never an edit of a merged one.
@@ -204,17 +263,20 @@ read-only until the rollback window ends (SDD v2.0 §5.4; Open items).
 
 ### Empty the database (keep `vsd-var`)
 
-To start PostgreSQL empty (dev data, or the clean start before the real ModelBundle is served), stop
-the stack and remove only the PostgreSQL volume. Do not use `docker compose down -v` for this: it also
+To start PostgreSQL empty (dev data; the real ModelBundle has
+[a store of its own](#real-model-stack-vsd-real) instead), stop the stack and remove only the PostgreSQL volume. Do not use `docker compose down -v` for this: it also
 deletes `vsd-var`, the read-only SQLite store kept until the rollback window ends.
 
 ```bash
 docker compose down                                # stop the stack; both volumes are kept
-docker compose config | grep -m1 '_vsd-pg$'        # the volume's real name: <project>_vsd-pg
+docker volume ls --filter "label=com.docker.compose.project=$(basename "$PWD")" --format '{{.Name}}' | grep '_vsd-pg$'   # the volume's real name: <project>_vsd-pg
 docker volume rm voice-spoofing-detection_vsd-pg   # the name printed above
 docker compose up -d --wait                        # a new vsd-pg, with the passwords now in .env
 docker compose exec api python -m api.admin create-account analyst01
 ```
+
+The `docker volume ls` command: run it from the repo folder; it lists only this Compose project's volumes
+(Compose labels each volume with its project), never `vsd-real_vsd-pg`.
 
 `docker compose config --volumes` lists the volume only as `vsd-pg`; Docker puts the Compose project
 name in front, which is the folder name by default (README, step 1). Instead of removing it, you can
