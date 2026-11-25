@@ -8668,16 +8668,43 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 220 — D67/D68 approved; approval recorded after merge (2026-11-25)
+
+- **Owner:** Donia Mabrouk (team lead). Branch `docs/decisions-d67-d68-approval` from `main` `48aeeb1`.
+- **Approval [user-reported]:** Iheb, Malak and Khalil approved D67 and D68 in person on 25 Nov; PR #167
+  has approving reviews by Iheb (`kahlanzzi`) and Khalil (`dridi-khalil`) [verified on GitHub; account
+  `kahlanzzi` = Iheb stated by Donia, 25 Nov]. Malak has no GitHub review on PR #167 [verified on GitHub];
+  her approval is in person (user-reported).
+- **Process deviation [verified on GitHub]:** PR #167 was merged by its author (Donia, `48aeeb1`) with two
+  GitHub approvals and before the approval commit, against Execution Plan v3.0: "Reviewer merges after the
+  diff review" (§13) and the approval commit before merge (§5.1). Precedent (§13, "Merge before approval
+  commit"): "record PR otherwise, as #112"; this PR is that record PR. Nothing on `main` claimed approval
+  before this PR (rows, ADRs and Entry 219 said Proposed). The approval is recorded after merge, as for
+  D46 (Entry 153); this PR is to be merged by a reviewer (Khalil).
+- **Scope (docs only):** the status cells of D67 and D68, the ADR index, the Status lines of ADRs 0011,
+  0017, 0018 and 0019, Open items, Current status, CHANGELOG and this entry. Entry 219 is not edited.
+- **Next:** the Execution Plan status update (`docs/stage19-plan-status-w4`), HANDOFF-v3 and the prototype
+  corrections (Malak), the D68 implementation (Iheb, cut line Fri 18 Dec).
+- **AI assistance:** Claude drafted the wording, Claude Code made the edits, Donia reviewed the diff.
+- **Gate:** **APPROVED (D67, D68)**; this PR waits for reviewer merge.
+
+---
+
 ## Open items
 
 **D67/D68 (Entry 219)**
-- [ ] Approval by Iheb, Malak, Khalil, then the approval commit.
+- [x] Approval by Iheb, Malak, Khalil, then the approval commit. (approved in person 25 Nov; recorded after
+  merge in Entry 220)
+- [ ] Execution Plan status update PR (docs/stage19-plan-status-w4), reviewer merges.
+- [ ] Prototype corrections D67 (1)–(7) and docs/design/HANDOFF-v3.md (Malak).
+- [ ] D68 implementation PR with the §4.8 contract and threat model §10.1 update (Iheb; cut line Fri 18 Dec).
 
 **VoiceCheck Enterprise proposal (Entry 218)**
 - [x] Iheb reviews the proposed prototype against the Stage 17 backend/API work and D55 build plan. (done, #166)
-- [ ] If the team wants to replace Direction D, approve a specific amendment to D65, correct the
+- [x] If the team wants to replace Direction D, approve a specific amendment to D65, correct the
   D52 live demo and decision board, revise the handoff, and run the D55 accessibility and usability
-  checks before implementation is accepted.
+  checks before implementation is accepted. (D67 approved, Entry 220; HANDOFF-v3 and checks tracked under
+  D67/D68)
 
 **v2 track, live analysis and infrastructure (Entry 150)**
 - [x] Approve or revise D48–D55, ADRs 0012–0015 and H8–H9 (all four) before the v1 Stage 11 claim. (PR #111, 2026-11-10)
@@ -9161,7 +9188,7 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-25 (Entries 203-219)
+## Current status — updated 2026-11-25 (Entries 203-220)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -9228,11 +9255,11 @@ No DEEP-VOICE audio was opened or scored, and no external-run claim was created 
 verdict must not be presented as a real model result. P1 (Entry 217; merged, PR #165) serves the frozen F4
 bundle in the process pool, on a Compose project and store of its own (`docs/setup.md` "Real model stack
 (vsd-real)"); until D63, its verdict uses the centre 2 s of the upload only.
-D65 (Entry 191, approved in Entry 193) names Direction D and `docs/design/HANDOFF-v2.md` as the D55 target design;
-the shipped UI is unchanged until the D55 build PRs. Malak's VoiceCheck Enterprise HTML
-(Entry 218) was reviewed and merged by Iheb (PR #166). D67 proposes adopting it, with listed corrections, in
-place of Direction D; D68 proposes email sign-in, server-side roles and member management (Entry 219; ADRs
-0018 and 0019). Both are Proposed: until the approval commit, D65 and D47 remain the approved decisions.
+D67 (approved 25 Nov, Entry 220) makes Malak's VoiceCheck Enterprise prototype (PR #166), with the seven
+D67 corrections, the D55 target design in place of Direction D; HANDOFF-v3 is next. D68 (approved,
+Entry 220) adds email sign-in, server-side roles and member management; until its implementation is merged
+and running on staging (cut line Fri 18 Dec), D47 username sign-in stays in force. The shipped UI is
+unchanged until the D55 build PRs.
 P2a (Entry 207; merged, PR #155) moved the store to
 PostgreSQL behind the same repositories (D53 (4)): `db` service pinned by digest, the API as the
 non-superuser `vsd_app`, a one-time import of the old SQLite store, the API tests on PostgreSQL locally
@@ -9292,5 +9319,5 @@ The D52 warm-up analysis is scheduled for W3 (23–29 November); Stages 15–16 
    then F5.
 2. Review and merge the SRS v4.1 adoption update, then coordinate D63 implementation with Iheb and
    keep Stage 13 within its gates.
-3. D67/D68: approval by Iheb, Malak and Khalil, then the approval commit (Entry 219).
+3. D67/D68 approved (Entry 220): Execution Plan status update PR, then HANDOFF-v3 and the D68 implementation.
 4. Do not open, score or claim DEEP-VOICE until the single-run prerequisites and team review pass.
