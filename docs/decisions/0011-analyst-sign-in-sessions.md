@@ -1,7 +1,7 @@
 # 0011. Analyst sign-in: username + password with server-side cookie sessions
 
 - **Status:** Accepted (team decision, 2026-11-01; user-reported). The contract details in
-  `docs/api_design.md` §4.8 and the §9 values marked proposed are under team review in this PR; identity and accounts superseded by [ADR 0019](0019-analyst-identity-and-roles.md) (D68) once D68 is approved; sessions unchanged.
+  `docs/api_design.md` §4.8 and the §9 values marked proposed are under team review in this PR; identity and accounts superseded by [ADR 0019](0019-analyst-identity-and-roles.md) (D68, approved 2026-11-25); sessions unchanged.
 - **Date:** 2026-11-01
 - **Register:** D47 in `README.md` (D46 is used by open PR #67; recheck the next free D-ID against
   `main` before merge)

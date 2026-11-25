@@ -1,6 +1,6 @@
 # 0017. Analyst interface: Direction D (mix of A and B) as the D55 design
 
-- **Status:** Approved 2026-11-17 (Donia and Khalil by review on PR #143, Malak by comment on PR #143; recorded in Entry 193); superseded by [ADR 0018](0018-ui-direction-enterprise.md) (D67) once D67 is approved
+- **Status:** Approved 2026-11-17 (Donia and Khalil by review on PR #143, Malak by comment on PR #143; recorded in Entry 193); superseded by [ADR 0018](0018-ui-direction-enterprise.md) (D67, approved 2026-11-25)
 - **Date:** 2026-11-16
 - **Register:** D65 (refines D55 (1))
 - **Author:** Iheb Zemzemi
