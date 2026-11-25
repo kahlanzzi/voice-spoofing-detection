@@ -22,6 +22,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
   identical, and the old/new recipes, reports and row-level comparison are retained (Entry 205).
 
 ### Added
+- Draft Stage 13 brief explaining claim-before-scoring order, frozen inputs, reporting conventions and outstanding execution gates; no external run performed.
 - D67 and D68 proposed (Entry 219; D67 amends D65, D68 amends D47): VoiceCheck Enterprise as the D55 design (ADR 0018), and analyst identity, roles and member management (ADR 0019); docs only.
 - A standalone VoiceCheck Enterprise UI candidate and comparison with the approved D65 direction,
   for Iheb and team review; no application or API behavior changes (Entry 218).

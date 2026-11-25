@@ -8668,7 +8668,35 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 221 — Stage 13 preparation brief (2026-11-25)
+
+- **Owner:** Khalil Dridi.
+- **Change [doc]:** Added `docs/stages/stage13-external-run.md` as a draft and linked it in the
+  stage index. Explains D35 claim-before-audio/scoring order, D48 model-set/cutoff, D33/D34 reports,
+  D58 runtime evidence and the D52 val-B preparation. Stage 13 remains open; this is not run approval.
+- **Sources [verified]:** Compared the brief against `external_run.py`, ADRs 0007/0012, F4 record
+  and Execution Plan v3.0 at base `48aeeb1`. The architecture-aware F5 loader is already supplied
+  by PR #138; actual frozen F5 evidence and its run-session verification remain separate gates.
+- **Checks [verified]:** Python 3.13.16: focused runner/governance tests `31 passed, 2 skipped in
+  3.13s`. The skipped tests require Torch. Full suite: `25 skipped, 5 errors in 3.01s`, stopped
+  during collection because `psycopg` and `torch` are absent. An initial governance invocation
+  failed Git ownership validation; rerun passed with a process-scoped safe-directory entry for
+  this exact checkout. No test code or guards were changed.
+- **Safety:** Documentation only; no external audio, scoring, official claim or Drive mutation.
+- **Remaining:** dependency-complete tests, human review, real-run readiness evidence and eventual
+  results/claim/teach-back additions. This branch is not cleared for push or stage closure.
+- **Numbering:** 220 is already used on `docs/decisions-d67-d68-approval`; 221 is provisional and
+  must be checked again before merge. Earlier entries are preserved.
+- **AI assistance:** Codex checked sources, corrected the draft's claim order and evidence wording,
+  prepared documentation and ran the checks above. Human acceptance remains pending.
+
+---
+
 ## Open items
+
+**Stage 13 draft brief (Entry 221)**
+- [ ] Review `docs/stages/stage13-external-run.md`; complete dependency-inclusive tests before push.
+- [ ] Add real-run evidence and D32 teach-back before accepting the brief and closing Stage 13.
 
 **D67/D68 (Entry 219)**
 - [ ] Approval by Iheb, Malak, Khalil, then the approval commit.
@@ -9161,7 +9189,12 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-25 (Entries 203-219)
+## Current status — updated 2026-11-25 (Entries 203-219, 221)
+
+**Stage 13 preparation brief (Entry 221):** draft now available in `docs/stages/`; the stage remains
+open. Focused runner/governance tests pass with two Torch skips. Full local collection is blocked
+by missing Torch and psycopg; no official run or claim was performed. Review and the real-run gates
+remain pending.
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -9221,7 +9254,8 @@ the required checks, e2e and web checks green. The optional Torch guard merged i
 a fresh-runtime read-back (Entry 198). The approved Drive target still needs its own check.
 Before the single Stage 13 run, verify the applicable D48 model set (F5 verified by the cutoff,
 or v1 plus baseline after it) and recheck D58 in the run session. Complete any follow-up loader
-integration and all-four review before the run. The Stage 13 brief follows the run.
+integration and all-four review before the run. A draft Stage 13 brief is prepared in Entry 221;
+its results and acceptance evidence follow the run.
 No DEEP-VOICE audio was opened or scored, and no external-run claim was created during preparation.
 
 **Application status.** The default React Docker stack still displays mock analyzer results; the mock
