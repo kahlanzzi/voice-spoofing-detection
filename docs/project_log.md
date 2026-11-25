@@ -8690,7 +8690,33 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-### Entry 221 — Stage 13 preparation brief (2026-11-25)
+### Entry 221 — Execution Plan v3.0 status update (2026-11-25)
+
+- **Owner:** Donia Mabrouk. Branch `docs/stage19-plan-status-w4` from `main` `28bd91b`.
+- **Scope (docs only):** `docs/reference/Execution_Plan_v3.0.md` (Markdown only; the PDF is not regenerated,
+  as in PR #161): header, "Where we are today", the contents line of §14, §§6, 7, 9–14 and Appendix A
+  (D56–D68); Open items, Current status and this entry. Appendices B and C are left unchanged.
+- **Sources:** merges #161–#168, Entries 212–220 and the D55–D68 rows [verified on `main`]; rehearsal, search
+  sessions and estimates, with 29.5 h, 23.0 h and 95 h [stated by Donia; Drive and notebook output reviewed
+  with Claude]; Iheb's order and dates [stated by Iheb, 25 Nov]; P4 owner Iheb → Donia [agreed 25 Nov];
+  D67/D68 work split (Entry 219; owners, 25 Nov); v2 Stage 11 closure [agreed by Iheb, Khalil and Malak].
+- **Corrections to Entry 219 (not edited):** the P4 and production dates are corrected here against SDD v2.0
+  §7.4 and NFR-15 (D53 (3) is not amended): the load test needs live sessions, so P4 is split into part 1
+  (uploads, Mon 7 – Tue 8 Dec, measurements only) and part 2 (live sessions, after L1 is on staging, date set
+  then), with one decision after part 2 and before production acceptance. If F5 is not on staging by Mon 7
+  Dec, part 1 runs on F4 and its upload measurements are repeated on F5 in part 2. If F5 misses Fri 4
+  Dec, F4 stays deployed (D48 (4)) and both parts run on F4. Production is Sun 13 Dec if L1, the F5 swap and
+  the P4 decision are done, otherwise right after them.
+- **Estimate:** the 16.5–21-day D55 build total (owners) excludes the L1 contract review.
+- **Stage 14:** dates follow Entry 216.
+- **AI assistance:** Claude drafted the facts; Claude Code checked them against the repo, reported the P4 and
+  production contradictions before editing and made the edits from Donia's decisions; Donia reviewed the
+  diff.
+- **Gate:** **WAITING FOR REVIEW** (a reviewer merges: Khalil, as PR #161).
+
+---
+
+### Entry 222 — Stage 13 preparation brief (2026-11-25)
 
 - **Owner:** Khalil Dridi.
 - **Change [doc]:** Added `docs/stages/stage13-external-run.md` as a draft and linked it in the
@@ -8727,10 +8753,11 @@ pointers and synchronized PDF are reviewed.
   scorer's report/finalization order. Repeated focused runner/governance/v2-loader tests after
   integration: `55 passed in 14.75s`. All brief links resolve, whitespace checks pass, and earlier
   log entries match main after newline normalization. Added the loader handover test command to
-  the brief. Docker named-pipe access still returns permission denied; Linux checks remain blocked.
+  the brief. Agent Docker access remained blocked; the user subsequently ran Linux/PostgreSQL verification:
+  2,710 passed, one skipped, six warnings (456.94s), including the uncommitted D52 helper tests.
 - **Remaining:** dependency-complete tests, human review, real-run readiness evidence and eventual
   results/claim/teach-back additions. This branch is not cleared for push or stage closure.
-- **Numbering:** 220 is already used on `docs/decisions-d67-d68-approval`; 221 is provisional and
+- **Numbering:** 220 is already used on `docs/decisions-d67-d68-approval`; 222 is provisional and
   must be checked again before merge. Earlier entries are preserved.
 - **AI assistance:** Codex checked sources, corrected the draft's claim order and evidence wording,
   prepared documentation and ran the checks above. Human acceptance remains pending.
@@ -8739,14 +8766,14 @@ pointers and synchronized PDF are reviewed.
 
 ## Open items
 
-**Stage 13 draft brief (Entry 221)**
-- [ ] Review `docs/stages/stage13-external-run.md`; complete dependency-inclusive tests before push.
+**Stage 13 draft brief (Entry 222)**
+- [ ] Review `docs/stages/stage13-external-run.md`; Linux dependency-inclusive tests passed; check the final branch before push.
 - [ ] Add real-run evidence and D32 teach-back before accepting the brief and closing Stage 13.
 
 **D67/D68 (Entry 219)**
 - [x] Approval by Iheb, Malak, Khalil, then the approval commit. (approved in person 25 Nov; recorded after
   merge in Entry 220)
-- [ ] Execution Plan status update PR (docs/stage19-plan-status-w4), reviewer merges.
+- [ ] Execution Plan status update PR (docs/stage19-plan-status-w4), reviewer merges. (PR open, Entry 221)
 - [ ] Prototype corrections D67 (1)–(7) and docs/design/HANDOFF-v3.md (Malak).
 - [ ] D68 implementation PR with the §4.8 contract and threat model §10.1 update (Iheb; cut line Fri 18 Dec).
 
@@ -9239,12 +9266,10 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-25 (Entries 203-221)
+## Current status — updated 2026-11-25 (Entries 203-222)
 
-**Stage 13 preparation brief (Entry 221):** draft now available in `docs/stages/`; the stage remains
-open. Runner/governance/v2-loader tests pass with Torch enabled (55 passed). Linux verification
-remains blocked by Docker pipe permissions; Windows has an existing Unix executable-bit test
-failure. No official run or claim was performed. Review and the real-run gates remain pending.
+**Stage 13 preparation brief (Entry 222):** draft now available in `docs/stages/`; the stage remains
+open. Runner/governance/v2-loader tests pass with Torch enabled (55 passed). Linux/PostgreSQL verification passed: 2,710 passed, one skipped, six warnings; Windows has an existing Unix executable-bit test failure. No official run or claim was performed. Review and the real-run gates remain pending.
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -9304,7 +9329,7 @@ the required checks, e2e and web checks green. The optional Torch guard merged i
 a fresh-runtime read-back (Entry 198). The approved Drive target still needs its own check.
 Before the single Stage 13 run, verify the applicable D48 model set (F5 verified by the cutoff,
 or v1 plus baseline after it) and recheck D58 in the run session. Complete any follow-up loader
-integration and all-four review before the run. A draft Stage 13 brief is prepared in Entry 221;
+integration and all-four review before the run. A draft Stage 13 brief is prepared in Entry 222;
 its results and acceptance evidence follow the run.
 No DEEP-VOICE audio was opened or scored, and no external-run claim was created during preparation.
 
@@ -9317,6 +9342,7 @@ D67 corrections, the D55 target design in place of Direction D; HANDOFF-v3 is ne
 Entry 220) adds email sign-in, server-side roles and member management; until its implementation is merged
 and running on staging (cut line Fri 18 Dec), D47 username sign-in stays in force. The shipped UI is
 unchanged until the D55 build PRs.
+The Execution Plan v3.0 status was updated on 25 Nov (Entry 221, waiting for review).
 P2a (Entry 207; merged, PR #155) moved the store to
 PostgreSQL behind the same repositories (D53 (4)): `db` service pinned by digest, the API as the
 non-superuser `vsd_app`, a one-time import of the old SQLite store, the API tests on PostgreSQL locally
