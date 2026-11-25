@@ -3,14 +3,16 @@ The analyzers are fakes; the real one's info().mock is tested in test_api_bundle
 from __future__ import annotations
 
 import functools
+import re
 import sys
 
 import pytest
 from fastapi.testclient import TestClient
 
+from api.config import REPO_ROOT
 from api.main import create_app
 from api.pool import NEEDS_SELECTOR_LOOP
-from api.repository import AnalysisRecord, MixedStoreError
+from api.repository import REAL_STACK_SECTION, AnalysisRecord, MixedStoreError
 from tests.api._analyzers import FakeAnalyzer
 from tests.api.conftest import HTTPS, audio_bytes, signed_in_client
 
@@ -65,3 +67,9 @@ def test_one_row_of_the_other_kind_among_many_refuses_to_start(config):
     with pytest.raises(MixedStoreError):
         with TestClient(app_for(config, False), base_url=HTTPS):
             pass
+
+
+def test_the_section_named_in_the_message_is_a_heading_of_setup_md():
+    text = (REPO_ROOT / "docs" / "setup.md").read_text(encoding="utf-8")
+    headings = re.findall(r"^#{2,} (.+?)\s*$", text, flags=re.MULTILINE)
+    assert headings.count(REAL_STACK_SECTION) == 1
