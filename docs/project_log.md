@@ -8704,6 +8704,24 @@ pointers and synchronized PDF are reviewed.
   during collection because `psycopg` and `torch` are absent. An initial governance invocation
   failed Git ownership validation; rerun passed with a process-scoped safe-directory entry for
   this exact checkout. No test code or guards were changed.
+- **Follow-up checks [verified]:** Installed CPU Torch 2.11.0, psycopg 3.3.9/pool 3.3.3 and
+  safetensors 0.8.0 into separate local test dependency folders outside the repository. With
+  `REQUIRE_TORCH_TESTS=1`, runner/governance/v2-loader tests: `55 passed in 8.62s`. All brief links
+  resolve; whitespace and conflict-marker checks pass. The deployment executable-bit test fails
+  on Windows; Git records the unchanged script as `100755`. Docker started after user assistance,
+  but the agent cannot access its named pipe (permission denied; permission-path request unsupported).
+- **Integration [verified]:** Incorporated `origin/main` `28bd91b` (PR #168); preserved Entry 220
+  and verified the full earlier log-entry prefix matches that main byte-for-byte after newline
+  normalization. Only the four intended documentation files differ from that base.
+- **Broad rerun [verified]:** `15 failed, 2264 passed, 405 skipped, 6 errors in 425.65s (0:07:05)`;
+  370 database tests skipped without PostgreSQL. Failures/errors report missing W&B dependency
+  and the existing Windows executable-bit assertion. This is not a passing full-suite result.
+- **Dependency follow-up [verified]:** Added pinned W&B 0.31.0 in a separate local dependency
+  folder, then reran pytest's last-failed selection: `1 failed, 207 passed, 403 skipped in 46.16s`.
+  The W&B-related failures/errors are resolved; the remaining failure is
+  `tests/deploy/test_deploy_compose.py::test_init_script_creates_a_non_superuser_app_role_from_its_own_variable`
+  (Windows `stat().st_mode` executable-bit check, script unchanged from main). The run still skips
+  370 PostgreSQL tests. Linux/database validation remains required; no full green result is claimed.
 - **Safety:** Documentation only; no external audio, scoring, official claim or Drive mutation.
 - **Remaining:** dependency-complete tests, human review, real-run readiness evidence and eventual
   results/claim/teach-back additions. This branch is not cleared for push or stage closure.
@@ -9219,9 +9237,9 @@ pointers and synchronized PDF are reviewed.
 ## Current status — updated 2026-11-25 (Entries 203-221)
 
 **Stage 13 preparation brief (Entry 221):** draft now available in `docs/stages/`; the stage remains
-open. Focused runner/governance tests pass with two Torch skips. Full local collection is blocked
-by missing Torch and psycopg; no official run or claim was performed. Review and the real-run gates
-remain pending.
+open. Runner/governance/v2-loader tests pass with Torch enabled (55 passed). Linux verification
+remains blocked by Docker pipe permissions; Windows has an existing Unix executable-bit test
+failure. No official run or claim was performed. Review and the real-run gates remain pending.
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
