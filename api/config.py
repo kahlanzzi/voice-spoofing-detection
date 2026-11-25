@@ -31,6 +31,9 @@ TYPES = {
     "note_max_chars": int,
     "stats_time_zone": str,
     "notice_text": str,
+    "analyzer": str,
+    "bundle_dir": str,
+    "bundle_manifest_sha256": str,
     "mock_deferral_on_fit": float,
     "temp_dir": (str, type(None)),
     "database_host": str,
@@ -52,6 +55,8 @@ POSITIVE = ("max_size_bytes", "max_duration_s", "analysis_timeout_s", "analysis_
             "session_idle_minutes", "session_absolute_hours", "lockout_threshold", "lockout_minutes",
             "password_min_chars", "password_max_chars", "database_port", "database_pool_max",
             "database_timeout_s")
+ANALYZERS = ("mock", "bundle")
+SHA256 = re.compile(r"[0-9a-f]{64}")
 # PostgreSQL identifiers in the config (database and role names): plain lower-case names only.
 DB_IDENTIFIER = re.compile(r"[a-z_][a-z0-9_]{0,62}")
 # An Origin header value: scheme://host[:port], no path, no trailing slash (§4.8 CSRF).
@@ -72,6 +77,9 @@ class ApiConfig:
     note_max_chars: int
     stats_time_zone: str
     notice_text: str
+    analyzer: str
+    bundle_dir: str
+    bundle_manifest_sha256: str
     mock_deferral_on_fit: float
     temp_dir: str | None
     database_host: str
@@ -126,6 +134,13 @@ def load_api_config(path=None) -> ApiConfig:
     if cfg["analysis_retry_after_s"] > cfg["analysis_timeout_s"]:
         # The analysis deadline is the longest an analysis holds a worker (D53 (2)).
         raise ValueError(f"{path}: analysis_retry_after_s must not exceed analysis_timeout_s")
+    if cfg["analyzer"] not in ANALYZERS:
+        raise ValueError(f"{path}: analyzer must be one of {ANALYZERS}, got {cfg['analyzer']!r}")
+    if not cfg["bundle_dir"].startswith("/"):  # a mount point in the container, never a folder of the repo
+        raise ValueError(f"{path}: bundle_dir must be an absolute path, got {cfg['bundle_dir']!r}")
+    if not SHA256.fullmatch(cfg["bundle_manifest_sha256"]):
+        raise ValueError(f"{path}: bundle_manifest_sha256 must be 64 lower-case hex characters, "
+                         f"got {cfg['bundle_manifest_sha256']!r}")
     if not 0.0 <= cfg["mock_deferral_on_fit"] <= 1.0:
         raise ValueError(f"{path}: mock_deferral_on_fit must be in [0, 1], got {cfg['mock_deferral_on_fit']!r}")
     if not cfg["notice_text"].strip():

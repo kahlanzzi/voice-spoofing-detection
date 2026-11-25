@@ -10,8 +10,10 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from api.analyzer import MockAnalyzer
 from api.auth import HMAC_KEY_ENV
-from api.main import create_app
+from api.bundle_analyzer import BundleAnalyzer
+from api.main import analyzer_factory_for, create_app
 from api.pool import NEEDS_SELECTOR_LOOP, PoolStartError
 from tests.api._analyzers import ScriptedAnalyzer, started
 from tests.api.conftest import audio_bytes, signed_in_client
@@ -64,6 +66,22 @@ def test_the_api_refuses_to_start_without_a_valid_signin_key(config, monkeypatch
 def test_middleware_order_is_request_id_session_content_length_body_limit(config):
     names = [m.cls.__name__ for m in create_app(config).user_middleware]
     assert names == ["RequestIdMiddleware", "SessionGuard", "ContentLengthGuard", "RequestBodyLimitMiddleware"]
+
+
+# --- analyzer selection ---------------------------------------------------------------------------
+
+@pytest.mark.own_pool
+def test_the_config_selects_the_analyzer(config):
+    mock = create_app(config).state.pool.factory
+    assert (mock.func, mock.args, mock.keywords) == (MockAnalyzer, (config.mock_deferral_on_fit,), {})
+    bundle = create_app(dataclasses.replace(config, analyzer="bundle")).state.pool.factory
+    assert (bundle.func, bundle.keywords) == (BundleAnalyzer, {})
+    assert bundle.args == (config.bundle_dir, config.bundle_manifest_sha256)
+
+
+def test_an_unknown_analyzer_is_never_the_mock(config):
+    with pytest.raises(ValueError, match="unknown analyzer"):
+        analyzer_factory_for(dataclasses.replace(config, analyzer="other"))
 
 
 # --- analysis pool lifecycle (D53 (2)) ------------------------------------------------------------

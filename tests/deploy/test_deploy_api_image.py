@@ -1,7 +1,8 @@
 """deploy/api.Dockerfile, requirements-api.txt and .dockerignore (Stage 17 Step 8a).
 
 Text checks only, so CI needs no Docker: a pinned base image, a non-root user, the API's dependencies only
-(each pinned as in requirements.txt), no client IP in uvicorn's logs, a health check on GET /api/health, and a
+(each pinned as in requirements.txt or requirements-cnn.txt, torch by the CI command), the scoring modules of src/
+and nothing else of it, no client IP in uvicorn's logs, a health check on GET /api/health, and a
 build context that never holds .env, the store, the venv, data or audio.
 """
 from __future__ import annotations
@@ -11,14 +12,23 @@ import re
 import sys
 from pathlib import Path
 
+import yaml
+
+from api.config import load_api_config
+
 REPO = Path(__file__).resolve().parents[2]
 DOCKERFILE = (REPO / "deploy" / "api.Dockerfile").read_text(encoding="utf-8")
 IGNORE = [line.strip() for line in (REPO / ".dockerignore").read_text(encoding="utf-8").splitlines()
           if line.strip() and not line.startswith("#")]
 # Import name -> the requirements-api.txt package that provides it (pydantic comes with fastapi).
 PROVIDER = {"argon2": "argon2-cffi", "yaml": "pyyaml", "pydantic": "fastapi", "psycopg_pool": "psycopg-pool"}
-FORBIDDEN = {"torch", "librosa", "scikit-learn", "pandas", "kaggle", "huggingface-hub", "pytest", "httpx",
-             "wandb", "safetensors", "python-dotenv"}
+# torch stays forbidden in requirements-api.txt: PyPI serves the CUDA build (it has its own RUN line, below).
+FORBIDDEN = {"torch", "pandas", "kaggle", "huggingface-hub", "pytest", "httpx", "wandb", "python-dotenv"}
+TORCH_COMMAND = "pip install torch==2.11.0 --index-url https://download.pytorch.org/whl/cpu"
+# The scoring path's modules (Donia, 23 Nov), and nothing else of src/.
+SRC = {"src/__init__.py", "src/bundle/", "src/models/", "src/preprocessing/", "src/risk/",
+       "src/training/__init__.py", "src/training/normalization.py"}
+API_FILES = {"requirements-api.txt", "api/", "configs/api.yaml", "configs/api.bundle.yaml", "configs/api_logging.yaml"}
 
 
 def pins(path: Path) -> dict[str, str]:
@@ -51,9 +61,28 @@ def test_runs_as_non_root_user():
     assert users and users[-1] not in ("root", "0")
 
 
-def test_copies_only_api_code_and_its_configs():
+def test_image_copies_exactly_the_approved_modules():
     copied = {part for line in instructions("COPY") for part in line.split()[:-1]}
-    assert copied == {"requirements-api.txt", "api/", "configs/api.yaml", "configs/api_logging.yaml"}
+    assert copied == API_FILES | SRC
+    for line in instructions("COPY"):  # each src/ part lands at its own path
+        *sources, target = line.split()
+        for source in sources:
+            if source.startswith("src/"):
+                assert target == (source if source.endswith("/") else source.rsplit("/", 1)[0] + "/"), line
+
+
+def test_torch_command_is_the_ci_command():
+    workflow = yaml.safe_load((REPO / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
+    ci = [line.strip() for step in workflow["jobs"]["checks"]["steps"] for line in step.get("run", "").splitlines()
+          if re.search(r"\btorch\b", line)]
+    image = [line for line in instructions("RUN") if re.search(r"\btorch\b", line)]
+    assert ci == image == [TORCH_COMMAND]
+
+
+def test_native_libraries_get_one_thread():
+    env = " ".join(instructions("ENV"))
+    for name in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS"):
+        assert re.search(rf"\b{name}=1\b", env), name
 
 
 def test_uvicorn_logs_no_client_ip_and_uses_the_log_config():
@@ -68,26 +97,36 @@ def test_healthcheck_calls_api_health():
     assert "curl" not in check and "wget" not in check
 
 
+def test_start_period_covers_the_worker_start_timeout():
+    (check,) = instructions("HEALTHCHECK")
+    (seconds,) = re.findall(r"--start-period=(\d+)s\b", check)
+    assert int(seconds) == load_api_config().analysis_worker_start_timeout_s + 30
+
+
 def test_api_requirements_pin_exactly_as_requirements_txt():
-    api, main = pins(REPO / "requirements-api.txt"), pins(REPO / "requirements.txt")
+    """Each pin equals its owner's: requirements.txt, else requirements-cnn.txt; a package in both must agree."""
+    api = pins(REPO / "requirements-api.txt")
+    main, cnn = pins(REPO / "requirements.txt"), pins(REPO / "requirements-cnn.txt")
     assert api, "requirements-api.txt is empty"
     for name, version in api.items():
-        assert main.get(name) == version, f"{name}=={version} differs from requirements.txt ({main.get(name)})"
+        owners = [owner[name] for owner in (main, cnn) if name in owner]
+        assert owners, f"{name} is pinned in neither requirements.txt nor requirements-cnn.txt"
+        assert set(owners) == {version}, f"{name}=={version} differs from the owner's pin {owners}"
 
 
-def test_api_requirements_hold_no_model_dataset_or_test_package():
+def test_api_requirements_hold_no_torch_dataset_or_test_package():
     assert not FORBIDDEN & set(pins(REPO / "requirements-api.txt"))
 
 
 def test_api_requirements_cover_every_third_party_import_in_api():
-    api = set(pins(REPO / "requirements-api.txt"))
+    api = set(pins(REPO / "requirements-api.txt")) | {"torch"}  # torch: its own RUN line
     for path in (REPO / "api").rglob("*.py"):
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
             names = ([a.name for a in node.names] if isinstance(node, ast.Import)
                      else [node.module] if isinstance(node, ast.ImportFrom) and node.level == 0 else [])
             for name in names:
                 top = name.split(".")[0]
-                if top in sys.stdlib_module_names or top in ("api", "__future__"):
+                if top in sys.stdlib_module_names or top in ("api", "src", "__future__"):
                     continue
                 assert PROVIDER.get(top, top).lower() in api, f"{path.name} imports {top}, not in requirements-api.txt"
 
@@ -95,6 +134,6 @@ def test_api_requirements_cover_every_third_party_import_in_api():
 def test_dockerignore_is_an_allowlist_without_secrets_store_or_data():
     assert IGNORE[0] == "*"
     allowed = {line[1:] for line in IGNORE if line.startswith("!")}
-    assert allowed == {"api/", "configs/api.yaml", "configs/api_logging.yaml", "requirements-api.txt"}
+    assert allowed == API_FILES | SRC
     for excluded in (".env", "var/", ".venv/", "data/", "**/*.wav", "**/*.flac", "**/*.mp3"):
         assert excluded in IGNORE

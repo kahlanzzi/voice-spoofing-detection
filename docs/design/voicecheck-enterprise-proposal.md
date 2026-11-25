@@ -26,7 +26,7 @@ so the appearance may differ without an internet connection.
 The current [API design](../api_design.md), D51/D52 live decisions, D55/D63 application contract,
 and D65 UI decision control the implementation. The candidate is a way to discuss a possible new
 visual and workflow direction with Iheb, not permission to replace them. Iheb should identify
-backend implications and sequencing alongside his active Stage 17 P1 integration PR before the
+backend implications and sequencing after his merged Stage 17 P1 integration PR before the
 team decides whether to amend D65. If the team adopts it, make a new reviewed handoff and tests;
 preserve the existing hashed Direction D prototype as history.
 

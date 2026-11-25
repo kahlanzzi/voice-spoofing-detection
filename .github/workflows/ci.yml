@@ -125,6 +125,10 @@ jobs:
       - name: Start the stack
         run: docker compose up -d --build --wait --wait-timeout 240
 
+      # The scoring modules, none of the research code, and one analysis, inside the running container (P1).
+      - name: Image check (inside the api container)
+        run: docker compose exec -T -e VSD_CHECK_PROFILE="$(cat configs/preprocessing.yaml)" api python - < deploy/image_check.py
+
       # Not cached: --with-deps installs OS packages, and restoring the browser takes about as long as downloading it.
       - name: Install Chromium
         working-directory: web
