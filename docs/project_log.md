@@ -8594,7 +8594,38 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 218 — VoiceCheck Enterprise UI candidate for Iheb review (2026-11-25)
+
+- **Owner:** Malak Ben Salem; Iheb Zemzemi leads the backend and D55 implementation. Entry 217
+  belongs to Iheb's merged Stage 17 P1 PR #165, so this proposal takes the next number.
+- **Scope [verified]:** copied Malak's standalone `VoiceCheck_Enterprise.html` byte for byte as
+  `docs/design/voicecheck-enterprise-proposal.html` (SHA-256
+  `390f35c885cf6d84d80fc663d7fb8dfe8a95c689760e9b09a28a6fd8fd5dacd6`). Added a
+  comparison page and a link from the design index. No React, API, model or policy code changed.
+- **Review issues [verified against D52/D55/D63/D65]:** the candidate uses a median for live scores
+  and excludes three warm-up windows from scoring, while D52 requires the mean of all kept windows;
+  its score scale omits the prominent 0.633 cut, and its Inter typography differs from D65. Its new
+  Overview, review and admin screens need separately defined backend and privacy behavior. The
+  current Direction D prototype and HANDOFF-v2 remain authoritative pending a team decision.
+- **Checks [verified]:** the copied HTML hash matched the supplied file and its inline script
+  passed `node --check`; the D20 governance test passed (`4 passed in 1.12s`), `git diff --check`
+  passed, and a static scan found no browser network, audio capture or storage API calls or token
+  patterns. The full local suite stopped during collection (five errors): this Windows environment
+  lacks PyTorch and cannot load the installed psycopg binary under its application-control policy.
+  Browser interaction, accessibility, 390 px and usability tests have not been run on this candidate.
+- **AI assistance:** Codex compared the supplied prototype with the repository decisions and
+  drafted the proposal notes. Malak reviews the PR; Iheb and the team decide whether to adopt it.
+- **Gate:** **WAITING FOR IHEB AND TEAM REVIEW.** No production redesign is approved by this PR.
+
+---
+
 ## Open items
+
+**VoiceCheck Enterprise proposal (Entry 218)**
+- [ ] Iheb reviews the proposed prototype against the Stage 17 backend/API work and D55 build plan.
+- [ ] If the team wants to replace Direction D, approve a specific amendment to D65, correct the
+  D52 live demo and decision board, revise the handoff, and run the D55 accessibility and usability
+  checks before implementation is accepted.
 
 **v2 track, live analysis and infrastructure (Entry 150)**
 - [x] Approve or revise D48–D55, ADRs 0012–0015 and H8–H9 (all four) before the v1 Stage 11 claim. (PR #111, 2026-11-10)
@@ -9078,7 +9109,7 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-25 (Entries 203-217)
+## Current status — updated 2026-11-25 (Entries 203-218)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -9146,7 +9177,10 @@ verdict must not be presented as a real model result. P1 (Entry 217; PR in revie
 bundle in the process pool, on a Compose project and store of its own (`docs/setup.md` "Real model stack
 (vsd-real)"); until D63, its verdict uses the centre 2 s of the upload only.
 D65 (Entry 191, approved in Entry 193) names Direction D and `docs/design/HANDOFF-v2.md` as the D55 target design;
-the shipped UI is unchanged until the D55 build PRs. P2a (Entry 207; merged, PR #155) moved the store to
+the shipped UI is unchanged until the D55 build PRs. Malak's VoiceCheck Enterprise HTML is now a
+separate candidate for Iheb and team review (Entry 218); its differing D52/D65 behavior and new
+backend needs are listed in the proposal. It does not replace the approved direction.
+P2a (Entry 207; merged, PR #155) moved the store to
 PostgreSQL behind the same repositories (D53 (4)): `db` service pinned by digest, the API as the
 non-superuser `vsd_app`, a one-time import of the old SQLite store, the API tests on PostgreSQL locally
 and in CI. Every `.env` needs `VSD_DB_PASSWORD` and `VSD_DB_APP_PASSWORD`. P2b (Entry 214; merged,

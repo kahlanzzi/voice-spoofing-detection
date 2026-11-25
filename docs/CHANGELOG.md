@@ -22,6 +22,8 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
   identical, and the old/new recipes, reports and row-level comparison are retained (Entry 205).
 
 ### Added
+- A standalone VoiceCheck Enterprise UI candidate and comparison with the approved D65 direction,
+  for Iheb and team review; no application or API behavior changes (Entry 218).
 - The API can serve the frozen F4 bundle (D48 (1), D59, D60): manifest pin checked in every worker at start, CPU torch in the image, read-only mount; mock stays the default and a store never mixes mock and real rows (Track P, PR P1, Entry 217).
 - Analyses run in a bounded pool of K spawned worker processes (D53 (2)): a full pool answers `503 analysis_unavailable` with `Retry-After`, a timed-out analysis is killed and its worker replaced, and the api tmpfs follows K (`x-vsd-concurrent-uploads` removed; K and Retry-After are mock, not measured values until the P4 load test; the start timeout is a mock value until P1) (Track P, PR P2b, Entry 214).
 - Official Track V V1c build evidence: the D64-pinned five-condition selection set S and the
