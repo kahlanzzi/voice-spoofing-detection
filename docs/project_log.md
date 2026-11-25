@@ -8619,10 +8619,62 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 219 — D67/D68 proposed: VoiceCheck Enterprise direction, identity and roles (2026-11-25)
+
+- **Owner:** Donia Mabrouk (team lead). Branch `docs/decisions-d67-d68-enterprise` from `main` `78fd23e`.
+- **Scope (docs only):** register rows D67 and D68 (Proposed) with markers on D65 and D47, ADRs 0018 and
+  0019 and their index rows, the Status lines of ADRs 0017 and 0011, CHANGELOG, Open items, Current status
+  and this entry. D66 is reserved for F5 and has no row here.
+- **PR #166 (Entry 218):** reviewed and merged by Iheb as `78fd23e`. D67 proposes adopting its prototype with
+  the corrections listed in D67 (1)–(7). Entry 218 is not edited.
+- **Rows check:** checked against the repo by Claude Code before the proposal; four contradictions
+  corrected in the draft (D54 (8) on staging, pre-D63 zone-edge table, lockout per identifier, unlock
+  endpoint) and the D67 (4) citation fixed.
+- **Team answers [stated by the team, 25 Nov]:**
+  - fonts: Public Sans + IBM Plex Mono;
+  - scale: nonlinear, labelled;
+  - role matrix: ok, with Iheb's four additions included in D68 (3), (4);
+  - migration: an Administrator enters real emails (in production; staging keeps test addresses, D68 (6));
+  - no extra usability task;
+  - cut line: Fri 18 Dec, defined as merged and running on staging.
+- **Khalil's dates [confirmed by Khalil, 25 Nov]:** filter + L1 contract review by Tue 1 Dec; Analyse, Result,
+  History, Live check by Thu 10 Dec.
+- **Work split (owners confirmed 25 Nov; working days):**
+
+  | Piece | Owner | Depends on | Estimate |
+  |---|---|---|---|
+  | Prototype corrections (D67 (1)–(7)) | Malak | D67 approved | 1 |
+  | `HANDOFF-v3.md` (Phase 1 parts first: Analyse, Result, History, Live) | Malak | corrections | 2 |
+  | B1 + shell (tokens, self-hosted font, light/dark, navigation, breakpoints, CSS in stylesheet files: CSP forbids inline styles) | Malak | HANDOFF-v3 | 2–3 |
+  | Analyse 1, Result 1 (window grid after D63, Wed 2 Dec), History 1 | Khalil | B1 + shell; HANDOFF-v3 Phase 1 parts | 3, by Thu 10 Dec |
+  | Note filter on `GET /analyses`: `note=missing` (Pending) and `note=present` (Reviewed) (+ tests, §4.4) | Khalil | D67 approved | 0.5, by Tue 1 Dec |
+  | Live check screen | Khalil | L1 contract (SDD v2.0, Sun 29) + mock, from Mon 30 | 1, by Thu 10 Dec |
+  | L1 contract review | Khalil | SDD v2.0 streaming section (Sun 29) | 1.5, by Tue 1 Dec |
+  | Flagged reviews (Phase 2) | Malak | note filter; B1 + shell | 2 |
+  | Overview (Phase 2) | Donia, from Wed 9 Dec (fallback Khalil, from Mon 14) | B1 + shell | 1.5–2 |
+  | D68 backend: email identity, roles on every route, members endpoints, audit table, migration, admin CLI, tests, §4.8 docs | Iheb | D68 approved; after L1 (from Mon 14 Dec at the earliest) | 4–6 |
+  | D68 threat-model update | Iheb | D68 backend | 0.5–1 |
+  | Sign-in 0.5, Administration (Members + System) 1.5–2 | Iheb | D68 API (after L1) | 2–2.5 |
+  | L1 `/api/live` + F5 swap (1–2 of the days: P1 refuses non-cnn bundles; parity reference `score_aasist`) | Iheb | D63; F5 | 5–8 from Thu 3 Dec |
+  | P4 load test on staging (K, Retry-After, worker start timeout, Q1 decoded-size bound recorded by decision) | Donia, from Iheb's brief (by Mon 30) | staging live; F5 | dry run Sun 6 (F4), official Mon 7 – Tue 8 (F5) |
+  | axe, 390 px, e2e per screen | each screen's author | screens | in each PR |
+  | Usability test (D55 (4)) | all four | staging + screens | W5 |
+  | Decision PR review | Iheb, Malak, Khalil | — | Thu 26 – Fri 27 |
+
+- **Approval records:** Entry 217 (PR #165): reviewed face to face by Donia on 25 Nov and approved by Malak.
+- **AI assistance:** Claude drafted the rows from the team's answers; Claude Code checked them against the
+  repo and wrote the ADRs and this entry; Donia reviewed the full diff with Claude before the commit.
+- **Gate:** **WAITING FOR APPROVAL** (Iheb, Malak, Khalil by PR review, then the approval commit).
+
+---
+
 ## Open items
 
+**D67/D68 (Entry 219)**
+- [ ] Approval by Iheb, Malak, Khalil, then the approval commit.
+
 **VoiceCheck Enterprise proposal (Entry 218)**
-- [ ] Iheb reviews the proposed prototype against the Stage 17 backend/API work and D55 build plan.
+- [x] Iheb reviews the proposed prototype against the Stage 17 backend/API work and D55 build plan. (done, #166)
 - [ ] If the team wants to replace Direction D, approve a specific amendment to D65, correct the
   D52 live demo and decision board, revise the handoff, and run the D55 accessibility and usability
   checks before implementation is accepted.
@@ -9109,7 +9161,7 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-25 (Entries 203-218)
+## Current status — updated 2026-11-25 (Entries 203-219)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -9173,13 +9225,14 @@ integration and all-four review before the run. The Stage 13 brief follows the r
 No DEEP-VOICE audio was opened or scored, and no external-run claim was created during preparation.
 
 **Application status.** The default React Docker stack still displays mock analyzer results; the mock
-verdict must not be presented as a real model result. P1 (Entry 217; PR in review) serves the frozen F4
+verdict must not be presented as a real model result. P1 (Entry 217; merged, PR #165) serves the frozen F4
 bundle in the process pool, on a Compose project and store of its own (`docs/setup.md` "Real model stack
 (vsd-real)"); until D63, its verdict uses the centre 2 s of the upload only.
 D65 (Entry 191, approved in Entry 193) names Direction D and `docs/design/HANDOFF-v2.md` as the D55 target design;
-the shipped UI is unchanged until the D55 build PRs. Malak's VoiceCheck Enterprise HTML is now a
-separate candidate for Iheb and team review (Entry 218); its differing D52/D65 behavior and new
-backend needs are listed in the proposal. It does not replace the approved direction.
+the shipped UI is unchanged until the D55 build PRs. Malak's VoiceCheck Enterprise HTML
+(Entry 218) was reviewed and merged by Iheb (PR #166). D67 proposes adopting it, with listed corrections, in
+place of Direction D; D68 proposes email sign-in, server-side roles and member management (Entry 219; ADRs
+0018 and 0019). Both are Proposed: until the approval commit, D65 and D47 remain the approved decisions.
 P2a (Entry 207; merged, PR #155) moved the store to
 PostgreSQL behind the same repositories (D53 (4)): `db` service pinned by digest, the API as the
 non-superuser `vsd_app`, a one-time import of the old SQLite store, the API tests on PostgreSQL locally
@@ -9239,4 +9292,5 @@ The D52 warm-up analysis is scheduled for W3 (23–29 November); Stages 15–16 
    then F5.
 2. Review and merge the SRS v4.1 adoption update, then coordinate D63 implementation with Iheb and
    keep Stage 13 within its gates.
-3. Do not open, score or claim DEEP-VOICE until the single-run prerequisites and team review pass.
+3. D67/D68: approval by Iheb, Malak and Khalil, then the approval commit (Entry 219).
+4. Do not open, score or claim DEEP-VOICE until the single-run prerequisites and team review pass.
