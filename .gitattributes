@@ -11,3 +11,6 @@
 
 # The run registry is hash-chained (D31): Git must never convert its line endings.
 *.jsonl -text
+
+# Preserve the submitted design candidate byte for byte for review against its SHA-256.
+docs/design/voicecheck-enterprise-proposal.html -text -eol whitespace=cr-at-eol
