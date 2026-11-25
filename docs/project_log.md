@@ -8690,12 +8690,38 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 221 — Execution Plan v3.0 status update (2026-11-25)
+
+- **Owner:** Donia Mabrouk. Branch `docs/stage19-plan-status-w4` from `main` `28bd91b`.
+- **Scope (docs only):** `docs/reference/Execution_Plan_v3.0.md` (Markdown only; the PDF is not regenerated,
+  as in PR #161): header, "Where we are today", the contents line of §14, §§6, 7, 9–14 and Appendix A
+  (D56–D68); Open items, Current status and this entry. Appendices B and C are left unchanged.
+- **Sources:** merges #161–#168, Entries 212–220 and the D55–D68 rows [verified on `main`]; rehearsal, search
+  sessions and estimates, with 29.5 h, 23.0 h and 95 h [stated by Donia; Drive and notebook output reviewed
+  with Claude]; Iheb's order and dates [stated by Iheb, 25 Nov]; P4 owner Iheb → Donia [agreed 25 Nov];
+  D67/D68 work split (Entry 219; owners, 25 Nov); v2 Stage 11 closure [agreed by Iheb, Khalil and Malak].
+- **Corrections to Entry 219 (not edited):** the P4 and production dates are corrected here against SDD v2.0
+  §7.4 and NFR-15 (D53 (3) is not amended): the load test needs live sessions, so P4 is split into part 1
+  (uploads, Mon 7 – Tue 8 Dec, measurements only) and part 2 (live sessions, after L1 is on staging, date set
+  then), with one decision after part 2 and before production acceptance. If F5 is not on staging by Mon 7
+  Dec, part 1 runs on F4 and its upload measurements are repeated on F5 in part 2. If F5 misses Fri 4
+  Dec, F4 stays deployed (D48 (4)) and both parts run on F4. Production is Sun 13 Dec if L1, the F5 swap and
+  the P4 decision are done, otherwise right after them.
+- **Estimate:** the 16.5–21-day D55 build total (owners) excludes the L1 contract review.
+- **Stage 14:** dates follow Entry 216.
+- **AI assistance:** Claude drafted the facts; Claude Code checked them against the repo, reported the P4 and
+  production contradictions before editing and made the edits from Donia's decisions; Donia reviewed the
+  diff.
+- **Gate:** **WAITING FOR REVIEW** (a reviewer merges: Khalil, as PR #161).
+
+---
+
 ## Open items
 
 **D67/D68 (Entry 219)**
 - [x] Approval by Iheb, Malak, Khalil, then the approval commit. (approved in person 25 Nov; recorded after
   merge in Entry 220)
-- [ ] Execution Plan status update PR (docs/stage19-plan-status-w4), reviewer merges.
+- [ ] Execution Plan status update PR (docs/stage19-plan-status-w4), reviewer merges. (PR open, Entry 221)
 - [ ] Prototype corrections D67 (1)–(7) and docs/design/HANDOFF-v3.md (Malak).
 - [ ] D68 implementation PR with the §4.8 contract and threat model §10.1 update (Iheb; cut line Fri 18 Dec).
 
@@ -9188,7 +9214,7 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-25 (Entries 203-220)
+## Current status — updated 2026-11-25 (Entries 203-221)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -9260,6 +9286,7 @@ D67 corrections, the D55 target design in place of Direction D; HANDOFF-v3 is ne
 Entry 220) adds email sign-in, server-side roles and member management; until its implementation is merged
 and running on staging (cut line Fri 18 Dec), D47 username sign-in stays in force. The shipped UI is
 unchanged until the D55 build PRs.
+The Execution Plan v3.0 status was updated on 25 Nov (Entry 221, waiting for review).
 P2a (Entry 207; merged, PR #155) moved the store to
 PostgreSQL behind the same repositories (D53 (4)): `db` service pinned by digest, the API as the
 non-superuser `vsd_app`, a one-time import of the old SQLite store, the API tests on PostgreSQL locally
