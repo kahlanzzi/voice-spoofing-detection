@@ -22,6 +22,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
   identical, and the old/new recipes, reports and row-level comparison are retained (Entry 205).
 
 ### Added
+- D67 and D68 proposed (Entry 219; D67 amends D65, D68 amends D47): VoiceCheck Enterprise as the D55 design (ADR 0018), and analyst identity, roles and member management (ADR 0019); docs only.
 - A standalone VoiceCheck Enterprise UI candidate and comparison with the approved D65 direction,
   for Iheb and team review; no application or API behavior changes (Entry 218).
 - The API can serve the frozen F4 bundle (D48 (1), D59, D60): manifest pin checked in every worker at start, CPU torch in the image, read-only mount; mock stays the default and a store never mixes mock and real rows (Track P, PR P1, Entry 217).
