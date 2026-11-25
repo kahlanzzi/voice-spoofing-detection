@@ -8761,6 +8761,10 @@ pointers and synchronized PDF are reviewed.
   must be checked again before merge. Earlier entries are preserved.
 - **AI assistance:** Codex checked sources, corrected the draft's claim order and evidence wording,
   prepared documentation and ran the checks above. Human acceptance remains pending.
+- **D52 preparation:** Added a pure checkpoint calculation helper with synthetic tests. It applies
+  the shared three-way rule to the mean of all kept probabilities at 3, 5 and 10 windows, explicitly
+  marking checkpoints not reached. This is not the val-B analysis: sequence construction, accuracy
+  reporting and real evidence remain to be reviewed and completed. No dataset was accessed.
 
 ---
 
