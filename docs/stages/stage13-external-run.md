@@ -130,6 +130,7 @@ From the repository root with its documented test dependencies, run synthetic ch
 
 ```bash
 python -m pytest -q tests/evaluation/test_external_run.py tests/governance/test_deepvoice_access.py
+python -m pytest -q tests/bundle/test_model_loader_v2.py
 python -m pytest -q
 git diff --check
 ```

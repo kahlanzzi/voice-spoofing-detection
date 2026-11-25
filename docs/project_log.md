@@ -8723,6 +8723,11 @@ pointers and synchronized PDF are reviewed.
   (Windows `stat().st_mode` executable-bit check, script unchanged from main). The run still skips
   370 PostgreSQL tests. Linux/database validation remains required; no full green result is claimed.
 - **Safety:** Documentation only; no external audio, scoring, official claim or Drive mutation.
+- **Resumed review [verified, 2026-11-25]:** Rechecked the brief against D48/ADR 0007 and the
+  scorer's report/finalization order. Repeated focused runner/governance/v2-loader tests after
+  integration: `55 passed in 14.75s`. All brief links resolve, whitespace checks pass, and earlier
+  log entries match main after newline normalization. Added the loader handover test command to
+  the brief. Docker named-pipe access still returns permission denied; Linux checks remain blocked.
 - **Remaining:** dependency-complete tests, human review, real-run readiness evidence and eventual
   results/claim/teach-back additions. This branch is not cleared for push or stage closure.
 - **Numbering:** 220 is already used on `docs/decisions-d67-d68-approval`; 221 is provisional and
