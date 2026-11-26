@@ -5,7 +5,12 @@ No audio is decoded, no scores are read, and no registry claim is created.
 from __future__ import annotations
 
 from dataclasses import asdict
+import argparse
+import hashlib
+import json
 from pathlib import Path
+import platform
+import re
 
 from src.evaluation.live_warmup import plan_same_label_calls
 from src.preprocessing.validation import F2_MANIFEST_SHA256, load_f2_manifest
@@ -36,3 +41,35 @@ def build_call_plan(manifest_path: Path) -> dict:
         "plans": plans,
         "clips": rows.to_dict(orient="records"),
     }
+
+
+def export_call_plan(manifest_path: Path, output: Path, *, code_commit: str) -> str:
+    """Write once; return the digest of the exact exported bytes.
+
+    The caller records the clean implementation commit. This command does not
+    assert that a supplied commit is reviewed or authorize scoring.
+    """
+    if not isinstance(code_commit, str) or not re.fullmatch(r"[0-9a-f]{40}", code_commit):
+        raise ValueError("code_commit must be a full lowercase Git SHA")
+    plan = build_call_plan(manifest_path)
+    plan["code_commit"] = code_commit
+    plan["python_version"] = platform.python_version()
+    payload = (json.dumps(plan, sort_keys=True, indent=2, allow_nan=False) + "\n").encode("utf-8")
+    with Path(output).open("xb") as stream:
+        stream.write(payload)
+    return hashlib.sha256(payload).hexdigest()
+
+
+def main(argv=None) -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--code-commit", required=True)
+    args = parser.parse_args(argv)
+    digest = export_call_plan(args.manifest, args.output, code_commit=args.code_commit)
+    print(f"call_plan_sha256: {digest}")
+    print(f"call_plan: {args.output}")
+
+
+if __name__ == "__main__":
+    main()

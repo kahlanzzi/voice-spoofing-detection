@@ -1,8 +1,10 @@
 from pathlib import Path
+import hashlib
+import json
 
 import pytest
 
-from src.evaluation.live_warmup_plan import build_call_plan
+from src.evaluation.live_warmup_plan import build_call_plan, export_call_plan, main
 from src.preprocessing.profile import PreprocessingError
 
 
@@ -33,3 +35,30 @@ def test_modified_manifest_is_rejected_before_planning(tmp_path):
     altered.write_bytes(MANIFEST.read_bytes().replace(b"val-B", b"val-A", 1))
     with pytest.raises(PreprocessingError, match="SHA-256 mismatch"):
         build_call_plan(altered)
+
+
+def test_export_digest_provenance_and_no_overwrite(tmp_path):
+    target = tmp_path / "calls.json"
+    digest = export_call_plan(MANIFEST, target, code_commit="a" * 40)
+    original = target.read_bytes()
+    assert digest == hashlib.sha256(original).hexdigest()
+    plan = json.loads(original)
+    assert plan["code_commit"] == "a" * 40
+    assert plan["python_version"]
+    with pytest.raises(FileExistsError):
+        export_call_plan(MANIFEST, target, code_commit="b" * 40)
+    assert target.read_bytes() == original
+
+
+@pytest.mark.parametrize("commit", ["main", "abc123", "A" * 40, "g" * 40, None])
+def test_export_rejects_invalid_commit_without_output(tmp_path, commit):
+    target = tmp_path / "calls.json"
+    with pytest.raises(ValueError, match="Git SHA"):
+        export_call_plan(MANIFEST, target, code_commit=commit)
+    assert not target.exists()
+
+
+def test_cli_exports_exact_digest(tmp_path, capsys):
+    target = tmp_path / "calls.json"
+    main(["--manifest", str(MANIFEST), "--output", str(target), "--code-commit", "a" * 40])
+    assert hashlib.sha256(target.read_bytes()).hexdigest() in capsys.readouterr().out
