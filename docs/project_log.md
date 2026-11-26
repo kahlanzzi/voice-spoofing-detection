@@ -8949,9 +8949,24 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 230 — D52 export Linux verification (2026-11-26)
+
+- **Owner:** Khalil Dridi.
+- **Verified, user-run:** Full Linux Docker pytest at
+  `2fe1928cb73f3c19e5c63c1176e45741577e560f` finished with **2761 passed,
+  1 skipped, 6 warnings in 444.79s (0:07:24)**; exit code **0**.
+  PostgreSQL **18.7**; required Torch/PostgreSQL checks enabled by the pinned
+  harness. The six warnings concern existing multiprocessing fork deprecations.
+- **Scope:** Completes the pending Linux check from Entry 229. Tests are synthetic;
+  no real D52 scoring or external claim occurred. Human PR review remains required.
+- **AI assistance:** Codex checked the supplied transcript against the tested SHA
+  and recorded this evidence. This follow-up changes documentation only.
+
+---
+
 ## Open items
 
-- [ ] Entry 229: verify/review report export; execute and preserve D52 evidence. Scoring integration merged in PR #176.
+- [ ] Entry 230: Linux export verification passed; obtain review, then execute and preserve D52 evidence. Scoring integration merged in PR #176.
 
 - [x] Entry 227: report helpers reviewed and merged in #175; real scoring remains open.
 
@@ -9466,9 +9481,9 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-26 (through Entry 229)
+## Current status — updated 2026-11-26 (through Entry 230)
 
-**D52 export (Entry 229):** command and synthetic checks complete; full Linux verification and real val-B execution remain pending.
+**D52 export (Entries 229–230):** full Linux verification passed (2761 passed, 1 skipped); PR review and real val-B execution remain pending.
 
 **D52 scoring integration (Entry 228):** pinned-bundle val-B scoring and provenance
 are implemented; user-run Linux verification passed (2757 passed, 1 skipped).
