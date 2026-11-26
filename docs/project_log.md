@@ -8964,9 +8964,40 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 231 — D52 val-B evidence submitted for review (2026-11-26)
+
+- **Owner:** Khalil Dridi; analysis acceptance requested from Donia.
+- **Observed run:** Clean merged PR #177 commit
+  `b9fb99027fb7c59f64b9f57a6e62f5bb3ae33cb3`; frozen F4 CNN; val-B only.
+  Export exited 0, with 1,320 planned clips in 88 constructed calls. All calls
+  reached 3/5/10 kept windows: 75/74/65 correct verdicts and 13/14/23 deferrals.
+  No opposite-class verdict occurred. Full metrics, denominators and limitations
+  are in [the evidence note](audit_evidence/d52_warmup/README.md).
+- **Preservation:** Drive folder
+  `MyDrive/voice-spoofing-detection-d52-khalil-output/20261126T223751Z/`.
+  Report SHA-256 `810d7d6f832bf68c14d8b35da043a1fed7a2c8e586e9ece51ba143ffc62c41e5`.
+  Report read-back and six-file checksum verification passed in the same runtime;
+  this is not a fresh-runtime persistence test or independent review.
+- **Runtime caveat:** CPU, Colab selector 2026.10, actual Python 3.13.18 versus
+  AGENTS.md's 3.13.15. Donia must review applicability before acceptance; no
+  runtime decision or D58 requirement is changed by this documentation.
+- **Checks:** Local D52/governance selection: **72 passed, 4 skipped in 11.97s**;
+  skipped export cases require unavailable local Torch. Diff whitespace check
+  passed. A fresh full Linux/PostgreSQL run remains pending: the agent cannot
+  access the Docker engine. Entry 230 is historical verification, not a rerun.
+- **Scope:** Descriptive validation data, not held-out performance. Keep the
+  three-window minimum and frozen policy unchanged; no external audio or claim.
+  Official Stage 13 remains gated. Independent evidence review is pending.
+- **AI assistance:** Codex ran the reviewed export in Colab, inspected visible
+  results and read-back checks, and drafted the evidence/status documentation.
+
+---
+
 ## Open items
 
-- [ ] Entry 230: Linux export verification passed; obtain review, then execute and preserve D52 evidence. Scoring integration merged in PR #176.
+- [x] Entry 230: export reviewed and merged in #177; first val-B execution and evidence preservation recorded in Entry 231.
+- [ ] Entry 231: Donia independently verifies D52 evidence/hashes and reviews the Python runtime discrepancy, denominators and limitations; confirm reviewer Drive access. Acceptance remains pending.
+- [ ] Entry 231: complete fresh Linux/PostgreSQL PR verification; agent Docker access is unavailable.
 
 - [x] Entry 227: report helpers reviewed and merged in #175; real scoring remains open.
 
@@ -9481,15 +9512,15 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-26 (through Entry 230)
+## Current status — updated 2026-11-26 (through Entry 231)
 
-**D52 export (Entries 229–230):** full Linux verification passed (2761 passed, 1 skipped); PR review and real val-B execution remain pending.
-
-**D52 scoring integration (Entry 228):** pinned-bundle val-B scoring and provenance
-are implemented; user-run Linux verification passed (2757 passed, 1 skipped).
-Human review of this integration is pending. The planning/report helpers were
-approved and merged in #173–#175. No real warm-up result has been produced.
-Actual execution, durable evidence export and analysis review remain open.
+**D52 warm-up (Entry 231):** the helpers, scoring and export merged in #173–#177.
+The first real val-B run exited 0 and its report/checksums were saved on Drive.
+Across 88 constructed calls, 3/5/10-kept-window correct verdict counts were
+75/74/65, with 13/14/23 deferrals and no unreached calls. These are descriptive
+val-B results. Donia's independent evidence review and assessment of Python
+3.13.18 versus the documented 3.13.15 remain pending; D52's rule is unchanged.
+This is not completion or approval of the official Stage 13 run.
 
 **Stage 13 preparation brief (Entry 225):** draft now available in `docs/stages/`; the stage remains
 open. Runner/governance/v2-loader tests pass with Torch enabled (55 passed). Linux/PostgreSQL verification passed: 2,710 passed, one skipped, six warnings; Windows has an existing Unix executable-bit test failure. No official run or claim was performed. Review and the real-run gates remain pending.
@@ -9619,7 +9650,7 @@ Continue Stage 13 preparation only within the gates above.
 D63 has all four decision approvals (Entry 195). One or two kept upload windows use D34’s mean, and
 zero kept upload windows return `422 no_speech` without a stored analysis. Coordinate its
 implementation and single migration with Iheb.
-The D52 warm-up analysis is scheduled for W3 (23–29 November); Stages 15–16 follow later in the plan.
+The D52 warm-up evidence is awaiting review (Entry 231); Stages 15–16 follow later in the plan.
 
 **What is next:**
 1. Track V: run notebook 08 from the merged commit (V1c builds, rehearsal, team review of the
