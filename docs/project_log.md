@@ -8993,11 +8993,31 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 232 — D52 evidence Linux verification (2026-11-27)
+
+- **Owner:** Khalil Dridi.
+- **Verified, user-run:** Full Linux Docker pytest at
+  `bd0d1ddec9f5540665f680d860e08f6f484b72ee` completed with **2761 passed,
+  1 skipped, 6 warnings in 456.34s (0:07:36)**; verification exit code **0**.
+  Database tests ran on PostgreSQL **18.7**; the harness enabled required
+  Torch/PostgreSQL tests. The six warnings concern multiprocessing fork deprecation.
+- **Evidence:** User-supplied terminal transcript identifies the exact tested SHA
+  and result folder `stage13-evidence-check/stage13-check-9ed2adcb33` outside the repo.
+  Codex checked the transcript against the branch HEAD. This resolves the pending
+  full-suite verification in Entry 231; it does not resolve the Colab Python-version
+  discrepancy or replace independent review of the real D52 evidence.
+- **Scope:** Documentation-only follow-up. No scoring, runtime-policy change or
+  official external claim. Donia's evidence review remains pending.
+- **AI assistance:** Codex inspected the supplied verification output and recorded
+  its exact result and tested commit; this was a user-run check, not agent execution.
+
+---
+
 ## Open items
 
 - [x] Entry 230: export reviewed and merged in #177; first val-B execution and evidence preservation recorded in Entry 231.
 - [ ] Entry 231: Donia independently verifies D52 evidence/hashes and reviews the Python runtime discrepancy, denominators and limitations; confirm reviewer Drive access. Acceptance remains pending.
-- [ ] Entry 231: complete fresh Linux/PostgreSQL PR verification; agent Docker access is unavailable.
+- [x] Entry 231: full Linux/PostgreSQL verification passed at the evidence commit; see Entry 232.
 
 - [x] Entry 227: report helpers reviewed and merged in #175; real scoring remains open.
 
@@ -9512,7 +9532,11 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-26 (through Entry 231)
+## Current status — updated 2026-11-27 (through Entry 232)
+
+**D52 evidence verification (Entry 232):** the user-run full Linux suite passed
+(2761 passed, 1 skipped) at `bd0d1dd`. This documentation-only follow-up records
+that result. Independent analysis review and the Colab runtime discrepancy remain open.
 
 **D52 warm-up (Entry 231):** the helpers, scoring and export merged in #173–#177.
 The first real val-B run exited 0 and its report/checksums were saved on Drive.
