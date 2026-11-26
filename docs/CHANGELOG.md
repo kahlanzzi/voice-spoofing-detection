@@ -13,6 +13,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
   every other deterministic NPZ writer keeps its existing byte format (Entry 211).
 
 ### Changed
+- Execution Plan v3.0 status updated for D69 and D70 (Markdown only; Entry 224).
 - D70 approved (PR #171, 26 Nov): staging removed (two environments, dev and production; the professor's staging
   request withdrawn in writing, 25 Nov); docs only (Entry 223).
 - D67 and D68 approved (in person, 25 Nov); approval recorded after merge of PR #167 (Entry 220); docs only.

@@ -8781,7 +8781,25 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 224 — Execution Plan v3.0 status update for D69 and D70 (2026-11-26)
+
+- **Owner:** Donia Mabrouk. Branch `docs/stage19-plan-status-d69-d70` from `main` `15cb08d`.
+- **Scope (docs only):** `docs/reference/Execution_Plan_v3.0.md` (Markdown only; the PDF is the 10 Nov
+  baseline, regenerated at the feature freeze), the Execution Plan note in `docs/reference/README.md`, Open
+  items, Current status, CHANGELOG and this entry. Appendices B and C unchanged.
+- **Sources:** the D69 and D70 rows on `main` [verified]; Vercel ruled out [stated by Iheb, 26 Nov].
+- **Timing:** Entry 222 planned the D69 plan update for the Mon 7 Dec sync; it is done now because D70
+  changes Iheb's dates from Mon 30 Nov.
+- **AI assistance:** Claude drafted the changes from the approved rows; Claude Code made the edits; Donia
+  reviews the diff.
+- **Gate:** **WAITING FOR REVIEW** (a reviewer merges: Khalil).
+
+---
+
 ## Open items
+
+**Plan (Entry 224)**
+- [ ] Execution Plan status update for D69/D70 (Entry 224), reviewer merges.
 
 **D70 (Entry 223)**
 - [x] D70 approval commit before merge (approved 26 Nov, PR #171); reviewer merges.
@@ -9358,7 +9376,7 @@ Entry 220) adds email sign-in, server-side roles and member management; until it
 and running on the production host (D70; cut line Fri 18 Dec), D47 username sign-in stays in force. D69 (approved 26 Nov, PR #170, Entry 222)
 sets the delivery scope: no extension, D68 designed but not shipped, usability test on the production host (D70) or the local
 `vsd-real` stack, feature freeze Fri 18 Dec, no P4 dry run. The shipped UI is unchanged until the D55 build PRs.
-The Execution Plan v3.0 status was updated on 25 Nov (Entry 221; merged #169, post-merge review by Khalil).
+The Execution Plan v3.0 status was updated on 25 Nov (Entry 221; #169) and on 26 Nov for D69 and D70 (Entry 224, waiting for review).
 D70 (approved 26 Nov, PR #171, Entry 223) removes staging: two environments, dev and production; P4 runs on the
 production host before production acceptance.
 P2a (Entry 207; merged, PR #155) moved the store to
