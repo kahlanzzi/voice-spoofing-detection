@@ -8931,9 +8931,42 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 229 — D52 report export command (2026-11-26)
+
+- **Owner:** Khalil Dridi.
+- **Change:** Added a val-B report export command around the reviewed scoring
+  integration from PR #176. It records runtime versions and UTC timestamps,
+  reserves a new output before scoring, writes strict JSON and prints its SHA-256.
+- **Verification:** D52 and governance tests: **268 passed, 4 skipped in 14.34s**
+  (Torch unavailable). Full local pytest: **25 skipped, 5 collection errors in
+  2.90s**, from missing psycopg/Torch. Linux/PostgreSQL verification is pending;
+  the agent cannot access the Docker engine. No full-suite pass is claimed.
+- **Limits:** No real audio scored, no external claim, no change to sampling,
+  calibration, thresholds or warm-up. Caller-supplied SHA and runtime observations
+  do not establish approval. Failed exports remain for inspection.
+- **AI assistance:** Codex implemented the command, synthetic tests and docs.
+  Human review and complete Linux verification remain required before acceptance.
+
+---
+
+### Entry 230 — D52 export Linux verification (2026-11-26)
+
+- **Owner:** Khalil Dridi.
+- **Verified, user-run:** Full Linux Docker pytest at
+  `2fe1928cb73f3c19e5c63c1176e45741577e560f` finished with **2761 passed,
+  1 skipped, 6 warnings in 444.79s (0:07:24)**; exit code **0**.
+  PostgreSQL **18.7**; required Torch/PostgreSQL checks enabled by the pinned
+  harness. The six warnings concern existing multiprocessing fork deprecations.
+- **Scope:** Completes the pending Linux check from Entry 229. Tests are synthetic;
+  no real D52 scoring or external claim occurred. Human PR review remains required.
+- **AI assistance:** Codex checked the supplied transcript against the tested SHA
+  and recorded this evidence. This follow-up changes documentation only.
+
+---
+
 ## Open items
 
-- [ ] Entry 228: review scoring integration; execute and preserve D52 evidence after review.
+- [ ] Entry 230: Linux export verification passed; obtain review, then execute and preserve D52 evidence. Scoring integration merged in PR #176.
 
 - [x] Entry 227: report helpers reviewed and merged in #175; real scoring remains open.
 
@@ -9448,7 +9481,9 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-26 (through Entry 228)
+## Current status — updated 2026-11-26 (through Entry 230)
+
+**D52 export (Entries 229–230):** full Linux verification passed (2761 passed, 1 skipped); PR review and real val-B execution remain pending.
 
 **D52 scoring integration (Entry 228):** pinned-bundle val-B scoring and provenance
 are implemented; user-run Linux verification passed (2757 passed, 1 skipped).

@@ -203,6 +203,25 @@ The code SHA is a caller assertion, not automatic proof of approval or a clean c
 required Torch/PostgreSQL tests enabled. Tests use synthetic inputs; no real D52
 result or official external-run permission follows from these checks.
 
+### Saving a D52 report
+
+From the reviewed clean checkout in the approved research runtime, run:
+
+```text
+python -m src.evaluation.live_warmup_export --plan-path <plan.json> --manifest-path data/manifests/for2sec_frozen_manifest.csv --audio-root <FoR-root> --bundle-dir <verified-bundle> --expected-plan-sha256 <plan-hash> --expected-bundle-sha256 <bundle-hash> --code-commit <full-reviewed-SHA> --output <outside-repo>/d52-report.json
+```
+
+The output parent must exist. The command reserves the output exclusively before
+scoring, serializes undefined rates as null, flushes the report and prints the
+SHA-256 of its exact bytes. Preserve the report and printed digest together.
+It records Python, platform, CPU device and numerical/inference package versions,
+plus UTC start/end times. These observations do not certify runtime approval or
+replace the requirements pins. The code SHA remains caller-supplied provenance.
+An inference failure leaves an empty reservation; a write failure may leave a
+partial file. Neither is a completed report: preserve the error and inspect it
+before any retry. This is a val-B command, not the official external runner.
+No real scoring was performed when adding this command.
+
 ### External-run limitations
 
 - No official external run or claim was made for this draft. No external performance is established.
