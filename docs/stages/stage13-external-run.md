@@ -123,8 +123,9 @@ For review, the implementation convention selected on 26 November is:
 - Use exactly the same call membership for any model comparison. Do not claim independence of
   calls merely because clips are disjoint: clips can share speakers or near-duplicate groups.
 
-This is a documented implementation proposal, not an amendment to D52 or completed evidence.
-Team review precedes its use for the reported analysis. It avoids an arbitrary call-count target
+The convention was submitted explicitly for review in PR #173, approved by Donia
+and Malak, and merged; #174 and #175 received their approvals too. This is
+implementation acceptance, not an amendment to D52 or completed analysis evidence. It avoids an arbitrary call-count target
 and repeated clips while preserving D52's fixed seed, same-label sequences and duration.
 Report reached/unreached counts and coverage/deferral alongside checkpoint accuracy; document
 the denominator and treatment of uncertain predictions. Do not tune the three-window rule.
@@ -140,8 +141,7 @@ python -m pytest -q tests/evaluation/test_live_warmup.py
 `python -m src.evaluation.live_warmup_plan` verifies the exact F2 manifest using
 the shared loader, selects only val-B, and exports same-label call membership and
 leftovers. It retains each clip's label, group and sample hash. No audio or scores
-are read. The sampling convention above still requires team acceptance before
-the reported analysis; exporting a plan does not authorize scoring.
+are read. The sampling convention above was reviewed in PR #173; exporting a plan does not authorize scoring.
 
 From a clean reviewed checkout, obtain the full SHA with `git rev-parse HEAD`, then:
 
@@ -153,8 +153,8 @@ The parent output directory must already exist. The command refuses to overwrite
 an existing file and prints its SHA-256. Preserve that file and digest before
 looking at scores. The SHA argument is caller-supplied provenance, not automatic
 proof of a clean or approved checkout. Python's version is recorded in the file.
-Actual bundle verification, D17 filtering, inference and descriptive reporting
-remain separate unfinished steps. Do not use this plan for test-split access.
+The scoring integration below performs bundle verification, D17 filtering, inference
+and descriptive reporting; actual execution and evidence acceptance remain unfinished. Do not use this plan for test-split access.
 
 ### D52 report preparation
 
@@ -176,8 +176,32 @@ EER/AUC are unavailable when fewer than two classes reach the checkpoint.
 
 These are descriptive val-B summaries, not held-out results or a claim of independent
 calls; no confidence interval is supplied by this helper. Review the reporting
-denominators before using them in evidence. Real scoring and its provenance export
-remain unfinished. Tests use synthetic probabilities only.
+denominators before using them in evidence. The scoring integration below supplies
+provenance; real execution and evidence export remain unfinished. Tests are synthetic.
+
+### D52 frozen-bundle scoring integration
+
+`src/evaluation/live_warmup_scoring.py::score_call_plan` accepts the exported plan,
+F2 manifest, audio root, bundle directory, expected plan/bundle SHA-256 values and
+caller-supplied clean reviewed code SHA. It validates the plan before audio access,
+loads the verified model and uses its in-memory profile and policy. Only planned
+val-B clips are decoded through the shared sample-hash verifier; leftovers are not read.
+Each slot must be exactly two seconds and mono. D17-rejected slots retain a null
+probability and are not inferred. Retained slots receive one raw logit and exactly
+one calibration; the report applies the frozen band to their means without recalibration.
+The existing frozen loader supports cnn, cnn-aug, crnn and aasist input dispatch.
+
+The returned dictionary contains checkpoint metrics, per-slot sample hashes, speech
+fractions, keep flags, raw logits and calibrated probabilities, plus bundle identity,
+component versions, architecture and code SHA. It creates no registry claim and writes
+no files. Use `report_json` for strict JSON export outside the repository. The caller
+is responsible for preserving output bytes, runtime/dependency evidence and their hash.
+The code SHA is a caller assertion, not automatic proof of approval or a clean checkout.
+
+[verified, user-run] Linux verification at `9dcff263581e3e8f1416451b96a6939a10451938`:
+**2757 passed, 1 skipped, 6 warnings in 454.82s (0:07:34)**, exit 0; PostgreSQL 18.7,
+required Torch/PostgreSQL tests enabled. Tests use synthetic inputs; no real D52
+result or official external-run permission follows from these checks.
 
 ### External-run limitations
 
