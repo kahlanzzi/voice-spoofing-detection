@@ -8796,6 +8796,72 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 225 — Stage 13 preparation brief (2026-11-25)
+
+- **Final Linux verification (26 November, user-run):** Commit `542e45a`, Python 3.13 container,
+  CPU Torch 2.11.0 and PostgreSQL 18.7, required Torch/PostgreSQL tests enabled:
+  `2722 passed, 1 skipped, 6 warnings in 448.06s`; exit code 0. The six warnings concern
+  multiprocessing fork in existing training tests. This supersedes the earlier full-suite blocker
+  for this preparation snapshot; it does not establish real-data performance or run authorization.
+
+- **26 November follow-up:** Reconciled merged D69/D70 and plan entries without editing their
+  history. Added a score-independent, single-label call-plan helper: sorted IDs, Python MT19937
+  seed 2026, disjoint groups of fifteen, explicit leftovers and duplicate-ID rejection. The caller
+  must verify val-B membership and labels; this helper does not establish those gates. The sampling
+  convention is documented for team review, not claimed as approved evidence. Focused tests:
+  `33 passed in 0.13s`; whitespace checks passed. Earlier full-suite results predate this addition;
+  final full-suite verification is still required. No audio read, claim or scoring occurred.
+
+- **Owner:** Khalil Dridi.
+- **Change [doc]:** Added `docs/stages/stage13-external-run.md` as a draft and linked it in the
+  stage index. Explains D35 claim-before-audio/scoring order, D48 model-set/cutoff, D33/D34 reports,
+  D58 runtime evidence and the D52 val-B preparation. Stage 13 remains open; this is not run approval.
+- **Sources [verified]:** Compared the brief against `external_run.py`, ADRs 0007/0012, F4 record
+  and Execution Plan v3.0 at base `48aeeb1`. The architecture-aware F5 loader is already supplied
+  by PR #138; actual frozen F5 evidence and its run-session verification remain separate gates.
+- **Checks [verified]:** Python 3.13.16: focused runner/governance tests `31 passed, 2 skipped in
+  3.13s`. The skipped tests require Torch. Full suite: `25 skipped, 5 errors in 3.01s`, stopped
+  during collection because `psycopg` and `torch` are absent. An initial governance invocation
+  failed Git ownership validation; rerun passed with a process-scoped safe-directory entry for
+  this exact checkout. No test code or guards were changed.
+- **Follow-up checks [verified]:** Installed CPU Torch 2.11.0, psycopg 3.3.9/pool 3.3.3 and
+  safetensors 0.8.0 into separate local test dependency folders outside the repository. With
+  `REQUIRE_TORCH_TESTS=1`, runner/governance/v2-loader tests: `55 passed in 8.62s`. All brief links
+  resolve; whitespace and conflict-marker checks pass. The deployment executable-bit test fails
+  on Windows; Git records the unchanged script as `100755`. Docker started after user assistance,
+  but the agent cannot access its named pipe (permission denied; permission-path request unsupported).
+- **Integration [verified]:** Incorporated `origin/main` `28bd91b` (PR #168); preserved Entry 220
+  and verified the full earlier log-entry prefix matches that main byte-for-byte after newline
+  normalization. Only the four intended documentation files differ from that base.
+- **Broad rerun [verified]:** `15 failed, 2264 passed, 405 skipped, 6 errors in 425.65s (0:07:05)`;
+  370 database tests skipped without PostgreSQL. Failures/errors report missing W&B dependency
+  and the existing Windows executable-bit assertion. This is not a passing full-suite result.
+- **Dependency follow-up [verified]:** Added pinned W&B 0.31.0 in a separate local dependency
+  folder, then reran pytest's last-failed selection: `1 failed, 207 passed, 403 skipped in 46.16s`.
+  The W&B-related failures/errors are resolved; the remaining failure is
+  `tests/deploy/test_deploy_compose.py::test_init_script_creates_a_non_superuser_app_role_from_its_own_variable`
+  (Windows `stat().st_mode` executable-bit check, script unchanged from main). The run still skips
+  370 PostgreSQL tests. Linux/database validation remains required; no full green result is claimed.
+- **Safety:** Documentation only; no external audio, scoring, official claim or Drive mutation.
+- **Resumed review [verified, 2026-11-25]:** Rechecked the brief against D48/ADR 0007 and the
+  scorer's report/finalization order. Repeated focused runner/governance/v2-loader tests after
+  integration: `55 passed in 14.75s`. All brief links resolve, whitespace checks pass, and earlier
+  log entries match main after newline normalization. Added the loader handover test command to
+  the brief. Agent Docker access remained blocked; the user subsequently ran Linux/PostgreSQL verification:
+  2,710 passed, one skipped, six warnings (456.94s), including the uncommitted D52 helper tests.
+- **Remaining:** dependency-complete tests, human review, real-run readiness evidence and eventual
+  results/claim/teach-back additions. This branch is not cleared for push or stage closure.
+- **Numbering:** 220 is already used on `docs/decisions-d67-d68-approval`; 225 is provisional and
+  must be checked again before merge. Earlier entries are preserved.
+- **AI assistance:** Codex checked sources, corrected the draft's claim order and evidence wording,
+  prepared documentation and ran the checks above. Human acceptance remains pending.
+- **D52 preparation:** Added a pure checkpoint calculation helper with synthetic tests. It applies
+  the shared three-way rule to the mean of all kept probabilities at 3, 5 and 10 windows, explicitly
+  marking checkpoints not reached. This is not the val-B analysis: sequence construction, accuracy
+  reporting and real evidence remain to be reviewed and completed. No dataset was accessed.
+
+---
+
 ## Open items
 
 **Plan (Entry 224)**
@@ -8804,6 +8870,10 @@ pointers and synchronized PDF are reviewed.
 **D70 (Entry 223)**
 - [x] D70 approval commit before merge (approved 26 Nov, PR #171); reviewer merges.
 - [ ] SRS v4.2 / SDD v2.x and deployment UML incorporate D70.
+
+**Stage 13 draft brief (Entry 225)**
+- [ ] Review `docs/stages/stage13-external-run.md`; Linux dependency-inclusive tests passed; check the final branch before push.
+- [ ] Add real-run evidence and D32 teach-back before accepting the brief and closing Stage 13.
 
 **D67/D68 (Entry 219)**
 - [x] Approval by Iheb, Malak, Khalil, then the approval commit. (approved in person 25 Nov; recorded after
@@ -9305,6 +9375,9 @@ pointers and synchronized PDF are reviewed.
 
 ## Current status — updated 2026-11-25 (Entries 203-222)
 
+**Stage 13 preparation brief (Entry 225):** draft now available in `docs/stages/`; the stage remains
+open. Runner/governance/v2-loader tests pass with Torch enabled (55 passed). Linux/PostgreSQL verification passed: 2,710 passed, one skipped, six warnings; Windows has an existing Unix executable-bit test failure. No official run or claim was performed. Review and the real-run gates remain pending.
+
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
 the D32 teach-back (Entry 174). Replacing the API mock with F4 remains Iheb’s P1 integration work.
@@ -9363,7 +9436,8 @@ the required checks, e2e and web checks green. The optional Torch guard merged i
 a fresh-runtime read-back (Entry 198). The approved Drive target still needs its own check.
 Before the single Stage 13 run, verify the applicable D48 model set (F5 verified by the cutoff,
 or v1 plus baseline after it) and recheck D58 in the run session. Complete any follow-up loader
-integration and all-four review before the run. The Stage 13 brief follows the run.
+integration and all-four review before the run. A draft Stage 13 brief is prepared in Entry 225;
+its results and acceptance evidence follow the run.
 No DEEP-VOICE audio was opened or scored, and no external-run claim was created during preparation.
 
 **Application status.** The default React Docker stack still displays mock analyzer results; the mock
