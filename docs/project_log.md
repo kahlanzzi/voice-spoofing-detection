@@ -8901,12 +8901,17 @@ pointers and synchronized PDF are reviewed.
 - **Gate:** Pending review. Reporting denominators are documented for review; the
   caller must verify frozen model/calibration, sample hashes and D17 provenance.
   Real scoring, evidence export and acceptance are unfinished. Stage 13 remains open.
+- **Linux verification follow-up:** Khalil ran the pinned Docker harness on
+  `1f87215e2465f7fac954063e70f76db4708eba27`: **2746 passed, 1 skipped, 6 warnings
+  in 458.35s (0:07:38)**; verification exit code **0**. Database tests ran on
+  PostgreSQL 18.7; warnings are existing multiprocessing fork deprecations.
+  The full-suite verification blocker is resolved; human review remains required.
 
 ---
 
 ## Open items
 
-- [ ] Entry 227: Linux verification and review of D52 report helpers; real scoring remains open.
+- [ ] Entry 227: review D52 report helpers; Linux verification passed, real scoring remains open.
 
 - [ ] Entry 226: review the D52 metadata-only export; Linux verification passed.
 
@@ -9422,7 +9427,7 @@ pointers and synchronized PDF are reviewed.
 ## Current status — updated 2026-11-26 (through Entry 227)
 
 **D52 report preparation (Entry 227):** report helpers and synthetic tests are
-implemented. Full Linux verification and human review are pending. No real warm-up
+implemented. Linux verification passed (2746 passed, 1 skipped); human review is pending. No real warm-up
 result has been produced; verified-bundle scoring remains to be implemented.
 
 **D52 preparation (Entry 226):** metadata-only call-plan export is implemented;
