@@ -8878,12 +8878,18 @@ pointers and synchronized PDF are reviewed.
 - **Gate:** Preparation only, pending human review and full Linux verification.
   Sampling acceptance, verified frozen-model scoring, D17 filtering and the actual
   D52 report remain outstanding. No Stage 13 official-run authorization is implied.
+- **Linux verification follow-up:** Khalil ran the pinned Docker harness on commit
+  `63415ba21fb9db2855190eae5a3943a816c3e25f`: **2731 passed, 1 skipped, 6 warnings
+  in 458.60s (0:07:38)**; verification exit code **0**. PostgreSQL tests ran on
+  PostgreSQL 18.7. The six warnings are multiprocessing `fork()` deprecations in
+  existing training tests. This resolves the full-suite verification blocker above;
+  human review and the unfinished analysis steps remain required.
 
 ---
 
 ## Open items
 
-- [ ] Entry 226: complete Linux verification and review the D52 metadata-only export.
+- [ ] Entry 226: review the D52 metadata-only export; Linux verification passed.
 
 **Plan (Entry 224)**
 - [ ] Execution Plan status update for D69/D70 (Entry 224), reviewer merges.
@@ -9397,8 +9403,9 @@ pointers and synchronized PDF are reviewed.
 ## Current status — updated 2026-11-26 (through Entry 226)
 
 **D52 preparation (Entry 226):** metadata-only call-plan export is implemented;
-242 focused/governance tests passed. Full Linux verification and human review are
-pending. The actual warm-up scoring/report and Stage 13 official run remain open.
+242 focused/governance tests passed; Linux verification reported 2731 passed and
+1 skipped. Human review is pending. The actual warm-up scoring/report and Stage 13
+official run remain open.
 
 **Stage 13 preparation brief (Entry 225):** draft now available in `docs/stages/`; the stage remains
 open. Runner/governance/v2-loader tests pass with Torch enabled (55 passed). Linux/PostgreSQL verification passed: 2,710 passed, one skipped, six warnings; Windows has an existing Unix executable-bit test failure. No official run or claim was performed. Review and the real-run gates remain pending.
