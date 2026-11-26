@@ -8716,7 +8716,87 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-### Entry 222 — Stage 13 preparation brief (2026-11-25)
+### Entry 222 — D69 proposed: delivery scope (2026-11-25)
+
+- **Owner:** Donia Mabrouk (team lead). Branch `docs/decisions-d69-delivery-scope` from `main` `47f76f1`.
+- **Approval [user-reported; reviews on GitHub]:** Iheb (`kahlanzzi`), Malak (`malakbensalemm`)
+  and Khalil (`dridi-khalil`) approved D69 by review on PR #170 on 2026-11-26.
+- **Scope (docs only):** register row D69 (Proposed) with markers on D51, D67 and D68, the Status lines of
+  ADRs 0014 and 0019, CHANGELOG, Open items, Current status and this entry. D69 has no ADR. Not changed: code,
+  API contract, threat model, `docs/design/`, Execution Plan (updated at the Mon 7 Dec sync).
+- **Rows check:** Claude Code stopped before editing on the first draft: the F5 swap before L1 contradicted
+  D68's order, a 26 Nov `aasist` checkpoint contradicted the 24 Nov decision, and D69 (2) was unclear against
+  D68 (7). The revised draft resolves the three (D69 amends list, (2) and (6); `aasist` below).
+- **Team answers [stated by the team, 25 Nov]:**
+  - Iheb: the extension was never in his estimate; D68 cannot fit after production: record as designed, not
+    shipped; `aasist` drop agreed on timing (withdrawn, below); laptop fallback on `vsd-real`; F5 swap on
+    staging by Sun 6 Dec if `aasist` is dropped and the bundle reaches him by Sat 5 Dec morning (the condition
+    is now D69 (6): a log-Mel winner); SDD v2.0 rest to Fri 18 Dec.
+  - Khalil: screens by Thu 10 Dec; Stages 15–16 Fri 11 – Fri 18 Dec; D52 before Stage 13.
+  - Malak (26 Nov): D69 is OK for her; approved by review on PR #170; her Stage 14 compute
+    estimate is not given yet (open item).
+- **Schedule changes (not part of the decision):** the rest of SDD v2.0 moves to Fri 18 Dec (the `/api/live`
+  contract stays due Sun 29 Nov); Khalil: screens by Thu 10 Dec, D52 warm-up analysis before the Stage 13
+  joint run, Stages 15–16 and their report sections Fri 11 – Fri 18 Dec; D66 (F5) approved by Sat 5 Dec so the
+  F5 bundle reaches Iheb on Sat 5 morning.
+- **`aasist`:** it stays a search candidate (the 24 Nov cut-line decision stands): the team's 25 Nov agreement
+  to drop it at a 26 Nov timing checkpoint is withdrawn, because the search binds every run to `d5ffe18` and
+  the `configs/v2_candidates.yaml` hash (`src/tuning/v2_search.py`, `base` provenance), so removing it from
+  `candidate_order` mid-search would make the completed and partial runs unusable, and changing D49's
+  candidate set after search results exist would fall under Protocol §12 change control (3).
+- #169 merged by its author; post-merge review by Khalil (comment on PR #169).
+- **AI assistance:** Claude drafted the row and the schedule wording from the team's answers; Claude Code
+  checked them against the repo and made the edits; Donia reviews the diff before the commit.
+- **Gate:** **APPROVED (D69)**, 2026-11-26 (PR #170); approval commit on this branch before merge;
+  a reviewer (Khalil) merges.
+
+---
+
+### Entry 223 — D70 proposed: staging removed (2026-11-26)
+
+- **Owner:** Donia Mabrouk (team lead). Branch `docs/decisions-d70-no-staging` from `main` `47f76f1`
+  (rebased onto `main` `a7e45dd` after D69 merged, PR #170; numbers kept, Execution Plan v3.0 §5.1).
+- **Approval [verified on GitHub]:** Iheb (`kahlanzzi`), Malak (`malakbensalemm`) and Khalil (`dridi-khalil`)
+  approved D70 by review on PR #171 on 2026-11-26.
+- **Source of the change (reported by Donia; the message is not committed):** the professor wrote to the team
+  on 2026-11-25 (WhatsApp) that staging is "optional not a must have requirement", which withdraws the request
+  recorded in ADR 0015; Iheb (Part E owner) confirmed that staging costs time.
+- **Removes:** the staging environment and the GitHub Environment `staging`; two environments remain, dev
+  (local Compose, including `vsd-real`) and production.
+- **Keeps:** build-once images by full SHA on GHCR, production only from a reviewed release tag, environment
+  secrets, HTTPS, health check, smoke test and rollback (D54); the P4 load test moves to the production host
+  before production acceptance (the usability test may run there before acceptance, demo audio and test
+  accounts only), and the data rule (NFR-20) applies to production until 23 Dec.
+- **Files touched:** `docs/decisions/README.md` (D70 row, Proposed), the Status-line notes of ADRs 0015, 0018
+  and 0019, `README.md`, `docs/api_design.md` and the `configs/api.yaml` comments (P4 host wording; no value
+  changes), `AGENTS.md` (Track P row), `docs/CHANGELOG.md`, Open items, Current status (the staging mentions
+  and one D70 line) and this entry.
+- **Not edited:** `docs/reference/` (SRS v4.2 / SDD v2.x incorporate D70 at their next version), the UML
+  deployment diagram (`docs/uml/deployment-runtime.puml` and its SVG), the ADR bodies and older Open items
+  that still say "staging" (read under D70 (6)).
+- **AI assistance:** Claude drafted the row; Claude Code made the edits; Donia reviews the diff before the
+  commit.
+- **Gate:** **APPROVED (D70)**, 2026-11-26 (PR #171); approval commit on this branch before merge; a reviewer
+  (Khalil) merges.
+
+---
+
+### Entry 224 — Execution Plan v3.0 status update for D69 and D70 (2026-11-26)
+
+- **Owner:** Donia Mabrouk. Branch `docs/stage19-plan-status-d69-d70` from `main` `15cb08d`.
+- **Scope (docs only):** `docs/reference/Execution_Plan_v3.0.md` (Markdown only; the PDF is the 10 Nov
+  baseline, regenerated at the feature freeze), the Execution Plan note in `docs/reference/README.md`, Open
+  items, Current status, CHANGELOG and this entry. Appendices B and C unchanged.
+- **Sources:** the D69 and D70 rows on `main` [verified]; Vercel ruled out [stated by Iheb, 26 Nov].
+- **Timing:** Entry 222 planned the D69 plan update for the Mon 7 Dec sync; it is done now because D70
+  changes Iheb's dates from Mon 30 Nov.
+- **AI assistance:** Claude drafted the changes from the approved rows; Claude Code made the edits; Donia
+  reviews the diff.
+- **Gate:** **WAITING FOR REVIEW** (a reviewer merges: Khalil).
+
+---
+
+### Entry 225 — Stage 13 preparation brief (2026-11-25)
 
 - **Owner:** Khalil Dridi.
 - **Change [doc]:** Added `docs/stages/stage13-external-run.md` as a draft and linked it in the
@@ -8757,7 +8837,7 @@ pointers and synchronized PDF are reviewed.
   2,710 passed, one skipped, six warnings (456.94s), including the uncommitted D52 helper tests.
 - **Remaining:** dependency-complete tests, human review, real-run readiness evidence and eventual
   results/claim/teach-back additions. This branch is not cleared for push or stage closure.
-- **Numbering:** 220 is already used on `docs/decisions-d67-d68-approval`; 222 is provisional and
+- **Numbering:** 220 is already used on `docs/decisions-d67-d68-approval`; 225 is provisional and
   must be checked again before merge. Earlier entries are preserved.
 - **AI assistance:** Codex checked sources, corrected the draft's claim order and evidence wording,
   prepared documentation and ran the checks above. Human acceptance remains pending.
@@ -8770,16 +8850,25 @@ pointers and synchronized PDF are reviewed.
 
 ## Open items
 
-**Stage 13 draft brief (Entry 222)**
+**Plan (Entry 224)**
+- [ ] Execution Plan status update for D69/D70 (Entry 224), reviewer merges.
+
+**D70 (Entry 223)**
+- [x] D70 approval commit before merge (approved 26 Nov, PR #171); reviewer merges.
+- [ ] SRS v4.2 / SDD v2.x and deployment UML incorporate D70.
+
+**Stage 13 draft brief (Entry 225)**
 - [ ] Review `docs/stages/stage13-external-run.md`; Linux dependency-inclusive tests passed; check the final branch before push.
 - [ ] Add real-run evidence and D32 teach-back before accepting the brief and closing Stage 13.
 
 **D67/D68 (Entry 219)**
 - [x] Approval by Iheb, Malak, Khalil, then the approval commit. (approved in person 25 Nov; recorded after
   merge in Entry 220)
-- [ ] Execution Plan status update PR (docs/stage19-plan-status-w4), reviewer merges. (PR open, Entry 221)
+- [x] Execution Plan status update PR (docs/stage19-plan-status-w4), reviewer merges. (merged #169; post-merge review by Khalil)
 - [ ] Prototype corrections D67 (1)–(7) and docs/design/HANDOFF-v3.md (Malak).
-- [ ] D68 implementation PR with the §4.8 contract and threat model §10.1 update (Iheb; cut line Fri 18 Dec).
+- [ ] D68 threat-model and design notes (Iheb; D69: designed, not shipped).
+- [x] D69 approval commit before merge (approved 26 Nov, PR #170); reviewer merges.
+- [ ] Malak: Stage 14 compute estimate (D69, Entry 222).
 
 **VoiceCheck Enterprise proposal (Entry 218)**
 - [x] Iheb reviews the proposed prototype against the Stage 17 backend/API work and D55 build plan. (done, #166)
@@ -9272,7 +9361,7 @@ pointers and synchronized PDF are reviewed.
 
 ## Current status — updated 2026-11-25 (Entries 203-222)
 
-**Stage 13 preparation brief (Entry 222):** draft now available in `docs/stages/`; the stage remains
+**Stage 13 preparation brief (Entry 225):** draft now available in `docs/stages/`; the stage remains
 open. Runner/governance/v2-loader tests pass with Torch enabled (55 passed). Linux/PostgreSQL verification passed: 2,710 passed, one skipped, six warnings; Windows has an existing Unix executable-bit test failure. No official run or claim was performed. Review and the real-run gates remain pending.
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
@@ -9333,7 +9422,7 @@ the required checks, e2e and web checks green. The optional Torch guard merged i
 a fresh-runtime read-back (Entry 198). The approved Drive target still needs its own check.
 Before the single Stage 13 run, verify the applicable D48 model set (F5 verified by the cutoff,
 or v1 plus baseline after it) and recheck D58 in the run session. Complete any follow-up loader
-integration and all-four review before the run. A draft Stage 13 brief is prepared in Entry 222;
+integration and all-four review before the run. A draft Stage 13 brief is prepared in Entry 225;
 its results and acceptance evidence follow the run.
 No DEEP-VOICE audio was opened or scored, and no external-run claim was created during preparation.
 
@@ -9344,9 +9433,12 @@ bundle in the process pool, on a Compose project and store of its own (`docs/set
 D67 (approved 25 Nov, Entry 220) makes Malak's VoiceCheck Enterprise prototype (PR #166), with the seven
 D67 corrections, the D55 target design in place of Direction D; HANDOFF-v3 is next. D68 (approved,
 Entry 220) adds email sign-in, server-side roles and member management; until its implementation is merged
-and running on staging (cut line Fri 18 Dec), D47 username sign-in stays in force. The shipped UI is
-unchanged until the D55 build PRs.
-The Execution Plan v3.0 status was updated on 25 Nov (Entry 221, waiting for review).
+and running on the production host (D70; cut line Fri 18 Dec), D47 username sign-in stays in force. D69 (approved 26 Nov, PR #170, Entry 222)
+sets the delivery scope: no extension, D68 designed but not shipped, usability test on the production host (D70) or the local
+`vsd-real` stack, feature freeze Fri 18 Dec, no P4 dry run. The shipped UI is unchanged until the D55 build PRs.
+The Execution Plan v3.0 status was updated on 25 Nov (Entry 221; #169) and on 26 Nov for D69 and D70 (Entry 224, waiting for review).
+D70 (approved 26 Nov, PR #171, Entry 223) removes staging: two environments, dev and production; P4 runs on the
+production host before production acceptance.
 P2a (Entry 207; merged, PR #155) moved the store to
 PostgreSQL behind the same repositories (D53 (4)): `db` service pinned by digest, the API as the
 non-superuser `vsd_app`, a one-time import of the old SQLite store, the API tests on PostgreSQL locally
@@ -9354,7 +9446,7 @@ and in CI. Every `.env` needs `VSD_DB_PASSWORD` and `VSD_DB_APP_PASSWORD`. P2b (
 PR #162) runs analyses in a bounded pool of K spawned worker processes (D53 (2)): `503
 analysis_unavailable` with `Retry-After` when all K are busy, a timed-out analysis killed and its worker
 replaced, the api tmpfs sized from K; K = 2 and Retry-After 30 s are mock, not measured values (P4, on
-the staging host with the real bundle). The start timeout is 20 s, measured in P1 (Entry 217).
+the production host with the real bundle, before production acceptance, D70). The start timeout is 20 s, measured in P1 (Entry 217).
 
 **Track V V1c implementation (Entry 185, merged in PR #152):** the pure frozen recipe,
 hash-verifying selection-set builder, strict training-half resource-cache builder/loader, exact

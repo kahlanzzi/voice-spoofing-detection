@@ -13,6 +13,9 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
   every other deterministic NPZ writer keeps its existing byte format (Entry 211).
 
 ### Changed
+- Execution Plan v3.0 status updated for D69 and D70 (Markdown only; Entry 224).
+- D70 approved (PR #171, 26 Nov): staging removed (two environments, dev and production; the professor's staging
+  request withdrawn in writing, 25 Nov); docs only (Entry 223).
 - D67 and D68 approved (in person, 25 Nov); approval recorded after merge of PR #167 (Entry 220); docs only.
 - Stage 14 H6 now uses the forced-binary REAL false-synthetic rate at the frozen F4 threshold;
   three-way synthetic/uncertain rates are descriptive. Official claims require an exact-commit,
@@ -23,6 +26,8 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
   identical, and the old/new recipes, reports and row-level comparison are retained (Entry 205).
 
 ### Added
+- D69 approved (PR #170, 26 Nov; Entry 222; amends D68's cut line and order, D67's usability-test date rule and the P4 card; D51 (c) not built): delivery scope for 23 Dec; docs only.
+
 - Draft Stage 13 brief explaining claim-before-scoring order, frozen inputs, reporting conventions and outstanding execution gates; no external run performed.
 - D67 and D68 proposed (Entry 219; D67 amends D65, D68 amends D47): VoiceCheck Enterprise as the D55 design (ADR 0018), and analyst identity, roles and member management (ADR 0019); docs only.
 - A standalone VoiceCheck Enterprise UI candidate and comparison with the approved D65 direction,
