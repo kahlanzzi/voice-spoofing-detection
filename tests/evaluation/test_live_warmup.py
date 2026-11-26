@@ -1,6 +1,31 @@
 import pytest
 
 from src.evaluation.live_warmup import warmup_checkpoints
+from src.evaluation.live_warmup import plan_same_label_calls
+
+
+def test_call_plan_preserves_every_id_once_and_ignores_input_order():
+    ids = [f"clip-{i:03d}" for i in range(47)]
+    plan = plan_same_label_calls(ids)
+    assert plan == plan_same_label_calls(reversed(ids))
+    assert len(plan.calls) == 3
+    assert all(len(call) == 15 for call in plan.calls)
+    assert len(plan.leftovers) == 2
+    flattened = [clip for call in plan.calls for clip in call] + list(plan.leftovers)
+    assert sorted(flattened) == ids
+
+
+@pytest.mark.parametrize("count", [0, 1, 14, 15, 16, 30])
+def test_call_plan_never_pads_or_oversamples(count):
+    plan = plan_same_label_calls([str(i) for i in range(count)])
+    assert len(plan.calls) == count // 15
+    assert len(plan.leftovers) == count % 15
+
+
+@pytest.mark.parametrize("ids", [["a", "a"], [""], ["  "], [None], [1]])
+def test_call_plan_rejects_ambiguous_ids(ids):
+    with pytest.raises(ValueError):
+        plan_same_label_calls(ids)
 
 
 def evaluate(values):

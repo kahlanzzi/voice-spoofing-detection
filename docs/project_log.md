@@ -8798,6 +8798,14 @@ pointers and synchronized PDF are reviewed.
 
 ### Entry 225 — Stage 13 preparation brief (2026-11-25)
 
+- **26 November follow-up:** Reconciled merged D69/D70 and plan entries without editing their
+  history. Added a score-independent, single-label call-plan helper: sorted IDs, Python MT19937
+  seed 2026, disjoint groups of fifteen, explicit leftovers and duplicate-ID rejection. The caller
+  must verify val-B membership and labels; this helper does not establish those gates. The sampling
+  convention is documented for team review, not claimed as approved evidence. Focused tests:
+  `33 passed in 0.13s`; whitespace checks passed. Earlier full-suite results predate this addition;
+  final full-suite verification is still required. No audio read, claim or scoring occurred.
+
 - **Owner:** Khalil Dridi.
 - **Change [doc]:** Added `docs/stages/stage13-external-run.md` as a draft and linked it in the
   stage index. Explains D35 claim-before-audio/scoring order, D48 model-set/cutoff, D33/D34 reports,

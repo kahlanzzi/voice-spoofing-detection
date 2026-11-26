@@ -101,6 +101,42 @@ new measurements from this preparation. Sources: [Protocol](../experimental_prot
 
 ## 6. Limitations
 
+### D52 preparation scope
+
+`src/evaluation/live_warmup.py` consumes fifteen ordered 2-second slots for one simulated
+30-second call. Each slot is a calibrated probability or `None` for a D17-rejected window.
+It reports the mean of every kept window and the shared frozen-policy label at 3, 5 and 10
+kept windows. Unreached checkpoints are explicit; they are not model deferrals.
+
+This helper does not construct calls, read audio, verify a bundle, or produce accuracy evidence.
+The D52 analysis still requires same-label val-B sequences, seed 2026, verified model/policy
+identities, and recorded clip membership. D52 does not specify a call count or replacement policy.
+For review, the implementation convention selected on 26 November is:
+
+- Start from the pinned val-B manifest, not a test split. Sort unique clip IDs within each label
+  before a deterministic shuffle with seed 2026; record the RNG algorithm and library version.
+- Partition each label's shuffled IDs into disjoint groups of fifteen 2-second clips. Use all
+  complete groups: `floor(N_label / 15)` calls per label. Do not reuse clips or oversample a class.
+- Record the IDs of the fewer-than-fifteen leftover clips per label; never silently discard them
+  or pad a call. Record complete ordered call membership and its hash before looking at scores.
+- Keep D17-rejected slots in the call as no-speech slots. Do not redraw a call to reach a checkpoint.
+- Use exactly the same call membership for any model comparison. Do not claim independence of
+  calls merely because clips are disjoint: clips can share speakers or near-duplicate groups.
+
+This is a documented implementation proposal, not an amendment to D52 or completed evidence.
+Team review precedes its use for the reported analysis. It avoids an arbitrary call-count target
+and repeated clips while preserving D52's fixed seed, same-label sequences and duration.
+Report reached/unreached counts and coverage/deferral alongside checkpoint accuracy; document
+the denominator and treatment of uncertain predictions. Do not tune the three-window rule.
+
+The calculation can be checked independently with:
+
+```bash
+python -m pytest -q tests/evaluation/test_live_warmup.py
+```
+
+### External-run limitations
+
 - No official external run or claim was made for this draft. No external performance is established.
 - Synthetic checks exercise behavior, not generalization or real Drive durability.
 - The text-based governance allowlist is not a security sandbox; review actual I/O ordering too.

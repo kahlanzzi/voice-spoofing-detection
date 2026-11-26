@@ -10,8 +10,36 @@ from dataclasses import dataclass
 from math import fsum, isfinite
 from numbers import Real
 from typing import Iterable
+import random
 
 from src.risk.decisions import three_way_decisions
+
+
+@dataclass(frozen=True)
+class SimulatedCallPlan:
+    calls: tuple[tuple[str, ...], ...]
+    leftovers: tuple[str, ...]
+
+
+def plan_same_label_calls(clip_ids: Iterable[str]) -> SimulatedCallPlan:
+    """Plan one label's calls without replacement; caller verifies val-B and label.
+
+    Python Random (MT19937), seed 2026. Sort before shuffling so manifest row order
+    cannot change membership. Persist the result and Python version for evidence.
+    No scores are accepted or consulted. This is a proposal pending team review.
+    """
+    ids = list(clip_ids)
+    if any(not isinstance(value, str) or not value.strip() for value in ids):
+        raise ValueError("clip IDs must be nonempty strings")
+    if len(set(ids)) != len(ids):
+        raise ValueError("duplicate clip IDs are not allowed")
+    ids.sort()
+    random.Random(2026).shuffle(ids)
+    complete = len(ids) // 15 * 15
+    return SimulatedCallPlan(
+        tuple(tuple(ids[i:i + 15]) for i in range(0, complete, 15)),
+        tuple(ids[complete:]),
+    )
 
 
 @dataclass(frozen=True)
