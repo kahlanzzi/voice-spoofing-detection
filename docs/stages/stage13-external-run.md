@@ -135,6 +135,27 @@ The calculation can be checked independently with:
 python -m pytest -q tests/evaluation/test_live_warmup.py
 ```
 
+### Exporting D52 membership before scoring
+
+`python -m src.evaluation.live_warmup_plan` verifies the exact F2 manifest using
+the shared loader, selects only val-B, and exports same-label call membership and
+leftovers. It retains each clip's label, group and sample hash. No audio or scores
+are read. The sampling convention above still requires team acceptance before
+the reported analysis; exporting a plan does not authorize scoring.
+
+From a clean reviewed checkout, obtain the full SHA with `git rev-parse HEAD`, then:
+
+```text
+python -m src.evaluation.live_warmup_plan --manifest data/manifests/for2sec_frozen_manifest.csv --output <outside-repo>/d52-call-plan.json --code-commit <full-reviewed-SHA>
+```
+
+The parent output directory must already exist. The command refuses to overwrite
+an existing file and prints its SHA-256. Preserve that file and digest before
+looking at scores. The SHA argument is caller-supplied provenance, not automatic
+proof of a clean or approved checkout. Python's version is recorded in the file.
+Actual bundle verification, D17 filtering, inference and descriptive reporting
+remain separate unfinished steps. Do not use this plan for test-split access.
+
 ### External-run limitations
 
 - No official external run or claim was made for this draft. No external performance is established.
