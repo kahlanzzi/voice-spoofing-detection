@@ -704,8 +704,8 @@ All values come from config (`configs/api.yaml`, written in Stage 17), never fro
 | `max_duration_s` | Recording duration cap | 60 | Mock; **open decision 2** |
 | `audio_deletion` | Deletion statement shown on S2 | "Deleted when processing finishes" | Depends on **open decision 4** |
 | `analysis_timeout_s` | How long the API waits for the analyzer | 30 | Proposal |
-| `analysis_workers` | K: analysis worker processes per API process | 2 | Mock, not measured; replaced by the P4 load-test decision on the staging host with the real bundle (D53 (3)) |
-| `analysis_retry_after_s` | `Retry-After` on a full pool; at most `analysis_timeout_s` | 30 | Mock, not measured; replaced by the P4 load-test decision on the staging host with the real bundle (D53 (3)) |
+| `analysis_workers` | K: analysis worker processes per API process | 2 | Mock, not measured; replaced by the P4 load-test decision on the production host, before production acceptance (D70), with the real bundle (D53 (3)) |
+| `analysis_retry_after_s` | `Retry-After` on a full pool; at most `analysis_timeout_s` | 30 | Mock, not measured; replaced by the P4 load-test decision on the production host, before production acceptance (D70), with the real bundle (D53 (3)) |
 | `analysis_worker_start_timeout_s` | How long one worker may take to build its analyzer | 20 | Measured in P1 (see the P1 log entry) |
 | `page_size_max` | Largest `page_size` | 50 | Proposal |
 | `note_max_chars` | Longest note | 2,000 | Proposal |

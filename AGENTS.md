@@ -126,7 +126,7 @@ required CI check `checks`, branch up to date; no direct pushes.
 | 14–16 | Robustness (FoR only) · calibration analysis · error analysis | D · Malak (14), Khalil (15, 16) | |
 | 17–19 | API (FastAPI) · web app (React, D38) · tests/CI/Docker/docs | E · Iheb; Stage 19 report: all four | |
 | L | Live analysis: live mic and `/api/live` (Must), Chrome extension (Should; not built for delivery, D69) (D51, D52) | E · Iheb | |
-| P | PostgreSQL, process pool and load test, staging/production, interface redesign and usability test (D53–D55) | E · Iheb; usability test: all four | |
+| P | PostgreSQL, process pool and load test, production (no staging, D70), interface redesign and usability test (D53–D55) | E · Iheb; usability test: all four | |
 
 Review rule (D26): the consumer reviews the producer.
 

@@ -1,6 +1,7 @@
 # 0019. Analyst identity, roles and member management
 
 - **Status:** Approved 2026-11-25 (Iheb, Malak and Khalil in person, user-reported; reviews on PR #167 by Iheb (`kahlanzzi`) and Khalil (`dridi-khalil`); recorded in Entry 220); designed, not shipped: cut line applied by D69 (approved 2026-11-26, PR #170)
+- **Amended:** D70 (approved 2026-11-26, PR #171): 'on staging' reads 'on the production host'.
 - **Date:** 2026-11-25
 - **Register:** D68 (amends D47)
 - **Author:** Donia Mabrouk

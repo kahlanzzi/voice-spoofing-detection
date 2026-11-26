@@ -8,9 +8,9 @@ audio_deletion: Deleted when processing finishes   # depends on open decision 4
 analysis_timeout_s: 30                         # proposal; not a latency target (open decision 5)
 # Analysis process pool (D53 (2)): K worker processes per API process; a request that finds all K busy gets
 # 503 analysis_unavailable with Retry-After. docker-compose.yml sizes the api and web tmpfs from K.
-analysis_workers: 2                            # mock, not measured; K per API process, replaced by the P4 load-test decision on the staging host with the real bundle (D53 (3))
-analysis_retry_after_s: 30                     # mock, not measured; Retry-After on a full pool, <= analysis_timeout_s, replaced by the P4 load-test decision on the staging host with the real bundle (D53 (3))
-analysis_worker_start_timeout_s: 20            # measured in P1: slowest of 7 starts (5 warm, 1 after the page cache was dropped, 1 earlier) 5.16 s from 'Waiting for application startup' to 'Application startup complete' with K = 2 workers, x3 rounded up to 10 s; re-measure on the staging host in P4
+analysis_workers: 2                            # mock, not measured; K per API process, replaced by the P4 load-test decision on the production host, before production acceptance (D70), with the real bundle (D53 (3))
+analysis_retry_after_s: 30                     # mock, not measured; Retry-After on a full pool, <= analysis_timeout_s, replaced by the P4 load-test decision on the production host, before production acceptance (D70), with the real bundle (D53 (3))
+analysis_worker_start_timeout_s: 20            # measured in P1: slowest of 7 starts (5 warm, 1 after the page cache was dropped, 1 earlier) 5.16 s from 'Waiting for application startup' to 'Application startup complete' with K = 2 workers, x3 rounded up to 10 s; re-measure on the production host, before production acceptance (D70), in P4
 page_size_max: 50                              # proposal
 note_max_chars: 2000                           # proposal
 stats_time_zone: UTC                           # open decision 6
