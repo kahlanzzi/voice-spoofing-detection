@@ -9,6 +9,8 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- D52 frozen-bundle scoring integration verifies val-B membership and sample hashes,
+  applies D17 filtering and one calibration, and retains per-slot provenance.
 - D52 descriptive report helper validates call membership and reports reached counts,
   deferrals and checkpoint metrics from supplied calibrated probabilities.
 - Stage 13 D52 metadata-only call-plan exporter: verified F2 val-B membership,

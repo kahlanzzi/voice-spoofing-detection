@@ -8909,11 +8909,35 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 228 — D52 frozen-bundle scoring integration (2026-11-26)
+
+- **Owner:** Khalil Dridi. **AI assistance:** Codex implemented scoring, synthetic
+  tests and documentation; Khalil ran the pinned Linux verification harness.
+- **Change:** Verify the exported F2 val-B plan before audio; load the pinned frozen
+  bundle; verify each used sample hash; apply D17 filtering and calibrate once.
+  Return checkpoint reports with slot-level provenance. No leftover/test clips read.
+- **Review evidence:** Donia and Malak approved the sampling convention presented
+  in PR #173 and the follow-up #174/#175. Their review submissions have empty bodies;
+  acceptance is inferred from approval of the explicitly scoped PRs, not a separate
+  written decision. Official external-run gates are unchanged.
+- **Verification:** Focused checks: **26 passed, 4 skipped in 10.17s** locally.
+  Full Windows attempt: **25 skipped, 5 errors in 3.27s**, missing torch/psycopg.
+  Khalil's Linux run on `9dcff263581e3e8f1416451b96a6939a10451938`:
+  **2757 passed, 1 skipped, 6 warnings in 454.82s (0:07:34)**; exit **0**;
+  PostgreSQL 18.7. Warnings are existing multiprocessing fork deprecations.
+- **Gate:** Implementation pending human review. No real audio scored, results
+  produced, or registry claim created. Actual D52 execution/export and Stage 13
+  model/runtime/storage/execution gates remain open.
+
+---
+
 ## Open items
 
-- [ ] Entry 227: review D52 report helpers; Linux verification passed, real scoring remains open.
+- [ ] Entry 228: review scoring integration; execute and preserve D52 evidence after review.
 
-- [ ] Entry 226: review the D52 metadata-only export; Linux verification passed.
+- [x] Entry 227: report helpers reviewed and merged in #175; real scoring remains open.
+
+- [x] Entry 226: metadata-only export reviewed and merged in #174.
 
 **Plan (Entry 224)**
 - [ ] Execution Plan status update for D69/D70 (Entry 224), reviewer merges.
@@ -9424,16 +9448,13 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-26 (through Entry 227)
+## Current status — updated 2026-11-26 (through Entry 228)
 
-**D52 report preparation (Entry 227):** report helpers and synthetic tests are
-implemented. Linux verification passed (2746 passed, 1 skipped); human review is pending. No real warm-up
-result has been produced; verified-bundle scoring remains to be implemented.
-
-**D52 preparation (Entry 226):** metadata-only call-plan export is implemented;
-242 focused/governance tests passed; Linux verification reported 2731 passed and
-1 skipped. Human review is pending. The actual warm-up scoring/report and Stage 13
-official run remain open.
+**D52 scoring integration (Entry 228):** pinned-bundle val-B scoring and provenance
+are implemented; user-run Linux verification passed (2757 passed, 1 skipped).
+Human review of this integration is pending. The planning/report helpers were
+approved and merged in #173–#175. No real warm-up result has been produced.
+Actual execution, durable evidence export and analysis review remain open.
 
 **Stage 13 preparation brief (Entry 225):** draft now available in `docs/stages/`; the stage remains
 open. Runner/governance/v2-loader tests pass with Torch enabled (55 passed). Linux/PostgreSQL verification passed: 2,710 passed, one skipped, six warnings; Windows has an existing Unix executable-bit test failure. No official run or claim was performed. Review and the real-run gates remain pending.
