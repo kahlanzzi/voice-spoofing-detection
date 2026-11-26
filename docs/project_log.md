@@ -8798,6 +8798,12 @@ pointers and synchronized PDF are reviewed.
 
 ### Entry 225 — Stage 13 preparation brief (2026-11-25)
 
+- **Final Linux verification (26 November, user-run):** Commit `542e45a`, Python 3.13 container,
+  CPU Torch 2.11.0 and PostgreSQL 18.7, required Torch/PostgreSQL tests enabled:
+  `2722 passed, 1 skipped, 6 warnings in 448.06s`; exit code 0. The six warnings concern
+  multiprocessing fork in existing training tests. This supersedes the earlier full-suite blocker
+  for this preparation snapshot; it does not establish real-data performance or run authorization.
+
 - **26 November follow-up:** Reconciled merged D69/D70 and plan entries without editing their
   history. Added a score-independent, single-label call-plan helper: sorted IDs, Python MT19937
   seed 2026, disjoint groups of fifteen, explicit leftovers and duplicate-ID rejection. The caller
