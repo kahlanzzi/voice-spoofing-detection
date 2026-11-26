@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- D52 report export command preserves runtime details and prints an exact-byte SHA-256; existing outputs are refused.
 - D52 frozen-bundle scoring integration verifies val-B membership and sample hashes,
   applies D17 filtering and one calibration, and retains per-slot provenance.
 - D52 descriptive report helper validates call membership and reports reached counts,

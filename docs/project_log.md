@@ -8931,9 +8931,27 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 229 — D52 report export command (2026-11-26)
+
+- **Owner:** Khalil Dridi.
+- **Change:** Added a val-B report export command around the reviewed scoring
+  integration from PR #176. It records runtime versions and UTC timestamps,
+  reserves a new output before scoring, writes strict JSON and prints its SHA-256.
+- **Verification:** D52 and governance tests: **268 passed, 4 skipped in 14.34s**
+  (Torch unavailable). Full local pytest: **25 skipped, 5 collection errors in
+  2.90s**, from missing psycopg/Torch. Linux/PostgreSQL verification is pending;
+  the agent cannot access the Docker engine. No full-suite pass is claimed.
+- **Limits:** No real audio scored, no external claim, no change to sampling,
+  calibration, thresholds or warm-up. Caller-supplied SHA and runtime observations
+  do not establish approval. Failed exports remain for inspection.
+- **AI assistance:** Codex implemented the command, synthetic tests and docs.
+  Human review and complete Linux verification remain required before acceptance.
+
+---
+
 ## Open items
 
-- [ ] Entry 228: review scoring integration; execute and preserve D52 evidence after review.
+- [ ] Entry 229: verify/review report export; execute and preserve D52 evidence. Scoring integration merged in PR #176.
 
 - [x] Entry 227: report helpers reviewed and merged in #175; real scoring remains open.
 
@@ -9448,7 +9466,9 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-26 (through Entry 228)
+## Current status — updated 2026-11-26 (through Entry 229)
+
+**D52 export (Entry 229):** command and synthetic checks complete; full Linux verification and real val-B execution remain pending.
 
 **D52 scoring integration (Entry 228):** pinned-bundle val-B scoring and provenance
 are implemented; user-run Linux verification passed (2757 passed, 1 skipped).
