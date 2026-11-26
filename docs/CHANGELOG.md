@@ -9,6 +9,7 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- D52 descriptive val-B evidence note with preserved hashes, checkpoint results, runtime discrepancy and pending-review status.
 - D52 report export command preserves runtime details and prints an exact-byte SHA-256; existing outputs are refused.
 - D52 frozen-bundle scoring integration verifies val-B membership and sample hashes,
   applies D17 filtering and one calibration, and retains per-slot provenance.
