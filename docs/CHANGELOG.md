@@ -13,6 +13,8 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
   every other deterministic NPZ writer keeps its existing byte format (Entry 211).
 
 ### Changed
+- D70 proposed: staging removed (two environments, dev and production; the professor's staging
+  request withdrawn in writing, 25 Nov); docs only (Entry 223).
 - D67 and D68 approved (in person, 25 Nov); approval recorded after merge of PR #167 (Entry 220); docs only.
 - Stage 14 H6 now uses the forced-binary REAL false-synthetic rate at the frozen F4 threshold;
   three-way synthetic/uncertain rates are descriptive. Official claims require an exact-commit,

@@ -8752,7 +8752,38 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 223 — D70 proposed: staging removed (2026-11-26)
+
+- **Owner:** Donia Mabrouk (team lead). Branch `docs/decisions-d70-no-staging` from `main` `47f76f1`
+  (rebased onto `main` `a7e45dd` after D69 merged, PR #170; numbers kept, Execution Plan v3.0 §5.1).
+- **Source of the change (reported by Donia; the message is not committed):** the professor wrote to the team
+  on 2026-11-25 (WhatsApp) that staging is "optional not a must have requirement", which withdraws the request
+  recorded in ADR 0015; Iheb (Part E owner) confirmed that staging costs time.
+- **Removes:** the staging environment and the GitHub Environment `staging`; two environments remain, dev
+  (local Compose, including `vsd-real`) and production.
+- **Keeps:** build-once images by full SHA on GHCR, production only from a reviewed release tag, environment
+  secrets, HTTPS, health check, smoke test and rollback (D54); the P4 load test moves to the production host
+  before production acceptance (the usability test may run there before acceptance, demo audio and test
+  accounts only), and the data rule (NFR-20) applies to production until 23 Dec.
+- **Files touched:** `docs/decisions/README.md` (D70 row, Proposed), the Status-line notes of ADRs 0015, 0018
+  and 0019, `README.md`, `docs/api_design.md` and the `configs/api.yaml` comments (P4 host wording; no value
+  changes), `AGENTS.md` (Track P row), `docs/CHANGELOG.md`, Open items, Current status (the staging mentions
+  and one D70 line) and this entry.
+- **Not edited:** `docs/reference/` (SRS v4.2 / SDD v2.x incorporate D70 at their next version), the UML
+  deployment diagram (`docs/uml/deployment-runtime.puml` and its SVG), the ADR bodies and older Open items
+  that still say "staging" (read under D70 (6)).
+- **AI assistance:** Claude drafted the row; Claude Code made the edits; Donia reviews the diff before the
+  commit.
+- **Gate:** **WAITING FOR APPROVAL** (Iheb, Malak, Khalil by PR review, then the approval commit **on this
+  branch before merge**, then a reviewer merges, never Donia).
+
+---
+
 ## Open items
+
+**D70 (Entry 223)**
+- [ ] D70 approval commit before merge; reviewer merges.
+- [ ] SRS v4.2 / SDD v2.x and deployment UML incorporate D70.
 
 **D67/D68 (Entry 219)**
 - [x] Approval by Iheb, Malak, Khalil, then the approval commit. (approved in person 25 Nov; recorded after
@@ -9322,10 +9353,12 @@ bundle in the process pool, on a Compose project and store of its own (`docs/set
 D67 (approved 25 Nov, Entry 220) makes Malak's VoiceCheck Enterprise prototype (PR #166), with the seven
 D67 corrections, the D55 target design in place of Direction D; HANDOFF-v3 is next. D68 (approved,
 Entry 220) adds email sign-in, server-side roles and member management; until its implementation is merged
-and running on staging (cut line Fri 18 Dec), D47 username sign-in stays in force. D69 (approved 26 Nov, PR #170, Entry 222)
+and running on the production host (D70; cut line Fri 18 Dec), D47 username sign-in stays in force. D69 (approved 26 Nov, PR #170, Entry 222)
 sets the delivery scope: no extension, D68 designed but not shipped, usability test on staging or the local
 `vsd-real` stack, feature freeze Fri 18 Dec, no P4 dry run. The shipped UI is unchanged until the D55 build PRs.
 The Execution Plan v3.0 status was updated on 25 Nov (Entry 221; merged #169, post-merge review by Khalil).
+D70 (proposed 26 Nov, Entry 223) removes staging: two environments, dev and production; P4 runs on the
+production host before production acceptance.
 P2a (Entry 207; merged, PR #155) moved the store to
 PostgreSQL behind the same repositories (D53 (4)): `db` service pinned by digest, the API as the
 non-superuser `vsd_app`, a one-time import of the old SQLite store, the API tests on PostgreSQL locally
@@ -9333,7 +9366,7 @@ and in CI. Every `.env` needs `VSD_DB_PASSWORD` and `VSD_DB_APP_PASSWORD`. P2b (
 PR #162) runs analyses in a bounded pool of K spawned worker processes (D53 (2)): `503
 analysis_unavailable` with `Retry-After` when all K are busy, a timed-out analysis killed and its worker
 replaced, the api tmpfs sized from K; K = 2 and Retry-After 30 s are mock, not measured values (P4, on
-the staging host with the real bundle). The start timeout is 20 s, measured in P1 (Entry 217).
+the production host with the real bundle, before production acceptance, D70). The start timeout is 20 s, measured in P1 (Entry 217).
 
 **Track V V1c implementation (Entry 185, merged in PR #152):** the pure frozen recipe,
 hash-verifying selection-set builder, strict training-half resource-cache builder/loader, exact
