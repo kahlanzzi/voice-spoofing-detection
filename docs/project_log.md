@@ -8756,6 +8756,8 @@ pointers and synchronized PDF are reviewed.
 
 - **Owner:** Donia Mabrouk (team lead). Branch `docs/decisions-d70-no-staging` from `main` `47f76f1`
   (rebased onto `main` `a7e45dd` after D69 merged, PR #170; numbers kept, Execution Plan v3.0 §5.1).
+- **Approval [verified on GitHub]:** Iheb (`kahlanzzi`), Malak (`malakbensalemm`) and Khalil (`dridi-khalil`)
+  approved D70 by review on PR #171 on 2026-11-26.
 - **Source of the change (reported by Donia; the message is not committed):** the professor wrote to the team
   on 2026-11-25 (WhatsApp) that staging is "optional not a must have requirement", which withdraws the request
   recorded in ADR 0015; Iheb (Part E owner) confirmed that staging costs time.
@@ -8774,15 +8776,15 @@ pointers and synchronized PDF are reviewed.
   that still say "staging" (read under D70 (6)).
 - **AI assistance:** Claude drafted the row; Claude Code made the edits; Donia reviews the diff before the
   commit.
-- **Gate:** **WAITING FOR APPROVAL** (Iheb, Malak, Khalil by PR review, then the approval commit **on this
-  branch before merge**, then a reviewer merges, never Donia).
+- **Gate:** **APPROVED (D70)**, 2026-11-26 (PR #171); approval commit on this branch before merge; a reviewer
+  (Khalil) merges.
 
 ---
 
 ## Open items
 
 **D70 (Entry 223)**
-- [ ] D70 approval commit before merge; reviewer merges.
+- [x] D70 approval commit before merge (approved 26 Nov, PR #171); reviewer merges.
 - [ ] SRS v4.2 / SDD v2.x and deployment UML incorporate D70.
 
 **D67/D68 (Entry 219)**
@@ -9354,10 +9356,10 @@ D67 (approved 25 Nov, Entry 220) makes Malak's VoiceCheck Enterprise prototype (
 D67 corrections, the D55 target design in place of Direction D; HANDOFF-v3 is next. D68 (approved,
 Entry 220) adds email sign-in, server-side roles and member management; until its implementation is merged
 and running on the production host (D70; cut line Fri 18 Dec), D47 username sign-in stays in force. D69 (approved 26 Nov, PR #170, Entry 222)
-sets the delivery scope: no extension, D68 designed but not shipped, usability test on staging or the local
+sets the delivery scope: no extension, D68 designed but not shipped, usability test on the production host (D70) or the local
 `vsd-real` stack, feature freeze Fri 18 Dec, no P4 dry run. The shipped UI is unchanged until the D55 build PRs.
 The Execution Plan v3.0 status was updated on 25 Nov (Entry 221; merged #169, post-merge review by Khalil).
-D70 (proposed 26 Nov, Entry 223) removes staging: two environments, dev and production; P4 runs on the
+D70 (approved 26 Nov, PR #171, Entry 223) removes staging: two environments, dev and production; P4 runs on the
 production host before production acceptance.
 P2a (Entry 207; merged, PR #155) moved the store to
 PostgreSQL behind the same repositories (D53 (4)): `db` service pinned by digest, the API as the

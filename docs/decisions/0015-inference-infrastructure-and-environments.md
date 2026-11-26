@@ -1,7 +1,7 @@
 # 0015. Inference infrastructure, capacity and staging/production environments
 
 - **Status:** Approved (all four; PR #111, 2026-11-10)
-- **Amended:** D70 (proposed 2026-11-26; the professor's staging request withdrawn in writing): staging removed; two environments, dev and production; load test on the production host before production acceptance.
+- **Amended:** D70 (approved 2026-11-26, PR #171; the professor's staging request withdrawn in writing): staging removed; two environments, dev and production; load test on the production host before production acceptance.
 - **Date:** 2026-11-09
 - **Register:** D53, D54
 - **Deciders:** Iheb Zemzemi (Part E owner), Donia Mabrouk (author), Malak Ben Salem, Khalil Dridi
