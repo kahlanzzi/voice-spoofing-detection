@@ -8862,7 +8862,28 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 226 — D52 metadata-only call-plan export (2026-11-26)
+
+- **Owner:** Khalil Dridi. **AI assistance:** Codex implemented and tested this preparation.
+- **Change:** Bind the existing D52 grouping helper to the shared hash-verified F2
+  manifest loader and val-B only. Export ordered same-label calls, explicit leftovers,
+  clip labels/groups/hashes, supplied code SHA and Python version; print the exact
+  output SHA-256 and refuse overwrite. No audio, inference or claim occurs.
+- **Verification:** D52 plus governance tests: **242 passed in 3.45 s**, with a
+  process-scoped Git safe-directory exception for this checkout. `git diff --check`
+  passed. Full local `pytest -q` attempted: **25 skipped, 5 collection errors**
+  because this environment lacks psycopg and torch. Docker verification could not
+  start from the agent: access to the Docker engine pipe was denied. These are
+  unresolved verification limitations, not passing full-suite evidence.
+- **Gate:** Preparation only, pending human review and full Linux verification.
+  Sampling acceptance, verified frozen-model scoring, D17 filtering and the actual
+  D52 report remain outstanding. No Stage 13 official-run authorization is implied.
+
+---
+
 ## Open items
+
+- [ ] Entry 226: complete Linux verification and review the D52 metadata-only export.
 
 **Plan (Entry 224)**
 - [ ] Execution Plan status update for D69/D70 (Entry 224), reviewer merges.
@@ -9373,7 +9394,11 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-25 (Entries 203-222)
+## Current status — updated 2026-11-26 (through Entry 226)
+
+**D52 preparation (Entry 226):** metadata-only call-plan export is implemented;
+242 focused/governance tests passed. Full Linux verification and human review are
+pending. The actual warm-up scoring/report and Stage 13 official run remain open.
 
 **Stage 13 preparation brief (Entry 225):** draft now available in `docs/stages/`; the stage remains
 open. Runner/governance/v2-loader tests pass with Torch enabled (55 passed). Linux/PostgreSQL verification passed: 2,710 passed, one skipped, six warnings; Windows has an existing Unix executable-bit test failure. No official run or claim was performed. Review and the real-run gates remain pending.

@@ -8,6 +8,10 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 
 ## [Unreleased]
 
+### Added
+- Stage 13 D52 metadata-only call-plan exporter: verified F2 val-B membership,
+  explicit leftovers, provenance and SHA-256 output; existing files are not overwritten.
+
 ### Fixed
 - The V1c training-half resource cache writes its oversized packed RIR member with ZIP64, while
   every other deterministic NPZ writer keeps its existing byte format (Entry 211).
