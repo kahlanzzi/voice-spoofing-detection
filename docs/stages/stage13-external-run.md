@@ -177,7 +177,8 @@ EER/AUC are unavailable when fewer than two classes reach the checkpoint.
 These are descriptive val-B summaries, not held-out results or a claim of independent
 calls; no confidence interval is supplied by this helper. Review the reporting
 denominators before using them in evidence. The scoring integration below supplies
-provenance; real execution and evidence export remain unfinished. Tests are synthetic.
+provenance. The first real val-B export is recorded in the evidence note below;
+its acceptance remains pending. Tests are synthetic.
 
 ### D52 frozen-bundle scoring integration
 
@@ -221,6 +222,17 @@ An inference failure leaves an empty reservation; a write failure may leave a
 partial file. Neither is a completed report: preserve the error and inspect it
 before any retry. This is a val-B command, not the official external runner.
 No real scoring was performed when adding this command.
+
+### D52 val-B execution evidence (26 November 2026)
+
+The [D52 evidence note](../audit_evidence/d52_warmup/README.md) records the first
+real export at merged PR #177, its exact code/input/output hashes, Drive location,
+runtime and 3/5/10-kept-window metrics. All 88 constructed calls reached each
+checkpoint; correct verdict counts were 75, 74 and 65, with 13, 14 and 23 deferrals.
+This is descriptive val-B evidence, not an external result or a change to the
+three-window minimum. Donia's review must address the observed Python 3.13.18
+versus documented 3.13.15 discrepancy and independently verify the preserved report.
+Stage 13 remains open and gated.
 
 ### External-run limitations
 
