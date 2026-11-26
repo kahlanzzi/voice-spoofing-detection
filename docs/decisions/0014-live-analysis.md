@@ -1,6 +1,6 @@
 # 0014. Live analysis: scope, capture paths and decision rule
 
-- **Status:** Approved (all four; PR #111, 2026-11-10); the extension (D51 (c)) is not built for delivery (D69, once approved)
+- **Status:** Approved (all four; PR #111, 2026-11-10); the extension (D51 (c)) is not built for delivery (D69, approved 2026-11-26, PR #170)
 - **Date:** 2026-11-09
 - **Register:** D51 (changes SRS v3.0 WH-01 for SRS v4.0), D52
 - **Deciders:** Iheb Zemzemi (Part E owner, D51), Khalil Dridi (Stage 13 conventions reused by D52),

@@ -8719,6 +8719,8 @@ pointers and synchronized PDF are reviewed.
 ### Entry 222 — D69 proposed: delivery scope (2026-11-25)
 
 - **Owner:** Donia Mabrouk (team lead). Branch `docs/decisions-d69-delivery-scope` from `main` `47f76f1`.
+- **Approval [user-reported; reviews on GitHub]:** Iheb (`kahlanzzi`), Malak (`malakbensalemm`)
+  and Khalil (`dridi-khalil`) approved D69 by review on PR #170 on 2026-11-26.
 - **Scope (docs only):** register row D69 (Proposed) with markers on D51, D67 and D68, the Status lines of
   ADRs 0014 and 0019, CHANGELOG, Open items, Current status and this entry. D69 has no ADR. Not changed: code,
   API contract, threat model, `docs/design/`, Execution Plan (updated at the Mon 7 Dec sync).
@@ -8731,7 +8733,8 @@ pointers and synchronized PDF are reviewed.
     staging by Sun 6 Dec if `aasist` is dropped and the bundle reaches him by Sat 5 Dec morning (the condition
     is now D69 (6): a log-Mel winner); SDD v2.0 rest to Fri 18 Dec.
   - Khalil: screens by Thu 10 Dec; Stages 15–16 Fri 11 – Fri 18 Dec; D52 before Stage 13.
-  - Malak: answer pending at PR opening; recorded with the approvals in the approval commit.
+  - Malak (26 Nov): D69 is OK for her; approved by review on PR #170; her Stage 14 compute
+    estimate is not given yet (open item).
 - **Schedule changes (not part of the decision):** the rest of SDD v2.0 moves to Fri 18 Dec (the `/api/live`
   contract stays due Sun 29 Nov); Khalil: screens by Thu 10 Dec, D52 warm-up analysis before the Stage 13
   joint run, Stages 15–16 and their report sections Fri 11 – Fri 18 Dec; D66 (F5) approved by Sat 5 Dec so the
@@ -8744,8 +8747,8 @@ pointers and synchronized PDF are reviewed.
 - #169 merged by its author; post-merge review by Khalil (comment on PR #169).
 - **AI assistance:** Claude drafted the row and the schedule wording from the team's answers; Claude Code
   checked them against the repo and made the edits; Donia reviews the diff before the commit.
-- **Gate:** **WAITING FOR APPROVAL** (Iheb, Malak, Khalil by PR review, then the approval commit **on this
-  branch before merge**, including the `AGENTS.md` L row, then a reviewer merges).
+- **Gate:** **APPROVED (D69)**, 2026-11-26 (PR #170); approval commit on this branch before merge;
+  a reviewer (Khalil) merges.
 
 ---
 
@@ -8757,7 +8760,8 @@ pointers and synchronized PDF are reviewed.
 - [x] Execution Plan status update PR (docs/stage19-plan-status-w4), reviewer merges. (merged #169; post-merge review by Khalil)
 - [ ] Prototype corrections D67 (1)–(7) and docs/design/HANDOFF-v3.md (Malak).
 - [ ] D68 threat-model and design notes (Iheb; D69: designed, not shipped).
-- [ ] D69 approval commit before merge; reviewer merges.
+- [x] D69 approval commit before merge (approved 26 Nov, PR #170); reviewer merges.
+- [ ] Malak: Stage 14 compute estimate (D69, Entry 222).
 
 **VoiceCheck Enterprise proposal (Entry 218)**
 - [x] Iheb reviews the proposed prototype against the Stage 17 backend/API work and D55 build plan. (done, #166)
@@ -9318,7 +9322,7 @@ bundle in the process pool, on a Compose project and store of its own (`docs/set
 D67 (approved 25 Nov, Entry 220) makes Malak's VoiceCheck Enterprise prototype (PR #166), with the seven
 D67 corrections, the D55 target design in place of Direction D; HANDOFF-v3 is next. D68 (approved,
 Entry 220) adds email sign-in, server-side roles and member management; until its implementation is merged
-and running on staging (cut line Fri 18 Dec), D47 username sign-in stays in force. D69 (proposed, Entry 222)
+and running on staging (cut line Fri 18 Dec), D47 username sign-in stays in force. D69 (approved 26 Nov, PR #170, Entry 222)
 sets the delivery scope: no extension, D68 designed but not shipped, usability test on staging or the local
 `vsd-real` stack, feature freeze Fri 18 Dec, no P4 dry run. The shipped UI is unchanged until the D55 build PRs.
 The Execution Plan v3.0 status was updated on 25 Nov (Entry 221; merged #169, post-merge review by Khalil).
