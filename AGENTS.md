@@ -125,7 +125,7 @@ required CI check `checks`, branch up to date; no direct pushes.
 | 13 | **DEEP-VOICE external run (once, guarded)**: v1, v2 and baseline in one pass, after F5 or the 2026-12-04 cut-off (D48); stores per-sample scores | D · Khalil; review: all four | |
 | 14–16 | Robustness (FoR only) · calibration analysis · error analysis | D · Malak (14), Khalil (15, 16) | |
 | 17–19 | API (FastAPI) · web app (React, D38) · tests/CI/Docker/docs | E · Iheb; Stage 19 report: all four | |
-| L | Live analysis: live mic and `/api/live` (Must), Chrome extension (Should) (D51, D52) | E · Iheb | |
+| L | Live analysis: live mic and `/api/live` (Must), Chrome extension (Should; not built for delivery, D69) (D51, D52) | E · Iheb | |
 | P | PostgreSQL, process pool and load test, staging/production, interface redesign and usability test (D53–D55) | E · Iheb; usability test: all four | |
 
 Review rule (D26): the consumer reviews the producer.

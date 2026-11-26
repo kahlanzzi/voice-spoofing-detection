@@ -8716,14 +8716,52 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 222 — D69 proposed: delivery scope (2026-11-25)
+
+- **Owner:** Donia Mabrouk (team lead). Branch `docs/decisions-d69-delivery-scope` from `main` `47f76f1`.
+- **Approval [user-reported; reviews on GitHub]:** Iheb (`kahlanzzi`), Malak (`malakbensalemm`)
+  and Khalil (`dridi-khalil`) approved D69 by review on PR #170 on 2026-11-26.
+- **Scope (docs only):** register row D69 (Proposed) with markers on D51, D67 and D68, the Status lines of
+  ADRs 0014 and 0019, CHANGELOG, Open items, Current status and this entry. D69 has no ADR. Not changed: code,
+  API contract, threat model, `docs/design/`, Execution Plan (updated at the Mon 7 Dec sync).
+- **Rows check:** Claude Code stopped before editing on the first draft: the F5 swap before L1 contradicted
+  D68's order, a 26 Nov `aasist` checkpoint contradicted the 24 Nov decision, and D69 (2) was unclear against
+  D68 (7). The revised draft resolves the three (D69 amends list, (2) and (6); `aasist` below).
+- **Team answers [stated by the team, 25 Nov]:**
+  - Iheb: the extension was never in his estimate; D68 cannot fit after production: record as designed, not
+    shipped; `aasist` drop agreed on timing (withdrawn, below); laptop fallback on `vsd-real`; F5 swap on
+    staging by Sun 6 Dec if `aasist` is dropped and the bundle reaches him by Sat 5 Dec morning (the condition
+    is now D69 (6): a log-Mel winner); SDD v2.0 rest to Fri 18 Dec.
+  - Khalil: screens by Thu 10 Dec; Stages 15–16 Fri 11 – Fri 18 Dec; D52 before Stage 13.
+  - Malak (26 Nov): D69 is OK for her; approved by review on PR #170; her Stage 14 compute
+    estimate is not given yet (open item).
+- **Schedule changes (not part of the decision):** the rest of SDD v2.0 moves to Fri 18 Dec (the `/api/live`
+  contract stays due Sun 29 Nov); Khalil: screens by Thu 10 Dec, D52 warm-up analysis before the Stage 13
+  joint run, Stages 15–16 and their report sections Fri 11 – Fri 18 Dec; D66 (F5) approved by Sat 5 Dec so the
+  F5 bundle reaches Iheb on Sat 5 morning.
+- **`aasist`:** it stays a search candidate (the 24 Nov cut-line decision stands): the team's 25 Nov agreement
+  to drop it at a 26 Nov timing checkpoint is withdrawn, because the search binds every run to `d5ffe18` and
+  the `configs/v2_candidates.yaml` hash (`src/tuning/v2_search.py`, `base` provenance), so removing it from
+  `candidate_order` mid-search would make the completed and partial runs unusable, and changing D49's
+  candidate set after search results exist would fall under Protocol §12 change control (3).
+- #169 merged by its author; post-merge review by Khalil (comment on PR #169).
+- **AI assistance:** Claude drafted the row and the schedule wording from the team's answers; Claude Code
+  checked them against the repo and made the edits; Donia reviews the diff before the commit.
+- **Gate:** **APPROVED (D69)**, 2026-11-26 (PR #170); approval commit on this branch before merge;
+  a reviewer (Khalil) merges.
+
+---
+
 ## Open items
 
 **D67/D68 (Entry 219)**
 - [x] Approval by Iheb, Malak, Khalil, then the approval commit. (approved in person 25 Nov; recorded after
   merge in Entry 220)
-- [ ] Execution Plan status update PR (docs/stage19-plan-status-w4), reviewer merges. (PR open, Entry 221)
+- [x] Execution Plan status update PR (docs/stage19-plan-status-w4), reviewer merges. (merged #169; post-merge review by Khalil)
 - [ ] Prototype corrections D67 (1)–(7) and docs/design/HANDOFF-v3.md (Malak).
-- [ ] D68 implementation PR with the §4.8 contract and threat model §10.1 update (Iheb; cut line Fri 18 Dec).
+- [ ] D68 threat-model and design notes (Iheb; D69: designed, not shipped).
+- [x] D69 approval commit before merge (approved 26 Nov, PR #170); reviewer merges.
+- [ ] Malak: Stage 14 compute estimate (D69, Entry 222).
 
 **VoiceCheck Enterprise proposal (Entry 218)**
 - [x] Iheb reviews the proposed prototype against the Stage 17 backend/API work and D55 build plan. (done, #166)
@@ -9214,7 +9252,7 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-25 (Entries 203-221)
+## Current status — updated 2026-11-25 (Entries 203-222)
 
 **Stage 12 — closed.** F4 (bundle-v1, manifest SHA-256 edf4a205…40efc) is frozen under D60,
 verified from Drive copies by Iheb and Khalil, and handed over. The Stage 12 brief was accepted after
@@ -9284,9 +9322,10 @@ bundle in the process pool, on a Compose project and store of its own (`docs/set
 D67 (approved 25 Nov, Entry 220) makes Malak's VoiceCheck Enterprise prototype (PR #166), with the seven
 D67 corrections, the D55 target design in place of Direction D; HANDOFF-v3 is next. D68 (approved,
 Entry 220) adds email sign-in, server-side roles and member management; until its implementation is merged
-and running on staging (cut line Fri 18 Dec), D47 username sign-in stays in force. The shipped UI is
-unchanged until the D55 build PRs.
-The Execution Plan v3.0 status was updated on 25 Nov (Entry 221, waiting for review).
+and running on staging (cut line Fri 18 Dec), D47 username sign-in stays in force. D69 (approved 26 Nov, PR #170, Entry 222)
+sets the delivery scope: no extension, D68 designed but not shipped, usability test on staging or the local
+`vsd-real` stack, feature freeze Fri 18 Dec, no P4 dry run. The shipped UI is unchanged until the D55 build PRs.
+The Execution Plan v3.0 status was updated on 25 Nov (Entry 221; merged #169, post-merge review by Khalil).
 P2a (Entry 207; merged, PR #155) moved the store to
 PostgreSQL behind the same repositories (D53 (4)): `db` service pinned by digest, the API as the
 non-superuser `vsd_app`, a one-time import of the old SQLite store, the API tests on PostgreSQL locally
