@@ -9,6 +9,8 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- D52 descriptive report helper validates call membership and reports reached counts,
+  deferrals and checkpoint metrics from supplied calibrated probabilities.
 - Stage 13 D52 metadata-only call-plan exporter: verified F2 val-B membership,
   explicit leftovers, provenance and SHA-256 output; existing files are not overwritten.
 

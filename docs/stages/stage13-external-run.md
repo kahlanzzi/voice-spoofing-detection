@@ -156,6 +156,29 @@ proof of a clean or approved checkout. Python's version is recorded in the file.
 Actual bundle verification, D17 filtering, inference and descriptive reporting
 remain separate unfinished steps. Do not use this plan for test-split access.
 
+### D52 report preparation
+
+`src/evaluation/live_warmup_report.py` provides `report_from_plan`: supply the
+exported plan path, F2 manifest path, expected plan SHA-256, a mapping of planned
+clip IDs to calibrated probabilities (or `None` for D17 rejection), and the frozen
+threshold and half-width. It re-verifies F2 and deterministic membership. Missing
+or extra scores, altered ordering and plan hash mismatches fail. Leftover clips
+must not be in the scoring map. The scoring caller remains responsible for bundle,
+calibration, audio-hash and speech-filter provenance; this is not an inference runner.
+
+At each of 3/5/10 kept windows, the report gives total/reached/unreached counts,
+reached class counts, forced-binary metrics, three-way confusion, coverage/deferral
+and non-deferred metrics. Its explicitly named verdict accuracy divides correct
+non-deferred verdicts by **all reached calls**, so uncertain verdicts do not count
+as correct. Unreached calls are excluded from metrics and counted separately.
+EER/AUC are unavailable when fewer than two classes reach the checkpoint.
+`report_json` converts undefined metric rates to JSON null. No threshold is fitted.
+
+These are descriptive val-B summaries, not held-out results or a claim of independent
+calls; no confidence interval is supplied by this helper. Review the reporting
+denominators before using them in evidence. Real scoring and its provenance export
+remain unfinished. Tests use synthetic probabilities only.
+
 ### External-run limitations
 
 - No official external run or claim was made for this draft. No external performance is established.

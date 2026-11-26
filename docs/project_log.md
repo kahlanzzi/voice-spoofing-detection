@@ -8887,7 +8887,26 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 227 — D52 descriptive report preparation (2026-11-26)
+
+- **Owner:** Khalil Dridi. **AI assistance:** Codex implemented the report helpers,
+  synthetic tests and documentation after PR #174 merged.
+- **Change:** Fixed 3/5/10 checkpoint summaries preserve unreached cases and distinguish
+  model deferral. Reuse shared binary/three-way/EER/AUC metrics; explicit accuracy
+  denominator; hash-pinned call plan is revalidated against F2 val-B membership.
+  Strict JSON uses null for undefined rates. No audio, inference or registry claim.
+- **Verification:** D52 and governance: **257 passed in 8.76 s**; diff check passed.
+  Full local suite attempted: **25 skipped, 5 collection errors in 3.43 s**, due to
+  missing psycopg and torch. Full Linux verification remains required before push.
+- **Gate:** Pending review. Reporting denominators are documented for review; the
+  caller must verify frozen model/calibration, sample hashes and D17 provenance.
+  Real scoring, evidence export and acceptance are unfinished. Stage 13 remains open.
+
+---
+
 ## Open items
+
+- [ ] Entry 227: Linux verification and review of D52 report helpers; real scoring remains open.
 
 - [ ] Entry 226: review the D52 metadata-only export; Linux verification passed.
 
@@ -9400,7 +9419,11 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-26 (through Entry 226)
+## Current status — updated 2026-11-26 (through Entry 227)
+
+**D52 report preparation (Entry 227):** report helpers and synthetic tests are
+implemented. Full Linux verification and human review are pending. No real warm-up
+result has been produced; verified-bundle scoring remains to be implemented.
 
 **D52 preparation (Entry 226):** metadata-only call-plan export is implemented;
 242 focused/governance tests passed; Linux verification reported 2731 passed and
