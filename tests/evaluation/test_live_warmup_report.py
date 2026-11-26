@@ -1,6 +1,10 @@
 import pytest
+import hashlib
+import json
+from pathlib import Path
 
-from src.evaluation.live_warmup_report import checkpoint_report
+from src.evaluation.live_warmup_report import checkpoint_report, report_from_plan, report_json
+from src.evaluation.live_warmup_plan import export_call_plan
 
 
 def call(identifier, label, probabilities):
@@ -49,3 +53,47 @@ def test_checkpoint_membership_changes_without_dropping_calls():
 def test_rejects_ambiguous_calls(calls):
     with pytest.raises(ValueError):
         report(calls)
+
+
+def test_strict_json_preserves_undefined_rates_as_null():
+    payload = json.loads(report_json(report([call("a", "REAL", [0.5] * 15)])))
+    assert payload["checkpoints"][0]["three_way"]["non_deferred"]["accuracy"] is None
+    assert payload["checkpoints"][0]["verdict_accuracy_among_reached"] == 0
+
+
+@pytest.fixture
+def bound_plan(tmp_path):
+    manifest = Path(__file__).resolve().parents[2] / "data/manifests/for2sec_frozen_manifest.csv"
+    target = tmp_path / "plan.json"
+    digest = export_call_plan(manifest, target, code_commit="a" * 40)
+    plan = json.loads(target.read_text())
+    scores = {path: (0.1 if label == "REAL" else 0.9)
+              for label, group in plan["plans"].items() for call in group["calls"] for path in call}
+    return target, manifest, digest, scores
+
+
+def test_bound_report_verifies_membership_and_records_digest(bound_plan):
+    path, manifest, digest, scores = bound_plan
+    result = report_from_plan(path, manifest, scores, expected_plan_sha256=digest,
+                              threshold=0.5, half_width=0.125)
+    assert result["call_plan_sha256"] == digest
+    assert all(row["verdict_accuracy_among_reached"] == 1 for row in result["checkpoints"])
+
+
+@pytest.mark.parametrize("change", ["missing", "extra", "wrong_hash", "membership"])
+def test_bound_report_rejects_corruption(bound_plan, change):
+    path, manifest, digest, scores = bound_plan
+    if change == "missing":
+        scores.pop(next(iter(scores)))
+    elif change == "extra":
+        scores["unknown"] = 0.5
+    elif change == "wrong_hash":
+        digest = "0" * 64
+    else:
+        plan = json.loads(path.read_text())
+        plan["plans"]["REAL"]["calls"][0].reverse()
+        path.write_text(json.dumps(plan))
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    with pytest.raises(ValueError):
+        report_from_plan(path, manifest, scores, expected_plan_sha256=digest,
+                         threshold=0.5, half_width=0.125)

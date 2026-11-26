@@ -2,9 +2,15 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+import hashlib
+import json
+import math
+from pathlib import Path
+import re
 
 from src.evaluation.live_warmup import warmup_checkpoints
 from src.evaluation.metrics import binary_metrics, eer, roc_auc, three_way_metrics
+from src.evaluation.live_warmup_plan import build_call_plan
 from src.risk.decisions import three_way_decisions
 
 
@@ -61,3 +67,54 @@ def checkpoint_report(calls, *, threshold: float, half_width: float) -> dict:
             "accuracy_denominator": "reached calls; uncertain counts as an incorrect verdict",
             "unreached_rule": "excluded from metrics and counted separately, never a deferral",
             "checkpoints": summaries, "calls": records}
+
+
+def report_from_plan(plan_path: Path, manifest_path: Path, probabilities: dict, *,
+                     expected_plan_sha256: str, threshold: float, half_width: float) -> dict:
+    """Bind slot scores to exact exported membership, verified again against F2.
+
+    Scores must map every planned clip ID (excluding leftovers) to p or None.
+    Model identity/calibration and D17 provenance remain the scoring caller's duty.
+    """
+    if not isinstance(expected_plan_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", expected_plan_sha256):
+        raise ValueError("expected_plan_sha256 must be a lowercase SHA-256")
+    data = Path(plan_path).read_bytes()
+    if hashlib.sha256(data).hexdigest() != expected_plan_sha256:
+        raise ValueError("call-plan SHA-256 mismatch")
+    plan = json.loads(data)
+    expected = build_call_plan(manifest_path)
+    expected = json.loads(json.dumps(expected))  # tuple/list normalization
+    if not isinstance(plan, dict) or set(plan) != set(expected) | {"code_commit", "python_version"}:
+        raise ValueError("call-plan schema mismatch")
+    if any(plan[key] != value for key, value in expected.items()):
+        raise ValueError("call-plan membership differs from verified val-B plan")
+    if not isinstance(plan["code_commit"], str) or not re.fullmatch(r"[0-9a-f]{40}", plan["code_commit"]):
+        raise ValueError("invalid call-plan code commit")
+    if not isinstance(plan["python_version"], str) or not plan["python_version"].strip():
+        raise ValueError("missing call-plan Python version")
+    required = {path for group in plan["plans"].values() for call in group["calls"] for path in call}
+    if not isinstance(probabilities, dict) or set(probabilities) != required:
+        raise ValueError("scores must match planned clip membership exactly; no missing or extra IDs")
+    calls = []
+    for label, group in plan["plans"].items():
+        for index, members in enumerate(group["calls"]):
+            calls.append({"call_id": f"{label}-{index:04d}", "label": label,
+                          "probabilities": [probabilities[path] for path in members]})
+    result = checkpoint_report(calls, threshold=threshold, half_width=half_width)
+    result["call_plan_sha256"] = expected_plan_sha256
+    result["manifest_sha256"] = plan["manifest_sha256"]
+    result["leftover_counts"] = {label: len(group["leftovers"]) for label, group in plan["plans"].items()}
+    return result
+
+
+def report_json(report: dict) -> str:
+    """Serialize undefined metric rates as null, never nonstandard JSON NaN."""
+    def clean(value):
+        if isinstance(value, float) and not math.isfinite(value):
+            return None
+        if isinstance(value, dict):
+            return {key: clean(item) for key, item in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [clean(item) for item in value]
+        return value
+    return json.dumps(clean(report), indent=2, sort_keys=True, allow_nan=False) + "\n"
