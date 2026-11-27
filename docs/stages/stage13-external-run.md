@@ -94,6 +94,12 @@ new measurements from this preparation. Sources: [Protocol](../experimental_prot
   Code availability does not establish verification of the future real F5 artifacts.
 - [doc] Entry 198 / #149 records scratch runtime and personal-Drive read-back evidence. It does
   not establish completion of the approved-target persistence and sharing requirements.
+- [verified preparation audit] The approved folder, exact `registry/` and `output/` paths, and the
+  259-byte dummy probe are recorded in
+  [the target audit](../audit_evidence/stage13_drive_target/README.md). The probe hash matches, but
+  the target is still private and the saved read-back notebook covers only Entry 198's personal
+  scratch folder. A new-runtime target read-back and Viewer sharing with the three reviewers remain
+  required; this audit is not an execution authorization.
 - [doc] Remaining: reviewed invocation with real F5 or the applicable cutoff exclusion; D58
   confirmation in the run session; approved-target durability/access evidence; D52 val-B warm-up;
   final runner review and execution readiness. After execution, add score/report/claim hashes,
