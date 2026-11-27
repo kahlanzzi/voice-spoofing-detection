@@ -9061,6 +9061,32 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 235 — Stage 13 approved Drive target pre-run audit (2026-11-27)
+
+- **Owner:** Khalil Dridi. **Decision:** D35 / ADR 0007; preparation only.
+- **Observed target:** DK account folder `voice-spoofing-detection-stage13`, ID
+  `17BxyuWYp2DUTnHbyUEUuyDA0Gv8HJuJD`, with exact Colab paths
+  `/content/drive/MyDrive/voice-spoofing-detection-stage13/{registry,output}/`.
+  Both subfolders exist. The harmless probe is 259 bytes and its reconstructed
+  SHA-256 is `3fb7482a130a19c99730655001ec73aeefbc545f631aacfed47024d03c52430b`.
+- **Important limits:** Drive metadata still reports the target as private. The
+  saved read-back notebook proves Entry 198's personal `stage13-scratch` only,
+  not this target. The required Viewer shares, reviewer references and a new,
+  separate-runtime read-back of this exact probe remain pending.
+- **Safety:** Read-only Drive and documentation audit. No external audio was
+  opened, no scoring ran, no official registry claim was created, and no Drive
+  bytes or project decisions changed.
+- **Evidence:** `docs/audit_evidence/stage13_drive_target/README.md` records the
+  folder/file IDs, paths, complete hashes and pending gates. The folder must not
+  be renamed, moved or emptied before the official registry is preserved.
+- **AI assistance:** Codex inspected the DK Drive metadata and saved notebook,
+  reconstructed the probe hash, and drafted the evidence. Human review required.
+- **Gate:** **WAITING FOR APPROVAL.** This target has not passed durability/access.
+  Complete sharing and fresh-runtime read-back, then F5-or-cutoff, run-session
+  D58, reviewed invocation/configuration and all-four review before the claim.
+
+---
+
 ## Open items
 
 - [x] Entry 230: export reviewed and merged in #177; first val-B execution and evidence preservation recorded in Entry 231.
@@ -9167,8 +9193,10 @@ pointers and synchronized PDF are reviewed.
 - [x] Review and merge the optional Torch guard for the two synthetic runner tests (Entry 196; PR #147).
 - [x] Match the D58 report hash and recorded T4 environment in a scratch session (Entry 198).
 - [x] Verify a dummy-file write and fresh-session read-back in personal My Drive (Entry 198).
-- [ ] Confirm the approved registry location and repeat the check in a writable scratch
-  subfolder there. Recheck D58 in the official run session (Entry 198).
+- [ ] Complete the approved-target gate from Entry 235: share the fixed target as Viewer with the
+  three reviewers, record their references, and verify the 259-byte probe from a new separate
+  Colab runtime. The target structure and hash are audited; durability/access have not passed.
+  Recheck D58 in the official run session (Entry 198).
 - [x] Implement the D35 per-window frozen preprocessing integration test (Entry 55); synthetic test verifies each complete window is independently preprocessed and the remainder is dropped (Entry 175).
 - [x] Add stored-score integrity checks, D33 eight-speaker summaries, D34 CNN file means and the D36 paired EER bootstrap (Entry 176; synthetic rows only).
 - [x] Add D34 source-speaker-clustered file-level intervals and strict JSON report export (Entry 177; synthetic rows only).
@@ -9582,7 +9610,7 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-27 (through Entry 233)
+## Current status — updated 2026-11-27 (through Entry 235)
 
 **D52 evidence verification (Entry 232):** the user-run full Linux suite passed
 (2761 passed, 1 skipped) at `bd0d1dd`. This documentation-only follow-up records
@@ -9654,7 +9682,9 @@ results PR, then F5. See the open items above and
 reported the full Torch-enabled suite as 2,002 passed and 2 skipped, plus 88 governance tests, with
 the required checks, e2e and web checks green. The optional Torch guard merged in PR #147
 (Entry 196). The D58 scratch runtime matched the rehearsal, and a personal Drive write passed
-a fresh-runtime read-back (Entry 198). The approved Drive target still needs its own check.
+a fresh-runtime read-back (Entry 198). Entry 235 verifies the approved target's folder structure,
+exact paths and 259-byte probe hash, but the target remains private and the saved read-back notebook
+covers only the personal scratch folder. Viewer sharing and a new-runtime target read-back remain open.
 Before the single Stage 13 run, verify the applicable D48 model set (F5 verified by the cutoff,
 or v1 plus baseline after it) and recheck D58 in the run session. Complete any follow-up loader
 integration and all-four review before the run. A draft Stage 13 brief is prepared in Entry 225;
