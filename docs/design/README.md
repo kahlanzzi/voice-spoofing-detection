@@ -1,10 +1,12 @@
 # Design: analyst console prototype
 
 **Approved visual direction (D67):** [VoiceCheck Enterprise](voicecheck-enterprise-proposal.html).
-The [work-in-progress corrected copy](voicecheck-enterprise-d67.html) keeps that visual design and
-currently fixes the D52 live mean/warm-up behavior and the nonlinear decision board's three
-major labels (D67 corrections 1–2). Corrections 3–7 and HANDOFF-v3 are still in progress;
-this copy is not the production application. The SHA-pinned original is unchanged.
+The [corrected design preview](voicecheck-enterprise-d67.html) keeps that visual design and
+shows all seven D67 corrections. Its sample scores and records are local preview fixtures;
+the application must obtain policy, versions, windows and records from the API. The preview
+does not authenticate, upload, capture audio or create accounts. The approved D69 cut line
+leaves member management on the server and username sign-in in place. HANDOFF-v3 and
+implementation checks remain separate work. The SHA-pinned original is unchanged.
 Direction D and HANDOFF-v2 remain historical references.
 
 `analyst-console-prototype.html` is the clickable prototype of the analyst interface approved in
