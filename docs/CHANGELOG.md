@@ -9,6 +9,8 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- Stage 13 approved-Drive pre-run audit records the exact target paths, folder IDs and 259-byte
+  probe hash while leaving the private-sharing and fresh-runtime read-back gates open (Entry 235).
 - The D67 Enterprise design preview now uses local fonts, request IDs, API-shaped policy fixtures,
   local time labels and the D69 account cut line; the original approved visual remains unchanged
   (Entry 234).
