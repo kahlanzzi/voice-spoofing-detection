@@ -9,6 +9,11 @@ Categories: **Added**, **Changed**, **Fixed**, **Removed**.
 ## [Unreleased]
 
 ### Added
+- The D67 Enterprise design preview now uses local fonts, request IDs, API-shaped policy fixtures,
+  local time labels and the D69 account cut line; the original approved visual remains unchanged
+  (Entry 234).
+- A work-in-progress D67 copy of the VoiceCheck Enterprise prototype preserves the original layout
+  while correcting the decision board and D52 live aggregation (Entry 233).
 - D52 descriptive val-B evidence note with preserved hashes, checkpoint results, runtime discrepancy and pending-review status.
 - D52 report export command preserves runtime details and prints an exact-byte SHA-256; existing outputs are refused.
 - D52 frozen-bundle scoring integration verifies val-B membership and sample hashes,

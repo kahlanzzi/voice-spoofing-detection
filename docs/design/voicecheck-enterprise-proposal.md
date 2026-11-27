@@ -1,8 +1,15 @@
 # VoiceCheck Enterprise: proposed interface direction
 
-**Status: proposal for Iheb and team review, not the approved D55/D65 target.** The current target
-remains [Direction D](prototype-d55-direction-d.html) and [HANDOFF-v2](HANDOFF-v2.md). This page
-does not change a decision, API contract, model, policy, or the running React application.
+**Status: original visual prototype, adopted by D67 with required corrections.** The file below
+remains byte-identical to the reviewed PR #166 candidate. The [corrected design preview](voicecheck-enterprise-d67.html)
+shows D67 corrections 1–7; HANDOFF-v3 and implementation checks remain open.
+
+The corrected preview keeps sample records so the team can inspect the screens, but the built
+app must use API responses for policy numbers, versions, windows and records. Request IDs replace
+original filenames everywhere in the preview. Public Sans and IBM Plex Mono are served from local
+font files. The demo entry button and badge are gone; the remaining sign-in interaction is a local
+preview only. Verdicts and charts retain text or icon labels alongside colour. The D69 delivery cut
+line keeps D47 username sign-in and server-managed accounts until D68 is shipped.
 
 ## Open the candidate
 

@@ -1,12 +1,13 @@
 # Design: analyst console prototype
 
-**Target design (D55, D65):** [`prototype-d55-direction-d.html`](prototype-d55-direction-d.html) and
-[`HANDOFF-v2.md`](HANDOFF-v2.md). The v4 prototype and HANDOFF.md below describe the shipped UI until the D55 build PRs replace them.
-
-**New candidate for review:** [VoiceCheck Enterprise prototype](voicecheck-enterprise-proposal.html)
-and its [comparison with the approved direction](voicecheck-enterprise-proposal.md). Malak proposes
-it for Iheb's backend and UI review. It does not replace D65 or the current handoff unless the team
-approves a decision update.
+**Approved visual direction (D67):** [VoiceCheck Enterprise](voicecheck-enterprise-proposal.html).
+The [corrected design preview](voicecheck-enterprise-d67.html) keeps that visual design and
+shows all seven D67 corrections. Its sample scores and records are local preview fixtures;
+the application must obtain policy, versions, windows and records from the API. The preview
+does not authenticate, upload, capture audio or create accounts. The approved D69 cut line
+leaves member management on the server and username sign-in in place. HANDOFF-v3 and
+implementation checks remain separate work. The SHA-pinned original is unchanged.
+Direction D and HANDOFF-v2 remain historical references.
 
 `analyst-console-prototype.html` is the clickable prototype of the analyst interface approved in
 D38 / [ADR 0008](../decisions/0008-web-frontend-react.md). It is a **design reference for Stage 18,
