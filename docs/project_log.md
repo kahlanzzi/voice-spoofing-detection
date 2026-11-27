@@ -9013,6 +9013,23 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
+### Entry 233 — D67 Enterprise visual correction, first pass (2026-11-27)
+
+- **Owner:** Malak Ben Salem. **Decision:** D67 (1)–(2), D52.
+- **Scope:** `docs/design/voicecheck-enterprise-d67.html` is a copy of the original approved visual
+  prototype, retaining its screens and styling. The original PR #166 file remains SHA-pinned and
+  unchanged. The copied decision board now draws a threshold mark and prominent 0.270, 0.633 and
+  0.997 labels on its nonlinear scale. The live demo now includes every kept window, including
+  the first three, in the arithmetic mean; only the verdict is withheld during warm-up.
+- **Checks:** JavaScript syntax and focused running-mean/scale assertions passed. A desktop browser
+  render of the result screen was inspected. Full repository pytest was unavailable in this
+  workspace because the existing virtual environment could not be executed.
+- **Open:** D67 corrections (3)–(7), true 390 px and accessibility checks, HANDOFF-v3, and
+  independent review. The copy is not production code and is not ready for a PR.
+- **AI assistance:** Codex made and checked the first-pass edits for Malak's visual review.
+
+---
+
 ## Open items
 
 - [x] Entry 230: export reviewed and merged in #177; first val-B execution and evidence preservation recorded in Entry 231.
@@ -9038,7 +9055,8 @@ pointers and synchronized PDF are reviewed.
 - [x] Approval by Iheb, Malak, Khalil, then the approval commit. (approved in person 25 Nov; recorded after
   merge in Entry 220)
 - [x] Execution Plan status update PR (docs/stage19-plan-status-w4), reviewer merges. (merged #169; post-merge review by Khalil)
-- [ ] Prototype corrections D67 (1)–(7) and docs/design/HANDOFF-v3.md (Malak).
+- [ ] Complete D67 prototype corrections (3)–(7) in the original-layout copy; (1)–(2) are
+  prepared in Entry 233), then write `docs/design/HANDOFF-v3.md` (Malak).
 - [ ] D68 threat-model and design notes (Iheb; D69: designed, not shipped).
 - [x] D69 approval commit before merge (approved 26 Nov, PR #170); reviewer merges.
 - [ ] Malak: Stage 14 compute estimate (D69, Entry 222).
@@ -9532,7 +9550,7 @@ pointers and synchronized PDF are reviewed.
 
 ---
 
-## Current status — updated 2026-11-27 (through Entry 232)
+## Current status — updated 2026-11-27 (through Entry 233)
 
 **D52 evidence verification (Entry 232):** the user-run full Linux suite passed
 (2761 passed, 1 skipped) at `bd0d1dd`. This documentation-only follow-up records
@@ -9616,7 +9634,8 @@ verdict must not be presented as a real model result. P1 (Entry 217; merged, PR 
 bundle in the process pool, on a Compose project and store of its own (`docs/setup.md` "Real model stack
 (vsd-real)"); until D63, its verdict uses the centre 2 s of the upload only.
 D67 (approved 25 Nov, Entry 220) makes Malak's VoiceCheck Enterprise prototype (PR #166), with the seven
-D67 corrections, the D55 target design in place of Direction D; HANDOFF-v3 is next. D68 (approved,
+D67 corrections, the D55 target design in place of Direction D. The first-pass corrections
+to the original-layout copy are prepared in Entry 233; corrections (3)–(7) and HANDOFF-v3 are next. D68 (approved,
 Entry 220) adds email sign-in, server-side roles and member management; until its implementation is merged
 and running on the production host (D70; cut line Fri 18 Dec), D47 username sign-in stays in force. D69 (approved 26 Nov, PR #170, Entry 222)
 sets the delivery scope: no extension, D68 designed but not shipped, usability test on the production host (D70) or the local

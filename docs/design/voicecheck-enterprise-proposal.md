@@ -1,8 +1,8 @@
 # VoiceCheck Enterprise: proposed interface direction
 
-**Status: proposal for Iheb and team review, not the approved D55/D65 target.** The current target
-remains [Direction D](prototype-d55-direction-d.html) and [HANDOFF-v2](HANDOFF-v2.md). This page
-does not change a decision, API contract, model, policy, or the running React application.
+**Status: original visual prototype, adopted by D67 with required corrections.** The file below
+remains byte-identical to the reviewed PR #166 candidate. The [corrected copy](voicecheck-enterprise-d67.html)
+is being revised screen by screen; corrections 3–7 and HANDOFF-v3 remain open.
 
 ## Open the candidate
 
